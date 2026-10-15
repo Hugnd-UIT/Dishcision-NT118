@@ -1,3 +1,16 @@
 <resources>
     <string name="app_name">Dishcision</string>
+    <string name="welcome_text">Welcome, Dishcision!</string>
+    <string name="subtitle_text">Decide what to eat together</string>
+    <string name="email_label">Email or Username</string>
+    <string name="email_hint">Enter your email or username</string>
+    <string name="password_label">Password</string>
+    <string name="password_hint">Enter your password</string>
+    <string name="login_button">Log In</string>
+    <string name="forgot_password">Forgot Password?</string>
+    <string name="no_account">Don\'t have an account?</string>
+    <string name="create_account">Create new account</string>
+    <string name="or_continue_with">OR\nCONTINUE\nWITH</string>
+    <string name="continue_with_google">Continue with Google</string>
+    <string name="terms_text">By logging in, you agree to Dishcision\'s Terms of Service &amp; Privacy Policy.</string>
 </resources>
