@@ -23,16 +23,22 @@ export const paginationSchema = z.object({
 });
 
 export const registerSchema = z.object({
-  username: z.string().min(3).max(50),
+  username: z.string().min(3).max(50).optional().or(z.literal('')),
   email: z.string().email(),
-  password: z.string().min(8),
+  password: z.string().min(6),
   fullName: z.string().min(1).max(100),
 });
 
-export const loginSchema = z.object({
-  credential: z.string().min(1),
-  password: z.string().min(1),
-});
+export const loginSchema = z
+  .object({
+    credential: z.string().optional(),
+    username: z.string().optional(),
+    email: z.string().optional(),
+    password: z.string().min(1),
+  })
+  .refine((data) => Boolean(data.credential || data.username || data.email), {
+    message: 'credential, username, or email is required',
+  });
 
 export const forgotPasswordSchema = z.object({
   email: z.string().email(),

@@ -4,15 +4,27 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.text.Html;
 import android.text.InputType;
+import android.text.TextUtils;
 import android.widget.EditText;
 import android.widget.ImageView;
+import android.widget.RelativeLayout;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.activity.EdgeToEdge;
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
+
+import com.example.dishcision.network.ApiClient;
+import com.example.dishcision.network.AuthResponse;
+import com.example.dishcision.network.RegisterRequest;
+
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
 
 public class RegisterActivity extends AppCompatActivity {
 
@@ -22,6 +34,7 @@ public class RegisterActivity extends AppCompatActivity {
     private EditText edtConfirmPassword;
     private ImageView btnToggleRegisterPassword;
     private ImageView btnToggleConfirmPassword;
+    private RelativeLayout btnRegister;
     private TextView tvLoginLink;
 
     private boolean isPasswordVisible = false;
@@ -51,10 +64,15 @@ public class RegisterActivity extends AppCompatActivity {
         edtConfirmPassword = findViewById(R.id.edtConfirmPassword);
         btnToggleRegisterPassword = findViewById(R.id.btnToggleRegisterPassword);
         btnToggleConfirmPassword = findViewById(R.id.btnToggleConfirmPassword);
+        btnRegister = findViewById(R.id.btnRegister);
         tvLoginLink = findViewById(R.id.tvLoginLink);
     }
 
     private void setupListeners() {
+        if (btnRegister != null) {
+            btnRegister.setOnClickListener(v -> performRegister());
+        }
+
         if (btnToggleRegisterPassword != null && edtRegisterPassword != null) {
             btnToggleRegisterPassword.setOnClickListener(v -> {
                 if (isPasswordVisible) {
@@ -88,6 +106,66 @@ public class RegisterActivity extends AppCompatActivity {
                 finish();
             });
         }
+    }
+
+    private void performRegister() {
+        String fullName = getEnteredFullName();
+        String email = getEnteredEmail();
+        String password = edtRegisterPassword != null ? edtRegisterPassword.getText().toString() : "";
+        String confirmPassword = edtConfirmPassword != null ? edtConfirmPassword.getText().toString() : "";
+
+        if (TextUtils.isEmpty(fullName)) {
+            edtFullName.setError("Vui lòng nhập họ và tên");
+            edtFullName.requestFocus();
+            return;
+        }
+
+        if (TextUtils.isEmpty(email)) {
+            edtRegisterEmail.setError("Vui lòng nhập địa chỉ email");
+            edtRegisterEmail.requestFocus();
+            return;
+        }
+
+        if (TextUtils.isEmpty(password)) {
+            edtRegisterPassword.setError("Vui lòng nhập mật khẩu");
+            edtRegisterPassword.requestFocus();
+            return;
+        }
+
+        if (password.length() < 8) {
+            edtRegisterPassword.setError("Mật khẩu phải từ 8 ký tự trở lên");
+            edtRegisterPassword.requestFocus();
+            return;
+        }
+
+        if (!password.equals(confirmPassword)) {
+            edtConfirmPassword.setError("Mật khẩu xác nhận không khớp");
+            edtConfirmPassword.requestFocus();
+            return;
+        }
+
+        RegisterRequest request = new RegisterRequest(fullName, email, password);
+        ApiClient.getApiService().register(request).enqueue(new Callback<AuthResponse>() {
+            @Override
+            public void onResponse(@NonNull Call<AuthResponse> call, @NonNull Response<AuthResponse> response) {
+                if (response.isSuccessful() && response.body() != null) {
+                    Toast.makeText(RegisterActivity.this, "Đăng ký thành công!", Toast.LENGTH_SHORT).show();
+                    Intent intent = new Intent(RegisterActivity.this, LoginActivity.class);
+                    startActivity(intent);
+                    finish();
+                } else {
+                    String msg = response.body() != null && response.body().getMessage() != null
+                            ? response.body().getMessage()
+                            : "Mã lỗi server: " + response.code();
+                    Toast.makeText(RegisterActivity.this, "Đăng ký thất bại: " + msg, Toast.LENGTH_LONG).show();
+                }
+            }
+
+            @Override
+            public void onFailure(@NonNull Call<AuthResponse> call, @NonNull Throwable t) {
+                Toast.makeText(RegisterActivity.this, "Lỗi kết nối server: " + t.getMessage(), Toast.LENGTH_LONG).show();
+            }
+        });
     }
 
     private void setupTermsText() {

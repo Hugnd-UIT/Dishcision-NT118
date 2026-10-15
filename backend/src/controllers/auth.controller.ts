@@ -43,17 +43,44 @@ function formatUserPrivate(user: any) {
 export async function register(req: Request, res: Response): Promise<void> {
   const { username, email, password, fullName } = req.body;
 
+  let finalUsername = username && typeof username === 'string' && username.trim().length >= 3 ? username.trim() : '';
+
+  if (!finalUsername) {
+    let base = email.split('@')[0].toLowerCase().replace(/[^a-z0-9_]/g, '');
+    if (base.length < 3) {
+      base = `user_${base}`;
+    }
+    base = base.slice(0, 30);
+    finalUsername = base;
+    let candidate = finalUsername;
+    let count = 0;
+    while (await prisma.user.findUnique({ where: { username: candidate } })) {
+      count++;
+      const suffix = Math.floor(1000 + Math.random() * 9000);
+      candidate = `${base.slice(0, 40)}_${suffix}`;
+      if (count > 20) {
+        candidate = `user_${crypto.randomBytes(4).toString('hex')}`;
+        break;
+      }
+    }
+    finalUsername = candidate;
+  }
+
   const existing = await prisma.user.findFirst({
-    where: { OR: [{ email }, { username }] },
+    where: { OR: [{ email }, { username: finalUsername }] },
   });
   if (existing) {
-    errorResponse(res, 'Email or username already exists', 409);
+    if (existing.email.toLowerCase() === email.toLowerCase()) {
+      errorResponse(res, 'Email already exists', 409);
+    } else {
+      errorResponse(res, 'Username already exists', 409);
+    }
     return;
   }
 
   const passwordHash = await hashPassword(password);
   const user = await prisma.user.create({
-    data: { username, email, passwordHash, fullName },
+    data: { username: finalUsername, email, passwordHash, fullName },
     select: { ...USER_PUBLIC_SELECT, _count: { select: { followers: true, following: true } } },
   });
 
@@ -61,21 +88,28 @@ export async function register(req: Request, res: Response): Promise<void> {
   const refreshToken = generateRefreshToken({ userId: user.id });
   await prisma.user.update({ where: { id: user.id }, data: { refreshToken } });
 
-  successResponse(res, {
+  res.status(201).json({
+    success: true,
+    message: 'Registration successful',
+    token: accessToken,
     accessToken,
-    refreshToken,
-    expiresIn: getExpiresIn(),
-    user: formatUser(user),
-  }, 'Registration successful', 201);
+    data: {
+      accessToken,
+      refreshToken,
+      expiresIn: getExpiresIn(),
+      user: formatUser(user),
+    },
+  });
 }
 
 // ── Login ─────────────────────────────────
 
 export async function login(req: Request, res: Response): Promise<void> {
-  const { credential, password } = req.body;
+  const { credential, username, email, password } = req.body;
+  const loginIdentifier = credential || username || email;
 
   const user = await prisma.user.findFirst({
-    where: { OR: [{ email: credential }, { username: credential }] },
+    where: { OR: [{ email: loginIdentifier }, { username: loginIdentifier }] },
     include: { _count: { select: { followers: true, following: true } } },
   });
 
@@ -93,12 +127,18 @@ export async function login(req: Request, res: Response): Promise<void> {
   const refreshToken = generateRefreshToken({ userId: user.id });
   await prisma.user.update({ where: { id: user.id }, data: { refreshToken } });
 
-  successResponse(res, {
+  res.status(200).json({
+    success: true,
+    message: 'Login successful',
+    token: accessToken,
     accessToken,
-    refreshToken,
-    expiresIn: getExpiresIn(),
-    user: formatUser(user),
-  }, 'Login successful');
+    data: {
+      accessToken,
+      refreshToken,
+      expiresIn: getExpiresIn(),
+      user: formatUser(user),
+    },
+  });
 }
 
 // ── Logout ────────────────────────────────

@@ -20,6 +20,8 @@ services:
       -c max_connections=50
     volumes:
       - postgres-data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
     deploy:
       resources:
         limits:
