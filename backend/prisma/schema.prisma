@@ -1,0 +1,400 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─────────────────────────────────────────
+// ENUMS
+// ─────────────────────────────────────────
+
+enum Role {
+  User
+  RestaurantAccount
+  Admin
+}
+
+enum Gender {
+  Male
+  Female
+  Other
+}
+
+enum AccountStatus {
+  Active
+  Banned
+  Suspended
+}
+
+enum PostStatus {
+  Active
+  Hidden
+  Deleted
+}
+
+enum NotificationType {
+  Like
+  Comment
+  Share
+  Follow
+  System
+}
+
+enum ReportReason {
+  Spam
+  Nudity
+  Violence
+  FakeNews
+  Harassment
+  Other
+}
+
+enum ReportStatus {
+  Pending
+  Resolved
+  Dismissed
+}
+
+enum ReportPriority {
+  Low
+  Medium
+  High
+}
+
+enum AuditTargetType {
+  User
+  Post
+  Comment
+  Report
+  AIConfig
+}
+
+enum TargetGroup {
+  All
+  User
+  RestaurantAccount
+}
+
+// ─────────────────────────────────────────
+// MODELS
+// ─────────────────────────────────────────
+
+model User {
+  id            Int           @id @default(autoincrement())
+  username      String        @unique @db.VarChar(50)
+  email         String        @unique @db.VarChar(255)
+  passwordHash  String        @db.VarChar(255)
+  fullName      String        @db.VarChar(100)
+  bio           String?       @db.VarChar(255)
+  avatarUrl     String?       @db.VarChar(500)
+  gender        Gender?
+  dateOfBirth   DateTime?     @db.Date
+  role          Role          @default(User)
+  accountStatus AccountStatus @default(Active)
+  refreshToken  String?       @db.VarChar(500)
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  // Relations
+  posts             Post[]              @relation("AuthorPosts")
+  comments          Comment[]
+  postLikes         PostLike[]
+  postShares        PostShare[]
+  savedPosts        SavedPost[]
+  reviews           Review[]
+  preferences       UserPreference[]
+  followers         Follow[]            @relation("Following")
+  following         Follow[]            @relation("Follower")
+  sentMessages      Message[]           @relation("SentMessages")
+  receivedMessages  Message[]           @relation("ReceivedMessages")
+  notifications     Notification[]
+  aiRequests        AIRequest[]
+  reports           Report[]            @relation("Reporter")
+  reportedByReports Report[]            @relation("ReportedUser")
+  auditLogs         AuditLog[]          @relation("AdminLogs")
+
+  @@map("users")
+}
+
+model FoodPreference {
+  id          Int    @id @default(autoincrement())
+  name        String @db.VarChar(100)
+  description String? @db.VarChar(255)
+  icon        String? @db.VarChar(10)
+
+  users UserPreference[]
+
+  @@map("food_preferences")
+}
+
+model UserPreference {
+  userId       Int
+  preferenceId Int
+
+  user       User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  preference FoodPreference @relation(fields: [preferenceId], references: [id], onDelete: Cascade)
+
+  @@id([userId, preferenceId])
+  @@map("user_preferences")
+}
+
+model Post {
+  id          Int        @id @default(autoincrement())
+  authorId    Int
+  content     String     @db.VarChar(2000)
+  locationUrl String?    @db.VarChar(500)
+  voucherCode String?    @db.VarChar(50)
+  hashtags    String[]
+  isPinned    Boolean    @default(false)
+  status      PostStatus @default(Active)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  author    User        @relation("AuthorPosts", fields: [authorId], references: [id], onDelete: Cascade)
+  images    PostImage[]
+  likes     PostLike[]
+  comments  Comment[]
+  shares    PostShare[]
+  savedBy   SavedPost[]
+  reports   Report[]
+
+  @@map("posts")
+}
+
+model PostImage {
+  id           Int    @id @default(autoincrement())
+  postId       Int
+  imageUrl     String @db.VarChar(500)
+  displayOrder Int    @default(0)
+
+  post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@map("post_images")
+}
+
+model PostLike {
+  userId    Int
+  postId    Int
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@id([userId, postId])
+  @@map("post_likes")
+}
+
+model PostShare {
+  userId    Int
+  postId    Int
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@id([userId, postId])
+  @@map("post_shares")
+}
+
+model SavedPost {
+  userId    Int
+  postId    Int
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@id([userId, postId])
+  @@map("saved_posts")
+}
+
+model Comment {
+  id              Int      @id @default(autoincrement())
+  postId          Int
+  authorId        Int
+  content         String   @db.VarChar(1000)
+  parentCommentId Int?
+  createdAt       DateTime @default(now())
+
+  post          Post      @relation(fields: [postId], references: [id], onDelete: Cascade)
+  author        User      @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  parentComment Comment?  @relation("Replies", fields: [parentCommentId], references: [id])
+  replies       Comment[] @relation("Replies")
+  likes         CommentLike[]
+
+  @@map("comments")
+}
+
+model CommentLike {
+  userId    Int
+  commentId Int
+
+  comment Comment @relation(fields: [commentId], references: [id], onDelete: Cascade)
+
+  @@id([userId, commentId])
+  @@map("comment_likes")
+}
+
+model Review {
+  id             Int      @id @default(autoincrement())
+  authorId       Int
+  restaurantName String   @db.VarChar(255)
+  locationUrl    String?  @db.VarChar(500)
+  rating         Int
+  content        String   @db.Text
+  tags           String[]
+  createdAt      DateTime @default(now())
+
+  author User          @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  images ReviewImage[]
+
+  @@map("reviews")
+}
+
+model ReviewImage {
+  id           Int    @id @default(autoincrement())
+  reviewId     Int
+  imageUrl     String @db.VarChar(500)
+  displayOrder Int    @default(0)
+
+  review Review @relation(fields: [reviewId], references: [id], onDelete: Cascade)
+
+  @@map("review_images")
+}
+
+model FoodCategory {
+  id   Int    @id @default(autoincrement())
+  name String @db.VarChar(100)
+  icon String? @db.VarChar(10)
+
+  @@map("food_categories")
+}
+
+model Follow {
+  followerId  Int
+  followingId Int
+  createdAt   DateTime @default(now())
+
+  follower  User @relation("Follower", fields: [followerId], references: [id], onDelete: Cascade)
+  following User @relation("Following", fields: [followingId], references: [id], onDelete: Cascade)
+
+  @@id([followerId, followingId])
+  @@map("follows")
+}
+
+model Message {
+  id          Int      @id @default(autoincrement())
+  senderId    Int
+  recipientId Int
+  content     String?  @db.Text
+  mediaUrl    String?  @db.VarChar(500)
+  isRead      Boolean  @default(false)
+  createdAt   DateTime @default(now())
+
+  sender    User @relation("SentMessages", fields: [senderId], references: [id], onDelete: Cascade)
+  recipient User @relation("ReceivedMessages", fields: [recipientId], references: [id], onDelete: Cascade)
+
+  @@map("messages")
+}
+
+model Notification {
+  id            Int              @id @default(autoincrement())
+  userId        Int
+  type          NotificationType
+  message       String           @db.VarChar(255)
+  isRead        Boolean          @default(false)
+  relatedPostId Int?
+  createdAt     DateTime         @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("notifications")
+}
+
+model AIRequest {
+  id          Int      @id @default(autoincrement())
+  userId      Int
+  mood        String?  @db.VarChar(255)
+  budget      String?  @db.VarChar(50)
+  companions  Int?
+  craving     String?  @db.VarChar(255)
+  resultJson  Json?
+  modelUsed   String?  @db.VarChar(100)
+  feedbackRating Int?
+  feedbackComment String? @db.VarChar(500)
+  createdAt   DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("ai_requests")
+}
+
+model AIConfig {
+  id          Int      @id @default(autoincrement())
+  modelName   String   @db.VarChar(100)
+  provider    String   @db.VarChar(50)
+  isActive    Boolean  @default(false)
+  maxTokens   Int      @default(1024)
+  temperature Float    @default(0.7)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("ai_configs")
+}
+
+model AIPrompt {
+  id        Int      @id @default(autoincrement())
+  name      String   @db.VarChar(255)
+  content   String   @db.Text
+  isActive  Boolean  @default(false)
+  updatedAt DateTime @updatedAt
+
+  @@map("ai_prompts")
+}
+
+model Report {
+  id             Int            @id @default(autoincrement())
+  reporterId     Int
+  postId         Int?
+  reportedUserId Int?
+  reason         ReportReason
+  description    String?        @db.VarChar(500)
+  status         ReportStatus   @default(Pending)
+  priority       ReportPriority @default(Medium)
+  createdAt      DateTime       @default(now())
+
+  reporter     User  @relation("Reporter", fields: [reporterId], references: [id], onDelete: Cascade)
+  post         Post? @relation(fields: [postId], references: [id])
+  reportedUser User? @relation("ReportedUser", fields: [reportedUserId], references: [id])
+
+  @@map("reports")
+}
+
+model AuditLog {
+  id         Int             @id @default(autoincrement())
+  adminId    Int
+  action     String          @db.VarChar(100)
+  targetType AuditTargetType
+  targetId   Int
+  ipAddress  String?         @db.VarChar(45)
+  details    String?         @db.Text
+  createdAt  DateTime        @default(now())
+
+  admin User @relation("AdminLogs", fields: [adminId], references: [id], onDelete: Cascade)
+
+  @@map("audit_logs")
+}
+
+model PasswordResetToken {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  tokenHash String   @unique @db.VarChar(255)
+  expiresAt DateTime
+  used      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@map("password_reset_tokens")
+}
