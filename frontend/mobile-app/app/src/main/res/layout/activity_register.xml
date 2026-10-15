@@ -54,7 +54,8 @@
                     android:text="@string/register_title"
                     android:textColor="@color/text_dark"
                     android:textSize="26sp"
-                    android:textStyle="bold" />
+                    android:textStyle="bold"
+                    tools:text="Tạo tài khoản mới" />
 
                 <TextView
                     android:id="@+id/tvRegisterSubtitle"
@@ -65,7 +66,8 @@
                     android:gravity="center"
                     android:text="@string/register_subtitle"
                     android:textColor="@color/text_gray"
-                    android:textSize="14sp" />
+                    android:textSize="14sp"
+                    tools:text="Khám phá và quyết định món ngon mỗi ngày" />
             </LinearLayout>
 
             <LinearLayout
@@ -84,7 +86,8 @@
                     android:text="@string/fullname_label"
                     android:textColor="@color/text_dark"
                     android:textSize="14sp"
-                    android:textStyle="bold" />
+                    android:textStyle="bold"
+                    tools:text="Họ và tên" />
 
                 <RelativeLayout
                     android:id="@+id/containerFullNameInput"
@@ -114,7 +117,8 @@
                         android:inputType="textPersonName"
                         android:textColor="@color/text_dark"
                         android:textColorHint="@color/text_gray"
-                        android:textSize="14sp" />
+                        android:textSize="14sp"
+                        tools:hint="Nhập họ và tên của bạn" />
                 </RelativeLayout>
 
                 <TextView
@@ -125,7 +129,8 @@
                     android:text="@string/email_register_label"
                     android:textColor="@color/text_dark"
                     android:textSize="14sp"
-                    android:textStyle="bold" />
+                    android:textStyle="bold"
+                    tools:text="Email" />
 
                 <RelativeLayout
                     android:id="@+id/containerRegisterEmailInput"
@@ -155,7 +160,8 @@
                         android:inputType="textEmailAddress"
                         android:textColor="@color/text_dark"
                         android:textColorHint="@color/text_gray"
-                        android:textSize="14sp" />
+                        android:textSize="14sp"
+                        tools:hint="Nhập địa chỉ email" />
                 </RelativeLayout>
 
                 <TextView
@@ -166,7 +172,8 @@
                     android:text="@string/password_register_label"
                     android:textColor="@color/text_dark"
                     android:textSize="14sp"
-                    android:textStyle="bold" />
+                    android:textStyle="bold"
+                    tools:text="Mật khẩu" />
 
                 <RelativeLayout
                     android:id="@+id/containerRegisterPasswordInput"
@@ -209,7 +216,8 @@
                         android:inputType="textPassword"
                         android:textColor="@color/text_dark"
                         android:textColorHint="@color/text_gray"
-                        android:textSize="14sp" />
+                        android:textSize="14sp"
+                        tools:hint="Tối thiểu 8 ký tự" />
                 </RelativeLayout>
 
                 <TextView
@@ -220,7 +228,8 @@
                     android:text="@string/confirm_password_label"
                     android:textColor="@color/text_dark"
                     android:textSize="14sp"
-                    android:textStyle="bold" />
+                    android:textStyle="bold"
+                    tools:text="Xác nhận mật khẩu" />
 
                 <RelativeLayout
                     android:id="@+id/containerConfirmPasswordInput"
@@ -263,7 +272,8 @@
                         android:inputType="textPassword"
                         android:textColor="@color/text_dark"
                         android:textColorHint="@color/text_gray"
-                        android:textSize="14sp" />
+                        android:textSize="14sp"
+                        tools:hint="Nhập lại mật khẩu" />
                 </RelativeLayout>
             </LinearLayout>
 
@@ -291,7 +301,8 @@
                         android:text="@string/register_button"
                         android:textColor="@color/white"
                         android:textSize="16sp"
-                        android:textStyle="bold" />
+                        android:textStyle="bold"
+                        tools:text="Đăng ký ngay" />
 
                     <ImageView
                         android:layout_width="20dp"
@@ -316,18 +327,21 @@
                     android:layout_height="wrap_content"
                     android:text="@string/already_have_account"
                     android:textColor="@color/text_gray"
-                    android:textSize="13sp" />
+                    android:textSize="13sp"
+                    tools:text="Đã có tài khoản? " />
 
                 <TextView
                     android:id="@+id/tvLoginLink"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    android:layout_marginStart="4dp"
                     android:clickable="true"
                     android:focusable="true"
                     android:text="@string/login_link"
                     android:textColor="@color/primary"
                     android:textSize="13sp"
-                    android:textStyle="bold" />
+                    android:textStyle="bold"
+                    tools:text="Đăng nhập" />
             </LinearLayout>
 
             <TextView
@@ -340,7 +354,8 @@
                 android:layout_marginTop="28dp"
                 android:gravity="center"
                 android:textColor="@color/text_gray"
-                android:textSize="12sp" />
+                android:textSize="12sp"
+                tools:text="Bằng việc đăng ký, bạn đồng ý với Điều khoản dịch vụ &amp; Chính sách bảo mật của Dishcision." />
 
         </RelativeLayout>
     </RelativeLayout>

@@ -1,9 +1,12 @@
 package com.example.dishcision;
 
+import android.content.Intent;
 import android.os.Bundle;
+import android.text.Html;
 import android.text.InputType;
 import android.widget.EditText;
 import android.widget.ImageView;
+import android.widget.RelativeLayout;
 import android.widget.TextView;
 
 import androidx.activity.EdgeToEdge;
@@ -17,6 +20,10 @@ public class LoginActivity extends AppCompatActivity {
     private EditText edtEmail;
     private EditText edtPassword;
     private ImageView btnTogglePassword;
+    private RelativeLayout btnLogin;
+    private RelativeLayout btnGoogleLogin;
+    private TextView tvForgotPassword;
+    private TextView tvCreateAccount;
     private boolean isPasswordVisible = false;
 
     @Override
@@ -40,9 +47,29 @@ public class LoginActivity extends AppCompatActivity {
         edtEmail = findViewById(R.id.edtEmail);
         edtPassword = findViewById(R.id.edtPassword);
         btnTogglePassword = findViewById(R.id.btnTogglePassword);
+        btnLogin = findViewById(R.id.btnLogin);
+        btnGoogleLogin = findViewById(R.id.btnGoogleLogin);
+        tvForgotPassword = findViewById(R.id.tvForgotPassword);
+        tvCreateAccount = findViewById(R.id.tvCreateAccount);
     }
 
     private void setupListeners() {
+        if (btnLogin != null) {
+            btnLogin.setOnClickListener(v -> {
+                Intent intent = new Intent(LoginActivity.this, HomeActivity.class);
+                startActivity(intent);
+                finish();
+            });
+        }
+
+        if (btnGoogleLogin != null) {
+            btnGoogleLogin.setOnClickListener(v -> {
+                Intent intent = new Intent(LoginActivity.this, HomeActivity.class);
+                startActivity(intent);
+                finish();
+            });
+        }
+
         if (btnTogglePassword != null && edtPassword != null) {
             btnTogglePassword.setOnClickListener(v -> {
                 if (isPasswordVisible) {
@@ -55,16 +82,39 @@ public class LoginActivity extends AppCompatActivity {
                 edtPassword.setSelection(edtPassword.getText().length());
             });
         }
+
+        if (tvForgotPassword != null) {
+            tvForgotPassword.setOnClickListener(v -> {
+                Intent intent = new Intent(LoginActivity.this, ForgotPasswordActivity.class);
+                startActivity(intent);
+            });
+        }
+
+        if (tvCreateAccount != null) {
+            tvCreateAccount.setOnClickListener(v -> {
+                Intent intent = new Intent(LoginActivity.this, RegisterActivity.class);
+                startActivity(intent);
+            });
+        }
     }
 
     private void setupTermsText() {
         TextView tvTerms = findViewById(R.id.tvTerms);
         if (tvTerms != null) {
-            String termsText = getString(R.string.terms_prefix) +
-                    getString(R.string.terms_of_service) +
-                    getString(R.string.terms_and) +
-                    getString(R.string.privacy_policy) + ".";
-            tvTerms.setText(termsText);
+            String htmlText = "Bằng việc đăng nhập, bạn đồng ý với <font color='#FF5722'><b>Điều khoản dịch vụ</b></font> &amp; <font color='#FF5722'><b>Chính sách bảo mật</b></font> của Dishcision.";
+            tvTerms.setText(Html.fromHtml(htmlText, Html.FROM_HTML_MODE_LEGACY));
+            tvTerms.setOnClickListener(v -> {
+                Intent intent = new Intent(LoginActivity.this, TermsOfServiceActivity.class);
+                startActivity(intent);
+            });
         }
+    }
+
+    public String getEnteredEmail() {
+        return edtEmail != null ? edtEmail.getText().toString().trim() : "";
+    }
+
+    public String getEnteredPassword() {
+        return edtPassword != null ? edtPassword.getText().toString() : "";
     }
 }

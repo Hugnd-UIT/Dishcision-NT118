@@ -50,6 +50,13 @@ public class ForgotPasswordActivity extends AppCompatActivity {
             btnBack.setOnClickListener(v -> finish());
         }
 
+        if (btnSendCode != null) {
+            btnSendCode.setOnClickListener(v -> {
+                Intent intent = new Intent(ForgotPasswordActivity.this, ResetPasswordActivity.class);
+                startActivity(intent);
+            });
+        }
+
         if (tvBackToLogin != null) {
             tvBackToLogin.setOnClickListener(v -> {
                 Intent intent = new Intent(ForgotPasswordActivity.this, LoginActivity.class);

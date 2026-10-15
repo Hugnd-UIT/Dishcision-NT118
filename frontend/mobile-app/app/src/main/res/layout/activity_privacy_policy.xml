@@ -54,7 +54,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="12dp"
-                android:text="Privacy Policy"
+                android:text="Chính sách bảo mật"
                 android:textColor="@color/text_dark"
                 android:textSize="28sp"
                 android:textStyle="bold" />
@@ -63,7 +63,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="6dp"
-                android:text="Understanding information, community sharing, and your privacy choices."
+                android:text="Hiểu rõ cách thu thập, chia sẻ thông tin và các quyền riêng tư của bạn trên Dishcision."
                 android:textColor="@color/text_gray"
                 android:textSize="14sp" />
 
@@ -78,7 +78,7 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Illustrative draft · For legal review"
+                    android:text="Bản thảo minh họa · Dùng cho đánh giá pháp lý"
                     android:textColor="#D32F2F"
                     android:textSize="13sp"
                     android:textStyle="bold" />
@@ -87,7 +87,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="6dp"
-                    android:text="Not an effective legal document. This sample needs review and confirmation before publication. No effective date has been set."
+                    android:text="Đây là tài liệu tham khảo giao diện. Bản chính thức sẽ được cập nhật và xác nhận trước khi phát hành chính thức."
                     android:textColor="#555555"
                     android:textSize="13sp" />
             </LinearLayout>
@@ -102,7 +102,7 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="1. About this policy"
+                android:text="1. Về chính sách bảo mật"
                 android:textColor="@color/text_dark"
                 android:textSize="17sp"
                 android:textStyle="bold" />
@@ -111,7 +111,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"
-                android:text="This illustrative policy outlines privacy topics for a food-discovery and community app. It is not a description of verified Dishcision data practices."
+                android:text="Chính sách này giải thích cách Dishcision bảo vệ dữ liệu cá nhân của bạn khi bạn trải nghiệm nền tảng mạng xã hội ẩm thực của chúng tôi."
                 android:textColor="#4A4A4A"
                 android:textSize="14sp" />
 
@@ -119,7 +119,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"
-                android:text="Before publication, the service operator must confirm what information is collected, why it is used, who receives it, and how people can make privacy requests. The final policy should identify the operator and its effective date."
+                android:text="Chúng tôi cam kết bảo vệ thông tin riêng tư và chỉ sử dụng dữ liệu để mang lại trải nghiệm ẩm thực cá nhân hóa tốt nhất cho bạn."
                 android:textColor="#4A4A4A"
                 android:textSize="14sp" />
 
@@ -127,7 +127,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="20dp"
-                android:text="2. Information you provide"
+                android:text="2. Thông tin chúng tôi thu thập"
                 android:textColor="@color/text_dark"
                 android:textSize="17sp"
                 android:textStyle="bold" />
@@ -136,7 +136,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"
-                android:text="Depending on the final features, account information could include an email address, username, profile photo, and sign-in credentials. Food preferences and saved places could help personalize discovery."
+                android:text="Thông tin tài khoản: Bao gồm địa chỉ email, tên người dùng, ảnh đại diện và sở thích ăn uống của bạn để gợi ý món ăn phù hợp."
                 android:textColor="#4A4A4A"
                 android:textSize="14sp" />
 
@@ -144,24 +144,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"
-                android:text="Community information could include reviews, photos, food lists, ratings, and comments you choose to publish on Dishcision."
-                android:textColor="#4A4A4A"
-                android:textSize="14sp" />
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="20dp"
-                android:text="3. How we use your information"
-                android:textColor="@color/text_dark"
-                android:textSize="17sp"
-                android:textStyle="bold" />
-
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
-                android:text="We use your information to operate the Dishcision platform, personalize food recommendations, connect you with food lovers, and improve app features and safety."
+                android:text="Nội dung cộng đồng: Bao gồm bài viết chia sẻ món ngon, hình ảnh check-in, đánh giá nhà hàng, danh sách món ăn đã lưu và các bình luận công khai."
                 android:textColor="#4A4A4A"
                 android:textSize="14sp" />
 
@@ -169,7 +152,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="20dp"
-                android:text="4. Information sharing &amp; Community visibility"
+                android:text="3. Cách chúng tôi sử dụng thông tin"
                 android:textColor="@color/text_dark"
                 android:textSize="17sp"
                 android:textStyle="bold" />
@@ -178,7 +161,24 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"
-                android:text="Content you post publicly (such as food posts, reviews, and comments) is visible to other Dishcision community members. We do not sell your personal data."
+                android:text="Chúng tôi sử dụng thông tin của bạn để vận hành ứng dụng, gợi ý địa điểm ăn uống chuẩn vị, kết nối bạn với những người có cùng gu ẩm thực và nâng cao tính an toàn cho nền tảng."
+                android:textColor="#4A4A4A"
+                android:textSize="14sp" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="20dp"
+                android:text="4. Chia sẻ thông tin &amp; Quyền riêng tư"
+                android:textColor="@color/text_dark"
+                android:textSize="17sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:text="Nội dung bạn đăng công khai (như bài viết món ăn, review) sẽ hiển thị với các thành viên khác trong cộng đồng Dishcision. Chúng tôi cam kết không bán dữ liệu cá nhân của bạn cho bên thứ ba."
                 android:textColor="#4A4A4A"
                 android:textSize="14sp" />
         </LinearLayout>

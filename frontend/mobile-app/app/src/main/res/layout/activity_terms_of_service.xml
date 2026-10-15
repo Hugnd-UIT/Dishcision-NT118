@@ -54,7 +54,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="12dp"
-                android:text="Terms of Service"
+                android:text="Điều khoản dịch vụ"
                 android:textColor="@color/text_dark"
                 android:textSize="28sp"
                 android:textStyle="bold" />
@@ -63,7 +63,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="6dp"
-                android:text="A shared understanding for discovering food and enjoying the community."
+                android:text="Thỏa thuận chung để khám phá ẩm thực và tham gia cộng đồng Dishcision."
                 android:textColor="@color/text_gray"
                 android:textSize="14sp" />
 
@@ -78,7 +78,7 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Illustrative draft · For legal review"
+                    android:text="Bản thảo minh họa · Dùng cho đánh giá pháp lý"
                     android:textColor="#D32F2F"
                     android:textSize="13sp"
                     android:textStyle="bold" />
@@ -87,7 +87,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="6dp"
-                    android:text="Not an effective legal document. This sample needs review and confirmation before publication. No effective date has been set."
+                    android:text="Đây là tài liệu tham khảo giao diện. Bản chính thức sẽ được cập nhật và xác nhận trước khi phát hành chính thức."
                     android:textColor="#555555"
                     android:textSize="13sp" />
             </LinearLayout>
@@ -102,7 +102,7 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="1. About these terms"
+                android:text="1. Giới thiệu về điều khoản"
                 android:textColor="@color/text_dark"
                 android:textSize="17sp"
                 android:textStyle="bold" />
@@ -111,7 +111,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"
-                android:text="These proposed terms describe how you would use Dishcision to discover food, share recommendations, and decide what to eat with others. &quot;You&quot; means the person using the app."
+                android:text="Các điều khoản này quy định cách bạn sử dụng ứng dụng Dishcision để khám phá món ăn, chia sẻ công thức, viết đánh giá quán ăn và cùng bạn bè quyết định ăn gì hôm nay. &quot;Bạn&quot; có nghĩa là người dùng ứng dụng."
                 android:textColor="#4A4A4A"
                 android:textSize="14sp" />
 
@@ -119,7 +119,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"
-                android:text="The final terms must identify the service operator and explain when they take effect. This draft does not create an agreement or replace the published terms of any live service."
+                android:text="Bằng việc đăng ký hoặc sử dụng ứng dụng, bạn đồng ý tuân thủ các quy định nhằm xây dựng một cộng đồng ẩm thực văn minh, tích cực."
                 android:textColor="#4A4A4A"
                 android:textSize="14sp" />
 
@@ -127,7 +127,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="20dp"
-                android:text="2. Your account"
+                android:text="2. Tài khoản của bạn"
                 android:textColor="@color/text_dark"
                 android:textSize="17sp"
                 android:textStyle="bold" />
@@ -136,7 +136,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"
-                android:text="Provide accurate account information and keep your sign-in details private. Do not impersonate another person or use someone else's account without permission."
+                android:text="Cung cấp thông tin tài khoản chính xác và bảo mật thông tin đăng nhập của bạn. Không mạo danh người khác hoặc sử dụng tài khoản của người khác khi chưa được phép."
                 android:textColor="#4A4A4A"
                 android:textSize="14sp" />
 
@@ -144,7 +144,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"
-                android:text="You are responsible for activity you authorize through your account. If you suspect misuse, use the support channel published in the app."
+                android:text="Bạn chịu trách nhiệm cho mọi hoạt động diễn ra dưới tài khoản của mình. Nếu phát hiện nghi vấn xâm nhập, vui lòng thông báo ngay qua trung tâm hỗ trợ."
                 android:textColor="#4A4A4A"
                 android:textSize="14sp" />
 
@@ -152,7 +152,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="20dp"
-                android:text="3. Culinary content &amp; Community guidelines"
+                android:text="3. Nội dung ẩm thực &amp; Quy chuẩn cộng đồng"
                 android:textColor="@color/text_dark"
                 android:textSize="17sp"
                 android:textStyle="bold" />
@@ -161,7 +161,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"
-                android:text="When sharing food reviews, photos, recipes, or restaurant recommendations on Dishcision, ensure your content is respectful, honest, and lawful. Do not post misleading food information or offensive content."
+                android:text="Khi đăng tải bài viết, hình ảnh món ăn, công thức nấu ăn hoặc đánh giá nhà hàng trên Dishcision, hãy đảm bảo nội dung mang tính chân thực, tôn trọng và tuân thủ pháp luật."
                 android:textColor="#4A4A4A"
                 android:textSize="14sp" />
 
@@ -169,7 +169,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"
-                android:text="Dishcision reserves the right to remove content or suspend accounts that violate our community standards."
+                android:text="Nghiêm cấm các bài viết sai sự thật về vệ sinh an toàn thực phẩm, nội dung đả kích, xúc phạm hoặc quảng cáo rác. Dishcision có quyền gỡ bỏ nội dung hoặc khóa tài khoản vi phạm."
                 android:textColor="#4A4A4A"
                 android:textSize="14sp" />
 
@@ -177,7 +177,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="20dp"
-                android:text="4. Contact &amp; Modifications"
+                android:text="4. Liên hệ &amp; Thay đổi điều khoản"
                 android:textColor="@color/text_dark"
                 android:textSize="17sp"
                 android:textStyle="bold" />
@@ -186,7 +186,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"
-                android:text="If you have questions about these terms or wish to contact Dishcision support, please reach out via the support options in the app settings."
+                android:text="Nếu bạn có bất kỳ câu hỏi nào về Điều khoản dịch vụ hoặc cần hỗ trợ, vui lòng liên hệ với bộ phận CSKH của Dishcision thông qua mục Hỗ trợ trong ứng dụng."
                 android:textColor="#4A4A4A"
                 android:textSize="14sp" />
         </LinearLayout>
