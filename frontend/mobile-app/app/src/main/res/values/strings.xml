@@ -64,4 +64,10 @@
     <string name="nav_create">Tạo bài</string>
     <string name="nav_messages">Tin nhắn</string>
     <string name="nav_profile">Cá nhân</string>
+
+    <string name="sidebar_for_you">Dành cho bạn</string>
+    <string name="sidebar_favorites">Món ăn yêu thích</string>
+    <string name="sidebar_following">Quán ăn yêu thích</string>
+    <string name="sidebar_reviews">Đánh giá của tôi</string>
+    <string name="sidebar_logout">Đăng xuất</string>
 </resources>

@@ -1,14 +1,9 @@
 package com.example.dishcision;
 
-import android.app.Dialog;
 import android.content.Intent;
-import android.graphics.Color;
 import android.graphics.Typeface;
-import android.graphics.drawable.ColorDrawable;
 import android.os.Bundle;
 import android.view.View;
-import android.view.ViewGroup;
-import android.view.Window;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.RelativeLayout;
@@ -27,7 +22,9 @@ public class FavoriteRestaurantsActivity extends AppCompatActivity {
 
     private ImageView btnBack;
     private LinearLayout navHome;
-    private RelativeLayout btnViewMenuPhoGiaTruyen;
+    private LinearLayout btnViewMenuPhoGiaTruyen;
+    private LinearLayout btnViewMenuComTam;
+    private LinearLayout btnViewMenuTocoToco;
 
     private LinearLayout storyBepLucNam;
     private LinearLayout storyPhoThin;
@@ -59,6 +56,8 @@ public class FavoriteRestaurantsActivity extends AppCompatActivity {
         btnBack = findViewById(R.id.btnBack);
         navHome = findViewById(R.id.navHome);
         btnViewMenuPhoGiaTruyen = findViewById(R.id.btnViewMenuPhoGiaTruyen);
+        btnViewMenuComTam = findViewById(R.id.btnViewMenuComTam);
+        btnViewMenuTocoToco = findViewById(R.id.btnViewMenuTocoToco);
 
         storyBepLucNam = findViewById(R.id.storyBepLucNam);
         storyPhoThin = findViewById(R.id.storyPhoThin);
@@ -87,6 +86,12 @@ public class FavoriteRestaurantsActivity extends AppCompatActivity {
 
         if (btnViewMenuPhoGiaTruyen != null) {
             btnViewMenuPhoGiaTruyen.setOnClickListener(v -> openMenuBottomSheet("Menu Quán Phở Bò Gia Truyền 1986"));
+        }
+        if (btnViewMenuComTam != null) {
+            btnViewMenuComTam.setOnClickListener(v -> openMenuBottomSheet("Menu Cơm Tấm Ba Nghiền"));
+        }
+        if (btnViewMenuTocoToco != null) {
+            btnViewMenuTocoToco.setOnClickListener(v -> openMenuBottomSheet("Menu Trà Sữa TocoToco - Cầu Giấy"));
         }
 
         if (storyBepLucNam != null) storyBepLucNam.setOnClickListener(v -> openStoryViewer("Bếp Lục Nam"));
@@ -119,32 +124,9 @@ public class FavoriteRestaurantsActivity extends AppCompatActivity {
     }
 
     private void openStoryViewer(String storeName) {
-        Dialog dialog = new Dialog(FavoriteRestaurantsActivity.this, android.R.style.Theme_Black_NoTitleBar_Fullscreen);
-        View dialogView = getLayoutInflater().inflate(R.layout.layout_dialog_story_viewer, null);
-        dialog.setContentView(dialogView);
-
-        Window window = dialog.getWindow();
-        if (window != null) {
-            window.setLayout(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT);
-            window.setBackgroundDrawable(new ColorDrawable(Color.BLACK));
-        }
-
-        TextView tvStoryStoreName = dialogView.findViewById(R.id.tvStoryStoreName);
-        TextView tvStoryTitle = dialogView.findViewById(R.id.tvStoryTitle);
-        ImageView btnCloseStory = dialogView.findViewById(R.id.btnCloseStory);
-
-        if (tvStoryStoreName != null && storeName != null) {
-            tvStoryStoreName.setText(storeName);
-        }
-        if (tvStoryTitle != null && storeName != null) {
-            tvStoryTitle.setText(storeName);
-        }
-
-        if (btnCloseStory != null) {
-            btnCloseStory.setOnClickListener(v -> dialog.dismiss());
-        }
-
-        dialog.show();
+        Intent intent = new Intent(FavoriteRestaurantsActivity.this, StoryActivity.class);
+        intent.putExtra(StoryActivity.EXTRA_STORE_NAME, storeName);
+        startActivity(intent);
     }
 
     private void setActiveChip(TextView selectedChip) {
