@@ -2,6 +2,7 @@ package com.example.dishcision;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 
 import androidx.activity.EdgeToEdge;
@@ -16,10 +17,12 @@ public class HomeActivity extends AppCompatActivity {
 
     private DrawerLayout drawerLayout;
     private LinearLayout btnOpenSidebar;
+    private ImageView btnNotification;
     private LinearLayout menuFavorites;
     private LinearLayout menuFollowing;
     private LinearLayout menuReviews;
     private LinearLayout menuLogout;
+    private LinearLayout navProfile;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -40,15 +43,23 @@ public class HomeActivity extends AppCompatActivity {
     private void initViews() {
         drawerLayout = findViewById(R.id.drawerLayout);
         btnOpenSidebar = findViewById(R.id.btnOpenSidebar);
+        btnNotification = findViewById(R.id.btnNotification);
         menuFavorites = findViewById(R.id.menuFavorites);
         menuFollowing = findViewById(R.id.menuFollowing);
         menuReviews = findViewById(R.id.menuReviews);
         menuLogout = findViewById(R.id.menuLogout);
+        navProfile = findViewById(R.id.navProfile);
     }
 
     private void setupListeners() {
         if (btnOpenSidebar != null && drawerLayout != null) {
             btnOpenSidebar.setOnClickListener(v -> drawerLayout.openDrawer(GravityCompat.START));
+        }
+
+        if (btnNotification != null) {
+            btnNotification.setOnClickListener(v -> {
+                // Event listener
+            });
         }
 
         if (menuFavorites != null) {
@@ -86,6 +97,13 @@ public class HomeActivity extends AppCompatActivity {
                 Intent intent = new Intent(HomeActivity.this, LoginActivity.class);
                 startActivity(intent);
                 finish();
+            });
+        }
+
+        if (navProfile != null) {
+            navProfile.setOnClickListener(v -> {
+                Intent intent = new Intent(HomeActivity.this, ProfileActivity.class);
+                startActivity(intent);
             });
         }
     }

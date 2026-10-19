@@ -21,6 +21,7 @@ public class MyReviewsActivity extends AppCompatActivity {
     private ImageView btnBack;
     private LinearLayout navHome;
     private LinearLayout btnSort;
+    private LinearLayout btnWriteNewReview;
     private TextView tvSortSelected;
 
     private TextView chipAll;
@@ -49,8 +50,16 @@ public class MyReviewsActivity extends AppCompatActivity {
 
     private void initViews() {
         btnBack = findViewById(R.id.btnBack);
+        ImageView btnNotification = findViewById(R.id.btnNotification);
+        if (btnNotification != null) {
+            btnNotification.setOnClickListener(v -> {
+                Intent intent = new Intent(MyReviewsActivity.this, NotificationsActivity.class);
+                startActivity(intent);
+            });
+        }
         navHome = findViewById(R.id.navHome);
         btnSort = findViewById(R.id.btnSort);
+        btnWriteNewReview = findViewById(R.id.btnWriteNewReview);
         tvSortSelected = findViewById(R.id.tvSortSelected);
 
         chipAll = findViewById(R.id.chipAll);
@@ -78,6 +87,13 @@ public class MyReviewsActivity extends AppCompatActivity {
 
         if (btnSort != null) {
             btnSort.setOnClickListener(v -> showSortDropdownMenu());
+        }
+
+        if (btnWriteNewReview != null) {
+            btnWriteNewReview.setOnClickListener(v -> {
+                Intent intent = new Intent(MyReviewsActivity.this, WriteReviewActivity.class);
+                startActivity(intent);
+            });
         }
 
         if (chipAll != null) chipAll.setOnClickListener(v -> setActiveChip(chipAll));
