@@ -70,4 +70,169 @@
     <string name="sidebar_following">Quán ăn yêu thích</string>
     <string name="sidebar_reviews">Đánh giá của tôi</string>
     <string name="sidebar_logout">Đăng xuất</string>
+
+    <!-- Security & Login Strings -->
+    <string name="security_login_title">Bảo mật &amp; đăng nhập</string>
+    <string name="security_manage_title">Quản lý cách bạn đăng nhập</string>
+    <string name="security_manage_subtitle">Xem các phiên đăng nhập và lựa chọn bảo vệ tài khoản của bạn.</string>
+    <string name="security_user_name">Maya Chen</string>
+    <string name="security_user_handle">\@mayafoodie</string>
+    <string name="security_recommended">Đề xuất cho bạn</string>
+    <string name="security_not_setup">Chưa thiết lập</string>
+    <string name="security_2fa_title">Xác thực hai yếu tố</string>
+    <string name="security_2fa_desc">Thêm bước xác nhận bằng ứng dụng xác thực khi đăng nhập.</string>
+    <string name="security_2fa_button">Bắt đầu thiết lập</string>
+    <string name="security_section_login">Đăng nhập</string>
+    <string name="security_change_password">Đổi mật khẩu</string>
+    <string name="security_change_password_sub">Cập nhật mật khẩu tài khoản</string>
+    <string name="security_active_sessions">Nơi bạn đã đăng nhập</string>
+    <string name="security_active_sessions_sub">Xem và quản lý các phiên</string>
+    <string name="security_logout_note">Bạn có thể kiểm tra các phiên không nhận ra trước khi quyết định đăng xuất.</string>
+
+    <!-- Login Sessions Strings -->
+    <string name="session_top_bar_title">Nơi bạn đã đăng nhập</string>
+    <string name="session_title">Các phiên đăng nhập</string>
+    <string name="session_subtitle">Xem thiết bị và chọn phiên bạn muốn quản lý.</string>
+    <string name="session_warning_text">Thiết bị, vị trí và hoạt động bên dưới là dữ liệu minh hoạ, không phải phiên thực tế.</string>
+    <string name="session_current_section">Phiên hiện tại</string>
+    <string name="session_current_device">Điện thoại · Dishcision</string>
+    <string name="session_current_status">Phiên đang xem trong thiết kế</string>
+    <string name="session_manage">Quản lý</string>
+    <string name="session_this_device">Thiết bị này</string>
+    <string name="session_other_section">Các phiên khác</string>
+    <string name="session_other_device_1">Máy tính · Trình duyệt</string>
+    <string name="session_other_location_1">TP.HCM · 15/10/2026</string>
+    <string name="session_logout_action">Chọn đăng xuất phiên này</string>
+    <string name="session_other_device_2">Máy tính bảng · Ứng dụng</string>
+    <string name="session_other_location_2">Hà Nội · 12/10/2026</string>
+    <string name="session_manage_multiple">Chọn nhiều phiên để quản lý</string>
+    <string name="session_unrecognized_title">Không nhận ra thiết bị?</string>
+    <string name="session_unrecognized_desc">Kiểm tra chi tiết phiên, chọn đăng xuất nếu cần và cân nhắc đổi mật khẩu của bạn.</string>
+    <string name="session_unrecognized_action">Xem cách xử lý</string>
+
+    <!-- 2FA Setup Strings -->
+    <string name="tfa_step1_top_bar">Thiết lập xác thực hai yếu tố</string>
+    <string name="tfa_step1_progress">BƯỚC 1 / 2 · ĐANG THIẾT LẬP</string>
+    <string name="tfa_step1_title">Kết nối ứng dụng xác thực</string>
+    <string name="tfa_step1_desc">Dùng ứng dụng xác thực để tạo mã xác nhận cho tài khoản Dishcision.</string>
+    <string name="tfa_step1_inst1">Mở ứng dụng xác thực bạn sử dụng, rồi chọn thêm tài khoản.</string>
+    <string name="tfa_step1_inst2">Quét mã QR hoặc nhập mã thiết lập được cung cấp khi thiết lập thực tế.</string>
+    <string name="tfa_qr_warning">QR minh hoạ · Không thể quét</string>
+    <string name="tfa_setup_code_label">Mã thiết lập</string>
+    <string name="tfa_setup_code_mock">●●●●  ●●●●  ●●●●</string>
+    <string name="tfa_qr_note">Không chứa khóa bí mật dùng được.</string>
+    <string name="tfa_step1_bottom_desc">Sau khi thêm tài khoản trong ứng dụng xác thực, tiếp tục để nhập mã do ứng dụng tạo.</string>
+    <string name="tfa_btn_continue">Tiếp tục nhập mã</string>
+    <string name="tfa_info_not_enabled">Xác thực hai yếu tố chưa được bật. Bạn cần hoàn tất bước xác nhận mã.</string>
+
+    <string name="tfa_step2_top_bar">Xác nhận xác thực hai yếu tố</string>
+    <string name="tfa_step2_progress">BƯỚC 2 / 2 · CHƯA HOÀN TẤT</string>
+    <string name="tfa_step2_title">Nhập mã từ ứng dụng</string>
+    <string name="tfa_step2_desc">Mở ứng dụng xác thực và nhập mã đang hiển thị cho tài khoản Dishcision của bạn.</string>
+    <string name="tfa_input_label">Mã từ ứng dụng xác thực</string>
+    <string name="tfa_input_hint">Nhập mã xác thực</string>
+    <string name="tfa_input_note">Đây là mã từ ứng dụng xác thực, không phải mã khôi phục gửi qua email.</string>
+    <string name="tfa_btn_confirm">Xác nhận và hoàn tất</string>
+    <string name="tfa_btn_back">Quay lại hướng dẫn</string>
+    <string name="tfa_info_incomplete">Chưa nhập mã. Xác thực hai yếu tố vẫn chưa được thiết lập xong.</string>
+
+    <!-- Privacy Settings Strings -->
+    <string name="privacy_top_bar">Quyền riêng tư</string>
+    <string name="privacy_header_title">Chia sẻ theo cách của bạn</string>
+    <string name="privacy_header_desc">Chọn ai được xem, tìm thấy và tương tác với bạn trên Dishcision.</string>
+
+    <string name="privacy_sec1_title">Ai có thể xem nội dung của bạn</string>
+    <string name="privacy_sec1_desc">Kiểm soát những gì bạn chia sẻ.</string>
+    <string name="privacy_item_posts">Bài đăng mới</string>
+    <string name="privacy_val_friends">Bạn bè</string>
+    <string name="privacy_item_info">Thông tin cá nhân</string>
+    <string name="privacy_val_only_me">Chỉ mình tôi</string>
+    <string name="privacy_item_following">Danh sách đang theo dõi</string>
+
+    <string name="privacy_sec2_title">Tìm thấy và liên hệ với bạn</string>
+    <string name="privacy_sec2_desc">Chọn cách bạn kết nối với cộng đồng.</string>
+    <string name="privacy_item_email">Tìm bạn bằng email</string>
+    <string name="privacy_val_no_one">Không ai</string>
+    <string name="privacy_item_friend_req">Gửi lời mời kết bạn</string>
+    <string name="privacy_val_fof">Bạn của bạn bè</string>
+    <string name="privacy_item_message">Gửi tin nhắn cho bạn</string>
+
+    <string name="privacy_sec3_title">Quản lý tương tác</string>
+    <string name="privacy_sec3_desc">Giữ trải nghiệm ẩm thực luôn thoải mái.</string>
+    <string name="privacy_item_comment">Bình luận bài đăng của bạn</string>
+    <string name="privacy_item_blocked">Tài khoản đã chặn</string>
+    <string name="privacy_val_3_accounts">3 tài khoản</string>
+    <string name="privacy_item_restricted">Tài khoản bị hạn chế</string>
+    <string name="privacy_val_1_account">1 tài khoản</string>
+
+    <string name="privacy_bottom_saved">Các thay đổi được lưu tự động</string>
+    <string name="privacy_bottom_learn_more">Tìm hiểu về quyền riêng tư</string>
+
+    <!-- Generic Radio Choice (Privacy Details) -->
+    <string name="privacy_radio_public">Mọi người</string>
+    <string name="privacy_radio_public_desc">Bất kỳ ai trên Dishcision.</string>
+    <string name="privacy_radio_friends">Bạn bè</string>
+    <string name="privacy_radio_friends_desc">Những người kết bạn với bạn.</string>
+    <string name="privacy_radio_fof">Bạn của bạn bè</string>
+    <string name="privacy_radio_fof_desc">Người kết bạn với bạn bè của bạn.</string>
+    <string name="privacy_radio_only_me">Chỉ mình tôi</string>
+    <string name="privacy_radio_only_me_desc">Chỉ bạn có thể xem.</string>
+    <string name="privacy_radio_none">Không ai</string>
+    <string name="privacy_note_save">Đã lưu\nCác thay đổi được lưu tự động</string>
+
+    <!-- Blocked Accounts -->
+    <string name="blocked_title">Quản lý tài khoản đã chặn</string>
+    <string name="blocked_desc">Người bị chặn không thể xem hồ sơ, bài viết hay bình luận của bạn trên Dishcision.</string>
+    <string name="btn_add_blocked">+ Thêm tài khoản để chặn</string>
+    <string name="search_blocked_hint">Tìm trong danh sách đã chặn</string>
+    <string name="btn_unblock">Bỏ chặn</string>
+    <string name="blocked_list_header">3 tài khoản</string>
+
+    <!-- Help Center Main -->
+    <string name="help_top_bar">Trung tâm hỗ trợ</string>
+    <string name="help_greeting">Chào bạn, Dishcision 2 đây.\nBạn cần giúp gì hôm nay?</string>
+    <string name="help_search_hint">Tìm kiếm câu hỏi, từ khóa...</string>
+    <string name="help_categories_title">Bạn muốn tìm hiểu về...</string>
+    <string name="help_cat_account">Tài khoản &amp; đăng nhập</string>
+    <string name="help_cat_discover">Khám phá món &amp; quán</string>
+    <string name="help_cat_saved">Đã lưu &amp; theo dõi</string>
+    <string name="help_cat_post">Bài viết &amp; story</string>
+    <string name="help_cat_message">Tin nhắn</string>
+    <string name="help_cat_safety">An toàn &amp; riêng tư</string>
+    <string name="help_faq_title">Câu hỏi thường gặp</string>
+    <string name="help_faq_more">Xem tất cả</string>
+    <string name="help_faq_1">Quên mật khẩu, làm sao đăng nhập lại?</string>
+    <string name="help_faq_1_desc">Chọn "Quên mật khẩu" ở màn hình đăng nhập. Nhập email đã đăng ký và làm theo hướng dẫn để đặt lại mật khẩu.</string>
+    <!-- Help Submit Request -->
+    <string name="submit_help_title">Gửi yêu cầu hỗ trợ</string>
+    <string name="submit_help_desc">Báo lỗi kỹ thuật, góp ý hoặc cần hỗ trợ từ đội ngũ Dishcision.</string>
+    <string name="submit_help_subject">Chủ đề *</string>
+    <string name="submit_help_subject_hint">Chọn chủ đề</string>
+    <string name="submit_help_title_label">Tiêu đề *</string>
+    <string name="submit_help_desc_label">Mô tả chi tiết *</string>
+    <string name="submit_help_attachment">Thêm ảnh hoặc tệp</string>
+    <string name="submit_help_btn">Gửi yêu cầu</string>
+
+    <!-- Report Content -->
+    <string name="report_title">Báo cáo nội dung</string>
+    <string name="report_reason_title">Điều gì khiến bạn lo ngại?</string>
+    <string name="report_reason_desc">Chúng tôi sẽ không cho người này biết bạn đã báo cáo họ.</string>
+    <string name="report_extra_info">Mô tả bổ sung (tùy chọn)</string>
+    <string name="report_btn">Gửi báo cáo</string>
+
+    <!-- Report Success -->
+    <string name="report_success_topbar">Đã nhận báo cáo</string>
+    <string name="report_success_title">Cảm ơn bạn đã lên tiếng</string>
+    <string name="report_success_desc">Báo cáo đã được ghi nhận trong hệ thống của chúng tôi để xem xét.</string>
+    <string name="report_success_btn">Xem Hộp thư hỗ trợ</string>
+
+    <!-- Help Inbox -->
+    <string name="inbox_title">Hộp thư hỗ trợ</string>
+    <string name="inbox_tab_all">Tất cả</string>
+    <string name="inbox_tab_report">Báo cáo</string>
+    <string name="inbox_tab_request">Yêu cầu hỗ trợ</string>
+
+    <!-- Help Article -->
+    <string name="article_topbar">Chi tiết bài viết</string>
+    <string name="article_related">Bài viết liên quan</string>
 </resources>
