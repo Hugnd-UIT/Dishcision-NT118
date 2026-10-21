@@ -23,7 +23,6 @@ public class MessagesInboxActivity extends AppCompatActivity {
 
     private LinearLayout navHome;
     private LinearLayout navDecide;
-    private LinearLayout navCreate;
     private LinearLayout navProfile;
 
     @Override
@@ -60,7 +59,13 @@ public class MessagesInboxActivity extends AppCompatActivity {
 
         navHome = findViewById(R.id.navHome);
         navDecide = findViewById(R.id.navDecide);
-        navCreate = findViewById(R.id.navCreate);
+        android.view.View navAdd = findViewById(R.id.navAdd);
+        if (navAdd != null) {
+            navAdd.setOnClickListener(v -> {
+                Intent intent = new Intent(MessagesInboxActivity.this, WriteReviewActivity.class);
+                startActivity(intent);
+            });
+        }
         navProfile = findViewById(R.id.navProfile);
     }
 
@@ -91,13 +96,6 @@ public class MessagesInboxActivity extends AppCompatActivity {
         if (navDecide != null) {
             navDecide.setOnClickListener(v -> {
                 Intent intent = new Intent(MessagesInboxActivity.this, DecideActivity.class);
-                startActivity(intent);
-            });
-        }
-
-        if (navCreate != null) {
-            navCreate.setOnClickListener(v -> {
-                Intent intent = new Intent(MessagesInboxActivity.this, CreatePostActivity.class);
                 startActivity(intent);
             });
         }

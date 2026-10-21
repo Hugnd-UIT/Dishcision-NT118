@@ -53,9 +53,10 @@ public class ArchiveActivity extends AppCompatActivity {
         }
 
         if (btnViewPost1 != null) {
-            btnViewPost1.setOnClickListener(v ->
-                Toast.makeText(this, "Xem bài viết: Matcha và bánh sừng bò", Toast.LENGTH_SHORT).show()
-            );
+            btnViewPost1.setOnClickListener(v -> {
+                android.content.Intent intent = new android.content.Intent(ArchiveActivity.this, MyReviewsActivity.class);
+                startActivity(intent);
+            });
         }
 
         if (btnRestore1 != null) {
@@ -65,9 +66,10 @@ public class ArchiveActivity extends AppCompatActivity {
         }
 
         if (btnViewPost2 != null) {
-            btnViewPost2.setOnClickListener(v ->
-                Toast.makeText(this, "Xem bài viết: Ramen ngày mưa", Toast.LENGTH_SHORT).show()
-            );
+            btnViewPost2.setOnClickListener(v -> {
+                android.content.Intent intent = new android.content.Intent(ArchiveActivity.this, MyReviewsActivity.class);
+                startActivity(intent);
+            });
         }
 
         if (btnRestore2 != null) {
@@ -77,9 +79,10 @@ public class ArchiveActivity extends AppCompatActivity {
         }
 
         if (btnViewPost3 != null) {
-            btnViewPost3.setOnClickListener(v ->
-                Toast.makeText(this, "Xem bài viết: Burger mới", Toast.LENGTH_SHORT).show()
-            );
+            btnViewPost3.setOnClickListener(v -> {
+                android.content.Intent intent = new android.content.Intent(ArchiveActivity.this, MyReviewsActivity.class);
+                startActivity(intent);
+            });
         }
 
         if (btnRestore3 != null) {
