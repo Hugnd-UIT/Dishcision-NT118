@@ -1,194 +1,629 @@
 <?xml version="1.0" encoding="utf-8"?>
-<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:id="@+id/main_terms_of_service"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/white"
-    android:fillViewport="true"
-    tools:context=".TermsOfServiceActivity">
+    android:background="#F9F9FF"
+    android:orientation="vertical">
 
-    <RelativeLayout
+    <!-- Top Bar Header -->
+    <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content">
+        android:layout_height="56dp"
+        android:background="#FFFFFF"
+        android:elevation="2dp"
+        android:gravity="center_vertical"
+        android:paddingHorizontal="16dp">
 
-        <RelativeLayout
-            android:id="@+id/topBar"
-            android:layout_width="match_parent"
+        <ImageView
+            android:id="@+id/btnBack"
+            android:layout_width="24dp"
+            android:layout_height="24dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:clickable="true"
+            android:contentDescription="Back"
+            android:focusable="true"
+            android:src="@drawable/ic_arrow_back"
+            app:tint="#141B2B" />
+
+        <TextView
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_alignParentTop="true"
-            android:paddingHorizontal="16dp"
-            android:paddingVertical="14dp">
+            android:layout_marginStart="8dp"
+            android:layout_weight="1"
+            android:gravity="center"
+            android:text="Dishcision"
+            android:textColor="#FF5A36"
+            android:textSize="20sp"
+            android:textStyle="bold" />
 
-            <ImageView
-                android:id="@+id/btnBack"
-                android:layout_width="24dp"
-                android:layout_height="24dp"
-                android:layout_alignParentStart="true"
-                android:layout_centerVertical="true"
-                android:clickable="true"
-                android:contentDescription="@string/app_name"
-                android:focusable="true"
-                android:src="@drawable/ic_arrow_back" />
+        <ImageView
+            android:layout_width="20dp"
+            android:layout_height="20dp"
+            android:contentDescription="Sparkle"
+            android:src="@drawable/ic_sparkle"
+            app:tint="#FF5A36" />
+    </LinearLayout>
 
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_alignParentEnd="true"
-                android:layout_centerVertical="true"
-                android:text="@string/app_name"
-                android:textColor="@color/text_dark"
-                android:textSize="16sp"
-                android:textStyle="bold" />
-        </RelativeLayout>
+    <!-- Scrollable Terms & Privacy Document -->
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:fillViewport="true"
+        android:scrollbars="none">
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_below="@id/topBar"
             android:orientation="vertical"
-            android:paddingHorizontal="20dp"
-            android:paddingBottom="32dp">
+            android:padding="16dp">
+
+            <!-- Headline Section -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Chính sách và Điều khoản"
+                android:textColor="#141B2B"
+                android:textSize="22sp"
+                android:textStyle="bold" />
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="12dp"
-                android:text="Điều khoản dịch vụ"
-                android:textColor="@color/text_dark"
-                android:textSize="28sp"
-                android:textStyle="bold" />
-
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
                 android:layout_marginTop="6dp"
-                android:text="Thỏa thuận chung để khám phá ẩm thực và tham gia cộng đồng Dishcision."
-                android:textColor="@color/text_gray"
+                android:lineSpacingExtra="3dp"
+                android:text="Cùng tìm hiểu cách khám phá ẩm thực và tham gia cộng đồng.\nTìm hiểu về thông tin, việc chia sẻ trong cộng đồng và các lựa chọn về quyền riêng tư của bạn."
+                android:textColor="#6B7280"
                 android:textSize="14sp" />
 
+            <!-- Legal Draft Disclaimer Banner -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="20dp"
-                android:background="@drawable/bg_banner_disclaimer"
+                android:layout_marginTop="16dp"
+                android:background="@drawable/bg_chip_selected_orange"
                 android:orientation="vertical"
-                android:padding="16dp">
+                android:padding="14dp">
 
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Bản thảo minh họa · Dùng cho đánh giá pháp lý"
-                    android:textColor="#D32F2F"
+                    android:text="Bản nháp minh họa - Cần rà soát pháp lý"
+                    android:textColor="#FF5A36"
                     android:textSize="13sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:lineSpacingExtra="2dp"
+                    android:text="Đây không phải văn bản pháp lý có hiệu lực. Bản mẫu này cần được rà soát và xác nhận trước khi công bố. Chưa xác định ngày có hiệu lực."
+                    android:textColor="#5B403A"
+                    android:textSize="12sp" />
+            </LinearLayout>
+
+            <!-- SECTION 1: Điều khoản dịch vụ -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="24dp"
+                android:text="Điều khoản dịch vụ"
+                android:textColor="#141B2B"
+                android:textSize="20sp"
+                android:textStyle="bold" />
+
+            <!-- Card Items 1 - 10 -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:background="@drawable/bg_card_white"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <!-- 1 -->
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="1. Về các điều khoản này"
+                    android:textColor="#141B2B"
+                    android:textSize="15sp"
                     android:textStyle="bold" />
 
                 <TextView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="6dp"
-                    android:text="Đây là tài liệu tham khảo giao diện. Bản chính thức sẽ được cập nhật và xác nhận trước khi phát hành chính thức."
-                    android:textColor="#555555"
+                    android:layout_marginTop="4dp"
+                    android:lineSpacingExtra="3dp"
+                    android:text="Các điều khoản đề xuất này mô tả cách bạn có thể sử dụng Dishcision để khám phá món ăn, chia sẻ gợi ý và cùng người khác quyết định ăn gì. “Bạn” là người sử dụng ứng dụng.\n\nBản điều khoản chính thức phải xác định đơn vị vận hành dịch vụ và nêu rõ thời điểm có hiệu lực. Bản nháp này không tạo thành thỏa thuận và không thay thế điều khoản đã công bố của bất kỳ dịch vụ đang hoạt động nào."
+                    android:textColor="#505568"
+                    android:textSize="13sp" />
+
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="1dp"
+                    android:layout_marginVertical="12dp"
+                    android:background="#E9EBF4" />
+
+                <!-- 2 -->
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="2. Tài khoản của bạn"
+                    android:textColor="#141B2B"
+                    android:textSize="15sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:lineSpacingExtra="3dp"
+                    android:text="Cung cấp thông tin tài khoản chính xác và giữ kín thông tin đăng nhập. Không mạo danh người khác hoặc sử dụng tài khoản của người khác khi chưa được cho phép.\n\nBạn chịu trách nhiệm về các hoạt động mà bạn cho phép thực hiện qua tài khoản của mình. Nếu nghi ngờ có hành vi sử dụng sai mục đích, hãy liên hệ qua kênh hỗ trợ được công bố trong ứng dụng. Điều kiện về độ tuổi và mọi yêu cầu về sự cho phép của cha mẹ phải được xác nhận trước khi ra mắt."
+                    android:textColor="#505568"
+                    android:textSize="13sp" />
+
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="1dp"
+                    android:layout_marginVertical="12dp"
+                    android:background="#E9EBF4" />
+
+                <!-- 3 -->
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="3. Cộng đồng ẩm thực tôn trọng lẫn nhau"
+                    android:textColor="#141B2B"
+                    android:textSize="15sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:lineSpacingExtra="3dp"
+                    android:text="Chia sẻ trải nghiệm trung thực và đối xử tôn trọng với người khác. Không đăng nội dung quấy rối, ngôn từ thù ghét, đe dọa, đánh giá gian dối, nội dung rác hoặc thông tin riêng tư của người khác.\n\nKhông thao túng điểm đánh giá, tạo tương tác giả, truy cập tài khoản khi chưa được phép hoặc gây cản trở dịch vụ. Công khai rõ mọi hoạt động quảng bá có trả phí hoặc mối quan hệ có thể ảnh hưởng đến một gợi ý."
+                    android:textColor="#505568"
+                    android:textSize="13sp" />
+
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="1dp"
+                    android:layout_marginVertical="12dp"
+                    android:background="#E9EBF4" />
+
+                <!-- 4 -->
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="4. Nội dung bạn chia sẻ"
+                    android:textColor="#141B2B"
+                    android:textSize="15sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:lineSpacingExtra="3dp"
+                    android:text="Chỉ chia sẻ ảnh, đánh giá và nội dung khác mà bạn sở hữu hoặc được phép sử dụng. Bạn vẫn giữ quyền sở hữu đối với nội dung gốc của mình.\n\nMột quyền sử dụng có giới hạn đang được đề xuất sẽ cho phép Dishcision lưu trữ, hiển thị và chia sẻ nội dung của bạn trong phạm vi dịch vụ khi cần để vận hành các tính năng. Bản điều khoản chính thức phải xác định rõ quyền này, thời hạn áp dụng và cách xử lý khi bạn xóa nội dung hoặc đóng tài khoản."
+                    android:textColor="#505568"
+                    android:textSize="13sp" />
+
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="1dp"
+                    android:layout_marginVertical="12dp"
+                    android:background="#E9EBF4" />
+
+                <!-- 5 -->
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="5. Thông tin món ăn và nhà hàng"
+                    android:textColor="#141B2B"
+                    android:textSize="15sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:lineSpacingExtra="3dp"
+                    android:text="Các gợi ý và bài đăng cộng đồng nhằm hỗ trợ khám phá, không phải lời khuyên y tế hay chế độ ăn uống. Thực đơn, giá cả, giờ mở cửa và tình trạng phục vụ có thể thay đổi.\n\nHãy xác nhận các thông tin quan trọng trực tiếp với nhà hàng, đặc biệt là nguyên liệu, chất gây dị ứng và cách chế biến món ăn. Không bao giờ xem một gợi ý là sự bảo đảm rằng món ăn an toàn với nhu cầu ăn uống của bạn."
+                    android:textColor="#505568"
+                    android:textSize="13sp" />
+
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="1dp"
+                    android:layout_marginVertical="12dp"
+                    android:background="#E9EBF4" />
+
+                <!-- 6 -->
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="6. Các dịch vụ khác"
+                    android:textColor="#141B2B"
+                    android:textSize="15sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:lineSpacingExtra="3dp"
+                    android:text="Trang web nhà hàng, liên kết bên ngoài và dịch vụ đăng nhập của bên thứ ba có điều khoản và thông báo về quyền riêng tư riêng. Hãy đọc các thông báo đó trước khi chia sẻ thông tin hoặc sử dụng các dịch vụ này.\n\nBản nháp này không quy định điều khoản đặt món, thanh toán, giao hàng hoặc hoàn tiền. Những tính năng đó, nếu có, cần các điều kiện riêng được giải thích rõ trước khi được cung cấp."
+                    android:textColor="#505568"
+                    android:textSize="13sp" />
+
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="1dp"
+                    android:layout_marginVertical="12dp"
+                    android:background="#E9EBF4" />
+
+                <!-- 7 -->
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="7. Kiểm duyệt và quyền truy cập tài khoản"
+                    android:textColor="#141B2B"
+                    android:textSize="15sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:lineSpacingExtra="3dp"
+                    android:text="Các quy tắc cộng đồng được đề xuất sẽ cho phép xem xét nội dung bị báo cáo và áp dụng biện pháp tương xứng đối với hành vi sử dụng sai mục đích, bao gồm gỡ nội dung hoặc hạn chế tài khoản.\n\nBản điều khoản chính thức cần giải thích các lựa chọn báo cáo, thông báo và yêu cầu xem xét lại, cũng như cách đóng tài khoản. Mọi biện pháp tức thời cần thiết để bảo vệ người dùng hoặc dịch vụ phải được mô tả rõ ràng."
+                    android:textColor="#505568"
+                    android:textSize="13sp" />
+
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="1dp"
+                    android:layout_marginVertical="12dp"
+                    android:background="#E9EBF4" />
+
+                <!-- 8 -->
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="8. Khả năng cung cấp dịch vụ và trách nhiệm"
+                    android:textColor="#141B2B"
+                    android:textSize="15sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:lineSpacingExtra="3dp"
+                    android:text="Các tính năng có thể thay đổi và đôi khi dịch vụ có thể không khả dụng. Nội dung cộng đồng có thể chứa sai sót hoặc những quan điểm mà Dishcision không tán thành.\n\nMọi cam kết bảo đảm, giới hạn trách nhiệm và ngoại lệ phải được rà soát theo từng khu vực nơi ứng dụng hoạt động. Bản nháp này không loại trừ những quyền mà pháp luật không cho phép loại trừ."
+                    android:textColor="#505568"
+                    android:textSize="13sp" />
+
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="1dp"
+                    android:layout_marginVertical="12dp"
+                    android:background="#E9EBF4" />
+
+                <!-- 9 -->
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="9. Quyền riêng tư và cập nhật"
+                    android:textColor="#141B2B"
+                    android:textSize="15sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:lineSpacingExtra="3dp"
+                    android:text="Đọc bản nháp Chính sách quyền riêng tư để tìm hiểu cách xử lý dự kiến đối với thông tin tài khoản, nội dung cộng đồng và các lựa chọn của bạn. Hoạt động xử lý dữ liệu thực tế phải được xác minh trước khi công bố.\n\nNhững thay đổi quan trọng đối với bản điều khoản chính thức cần được giải thích kèm thông báo và ngày có hiệu lực rõ ràng. Bản được phê duyệt phải đề cập việc tiếp tục sử dụng dịch vụ và mọi quy trình chấp thuận bắt buộc."
+                    android:textColor="#505568"
+                    android:textSize="13sp" />
+
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="1dp"
+                    android:layout_marginVertical="12dp"
+                    android:background="#E9EBF4" />
+
+                <!-- 10 -->
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="10. Thắc mắc và rà soát pháp lý"
+                    android:textColor="#141B2B"
+                    android:textSize="15sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:lineSpacingExtra="3dp"
+                    android:text="Các câu hỏi về điều khoản chính thức cần được gửi qua kênh hỗ trợ đã xác minh và được công bố trong Dishcision. Chưa có thông tin liên hệ pháp lý nào được cung cấp cho bản nháp này.\n\nTrước khi công bố, hãy cùng cố vấn pháp lý xác nhận đơn vị vận hành, điều kiện sử dụng, quyền sử dụng nội dung, quy trình hỗ trợ và giải quyết tranh chấp, pháp luật áp dụng và ngày có hiệu lực."
+                    android:textColor="#505568"
                     android:textSize="13sp" />
             </LinearLayout>
 
-            <View
-                android:layout_width="match_parent"
-                android:layout_height="1dp"
-                android:layout_marginTop="20dp"
-                android:layout_marginBottom="20dp"
-                android:background="@color/divider_gray" />
-
+            <!-- SECTION 2: Chính sách quyền riêng tư -->
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="1. Giới thiệu về điều khoản"
-                android:textColor="@color/text_dark"
-                android:textSize="17sp"
+                android:layout_marginTop="24dp"
+                android:text="Chính sách quyền riêng tư"
+                android:textColor="#141B2B"
+                android:textSize="20sp"
                 android:textStyle="bold" />
 
-            <TextView
+            <!-- Card Items 11 - 20 -->
+            <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
-                android:text="Các điều khoản này quy định cách bạn sử dụng ứng dụng Dishcision để khám phá món ăn, chia sẻ công thức, viết đánh giá quán ăn và cùng bạn bè quyết định ăn gì hôm nay. &quot;Bạn&quot; có nghĩa là người dùng ứng dụng."
-                android:textColor="#4A4A4A"
-                android:textSize="14sp" />
+                android:layout_marginTop="12dp"
+                android:background="@drawable/bg_card_white"
+                android:orientation="vertical"
+                android:padding="16dp">
 
+                <!-- 11 -->
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="11. Về chính sách này"
+                    android:textColor="#141B2B"
+                    android:textSize="15sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:lineSpacingExtra="3dp"
+                    android:text="Chính sách minh họa này phác thảo các vấn đề về quyền riêng tư cho một ứng dụng khám phá ẩm thực và cộng đồng. Đây không phải mô tả về hoạt động xử lý dữ liệu của Dishcision đã được xác minh.\n\nTrước khi công bố, đơn vị vận hành dịch vụ phải xác nhận những thông tin được thu thập, mục đích sử dụng, bên nhận thông tin và cách người dùng gửi yêu cầu về quyền riêng tư. Chính sách chính thức cần xác định đơn vị vận hành và ngày có hiệu lực."
+                    android:textColor="#505568"
+                    android:textSize="13sp" />
+
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="1dp"
+                    android:layout_marginVertical="12dp"
+                    android:background="#E9EBF4" />
+
+                <!-- 12 -->
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="12. Thông tin bạn cung cấp"
+                    android:textColor="#141B2B"
+                    android:textSize="15sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:lineSpacingExtra="3dp"
+                    android:text="Tùy vào các tính năng chính thức, thông tin tài khoản có thể bao gồm địa chỉ email, tên người dùng, ảnh đại diện và thông tin đăng nhập. Sở thích ẩm thực và địa điểm đã lưu có thể giúp cá nhân hóa việc khám phá.\n\nThông tin cộng đồng có thể bao gồm đánh giá, ảnh, bình luận và tin nhắn mà bạn chọn chia sẻ. Yêu cầu hỗ trợ có thể bao gồm các chi tiết bạn gửi khi cần trợ giúp. Các trường thông tin cụ thể và việc chúng có bắt buộc hay không phải được xác nhận."
+                    android:textColor="#505568"
+                    android:textSize="13sp" />
+
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="1dp"
+                    android:layout_marginVertical="12dp"
+                    android:background="#E9EBF4" />
+
+                <!-- 13 -->
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="13. Thông tin từ việc sử dụng ứng dụng"
+                    android:textColor="#141B2B"
+                    android:textSize="15sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:lineSpacingExtra="3dp"
+                    android:text="Ứng dụng có thể xử lý thông tin kỹ thuật như loại thiết bị, phiên bản ứng dụng, nhật ký lỗi và tương tác với các tính năng nhằm hỗ trợ vận hành và khắc phục sự cố.\n\nNếu cung cấp tính năng khám phá dựa trên vị trí, chính sách chính thức cần giải thích việc sử dụng vị trí gần đúng hay chính xác, thời điểm truy cập và cách cấp quyền. Bản nháp này không mặc định có hoạt động theo dõi vị trí hoặc thu thập dữ liệu trong nền."
+                    android:textColor="#505568"
+                    android:textSize="13sp" />
+
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="1dp"
+                    android:layout_marginVertical="12dp"
+                    android:background="#E9EBF4" />
+
+                <!-- 14 -->
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="14. Cách thông tin có thể được sử dụng"
+                    android:textColor="#141B2B"
+                    android:textSize="15sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:lineSpacingExtra="3dp"
+                    android:text="Các mục đích đề xuất bao gồm tạo tài khoản, hiển thị món ăn và nhà hàng phù hợp, hiển thị nội dung đóng góp của cộng đồng, chuyển tin nhắn và phản hồi yêu cầu hỗ trợ.\n\nCác mục đích có thể có khác bao gồm bảo vệ tài khoản và tìm hiểu sự cố kỹ thuật. Từng mục đích thực tế, cơ sở pháp lý tương ứng nếu có, và mọi việc sử dụng cho phân tích hoặc quảng cáo phải được xác minh và giải thích trong chính sách chính thức."
+                    android:textColor="#505568"
+                    android:textSize="13sp" />
+
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="1dp"
+                    android:layout_marginVertical="12dp"
+                    android:background="#E9EBF4" />
+
+                <!-- 15 -->
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="15. Phạm vi hiển thị trong cộng đồng"
+                    android:textColor="#141B2B"
+                    android:textSize="15sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:lineSpacingExtra="3dp"
+                    android:text="Đánh giá, ảnh và thông tin hồ sơ được chia sẻ công khai có thể hiển thị với người khác. Ứng dụng cần cho biết rõ ai có thể xem trước khi bạn đăng. Tránh đưa vào thông tin nhạy cảm hoặc thông tin riêng tư của người khác.\n\nNếu cung cấp tính năng nhắn tin riêng tư, chính sách chính thức phải giải thích ai có thể truy cập tin nhắn và vì sao. Nội dung đã chia sẻ với người khác có thể bị sao chép hoặc lưu bên ngoài Dishcision, ngay cả sau khi bạn xóa bài đăng của mình."
+                    android:textColor="#505568"
+                    android:textSize="13sp" />
+
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="1dp"
+                    android:layout_marginVertical="12dp"
+                    android:background="#E9EBF4" />
+
+                <!-- 16 -->
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="16. Chia sẻ thông tin và các dịch vụ khác"
+                    android:textColor="#141B2B"
+                    android:textSize="15sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:lineSpacingExtra="3dp"
+                    android:text="Việc vận hành dịch vụ có thể cần các nhà cung cấp dịch vụ lưu trữ, xác thực hoặc hỗ trợ. Các nhà cung cấp thực tế, nhóm bên nhận thông tin và giới hạn sử dụng thông tin của họ phải được xác nhận.\n\nĐăng nhập qua bên thứ ba và các liên kết đến nhà hàng có thể áp dụng cách xử lý quyền riêng tư riêng. Mọi trường hợp tiết lộ thông tin để đáp ứng yêu cầu pháp lý, chuyển giao doanh nghiệp hoặc mục đích khác phải được nêu rõ. Bản nháp này không khẳng định điều gì về việc bán dữ liệu, quảng cáo nhắm mục tiêu hoặc chuyển dữ liệu quốc tế."
+                    android:textColor="#505568"
+                    android:textSize="13sp" />
+
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="1dp"
+                    android:layout_marginVertical="12dp"
+                    android:background="#E9EBF4" />
+
+                <!-- 17 -->
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="17. Lựa chọn và yêu cầu của bạn"
+                    android:textColor="#141B2B"
+                    android:textSize="15sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:lineSpacingExtra="3dp"
+                    android:text="Cách tiếp cận được đề xuất sẽ cho phép bạn quản lý thông tin hồ sơ, chỉnh sửa hoặc xóa nội dung đóng góp và kiểm soát quyền truy cập trên thiết bị. Mọi tùy chọn quản lý thông báo và xóa tài khoản phải được đối chiếu, xác nhận với ứng dụng thực tế.\n\nTùy vào nơi bạn sinh sống và hoạt động xử lý dữ liệu chính thức, bạn có thể có quyền yêu cầu truy cập, chỉnh sửa, xóa dữ liệu hoặc các lựa chọn khác. Chính sách được phê duyệt cần giải thích điều kiện áp dụng, việc xác minh danh tính và cách gửi yêu cầu qua kênh liên hệ đã xác minh."
+                    android:textColor="#505568"
+                    android:textSize="13sp" />
+
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="1dp"
+                    android:layout_marginVertical="12dp"
+                    android:background="#E9EBF4" />
+
+                <!-- 18 -->
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="18. Lưu giữ và bảo mật"
+                    android:textColor="#141B2B"
+                    android:textSize="15sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:lineSpacingExtra="3dp"
+                    android:text="Chính sách chính thức cần giải thích thời gian lưu giữ từng loại thông tin và cách xử lý khi tài khoản bị đóng. Chưa có thông tin về thời hạn lưu giữ bài đăng, tin nhắn, nhật ký và bản sao lưu.\n\nCác biện pháp bảo vệ và kiểm soát truy cập phù hợp phải được xác minh trước khi được mô tả. Không dịch vụ trực tuyến nào có thể cam kết bảo mật tuyệt đối. Hãy giữ kín mật khẩu và báo cáo hành vi sử dụng tài khoản sai mục đích mà bạn nghi ngờ qua kênh hỗ trợ đã công bố."
+                    android:textColor="#505568"
+                    android:textSize="13sp" />
+
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="1dp"
+                    android:layout_marginVertical="12dp"
+                    android:background="#E9EBF4" />
+
+                <!-- 19 -->
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="19. Trẻ em và thay đổi chính sách"
+                    android:textColor="#141B2B"
+                    android:textSize="15sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:lineSpacingExtra="3dp"
+                    android:text="Độ tuổi tối thiểu để sử dụng Dishcision và mọi biện pháp bảo vệ người dùng nhỏ tuổi cần được xác nhận. Chính sách chính thức cần giải thích cách xử lý thông tin của trẻ em và cách phản ánh những vấn đề đáng lo ngại.\n\nNhững thay đổi trong hoạt động bảo vệ quyền riêng tư thực tế cần được phản ánh trong chính sách đã công bố, kèm ngày cập nhật và thông báo phù hợp. Mọi yêu cầu về sự đồng ý phải được đánh giá trước khi bắt đầu sử dụng thông tin cho mục đích mới."
+                    android:textColor="#505568"
+                    android:textSize="13sp" />
+
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="1dp"
+                    android:layout_marginVertical="12dp"
+                    android:background="#E9EBF4" />
+
+                <!-- 20 -->
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="20. Thắc mắc về quyền riêng tư"
+                    android:textColor="#141B2B"
+                    android:textSize="15sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:lineSpacingExtra="3dp"
+                    android:text="Chính sách được phê duyệt phải cung cấp một cách thức đã xác minh để liên hệ đơn vị vận hành dịch vụ về quyền riêng tư. Chưa có thông tin về danh tính doanh nghiệp, địa chỉ hoặc đầu mối liên hệ về quyền riêng tư được cung cấp cho bản nháp này.\n\nTrước khi ra mắt, hãy xác nhận danh mục dữ liệu, các quyền truy cập, nhà cung cấp, quy tắc lưu giữ, quy trình tiếp nhận yêu cầu và các yêu cầu liên quan tại từng khu vực. Bản minh họa này không khẳng định việc tuân thủ pháp luật."
+                    android:textColor="#505568"
+                    android:textSize="13sp" />
+            </LinearLayout>
+
+            <!-- Disclaimer Footer -->
             <TextView
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
-                android:text="Bằng việc đăng ký hoặc sử dụng ứng dụng, bạn đồng ý tuân thủ các quy định nhằm xây dựng một cộng đồng ẩm thực văn minh, tích cực."
-                android:textColor="#4A4A4A"
-                android:textSize="14sp" />
-
-            <TextView
-                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="20dp"
-                android:text="2. Tài khoản của bạn"
-                android:textColor="@color/text_dark"
-                android:textSize="17sp"
-                android:textStyle="bold" />
-
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
-                android:text="Cung cấp thông tin tài khoản chính xác và bảo mật thông tin đăng nhập của bạn. Không mạo danh người khác hoặc sử dụng tài khoản của người khác khi chưa được phép."
-                android:textColor="#4A4A4A"
-                android:textSize="14sp" />
-
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
-                android:text="Bạn chịu trách nhiệm cho mọi hoạt động diễn ra dưới tài khoản của mình. Nếu phát hiện nghi vấn xâm nhập, vui lòng thông báo ngay qua trung tâm hỗ trợ."
-                android:textColor="#4A4A4A"
-                android:textSize="14sp" />
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="20dp"
-                android:text="3. Nội dung ẩm thực &amp; Quy chuẩn cộng đồng"
-                android:textColor="@color/text_dark"
-                android:textSize="17sp"
-                android:textStyle="bold" />
-
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
-                android:text="Khi đăng tải bài viết, hình ảnh món ăn, công thức nấu ăn hoặc đánh giá nhà hàng trên Dishcision, hãy đảm bảo nội dung mang tính chân thực, tôn trọng và tuân thủ pháp luật."
-                android:textColor="#4A4A4A"
-                android:textSize="14sp" />
-
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
-                android:text="Nghiêm cấm các bài viết sai sự thật về vệ sinh an toàn thực phẩm, nội dung đả kích, xúc phạm hoặc quảng cáo rác. Dishcision có quyền gỡ bỏ nội dung hoặc khóa tài khoản vi phạm."
-                android:textColor="#4A4A4A"
-                android:textSize="14sp" />
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="20dp"
-                android:text="4. Liên hệ &amp; Thay đổi điều khoản"
-                android:textColor="@color/text_dark"
-                android:textSize="17sp"
-                android:textStyle="bold" />
-
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
-                android:text="Nếu bạn có bất kỳ câu hỏi nào về Điều khoản dịch vụ hoặc cần hỗ trợ, vui lòng liên hệ với bộ phận CSKH của Dishcision thông qua mục Hỗ trợ trong ứng dụng."
-                android:textColor="#4A4A4A"
-                android:textSize="14sp" />
+                android:layout_marginBottom="24dp"
+                android:gravity="center"
+                android:lineSpacingExtra="3dp"
+                android:text="Chỉ là bản nháp. Điều khoản chính thức, hoạt động bảo vệ quyền riêng tư và thông tin hỗ trợ phải được phê duyệt trước khi ra mắt."
+                android:textColor="#8E7570"
+                android:textSize="12sp" />
         </LinearLayout>
-    </RelativeLayout>
-</ScrollView>
+    </ScrollView>
+</LinearLayout>
