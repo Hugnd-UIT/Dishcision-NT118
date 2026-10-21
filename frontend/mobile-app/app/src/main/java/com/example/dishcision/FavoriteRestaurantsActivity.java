@@ -21,7 +21,14 @@ import com.google.android.material.bottomsheet.BottomSheetDialog;
 public class FavoriteRestaurantsActivity extends AppCompatActivity {
 
     private ImageView btnBack;
+    private ImageView btnNotification;
+
     private LinearLayout navHome;
+    private LinearLayout navDecide;
+    private LinearLayout navCreate;
+    private LinearLayout navMessages;
+    private LinearLayout navProfile;
+
     private LinearLayout btnViewMenuPhoGiaTruyen;
     private LinearLayout btnViewMenuComTam;
     private LinearLayout btnViewMenuTocoToco;
@@ -54,7 +61,14 @@ public class FavoriteRestaurantsActivity extends AppCompatActivity {
 
     private void initViews() {
         btnBack = findViewById(R.id.btnBack);
+        btnNotification = findViewById(R.id.btnNotification);
+
         navHome = findViewById(R.id.navHome);
+        navDecide = findViewById(R.id.navDecide);
+        navCreate = findViewById(R.id.navCreate);
+        navMessages = findViewById(R.id.navMessages);
+        navProfile = findViewById(R.id.navProfile);
+
         btnViewMenuPhoGiaTruyen = findViewById(R.id.btnViewMenuPhoGiaTruyen);
         btnViewMenuComTam = findViewById(R.id.btnViewMenuComTam);
         btnViewMenuTocoToco = findViewById(R.id.btnViewMenuTocoToco);
@@ -75,12 +89,47 @@ public class FavoriteRestaurantsActivity extends AppCompatActivity {
             btnBack.setOnClickListener(v -> finish());
         }
 
+        if (btnNotification != null) {
+            btnNotification.setOnClickListener(v -> {
+                Intent intent = new Intent(FavoriteRestaurantsActivity.this, NotificationsActivity.class);
+                startActivity(intent);
+            });
+        }
+
         if (navHome != null) {
             navHome.setOnClickListener(v -> {
                 Intent intent = new Intent(FavoriteRestaurantsActivity.this, HomeActivity.class);
                 intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
                 startActivity(intent);
                 finish();
+            });
+        }
+
+        if (navDecide != null) {
+            navDecide.setOnClickListener(v -> {
+                Intent intent = new Intent(FavoriteRestaurantsActivity.this, DecideActivity.class);
+                startActivity(intent);
+            });
+        }
+
+        if (navCreate != null) {
+            navCreate.setOnClickListener(v -> {
+                Intent intent = new Intent(FavoriteRestaurantsActivity.this, CreatePostActivity.class);
+                startActivity(intent);
+            });
+        }
+
+        if (navMessages != null) {
+            navMessages.setOnClickListener(v -> {
+                Intent intent = new Intent(FavoriteRestaurantsActivity.this, MessagesInboxActivity.class);
+                startActivity(intent);
+            });
+        }
+
+        if (navProfile != null) {
+            navProfile.setOnClickListener(v -> {
+                Intent intent = new Intent(FavoriteRestaurantsActivity.this, ProfileActivity.class);
+                startActivity(intent);
             });
         }
 

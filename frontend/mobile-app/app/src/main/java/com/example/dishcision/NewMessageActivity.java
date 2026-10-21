@@ -72,11 +72,11 @@ public class NewMessageActivity extends AppCompatActivity {
 
         if (btnStartChat != null) {
             btnStartChat.setOnClickListener(v -> {
-                if (selectedContactName.isEmpty()) {
+                if (selectedContactName == null || selectedContactName.isEmpty()) {
                     Toast.makeText(this, "Vui lòng chọn ít nhất 1 người hoặc quán ăn để bắt đầu trò chuyện", Toast.LENGTH_SHORT).show();
                     return;
                 }
-                Intent intent = new Intent(NewMessageActivity.this, ChatActivity.class);
+                Intent intent = new Intent(NewMessageActivity.this, ChatDetailActivity.class);
                 intent.putExtra("CHAT_NAME", selectedContactName);
                 startActivity(intent);
                 finish();
@@ -88,7 +88,10 @@ public class NewMessageActivity extends AppCompatActivity {
         if (item != null) {
             item.setOnClickListener(v -> {
                 selectedContactName = name;
-                Toast.makeText(this, "Đã chọn: " + name, Toast.LENGTH_SHORT).show();
+                Intent intent = new Intent(NewMessageActivity.this, ChatDetailActivity.class);
+                intent.putExtra("CHAT_NAME", name);
+                startActivity(intent);
+                finish();
             });
         }
     }

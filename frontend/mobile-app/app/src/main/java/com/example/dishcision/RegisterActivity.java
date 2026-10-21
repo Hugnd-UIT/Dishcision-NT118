@@ -1,10 +1,15 @@
 package com.example.dishcision;
 
 import android.content.Intent;
+import android.graphics.Color;
 import android.os.Bundle;
-import android.text.Html;
 import android.text.InputType;
-import android.text.TextUtils;
+import android.text.SpannableString;
+import android.text.Spanned;
+import android.text.TextPaint;
+import android.text.method.LinkMovementMethod;
+import android.text.style.ClickableSpan;
+import android.view.View;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.RelativeLayout;
@@ -18,14 +23,6 @@ import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 
-import com.example.dishcision.network.ApiClient;
-import com.example.dishcision.network.AuthResponse;
-import com.example.dishcision.network.RegisterRequest;
-
-import retrofit2.Call;
-import retrofit2.Callback;
-import retrofit2.Response;
-
 public class RegisterActivity extends AppCompatActivity {
 
     private EditText edtFullName;
@@ -33,12 +30,10 @@ public class RegisterActivity extends AppCompatActivity {
     private EditText edtRegisterPassword;
     private EditText edtConfirmPassword;
     private ImageView btnToggleRegisterPassword;
-    private ImageView btnToggleConfirmPassword;
     private RelativeLayout btnRegister;
     private TextView tvLoginLink;
 
-    private boolean isPasswordVisible = false;
-    private boolean isConfirmPasswordVisible = false;
+    private boolean isRegisterPasswordVisible = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -54,7 +49,7 @@ public class RegisterActivity extends AppCompatActivity {
 
         initViews();
         setupListeners();
-        setupTermsText();
+        setupRegisterTermsAndPrivacy();
     }
 
     private void initViews() {
@@ -63,7 +58,6 @@ public class RegisterActivity extends AppCompatActivity {
         edtRegisterPassword = findViewById(R.id.edtRegisterPassword);
         edtConfirmPassword = findViewById(R.id.edtConfirmPassword);
         btnToggleRegisterPassword = findViewById(R.id.btnToggleRegisterPassword);
-        btnToggleConfirmPassword = findViewById(R.id.btnToggleConfirmPassword);
         btnRegister = findViewById(R.id.btnRegister);
         tvLoginLink = findViewById(R.id.tvLoginLink);
     }
@@ -75,27 +69,14 @@ public class RegisterActivity extends AppCompatActivity {
 
         if (btnToggleRegisterPassword != null && edtRegisterPassword != null) {
             btnToggleRegisterPassword.setOnClickListener(v -> {
-                if (isPasswordVisible) {
+                if (isRegisterPasswordVisible) {
                     edtRegisterPassword.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_PASSWORD);
-                    isPasswordVisible = false;
+                    isRegisterPasswordVisible = false;
                 } else {
                     edtRegisterPassword.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD);
-                    isPasswordVisible = true;
+                    isRegisterPasswordVisible = true;
                 }
                 edtRegisterPassword.setSelection(edtRegisterPassword.getText().length());
-            });
-        }
-
-        if (btnToggleConfirmPassword != null && edtConfirmPassword != null) {
-            btnToggleConfirmPassword.setOnClickListener(v -> {
-                if (isConfirmPasswordVisible) {
-                    edtConfirmPassword.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_PASSWORD);
-                    isConfirmPasswordVisible = false;
-                } else {
-                    edtConfirmPassword.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD);
-                    isConfirmPasswordVisible = true;
-                }
-                edtConfirmPassword.setSelection(edtConfirmPassword.getText().length());
             });
         }
 
@@ -109,82 +90,74 @@ public class RegisterActivity extends AppCompatActivity {
     }
 
     private void performRegister() {
-        String fullName = getEnteredFullName();
-        String email = getEnteredEmail();
-        String password = edtRegisterPassword != null ? edtRegisterPassword.getText().toString() : "";
-        String confirmPassword = edtConfirmPassword != null ? edtConfirmPassword.getText().toString() : "";
-
-        if (TextUtils.isEmpty(fullName)) {
-            edtFullName.setError("Vui lòng nhập họ và tên");
-            edtFullName.requestFocus();
-            return;
-        }
-
-        if (TextUtils.isEmpty(email)) {
-            edtRegisterEmail.setError("Vui lòng nhập địa chỉ email");
-            edtRegisterEmail.requestFocus();
-            return;
-        }
-
-        if (TextUtils.isEmpty(password)) {
-            edtRegisterPassword.setError("Vui lòng nhập mật khẩu");
-            edtRegisterPassword.requestFocus();
-            return;
-        }
-
-        if (password.length() < 8) {
-            edtRegisterPassword.setError("Mật khẩu phải từ 8 ký tự trở lên");
-            edtRegisterPassword.requestFocus();
-            return;
-        }
-
-        if (!password.equals(confirmPassword)) {
-            edtConfirmPassword.setError("Mật khẩu xác nhận không khớp");
-            edtConfirmPassword.requestFocus();
-            return;
-        }
-
-        RegisterRequest request = new RegisterRequest(fullName, email, password);
-        ApiClient.getApiService().register(request).enqueue(new Callback<AuthResponse>() {
-            @Override
-            public void onResponse(@NonNull Call<AuthResponse> call, @NonNull Response<AuthResponse> response) {
-                if (response.isSuccessful() && response.body() != null) {
-                    Toast.makeText(RegisterActivity.this, "Đăng ký thành công!", Toast.LENGTH_SHORT).show();
-                    Intent intent = new Intent(RegisterActivity.this, LoginActivity.class);
-                    startActivity(intent);
-                    finish();
-                } else {
-                    String msg = response.body() != null && response.body().getMessage() != null
-                            ? response.body().getMessage()
-                            : "Mã lỗi server: " + response.code();
-                    Toast.makeText(RegisterActivity.this, "Đăng ký thất bại: " + msg, Toast.LENGTH_LONG).show();
-                }
-            }
-
-            @Override
-            public void onFailure(@NonNull Call<AuthResponse> call, @NonNull Throwable t) {
-                Toast.makeText(RegisterActivity.this, "Lỗi kết nối server: " + t.getMessage(), Toast.LENGTH_LONG).show();
-            }
-        });
+        // TỰ ĐỘNG BỎ QUA MỌI KIỂM TRA ĐIỀU KIỆN ĐỂ TEST CHUYỂN TRANG NGAY LẬP TỨC
+        Toast.makeText(RegisterActivity.this, "Đăng ký thành công!", Toast.LENGTH_SHORT).show();
+        Intent intent = new Intent(RegisterActivity.this, LoginActivity.class);
+        startActivity(intent);
+        finish();
     }
 
-    private void setupTermsText() {
+    private void setupRegisterTermsAndPrivacy() {
         TextView tvRegisterTerms = findViewById(R.id.tvRegisterTerms);
-        if (tvRegisterTerms != null) {
-            String htmlText = "Bằng việc đăng ký, bạn đồng ý với <font color='#FF5722'><b>Điều khoản dịch vụ</b></font> &amp; <font color='#FF5722'><b>Chính sách bảo mật</b></font> của Dishcision.";
-            tvRegisterTerms.setText(Html.fromHtml(htmlText, Html.FROM_HTML_MODE_LEGACY));
-            tvRegisterTerms.setOnClickListener(v -> {
-                Intent intent = new Intent(RegisterActivity.this, TermsOfServiceActivity.class);
-                startActivity(intent);
-            });
+        if (tvRegisterTerms == null) return;
+
+        String fullText = "Bằng việc đăng ký, bạn đồng ý với Điều khoản dịch vụ & Chính sách bảo mật của Dishcision.";
+
+        SpannableString spannableString = new SpannableString(fullText);
+
+        int termsStart = fullText.indexOf("Điều khoản dịch vụ");
+        int termsEnd = termsStart + "Điều khoản dịch vụ".length();
+
+        int privacyStart = fullText.indexOf("Chính sách bảo mật");
+        int privacyEnd = privacyStart + "Chính sách bảo mật".length();
+
+        if (termsStart != -1) {
+            spannableString.setSpan(new ClickableSpan() {
+                @Override
+                public void onClick(@NonNull View widget) {
+                    Intent intent = new Intent(RegisterActivity.this, TermsOfServiceActivity.class);
+                    startActivity(intent);
+                }
+
+                @Override
+                public void updateDrawState(@NonNull TextPaint ds) {
+                    super.updateDrawState(ds);
+                    ds.setColor(Color.parseColor("#FF5722"));
+                    ds.setUnderlineText(true);
+                }
+            }, termsStart, termsEnd, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
         }
+
+        if (privacyStart != -1) {
+            spannableString.setSpan(new ClickableSpan() {
+                @Override
+                public void onClick(@NonNull View widget) {
+                    Intent intent = new Intent(RegisterActivity.this, PrivacyPolicyActivity.class);
+                    startActivity(intent);
+                }
+
+                @Override
+                public void updateDrawState(@NonNull TextPaint ds) {
+                    super.updateDrawState(ds);
+                    ds.setColor(Color.parseColor("#FF5722"));
+                    ds.setUnderlineText(true);
+                }
+            }, privacyStart, privacyEnd, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        }
+
+        tvRegisterTerms.setText(spannableString);
+        tvRegisterTerms.setMovementMethod(LinkMovementMethod.getInstance());
     }
 
     public String getEnteredFullName() {
         return edtFullName != null ? edtFullName.getText().toString().trim() : "";
     }
 
-    public String getEnteredEmail() {
+    public String getEnteredRegisterEmail() {
         return edtRegisterEmail != null ? edtRegisterEmail.getText().toString().trim() : "";
+    }
+
+    public String getEnteredRegisterPassword() {
+        return edtRegisterPassword != null ? edtRegisterPassword.getText().toString() : "";
     }
 }

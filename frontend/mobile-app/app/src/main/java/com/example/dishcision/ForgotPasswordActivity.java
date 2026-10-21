@@ -2,27 +2,16 @@ package com.example.dishcision;
 
 import android.content.Intent;
 import android.os.Bundle;
-import android.text.TextUtils;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import androidx.activity.EdgeToEdge;
-import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
-
-import com.example.dishcision.network.ApiClient;
-import com.example.dishcision.network.AuthResponse;
-import com.example.dishcision.network.ForgotPasswordRequest;
-
-import retrofit2.Call;
-import retrofit2.Callback;
-import retrofit2.Response;
 
 public class ForgotPasswordActivity extends AppCompatActivity {
 
@@ -76,38 +65,16 @@ public class ForgotPasswordActivity extends AppCompatActivity {
 
     private void performForgotPassword() {
         String email = getEnteredForgotEmail();
-
-        if (TextUtils.isEmpty(email)) {
-            edtForgotEmail.setError("Vui lòng nhập địa chỉ email");
-            edtForgotEmail.requestFocus();
-            return;
+        if (email == null || email.isEmpty()) {
+            email = "m•••@example.com";
         }
+        navigateToOtp(email);
+    }
 
-        try {
-            ForgotPasswordRequest request = new ForgotPasswordRequest(email);
-            ApiClient.getApiService().forgotPassword(request).enqueue(new Callback<AuthResponse>() {
-                @Override
-                public void onResponse(@NonNull Call<AuthResponse> call, @NonNull Response<AuthResponse> response) {
-                    if (response.isSuccessful() && response.body() != null) {
-                        Intent intent = new Intent(ForgotPasswordActivity.this, ResetPasswordActivity.class);
-                        intent.putExtra("email", email);
-                        startActivity(intent);
-                    } else {
-                        String msg = response.body() != null && response.body().getMessage() != null
-                                ? response.body().getMessage()
-                                : "Mã lỗi server: " + response.code();
-                        Toast.makeText(ForgotPasswordActivity.this, "Gửi yêu cầu thất bại: " + msg, Toast.LENGTH_LONG).show();
-                    }
-                }
-
-                @Override
-                public void onFailure(@NonNull Call<AuthResponse> call, @NonNull Throwable t) {
-                    Toast.makeText(ForgotPasswordActivity.this, "Lỗi kết nối server: " + t.getMessage(), Toast.LENGTH_LONG).show();
-                }
-            });
-        } catch (Exception e) {
-            Toast.makeText(this, "Lỗi cấu hình URL API: " + e.getMessage(), Toast.LENGTH_LONG).show();
-        }
+    private void navigateToOtp(String email) {
+        Intent intent = new Intent(ForgotPasswordActivity.this, VerifyOtpActivity.class);
+        intent.putExtra(VerifyOtpActivity.EXTRA_EMAIL, email);
+        startActivity(intent);
     }
 
     public String getEnteredForgotEmail() {

@@ -22,6 +22,7 @@ public class UserProfileActivity extends AppCompatActivity {
 
     private LinearLayout navHome;
     private LinearLayout navDecide;
+    private LinearLayout navCreate;
     private LinearLayout navMessage;
     private LinearLayout navProfile;
 
@@ -52,6 +53,7 @@ public class UserProfileActivity extends AppCompatActivity {
 
         navHome = findViewById(R.id.navHome);
         navDecide = findViewById(R.id.navDecide);
+        navCreate = findViewById(R.id.navCreate);
         navMessage = findViewById(R.id.navMessage);
         navProfile = findViewById(R.id.navProfile);
     }
@@ -85,9 +87,11 @@ public class UserProfileActivity extends AppCompatActivity {
         }
 
         if (btnMessage != null) {
-            btnMessage.setOnClickListener(v ->
-                Toast.makeText(this, "Mở trò chuyện với Linh Đan", Toast.LENGTH_SHORT).show()
-            );
+            btnMessage.setOnClickListener(v -> {
+                Intent intent = new Intent(UserProfileActivity.this, ChatActivity.class);
+                intent.putExtra("CHAT_NAME", "Linh Đan (Đam Mê Ăn)");
+                startActivity(intent);
+            });
         }
 
         if (navHome != null) {
@@ -100,15 +104,24 @@ public class UserProfileActivity extends AppCompatActivity {
         }
 
         if (navDecide != null) {
-            navDecide.setOnClickListener(v ->
-                Toast.makeText(this, "Tính năng Quyết định", Toast.LENGTH_SHORT).show()
-            );
+            navDecide.setOnClickListener(v -> {
+                Intent intent = new Intent(UserProfileActivity.this, DecideActivity.class);
+                startActivity(intent);
+            });
+        }
+
+        if (navCreate != null) {
+            navCreate.setOnClickListener(v -> {
+                Intent intent = new Intent(UserProfileActivity.this, CreatePostActivity.class);
+                startActivity(intent);
+            });
         }
 
         if (navMessage != null) {
-            navMessage.setOnClickListener(v ->
-                Toast.makeText(this, "Tin nhắn", Toast.LENGTH_SHORT).show()
-            );
+            navMessage.setOnClickListener(v -> {
+                Intent intent = new Intent(UserProfileActivity.this, MessagesInboxActivity.class);
+                startActivity(intent);
+            });
         }
 
         if (navProfile != null) {

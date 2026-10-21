@@ -2,8 +2,8 @@ package com.example.dishcision;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
-import android.widget.Toast;
 
 import androidx.activity.EdgeToEdge;
 import androidx.appcompat.app.AppCompatActivity;
@@ -23,6 +23,7 @@ public class MessagesInboxActivity extends AppCompatActivity {
 
     private LinearLayout navHome;
     private LinearLayout navDecide;
+    private LinearLayout navCreate;
     private LinearLayout navProfile;
 
     @Override
@@ -42,7 +43,7 @@ public class MessagesInboxActivity extends AppCompatActivity {
     }
 
     private void initViews() {
-        android.widget.ImageView btnNotification = findViewById(R.id.btnNotification);
+        ImageView btnNotification = findViewById(R.id.btnNotification);
         if (btnNotification != null) {
             btnNotification.setOnClickListener(v -> {
                 Intent intent = new Intent(MessagesInboxActivity.this, NotificationsActivity.class);
@@ -59,6 +60,7 @@ public class MessagesInboxActivity extends AppCompatActivity {
 
         navHome = findViewById(R.id.navHome);
         navDecide = findViewById(R.id.navDecide);
+        navCreate = findViewById(R.id.navCreate);
         navProfile = findViewById(R.id.navProfile);
     }
 
@@ -87,9 +89,17 @@ public class MessagesInboxActivity extends AppCompatActivity {
         }
 
         if (navDecide != null) {
-            navDecide.setOnClickListener(v ->
-                Toast.makeText(this, "Tính năng Quyết định", Toast.LENGTH_SHORT).show()
-            );
+            navDecide.setOnClickListener(v -> {
+                Intent intent = new Intent(MessagesInboxActivity.this, DecideActivity.class);
+                startActivity(intent);
+            });
+        }
+
+        if (navCreate != null) {
+            navCreate.setOnClickListener(v -> {
+                Intent intent = new Intent(MessagesInboxActivity.this, CreatePostActivity.class);
+                startActivity(intent);
+            });
         }
 
         if (navProfile != null) {

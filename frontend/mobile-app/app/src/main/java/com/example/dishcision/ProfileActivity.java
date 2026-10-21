@@ -22,6 +22,7 @@ public class ProfileActivity extends AppCompatActivity {
 
     private LinearLayout navHome;
     private LinearLayout navDecide;
+    private LinearLayout navCreate;
     private LinearLayout navMessage;
 
     @Override
@@ -49,6 +50,7 @@ public class ProfileActivity extends AppCompatActivity {
 
         navHome = findViewById(R.id.navHome);
         navDecide = findViewById(R.id.navDecide);
+        navCreate = findViewById(R.id.navCreate);
         navMessage = findViewById(R.id.navMessage);
     }
 
@@ -93,9 +95,17 @@ public class ProfileActivity extends AppCompatActivity {
         }
 
         if (navDecide != null) {
-            navDecide.setOnClickListener(v ->
-                Toast.makeText(this, "Tính năng Quyết định", Toast.LENGTH_SHORT).show()
-            );
+            navDecide.setOnClickListener(v -> {
+                Intent intent = new Intent(ProfileActivity.this, DecideActivity.class);
+                startActivity(intent);
+            });
+        }
+
+        if (navCreate != null) {
+            navCreate.setOnClickListener(v -> {
+                Intent intent = new Intent(ProfileActivity.this, CreatePostActivity.class);
+                startActivity(intent);
+            });
         }
 
         if (navMessage != null) {

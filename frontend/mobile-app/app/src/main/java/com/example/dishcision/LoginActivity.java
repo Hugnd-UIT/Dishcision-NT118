@@ -1,10 +1,15 @@
 package com.example.dishcision;
 
 import android.content.Intent;
+import android.graphics.Color;
 import android.os.Bundle;
-import android.text.Html;
 import android.text.InputType;
-import android.text.TextUtils;
+import android.text.SpannableString;
+import android.text.Spanned;
+import android.text.TextPaint;
+import android.text.method.LinkMovementMethod;
+import android.text.style.ClickableSpan;
+import android.view.View;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.RelativeLayout;
@@ -18,14 +23,6 @@ import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 
-import com.example.dishcision.network.ApiClient;
-import com.example.dishcision.network.AuthResponse;
-import com.example.dishcision.network.LoginRequest;
-
-import retrofit2.Call;
-import retrofit2.Callback;
-import retrofit2.Response;
-
 public class LoginActivity extends AppCompatActivity {
 
     private EditText edtEmail;
@@ -35,6 +32,7 @@ public class LoginActivity extends AppCompatActivity {
     private RelativeLayout btnGoogleLogin;
     private TextView tvForgotPassword;
     private TextView tvCreateAccount;
+
     private boolean isPasswordVisible = false;
 
     @Override
@@ -51,7 +49,7 @@ public class LoginActivity extends AppCompatActivity {
 
         initViews();
         setupListeners();
-        setupTermsText();
+        setupTermsAndPrivacy();
     }
 
     private void initViews() {
@@ -71,6 +69,7 @@ public class LoginActivity extends AppCompatActivity {
 
         if (btnGoogleLogin != null) {
             btnGoogleLogin.setOnClickListener(v -> {
+                Toast.makeText(this, "Đăng nhập Google", Toast.LENGTH_SHORT).show();
                 Intent intent = new Intent(LoginActivity.this, HomeActivity.class);
                 startActivity(intent);
                 finish();
@@ -106,59 +105,63 @@ public class LoginActivity extends AppCompatActivity {
     }
 
     private void performLogin() {
-        String email = getEnteredEmail();
-        String password = getEnteredPassword();
-
-        if (TextUtils.isEmpty(email)) {
-            edtEmail.setError("Vui lòng nhập email hoặc tên đăng nhập");
-            edtEmail.requestFocus();
-            return;
-        }
-
-        if (TextUtils.isEmpty(password)) {
-            edtPassword.setError("Vui lòng nhập mật khẩu");
-            edtPassword.requestFocus();
-            return;
-        }
-
-        try {
-            LoginRequest request = new LoginRequest(email, password);
-            ApiClient.getApiService().login(request).enqueue(new Callback<AuthResponse>() {
-                @Override
-                public void onResponse(@NonNull Call<AuthResponse> call, @NonNull Response<AuthResponse> response) {
-                    if (response.isSuccessful() && response.body() != null) {
-                        Toast.makeText(LoginActivity.this, "Đăng nhập thành công!", Toast.LENGTH_SHORT).show();
-                        Intent intent = new Intent(LoginActivity.this, HomeActivity.class);
-                        startActivity(intent);
-                        finish();
-                    } else {
-                        String msg = response.body() != null && response.body().getMessage() != null
-                                ? response.body().getMessage()
-                                : "Mã lỗi server: " + response.code();
-                        Toast.makeText(LoginActivity.this, "Đăng nhập thất bại: " + msg, Toast.LENGTH_LONG).show();
-                    }
-                }
-
-                @Override
-                public void onFailure(@NonNull Call<AuthResponse> call, @NonNull Throwable t) {
-                    Toast.makeText(LoginActivity.this, "Lỗi kết nối server: " + t.getMessage(), Toast.LENGTH_LONG).show();
-                }
-            });
-        } catch (Exception e) {
-            Toast.makeText(this, "Lỗi cấu hình URL API: " + e.getMessage(), Toast.LENGTH_LONG).show();
-        }
+        // TỰ ĐỘNG BỎ QUA MỌI KIỂM TRA ĐIỀU KIỆN ĐỂ TEST CHUYỂN TRANG NGAY LẬP TỨC
+        Toast.makeText(LoginActivity.this, "Đăng nhập thành công!", Toast.LENGTH_SHORT).show();
+        Intent intent = new Intent(LoginActivity.this, HomeActivity.class);
+        startActivity(intent);
+        finish();
     }
 
-    private void setupTermsText() {
+    private void setupTermsAndPrivacy() {
         TextView tvTerms = findViewById(R.id.tvTerms);
-        if (tvTerms != null) {
-            String htmlText = "Bằng việc đăng nhập, bạn đồng ý với <font color='#FF5722'><b>Điều khoản dịch vụ</b></font> &amp; <font color='#FF5722'><b>Chính sách bảo mật</b></font> của Dishcision.";
-            tvTerms.setText(Html.fromHtml(htmlText, Html.FROM_HTML_MODE_LEGACY));
-            tvTerms.setOnClickListener(v -> {
-                Intent intent = new Intent(LoginActivity.this, TermsOfServiceActivity.class);
-                startActivity(intent);
-            });
+        if (tvTerms == null) return;
+
+        String fullText = "By logging in, you agree to Dishcision's Terms of Service & Privacy Policy";
+
+        SpannableString spannableString = new SpannableString(fullText);
+
+        int termsStart = fullText.indexOf("Terms of Service");
+        int termsEnd = termsStart + "Terms of Service".length();
+
+        int privacyStart = fullText.indexOf("Privacy Policy");
+        int privacyEnd = privacyStart + "Privacy Policy".length();
+
+        if (termsStart != -1) {
+            spannableString.setSpan(new ClickableSpan() {
+                @Override
+                public void onClick(@NonNull View widget) {
+                    Intent intent = new Intent(LoginActivity.this, TermsOfServiceActivity.class);
+                    startActivity(intent);
+                }
+
+                @Override
+                public void updateDrawState(@NonNull TextPaint ds) {
+                    super.updateDrawState(ds);
+                    ds.setColor(Color.parseColor("#FF5722"));
+                    ds.setUnderlineText(true);
+                }
+            }, termsStart, termsEnd, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
         }
+
+        if (privacyStart != -1) {
+            spannableString.setSpan(new ClickableSpan() {
+                @Override
+                public void onClick(@NonNull View widget) {
+                    Intent intent = new Intent(LoginActivity.this, PrivacyPolicyActivity.class);
+                    startActivity(intent);
+                }
+
+                @Override
+                public void updateDrawState(@NonNull TextPaint ds) {
+                    super.updateDrawState(ds);
+                    ds.setColor(Color.parseColor("#FF5722"));
+                    ds.setUnderlineText(true);
+                }
+            }, privacyStart, privacyEnd, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        }
+
+        tvTerms.setText(spannableString);
+        tvTerms.setMovementMethod(LinkMovementMethod.getInstance());
     }
 
     public String getEnteredEmail() {

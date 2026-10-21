@@ -366,7 +366,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginStart="14dp"
-                    android:text="@"
+                    android:text="&#64;"
                     android:textColor="@color/text_dark"
                     android:textSize="16sp"
                     android:textStyle="bold" />
