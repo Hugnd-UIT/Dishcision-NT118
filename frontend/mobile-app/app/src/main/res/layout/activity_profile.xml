@@ -55,7 +55,7 @@
             android:clickable="true"
             android:contentDescription="Settings"
             android:focusable="true"
-            android:src="@drawable/ic_notification"
+            android:src="@drawable/ic_settings"
             app:tint="#141B2B" />
     </LinearLayout>
 

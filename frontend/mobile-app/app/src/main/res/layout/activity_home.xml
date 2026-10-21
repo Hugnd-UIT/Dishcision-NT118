@@ -408,6 +408,7 @@
                         </LinearLayout>
 
                         <ImageView
+                            android:id="@+id/btnOptions1"
                             android:layout_width="24dp"
                             android:layout_height="24dp"
                             android:layout_alignParentEnd="true"

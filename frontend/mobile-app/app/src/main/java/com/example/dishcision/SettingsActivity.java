@@ -28,6 +28,7 @@ public class SettingsActivity extends AppCompatActivity {
     private SwitchCompat switchEmailPromos;
 
     private LinearLayout btnHelpCenter;
+    private LinearLayout btnHelpInbox;
     private LinearLayout btnTerms;
     private LinearLayout btnAppRating;
 
@@ -64,6 +65,7 @@ public class SettingsActivity extends AppCompatActivity {
         switchEmailPromos = findViewById(R.id.switchEmailPromos);
 
         btnHelpCenter = findViewById(R.id.btnHelpCenter);
+        btnHelpInbox = findViewById(R.id.btnHelpInbox);
         btnTerms = findViewById(R.id.btnTerms);
         btnAppRating = findViewById(R.id.btnAppRating);
 
@@ -133,9 +135,17 @@ public class SettingsActivity extends AppCompatActivity {
         }
 
         if (btnHelpCenter != null) {
-            btnHelpCenter.setOnClickListener(v ->
-                Toast.makeText(this, "Trung tâm trợ giúp", Toast.LENGTH_SHORT).show()
-            );
+            btnHelpCenter.setOnClickListener(v -> {
+                Intent intent = new Intent(SettingsActivity.this, HelpCenterActivity.class);
+                startActivity(intent);
+            });
+        }
+
+        if (btnHelpInbox != null) {
+            btnHelpInbox.setOnClickListener(v -> {
+                Intent intent = new Intent(SettingsActivity.this, HelpInboxActivity.class);
+                startActivity(intent);
+            });
         }
 
         if (btnTerms != null) {
