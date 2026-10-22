@@ -205,6 +205,12 @@ public class HomeActivity extends AppCompatActivity {
         if (btnShare1 != null) btnShare1.setOnClickListener(openShare);
         if (btnShare2 != null) btnShare2.setOnClickListener(openShare);
         if (btnShare3 != null) btnShare3.setOnClickListener(openShare);
+
+        // Options (3 dots)
+        ImageView btnOptions1 = findViewById(R.id.btnOptions1);
+        if (btnOptions1 != null) {
+            btnOptions1.setOnClickListener(v -> openPostOptionsBottomSheet());
+        }
     }
 
     private void openCommentsBottomSheet() {
@@ -228,6 +234,22 @@ public class HomeActivity extends AppCompatActivity {
         View btnCloseShare = dialogView.findViewById(R.id.btnCloseShare);
         if (btnCloseShare != null) {
             btnCloseShare.setOnClickListener(v -> bottomSheetDialog.dismiss());
+        }
+
+        bottomSheetDialog.show();
+    }
+    private void openPostOptionsBottomSheet() {
+        View dialogView = getLayoutInflater().inflate(R.layout.layout_dialog_post_options, null);
+        BottomSheetDialog bottomSheetDialog = new BottomSheetDialog(HomeActivity.this);
+        bottomSheetDialog.setContentView(dialogView);
+
+        View btnReportPost = dialogView.findViewById(R.id.btnReportPost);
+        if (btnReportPost != null) {
+            btnReportPost.setOnClickListener(v -> {
+                bottomSheetDialog.dismiss();
+                Intent intent = new Intent(HomeActivity.this, ReportContentActivity.class);
+                startActivity(intent);
+            });
         }
 
         bottomSheetDialog.show();

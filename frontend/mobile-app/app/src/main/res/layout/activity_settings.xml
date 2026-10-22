@@ -472,6 +472,49 @@
                     android:layout_height="1dp"
                     android:background="#E9EBF4" />
 
+                <!-- Hộp thư hỗ trợ -->
+                <LinearLayout
+                    android:id="@+id/btnHelpInbox"
+                    android:layout_width="match_parent"
+                    android:layout_height="52dp"
+                    android:background="?attr/selectableItemBackground"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:gravity="center_vertical"
+                    android:paddingHorizontal="16dp">
+
+                    <ImageView
+                        android:layout_width="24dp"
+                        android:layout_height="24dp"
+                        android:contentDescription="Hộp thư"
+                        android:src="@drawable/ic_mail"
+                        app:tint="#505568" />
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="12dp"
+                        android:layout_weight="1"
+                        android:text="Hộp thư hỗ trợ"
+                        android:textColor="#141B2B"
+                        android:textSize="15sp"
+                        android:textStyle="bold" />
+
+                    <ImageView
+                        android:layout_width="20dp"
+                        android:layout_height="20dp"
+                        android:contentDescription="Mở"
+                        android:src="@drawable/ic_chevron_right"
+                        app:tint="#8E93A6" />
+                </LinearLayout>
+
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="1dp"
+                    android:layout_marginStart="52dp"
+                    android:layout_marginEnd="16dp"
+                    android:background="#E9EBF4" />
+
                 <LinearLayout
                     android:id="@+id/btnTerms"
                     android:layout_width="match_parent"

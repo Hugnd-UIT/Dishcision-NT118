@@ -1,7 +1,10 @@
 package com.example.dishcision;
 
 import android.os.Bundle;
+import android.widget.Button;
 import android.widget.ImageView;
+import android.content.Intent;
+import android.widget.Toast;
 
 import androidx.activity.EdgeToEdge;
 import androidx.appcompat.app.AppCompatActivity;
@@ -10,7 +13,6 @@ import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 
 public class PrivacyPolicyActivity extends AppCompatActivity {
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -26,6 +28,14 @@ public class PrivacyPolicyActivity extends AppCompatActivity {
         ImageView btnBack = findViewById(R.id.btnBack);
         if (btnBack != null) {
             btnBack.setOnClickListener(v -> finish());
+        }
+
+        Button btnPrivacySettings = findViewById(R.id.btnPrivacySettings);
+        if (btnPrivacySettings != null) {
+            btnPrivacySettings.setOnClickListener(v -> {
+                Intent intent = new Intent(this, PrivacySettingsActivity.class);
+                startActivity(intent);
+            });
         }
     }
 }
