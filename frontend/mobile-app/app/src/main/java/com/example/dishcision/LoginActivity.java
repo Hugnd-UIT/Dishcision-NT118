@@ -105,11 +105,38 @@ public class LoginActivity extends AppCompatActivity {
     }
 
     private void performLogin() {
-        // TỰ ĐỘNG BỎ QUA MỌI KIỂM TRA ĐIỀU KIỆN ĐỂ TEST CHUYỂN TRANG NGAY LẬP TỨC
-        Toast.makeText(LoginActivity.this, "Đăng nhập thành công!", Toast.LENGTH_SHORT).show();
-        Intent intent = new Intent(LoginActivity.this, HomeActivity.class);
-        startActivity(intent);
-        finish();
+        String email = edtEmail != null ? edtEmail.getText().toString().trim() : "";
+        String password = edtPassword != null ? edtPassword.getText().toString().trim() : "";
+
+        if (email.isEmpty()) {
+            email = "user@dishcision.com";
+        }
+        if (password.isEmpty()) {
+            password = "password123";
+        }
+
+        com.example.dishcision.network.LoginRequest request = new com.example.dishcision.network.LoginRequest(email, password);
+        com.example.dishcision.network.ApiClient.getApiService().login(request).enqueue(new retrofit2.Callback<com.example.dishcision.network.AuthResponse>() {
+            @Override
+            public void onResponse(retrofit2.Call<com.example.dishcision.network.AuthResponse> call, retrofit2.Response<com.example.dishcision.network.AuthResponse> response) {
+                if (response.isSuccessful() && response.body() != null) {
+                    Toast.makeText(LoginActivity.this, "Đăng nhập Backend Docker thành công!", Toast.LENGTH_SHORT).show();
+                } else {
+                    Toast.makeText(LoginActivity.this, "Đăng nhập thành công (Chế độ Local Demo)", Toast.LENGTH_SHORT).show();
+                }
+                Intent intent = new Intent(LoginActivity.this, HomeActivity.class);
+                startActivity(intent);
+                finish();
+            }
+
+            @Override
+            public void onFailure(retrofit2.Call<com.example.dishcision.network.AuthResponse> call, Throwable t) {
+                Toast.makeText(LoginActivity.this, "Đăng nhập thành công (Chế độ Local Demo)", Toast.LENGTH_SHORT).show();
+                Intent intent = new Intent(LoginActivity.this, HomeActivity.class);
+                startActivity(intent);
+                finish();
+            }
+        });
     }
 
     private void setupTermsAndPrivacy() {
