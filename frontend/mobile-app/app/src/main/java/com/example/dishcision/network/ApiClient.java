@@ -9,8 +9,24 @@ import retrofit2.converter.gson.GsonConverterFactory;
 
 public class ApiClient {
 
-    public static final String BASE_URL = "http://192.168.33.115:3000/api/v1/";
+    // 10.0.2.2 là IP đại diện cho localhost của máy tính host khi chạy trên Android Emulator.
+    // Nếu chạy trên máy thật, có thể gọi setBaseUrl("http://IP_CUA_MAY_TINH:3000/api/v1/");
+    private static String baseUrl = "http://10.0.2.2:3000/api/v1/";
     private static Retrofit retrofit = null;
+
+    public static void setBaseUrl(String newBaseUrl) {
+        if (newBaseUrl != null && !newBaseUrl.isEmpty()) {
+            if (!newBaseUrl.endsWith("/")) {
+                newBaseUrl += "/";
+            }
+            baseUrl = newBaseUrl;
+            retrofit = null; // Re-initialize Retrofit instance with new URL
+        }
+    }
+
+    public static String getBaseUrl() {
+        return baseUrl;
+    }
 
     public static ApiService getApiService() {
         if (retrofit == null) {
@@ -19,13 +35,13 @@ public class ApiClient {
 
             OkHttpClient okHttpClient = new OkHttpClient.Builder()
                     .addInterceptor(loggingInterceptor)
-                    .connectTimeout(30, TimeUnit.SECONDS)
-                    .readTimeout(30, TimeUnit.SECONDS)
-                    .writeTimeout(30, TimeUnit.SECONDS)
+                    .connectTimeout(15, TimeUnit.SECONDS)
+                    .readTimeout(15, TimeUnit.SECONDS)
+                    .writeTimeout(15, TimeUnit.SECONDS)
                     .build();
 
             retrofit = new Retrofit.Builder()
-                    .baseUrl(BASE_URL)
+                    .baseUrl(baseUrl)
                     .client(okHttpClient)
                     .addConverterFactory(GsonConverterFactory.create())
                     .build();

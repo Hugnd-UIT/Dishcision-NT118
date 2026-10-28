@@ -4,6 +4,7 @@ import android.content.Intent;
 import android.graphics.Typeface;
 import android.os.Bundle;
 import android.view.MenuItem;
+import android.view.View;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
@@ -82,6 +83,38 @@ public class MyReviewsActivity extends AppCompatActivity {
                 intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
                 startActivity(intent);
                 finish();
+            });
+        }
+
+        LinearLayout navDecide = findViewById(R.id.navDecide);
+        if (navDecide != null) {
+            navDecide.setOnClickListener(v -> {
+                Intent intent = new Intent(MyReviewsActivity.this, DecideActivity.class);
+                startActivity(intent);
+            });
+        }
+
+        View navAdd = findViewById(R.id.navAdd);
+        if (navAdd != null) {
+            navAdd.setOnClickListener(v -> {
+                Intent intent = new Intent(MyReviewsActivity.this, WriteReviewActivity.class);
+                startActivity(intent);
+            });
+        }
+
+        LinearLayout navMessage = findViewById(R.id.navMessage);
+        if (navMessage != null) {
+            navMessage.setOnClickListener(v -> {
+                Intent intent = new Intent(MyReviewsActivity.this, MessagesInboxActivity.class);
+                startActivity(intent);
+            });
+        }
+
+        LinearLayout navProfile = findViewById(R.id.navProfile);
+        if (navProfile != null) {
+            navProfile.setOnClickListener(v -> {
+                Intent intent = new Intent(MyReviewsActivity.this, ProfileActivity.class);
+                startActivity(intent);
             });
         }
 

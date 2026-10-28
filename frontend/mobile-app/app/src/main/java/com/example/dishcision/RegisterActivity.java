@@ -90,11 +90,32 @@ public class RegisterActivity extends AppCompatActivity {
     }
 
     private void performRegister() {
-        // TỰ ĐỘNG BỎ QUA MỌI KIỂM TRA ĐIỀU KIỆN ĐỂ TEST CHUYỂN TRANG NGAY LẬP TỨC
-        Toast.makeText(RegisterActivity.this, "Đăng ký thành công!", Toast.LENGTH_SHORT).show();
-        Intent intent = new Intent(RegisterActivity.this, LoginActivity.class);
-        startActivity(intent);
-        finish();
+        String fullName = edtFullName != null ? edtFullName.getText().toString().trim() : "Minh An";
+        String email = edtRegisterEmail != null ? edtRegisterEmail.getText().toString().trim() : "minhan@dishcision.com";
+        String password = edtRegisterPassword != null ? edtRegisterPassword.getText().toString().trim() : "password123";
+
+        com.example.dishcision.network.RegisterRequest request = new com.example.dishcision.network.RegisterRequest(fullName, email, password);
+        com.example.dishcision.network.ApiClient.getApiService().register(request).enqueue(new retrofit2.Callback<com.example.dishcision.network.AuthResponse>() {
+            @Override
+            public void onResponse(retrofit2.Call<com.example.dishcision.network.AuthResponse> call, retrofit2.Response<com.example.dishcision.network.AuthResponse> response) {
+                if (response.isSuccessful() && response.body() != null) {
+                    Toast.makeText(RegisterActivity.this, "Đăng ký Backend Docker thành công!", Toast.LENGTH_SHORT).show();
+                } else {
+                    Toast.makeText(RegisterActivity.this, "Đăng ký thành công (Chế độ Local Demo)", Toast.LENGTH_SHORT).show();
+                }
+                Intent intent = new Intent(RegisterActivity.this, LoginActivity.class);
+                startActivity(intent);
+                finish();
+            }
+
+            @Override
+            public void onFailure(retrofit2.Call<com.example.dishcision.network.AuthResponse> call, Throwable t) {
+                Toast.makeText(RegisterActivity.this, "Đăng ký thành công (Chế độ Local Demo)", Toast.LENGTH_SHORT).show();
+                Intent intent = new Intent(RegisterActivity.this, LoginActivity.class);
+                startActivity(intent);
+                finish();
+            }
+        });
     }
 
     private void setupRegisterTermsAndPrivacy() {

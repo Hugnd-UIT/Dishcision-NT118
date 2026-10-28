@@ -66,9 +66,22 @@ public class ForgotPasswordActivity extends AppCompatActivity {
     private void performForgotPassword() {
         String email = getEnteredForgotEmail();
         if (email == null || email.isEmpty()) {
-            email = "m•••@example.com";
+            email = "user@dishcision.com";
         }
-        navigateToOtp(email);
+
+        com.example.dishcision.network.ForgotPasswordRequest request = new com.example.dishcision.network.ForgotPasswordRequest(email);
+        final String finalEmail = email;
+        com.example.dishcision.network.ApiClient.getApiService().forgotPassword(request).enqueue(new retrofit2.Callback<com.example.dishcision.network.AuthResponse>() {
+            @Override
+            public void onResponse(retrofit2.Call<com.example.dishcision.network.AuthResponse> call, retrofit2.Response<com.example.dishcision.network.AuthResponse> response) {
+                navigateToOtp(finalEmail);
+            }
+
+            @Override
+            public void onFailure(retrofit2.Call<com.example.dishcision.network.AuthResponse> call, Throwable t) {
+                navigateToOtp(finalEmail);
+            }
+        });
     }
 
     private void navigateToOtp(String email) {

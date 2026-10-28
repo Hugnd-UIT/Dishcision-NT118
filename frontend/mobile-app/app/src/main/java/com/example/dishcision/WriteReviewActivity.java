@@ -73,9 +73,10 @@ public class WriteReviewActivity extends AppCompatActivity {
         }
 
         if (btnChangeRestaurant != null) {
-            btnChangeRestaurant.setOnClickListener(v ->
-                Toast.makeText(this, "Chọn quán khác để đánh giá", Toast.LENGTH_SHORT).show()
-            );
+            btnChangeRestaurant.setOnClickListener(v -> {
+                android.content.Intent intent = new android.content.Intent(WriteReviewActivity.this, FavoriteRestaurantsActivity.class);
+                startActivity(intent);
+            });
         }
 
         setupStarListeners();
