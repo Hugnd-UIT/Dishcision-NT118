@@ -17,6 +17,7 @@ public class SettingsActivity extends AppCompatActivity {
 
     private ImageView btnBack;
     private LinearLayout btnAccountManagement;
+    private LinearLayout btnSecurityLogin;
     private LinearLayout btnChangePassword;
     private LinearLayout btnPrivacy;
 
@@ -54,6 +55,7 @@ public class SettingsActivity extends AppCompatActivity {
     private void initViews() {
         btnBack = findViewById(R.id.btnBack);
         btnAccountManagement = findViewById(R.id.btnAccountManagement);
+        btnSecurityLogin = findViewById(R.id.btnSecurityLogin);
         btnChangePassword = findViewById(R.id.btnChangePassword);
         btnPrivacy = findViewById(R.id.btnPrivacy);
 
@@ -81,6 +83,13 @@ public class SettingsActivity extends AppCompatActivity {
         if (btnAccountManagement != null) {
             btnAccountManagement.setOnClickListener(v -> {
                 Intent intent = new Intent(SettingsActivity.this, EditProfileActivity.class);
+                startActivity(intent);
+            });
+        }
+
+        if (btnSecurityLogin != null) {
+            btnSecurityLogin.setOnClickListener(v -> {
+                Intent intent = new Intent(SettingsActivity.this, SecurityLoginActivity.class);
                 startActivity(intent);
             });
         }

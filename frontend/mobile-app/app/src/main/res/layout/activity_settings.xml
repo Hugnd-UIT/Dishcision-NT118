@@ -162,6 +162,45 @@
                     android:background="#E9EBF4" />
 
                 <LinearLayout
+                    android:id="@+id/btnSecurityLogin"
+                    android:layout_width="match_parent"
+                    android:layout_height="52dp"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:foreground="?attr/selectableItemBackground"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <ImageView
+                        android:layout_width="20dp"
+                        android:layout_height="20dp"
+                        android:contentDescription="@string/security_login_title"
+                        android:src="@drawable/ic_shield"
+                        app:tint="#141B2B" />
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="12dp"
+                        android:layout_weight="1"
+                        android:text="@string/security_login_title"
+                        android:textColor="#141B2B"
+                        android:textSize="15sp" />
+
+                    <ImageView
+                        android:layout_width="16dp"
+                        android:layout_height="16dp"
+                        android:contentDescription="Arrow"
+                        android:src="@drawable/ic_arrow_right"
+                        app:tint="#6B7280" />
+                </LinearLayout>
+
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="1dp"
+                    android:background="#E9EBF4" />
+
+                <LinearLayout
                     android:id="@+id/btnChangePassword"
                     android:layout_width="match_parent"
                     android:layout_height="52dp"

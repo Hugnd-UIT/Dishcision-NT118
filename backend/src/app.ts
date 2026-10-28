@@ -18,6 +18,7 @@ import searchRoutes from './routes/search.routes';
 import notificationRoutes from './routes/notification.routes';
 import reportRoutes from './routes/report.routes';
 import adminRoutes from './routes/admin.routes';
+import helpRoutes from './routes/help.routes';
 import { errorHandler } from './middlewares/error.middleware';
 import { notFound } from './middlewares/not-found.middleware';
 
@@ -69,6 +70,7 @@ app.use(`${API_PREFIX}/search`, searchRoutes);
 app.use(`${API_PREFIX}/notifications`, notificationRoutes);
 app.use(`${API_PREFIX}/reports`, reportRoutes);
 app.use(`${API_PREFIX}/admin`, adminRoutes);
+app.use(`${API_PREFIX}/help`, helpRoutes);
 
 // ── Error Handling ────────────────────────
 app.use(notFound);

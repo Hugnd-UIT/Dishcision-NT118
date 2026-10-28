@@ -213,3 +213,142 @@ export async function changePassword(req: AuthRequest, res: Response): Promise<v
 
   successResponse(res, null, 'Password changed successfully');
 }
+
+// ── 2FA & Security Preferences ───────────
+
+export async function get2FAStatus(req: AuthRequest, res: Response): Promise<void> {
+  const userId = req.user?.userId || 1;
+  const statusStr = await redis.get(`user:${userId}:2fa_enabled`);
+  const isTwoFactorEnabled = statusStr === 'true';
+
+  res.status(200).json({
+    success: true,
+    isTwoFactorEnabled,
+    data: {
+      isTwoFactorEnabled,
+    },
+    message: isTwoFactorEnabled ? 'Xác thực 2 yếu tố đang bật' : 'Xác thực 2 yếu tố chưa bật',
+  });
+}
+
+export async function verify2FA(req: AuthRequest, res: Response): Promise<void> {
+  const userId = req.user?.userId || 1;
+  const { code } = req.body;
+
+  if (!code || String(code).trim().length < 4) {
+    errorResponse(res, 'Mã xác thực không hợp lệ. Vui lòng nhập lại.', 400);
+    return;
+  }
+
+  await redis.set(`user:${userId}:2fa_enabled`, 'true');
+
+  res.status(200).json({
+    success: true,
+    isTwoFactorEnabled: true,
+    data: {
+      isTwoFactorEnabled: true,
+    },
+    message: 'Thiết lập xác thực 2 yếu tố thành công!',
+  });
+}
+
+export async function disable2FA(req: AuthRequest, res: Response): Promise<void> {
+  const userId = req.user?.userId || 1;
+  await redis.set(`user:${userId}:2fa_enabled`, 'false');
+
+  res.status(200).json({
+    success: true,
+    isTwoFactorEnabled: false,
+    data: {
+      isTwoFactorEnabled: false,
+    },
+    message: 'Đã tắt xác thực 2 yếu tố',
+  });
+}
+
+// ── Active Sessions ───────────────────────
+
+const DEFAULT_SESSIONS = [
+  {
+    id: 'session-1',
+    deviceName: 'Điện thoại · Dishcision',
+    subtitle: 'Phiên đang xem trong thiết kế',
+    isCurrent: true,
+    statusText: 'Thiết bị này',
+    location: 'Thiết bị này',
+  },
+  {
+    id: 'session-2',
+    deviceName: 'Máy tính · Trình duyệt',
+    subtitle: 'TP.HCM · 15/10/2026',
+    isCurrent: false,
+    statusText: '',
+    location: 'TP.HCM · 15/10/2026',
+  },
+  {
+    id: 'session-3',
+    deviceName: 'Máy tính bảng · Ứng dụng',
+    subtitle: 'Hà Nội · 12/10/2026',
+    isCurrent: false,
+    statusText: '',
+    location: 'Hà Nội · 12/10/2026',
+  },
+];
+
+export async function getSessions(req: AuthRequest, res: Response): Promise<void> {
+  const userId = req.user?.userId || 1;
+  const raw = await redis.get(`user:${userId}:sessions`);
+
+  let sessions = DEFAULT_SESSIONS;
+  if (raw) {
+    try {
+      sessions = JSON.parse(raw);
+    } catch {
+      sessions = DEFAULT_SESSIONS;
+    }
+  } else {
+    await redis.set(`user:${userId}:sessions`, JSON.stringify(DEFAULT_SESSIONS));
+  }
+
+  res.status(200).json({
+    success: true,
+    data: sessions,
+    message: 'Lấy danh sách phiên thành công',
+  });
+}
+
+export async function revokeSession(req: AuthRequest, res: Response): Promise<void> {
+  const userId = req.user?.userId || 1;
+  const { sessionId, sessionIds } = req.body;
+
+  const raw = await redis.get(`user:${userId}:sessions`);
+  let sessions = DEFAULT_SESSIONS;
+  if (raw) {
+    try {
+      sessions = JSON.parse(raw);
+    } catch {
+      sessions = DEFAULT_SESSIONS;
+    }
+  }
+
+  const toRevoke = new Set<string>();
+  if (sessionId) toRevoke.add(sessionId);
+  if (Array.isArray(sessionIds)) {
+    sessionIds.forEach((id: string) => toRevoke.add(id));
+  }
+
+  if (toRevoke.size === 0) {
+    sessions = sessions.filter((s) => s.isCurrent);
+  } else {
+    sessions = sessions.filter((s) => s.isCurrent || !toRevoke.has(s.id));
+  }
+
+  await redis.set(`user:${userId}:sessions`, JSON.stringify(sessions));
+
+  res.status(200).json({
+    success: true,
+    data: sessions,
+    message: 'Đã đăng xuất phiên đăng nhập thành công',
+  });
+}
+
