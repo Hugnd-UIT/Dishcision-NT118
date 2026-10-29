@@ -1,4 +1,5 @@
 import express from 'express';
+import path from 'path';
 import cors from 'cors';
 import helmet from 'helmet';
 import compression from 'compression';
@@ -45,7 +46,9 @@ import { notFound } from './middlewares/not-found.middleware';
 const app = express();
 
 // ── Security & Performance ───────────────
-app.use(helmet());
+app.use(helmet({
+  crossOriginResourcePolicy: { policy: 'cross-origin' },
+}));
 app.use(compression());
 app.use(cors({
   origin: process.env.CORS_ORIGIN?.split(',') || '*',
@@ -63,6 +66,10 @@ app.use(rateLimit({
 // ── Body Parsing ──────────────────────────
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
+
+// ── Static Files (Uploads: Images & Videos)
+const uploadsDir = path.resolve(process.cwd(), 'uploads');
+app.use('/uploads', express.static(uploadsDir));
 
 // ── Logging ───────────────────────────────
 if (process.env.NODE_ENV !== 'test') {

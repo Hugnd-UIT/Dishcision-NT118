@@ -10,8 +10,14 @@ import {
   deleteAddress,
 } from '../controllers/extra.controller';
 import { optionalAuth } from '../middlewares/auth.middleware';
+import { uploadSingleMedia, uploadMultipleMedia } from '../controllers/upload.controller';
+import { mediaUpload } from '../middlewares/upload.middleware';
 
 const router = Router();
+
+// General Upload Media (Images & Videos)
+router.post('/upload', optionalAuth, mediaUpload.single('file'), uploadSingleMedia);
+router.post('/upload/multiple', optionalAuth, mediaUpload.array('files', 10), uploadMultipleMedia);
 
 // Stories (StoryActivity, CreateStoryActivity)
 router.get('/stories', optionalAuth, getStories);

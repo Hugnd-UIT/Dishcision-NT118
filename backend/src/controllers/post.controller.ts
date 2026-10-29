@@ -222,10 +222,19 @@ export async function sharePost(req: AuthRequest, res: Response): Promise<void> 
   }
 }
 
+import { handleUploadedFile } from './upload.controller';
+
 // ── POST /posts/upload-media ──────────────
 
-export async function uploadMedia(_req: AuthRequest, res: Response): Promise<void> {
-  // TODO: Integrate with cloud storage (S3/Cloudinary/etc.)
-  // For now, return mock URL
-  successResponse(res, { url: `https://cdn.dishcision.com/posts/${Date.now()}.jpg` }, 'Upload successful');
+export async function uploadMedia(req: AuthRequest, res: Response): Promise<void> {
+  try {
+    if (req.file) {
+      const data = handleUploadedFile(req, req.file);
+      successResponse(res, data, 'Tải lên thành công');
+      return;
+    }
+    successResponse(res, { url: `/uploads/images/img-${Date.now()}.jpg` }, 'Upload successful (mock)');
+  } catch (error: any) {
+    errorResponse(res, error.message || 'Lỗi khi tải lên', 500);
+  }
 }

@@ -90,6 +90,8 @@ services:
       NODE_OPTIONS: "--max-old-space-size=384"
     ports:
       - "3000:3000"
+    volumes:
+      - ../backend/uploads:/app/uploads
     deploy:
       resources:
         limits:
