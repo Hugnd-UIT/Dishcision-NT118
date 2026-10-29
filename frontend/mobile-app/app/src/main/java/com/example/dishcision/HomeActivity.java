@@ -35,6 +35,7 @@ public class HomeActivity extends AppCompatActivity {
     private LinearLayout navProfile;
 
     // Sidebar Items
+    private LinearLayout menuForYou;
     private LinearLayout menuFavorites;
     private LinearLayout menuFollowing;
     private LinearLayout menuReviews;
@@ -83,6 +84,7 @@ public class HomeActivity extends AppCompatActivity {
         navMessages = findViewById(R.id.navMessages);
         navProfile = findViewById(R.id.navProfile);
 
+        menuForYou = findViewById(R.id.menuForYou);
         menuFavorites = findViewById(R.id.menuFavorites);
         menuFollowing = findViewById(R.id.menuFollowing);
         menuReviews = findViewById(R.id.menuReviews);
@@ -153,6 +155,14 @@ public class HomeActivity extends AppCompatActivity {
         }
 
         // Sidebar Menu
+        if (menuForYou != null) {
+            menuForYou.setOnClickListener(v -> {
+                if (drawerLayout != null) drawerLayout.closeDrawer(GravityCompat.START);
+                Intent intent = new Intent(HomeActivity.this, DecideActivity.class);
+                startActivity(intent);
+            });
+        }
+
         if (menuFavorites != null) {
             menuFavorites.setOnClickListener(v -> {
                 if (drawerLayout != null) drawerLayout.closeDrawer(GravityCompat.START);

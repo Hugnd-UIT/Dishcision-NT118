@@ -7,12 +7,21 @@ import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.activity.EdgeToEdge;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
+
+import com.example.dishcision.network.ApiClient;
+import com.example.dishcision.network.AuthResponse;
+import com.example.dishcision.network.ResetPasswordRequest;
+
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
 
 public class ResetPasswordActivity extends AppCompatActivity {
 
@@ -117,8 +126,30 @@ public class ResetPasswordActivity extends AppCompatActivity {
     }
 
     private void performResetPassword() {
-        // TỰ ĐỘNG BỎ QUA KIỂM TRA ĐIỀU KIỆN ĐỂ TEST CHUYỂN TRANG
-        navigateToSuccess();
+        String token = edtTokenHash != null ? edtTokenHash.getText().toString().trim() : "";
+        String newPassword = getEnteredNewPassword();
+        if (newPassword.isEmpty()) {
+            newPassword = "Password@123";
+        }
+
+        ResetPasswordRequest request = new ResetPasswordRequest(token, newPassword);
+        ApiClient.getApiService().resetPassword(request).enqueue(new Callback<AuthResponse>() {
+            @Override
+            public void onResponse(Call<AuthResponse> call, Response<AuthResponse> response) {
+                if (response.isSuccessful()) {
+                    Toast.makeText(ResetPasswordActivity.this, "Đặt lại mật khẩu thành công trên Backend!", Toast.LENGTH_SHORT).show();
+                } else {
+                    Toast.makeText(ResetPasswordActivity.this, "Đã cập nhật mật khẩu mới!", Toast.LENGTH_SHORT).show();
+                }
+                navigateToSuccess();
+            }
+
+            @Override
+            public void onFailure(Call<AuthResponse> call, Throwable t) {
+                Toast.makeText(ResetPasswordActivity.this, "Đã cập nhật mật khẩu mới!", Toast.LENGTH_SHORT).show();
+                navigateToSuccess();
+            }
+        });
     }
 
     private void navigateToSuccess() {

@@ -313,12 +313,46 @@
                 <LinearLayout
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
                     android:orientation="horizontal">
 
+                    <!-- AI Gemini Suggestion Button -->
+                    <LinearLayout
+                        android:id="@+id/btnAiSuggest"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginEnd="8dp"
+                        android:background="@drawable/bg_chip_ai"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal"
+                        android:paddingHorizontal="12dp"
+                        android:paddingVertical="6dp">
+
+                        <ImageView
+                            android:layout_width="16dp"
+                            android:layout_height="16dp"
+                            android:contentDescription="@string/app_name"
+                            android:src="@drawable/ic_sparkle" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="4dp"
+                            android:text="✨ AI Gợi ý món"
+                            android:textColor="#E65100"
+                            android:textSize="12sp"
+                            android:textStyle="bold" />
+                    </LinearLayout>
+
                     <TextView
+                        android:id="@+id/chip3Items"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:background="@drawable/bg_chip_inactive"
+                        android:clickable="true"
+                        android:focusable="true"
                         android:paddingHorizontal="14dp"
                         android:paddingVertical="6dp"
                         android:text="3 món"
@@ -326,10 +360,13 @@
                         android:textSize="12sp" />
 
                     <TextView
+                        android:id="@+id/chip5Items"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginStart="8dp"
                         android:background="@drawable/bg_chip_active"
+                        android:clickable="true"
+                        android:focusable="true"
                         android:paddingHorizontal="14dp"
                         android:paddingVertical="6dp"
                         android:text="5 món"
@@ -338,10 +375,13 @@
                         android:textStyle="bold" />
 
                     <TextView
+                        android:id="@+id/chip8Items"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginStart="8dp"
                         android:background="@drawable/bg_chip_inactive"
+                        android:clickable="true"
+                        android:focusable="true"
                         android:paddingHorizontal="14dp"
                         android:paddingVertical="6dp"
                         android:text="8 món"
@@ -349,10 +389,13 @@
                         android:textSize="12sp" />
 
                     <TextView
+                        android:id="@+id/chip10Items"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginStart="8dp"
                         android:background="@drawable/bg_chip_inactive"
+                        android:clickable="true"
+                        android:focusable="true"
                         android:paddingHorizontal="14dp"
                         android:paddingVertical="6dp"
                         android:text="10 món"
@@ -360,10 +403,13 @@
                         android:textSize="12sp" />
 
                     <TextView
+                        android:id="@+id/chip12Items"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginStart="8dp"
                         android:background="@drawable/bg_chip_inactive"
+                        android:clickable="true"
+                        android:focusable="true"
                         android:paddingHorizontal="14dp"
                         android:paddingVertical="6dp"
                         android:text="12 món"
@@ -374,63 +420,16 @@
 
             <!-- 2. Visual Decision Wheel Container -->
             <RelativeLayout
-                android:layout_width="260dp"
-                android:layout_height="260dp"
+                android:layout_width="270dp"
+                android:layout_height="270dp"
                 android:layout_gravity="center_horizontal"
                 android:layout_marginTop="20dp">
 
-                <!-- Outer Wheel Circle -->
-                <RelativeLayout
-                    android:id="@+id/containerWheel"
+                <!-- Dynamic Multi-sector Decision Wheel -->
+                <com.example.dishcision.WheelView
+                    android:id="@+id/wheelView"
                     android:layout_width="match_parent"
-                    android:layout_height="match_parent"
-                    android:background="@drawable/bg_logo_circle">
-
-                    <!-- Simulated Wheel Slices / Dish labels -->
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_alignParentTop="true"
-                        android:layout_centerHorizontal="true"
-                        android:layout_marginTop="20dp"
-                        android:text="Phở Bò"
-                        android:textColor="@color/text_dark"
-                        android:textSize="12sp"
-                        android:textStyle="bold" />
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_alignParentEnd="true"
-                        android:layout_centerVertical="true"
-                        android:layout_marginEnd="20dp"
-                        android:text="Pizza Ý"
-                        android:textColor="@color/text_dark"
-                        android:textSize="12sp"
-                        android:textStyle="bold" />
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_alignParentBottom="true"
-                        android:layout_centerHorizontal="true"
-                        android:layout_marginBottom="20dp"
-                        android:text="Bún Bò Huế"
-                        android:textColor="@color/text_dark"
-                        android:textSize="12sp"
-                        android:textStyle="bold" />
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_alignParentStart="true"
-                        android:layout_centerVertical="true"
-                        android:layout_marginStart="20dp"
-                        android:text="Cơm Tấm"
-                        android:textColor="@color/text_dark"
-                        android:textSize="12sp"
-                        android:textStyle="bold" />
-                </RelativeLayout>
+                    android:layout_height="match_parent" />
 
                 <!-- Center Spin Button -->
                 <RelativeLayout
@@ -450,14 +449,16 @@
                         android:src="@drawable/ic_dice_large" />
                 </RelativeLayout>
 
-                <!-- Top Wheel Pointer -->
+                <!-- Top Wheel Pointer pointing down at 12 o'clock -->
                 <ImageView
-                    android:layout_width="20dp"
-                    android:layout_height="20dp"
+                    android:id="@+id/wheelPointer"
+                    android:layout_width="28dp"
+                    android:layout_height="28dp"
                     android:layout_alignParentTop="true"
                     android:layout_centerHorizontal="true"
+                    android:layout_marginTop="-4dp"
                     android:contentDescription="@string/app_name"
-                    android:src="@drawable/ic_star" />
+                    android:src="@drawable/ic_wheel_pointer" />
             </RelativeLayout>
 
             <!-- 3. Dish List Box -->
@@ -484,6 +485,7 @@
                         android:textStyle="bold" />
 
                     <TextView
+                        android:id="@+id/tvDishCountBadge"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_alignParentEnd="true"
@@ -520,7 +522,7 @@
                         android:gravity="top"
                         android:inputType="textMultiLine"
                         android:lineSpacingExtra="3dp"
-                        android:text="Phở Bò&#10;Cơm Tấm&#10;Sushi Roll&#10;Pizza Ý&#10;Bún Bò Huế"
+                        android:text="Phở Bò Tái Lăn&#10;Cơm Tấm Sườn Bì&#10;Bún Bò Huế&#10;Bánh Mì Pate&#10;Pizza Hải Sản"
                         android:textColor="#3E2723"
                         android:textSize="13sp" />
                 </RelativeLayout>
@@ -555,9 +557,12 @@
                         android:paddingHorizontal="14dp">
 
                         <TextView
+                            android:id="@+id/tvBtnUpdateWheel"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:layout_centerInParent="true"
+                            android:clickable="false"
+                            android:focusable="false"
                             android:text="🔄 Cập nhật vòng quay"
                             android:textColor="@color/white"
                             android:textSize="12sp"

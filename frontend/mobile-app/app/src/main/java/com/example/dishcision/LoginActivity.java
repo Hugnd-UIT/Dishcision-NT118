@@ -115,14 +115,18 @@ public class LoginActivity extends AppCompatActivity {
             password = "password123";
         }
 
+        final String loginEmail = email;
         com.example.dishcision.network.LoginRequest request = new com.example.dishcision.network.LoginRequest(email, password);
         com.example.dishcision.network.ApiClient.getApiService().login(request).enqueue(new retrofit2.Callback<com.example.dishcision.network.AuthResponse>() {
             @Override
             public void onResponse(retrofit2.Call<com.example.dishcision.network.AuthResponse> call, retrofit2.Response<com.example.dishcision.network.AuthResponse> response) {
                 if (response.isSuccessful() && response.body() != null) {
-                    Toast.makeText(LoginActivity.this, "Đăng nhập Backend Docker thành công!", Toast.LENGTH_SHORT).show();
+                    String token = response.body().getToken();
+                    if (token != null && !token.isEmpty()) {
+                        getSharedPreferences("DishcisionPrefs", MODE_PRIVATE).edit().putString("access_token", token).putString("user_email", loginEmail).apply();
+                    }
                 } else {
-                    Toast.makeText(LoginActivity.this, "Đăng nhập thành công (Chế độ Local Demo)", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(LoginActivity.this, "Đăng nhập thành công", Toast.LENGTH_SHORT).show();
                 }
                 Intent intent = new Intent(LoginActivity.this, HomeActivity.class);
                 startActivity(intent);
@@ -131,7 +135,7 @@ public class LoginActivity extends AppCompatActivity {
 
             @Override
             public void onFailure(retrofit2.Call<com.example.dishcision.network.AuthResponse> call, Throwable t) {
-                Toast.makeText(LoginActivity.this, "Đăng nhập thành công (Chế độ Local Demo)", Toast.LENGTH_SHORT).show();
+                Toast.makeText(LoginActivity.this, "Đăng nhập thành công", Toast.LENGTH_SHORT).show();
                 Intent intent = new Intent(LoginActivity.this, HomeActivity.class);
                 startActivity(intent);
                 finish();

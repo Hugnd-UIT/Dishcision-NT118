@@ -4,6 +4,7 @@ import {
   login,
   logout,
   forgotPassword,
+  verifyOtp,
   resetPassword,
   changePassword,
   get2FAStatus,
@@ -26,10 +27,11 @@ const router = Router();
 
 router.post('/register', validate(registerSchema), register);
 router.post('/login', validate(loginSchema), login);
-router.post('/logout', authenticate, logout);
+router.post('/logout', optionalAuth, logout);
 router.post('/forgot-password', validate(forgotPasswordSchema), forgotPassword);
+router.post('/verify-otp', verifyOtp);
 router.post('/reset-password', validate(resetPasswordSchema), resetPassword);
-router.post('/change-password', authenticate, validate(changePasswordSchema), changePassword);
+router.post('/change-password', optionalAuth, validate(changePasswordSchema), changePassword);
 
 // 2FA Security
 router.get('/2fa/status', optionalAuth, get2FAStatus);
@@ -41,4 +43,3 @@ router.get('/sessions', optionalAuth, getSessions);
 router.post('/sessions/revoke', optionalAuth, revokeSession);
 
 export default router;
-

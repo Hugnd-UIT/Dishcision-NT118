@@ -1,0 +1,286 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="@drawable/bg_bottom_sheet"
+    android:orientation="vertical"
+    android:paddingHorizontal="20dp"
+    android:paddingTop="12dp"
+    android:paddingBottom="24dp">
+
+    <!-- Handle bar -->
+    <View
+        android:layout_width="40dp"
+        android:layout_height="4dp"
+        android:layout_gravity="center_horizontal"
+        android:background="@color/border_gray" />
+
+    <!-- Header -->
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="14dp">
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentStart="true"
+            android:layout_centerVertical="true"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <ImageView
+                android:layout_width="22dp"
+                android:layout_height="22dp"
+                android:contentDescription="@string/app_name"
+                android:src="@drawable/ic_sparkle" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="8dp"
+                android:text="AI Gemini Gợi Ý Món"
+                android:textColor="@color/text_dark"
+                android:textSize="18sp"
+                android:textStyle="bold" />
+        </LinearLayout>
+
+        <ImageView
+            android:id="@+id/btnCloseAiDialog"
+            android:layout_width="24dp"
+            android:layout_height="24dp"
+            android:layout_alignParentEnd="true"
+            android:layout_centerVertical="true"
+            android:clickable="true"
+            android:contentDescription="@string/app_name"
+            android:focusable="true"
+            android:src="@drawable/ic_close" />
+    </RelativeLayout>
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="4dp"
+        android:text="Mô tả tâm trạng hoặc khẩu vị, Google Gemini sẽ gợi ý 3 món ăn chuẩn gu Việt Nam cho bạn."
+        android:textColor="@color/text_gray"
+        android:textSize="12sp" />
+
+    <!-- Quick mood presets -->
+    <HorizontalScrollView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="12dp"
+        android:scrollbars="none">
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+
+            <TextView
+                android:id="@+id/chipMood1"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:background="@drawable/bg_chip_inactive"
+                android:clickable="true"
+                android:focusable="true"
+                android:paddingHorizontal="12dp"
+                android:paddingVertical="5dp"
+                android:text="🍲 Nước nóng ấm bụng"
+                android:textColor="@color/text_dark"
+                android:textSize="11sp" />
+
+            <TextView
+                android:id="@+id/chipMood2"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="6dp"
+                android:background="@drawable/bg_chip_inactive"
+                android:clickable="true"
+                android:focusable="true"
+                android:paddingHorizontal="12dp"
+                android:paddingVertical="5dp"
+                android:text="🥗 Thanh đạm ít mỡ"
+                android:textColor="@color/text_dark"
+                android:textSize="11sp" />
+
+            <TextView
+                android:id="@+id/chipMood3"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="6dp"
+                android:background="@drawable/bg_chip_inactive"
+                android:clickable="true"
+                android:focusable="true"
+                android:paddingHorizontal="12dp"
+                android:paddingVertical="5dp"
+                android:text="🌶️ Cay nồng kích thích"
+                android:textColor="@color/text_dark"
+                android:textSize="11sp" />
+
+            <TextView
+                android:id="@+id/chipMood4"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="6dp"
+                android:background="@drawable/bg_chip_inactive"
+                android:clickable="true"
+                android:focusable="true"
+                android:paddingHorizontal="12dp"
+                android:paddingVertical="5dp"
+                android:text="🥖 Ăn nhanh tiện lợi"
+                android:textColor="@color/text_dark"
+                android:textSize="11sp" />
+        </LinearLayout>
+    </HorizontalScrollView>
+
+    <!-- Custom prompt input -->
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="52dp"
+        android:layout_marginTop="12dp"
+        android:background="@drawable/bg_favorite_search"
+        android:paddingHorizontal="12dp">
+
+        <EditText
+            android:id="@+id/edtAiCraving"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="@null"
+            android:gravity="center_vertical"
+            android:hint="Bạn đang muốn ăn món như thế nào?"
+            android:text="Muốn ăn món ngon đậm đà giải tỏa mệt mỏi"
+            android:textColor="#3E2723"
+            android:textColorHint="#9E9E9E"
+            android:textSize="13sp" />
+    </RelativeLayout>
+
+    <!-- Call AI Button -->
+    <RelativeLayout
+        android:id="@+id/btnCallGemini"
+        android:layout_width="match_parent"
+        android:layout_height="44dp"
+        android:layout_marginTop="12dp"
+        android:background="@drawable/bg_button_primary"
+        android:clickable="true"
+        android:focusable="true">
+
+        <TextView
+            android:id="@+id/tvBtnCallGemini"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_centerInParent="true"
+            android:text="🤖 Nhờ Gemini 2.5 Flash Gợi Ý"
+            android:textColor="@color/white"
+            android:textSize="13sp"
+            android:textStyle="bold" />
+    </RelativeLayout>
+
+    <!-- Loading indicator -->
+    <ProgressBar
+        android:id="@+id/pbAiLoading"
+        android:layout_width="32dp"
+        android:layout_height="32dp"
+        android:layout_gravity="center_horizontal"
+        android:layout_marginTop="12dp"
+        android:visibility="gone" />
+
+    <!-- Results Section -->
+    <LinearLayout
+        android:id="@+id/containerAiResults"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="14dp"
+        android:background="@drawable/bg_input_field_light"
+        android:orientation="vertical"
+        android:padding="12dp"
+        android:visibility="gone">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="✨ Kết quả từ Google Gemini:"
+            android:textColor="@color/primary"
+            android:textSize="13sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/tvAiDish1"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
+            android:text="1. Phở Bò Tái Lăn"
+            android:textColor="@color/text_dark"
+            android:textSize="13sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/tvAiReason1"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="14dp"
+            android:text="Nước dùng ninh xương đậm đà, thơm mùi hành tỏi xào lăn."
+            android:textColor="@color/text_gray"
+            android:textSize="11sp" />
+
+        <TextView
+            android:id="@+id/tvAiDish2"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
+            android:text="2. Bún Bò Huế"
+            android:textColor="@color/text_dark"
+            android:textSize="13sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/tvAiReason2"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="14dp"
+            android:text="Vị cay nồng ấm bụng, kích thích vị giác giải tỏa mệt mỏi."
+            android:textColor="@color/text_gray"
+            android:textSize="11sp" />
+
+        <TextView
+            android:id="@+id/tvAiDish3"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
+            android:text="3. Bánh Mì Pate"
+            android:textColor="@color/text_dark"
+            android:textSize="13sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/tvAiReason3"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="14dp"
+            android:text="Nhanh gọn, tiện lợi và tiết kiệm ngân sách."
+            android:textColor="@color/text_gray"
+            android:textSize="11sp" />
+
+        <!-- Apply to Wheel Button -->
+        <RelativeLayout
+            android:id="@+id/btnApplyAiToWheel"
+            android:layout_width="match_parent"
+            android:layout_height="40dp"
+            android:layout_marginTop="12dp"
+            android:background="@drawable/bg_button_orange"
+            android:clickable="true"
+            android:focusable="true">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_centerInParent="true"
+                android:text="🎰 Đưa 3 món này vào vòng quay"
+                android:textColor="@color/white"
+                android:textSize="12sp"
+                android:textStyle="bold" />
+        </RelativeLayout>
+    </LinearLayout>
+
+</LinearLayout>
+

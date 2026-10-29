@@ -18,6 +18,9 @@ public interface ApiService {
     @POST("auth/forgot-password")
     Call<AuthResponse> forgotPassword(@Body ForgotPasswordRequest request);
 
+    @POST("auth/verify-otp")
+    Call<AuthResponse> verifyOtp(@Body VerifyOtpRequest request);
+
     @POST("auth/reset-password")
     Call<AuthResponse> resetPassword(@Body ResetPasswordRequest request);
 
@@ -26,6 +29,9 @@ public interface ApiService {
             @Header("Authorization") String authHeader,
             @Body ChangePasswordRequest request
     );
+
+    @POST("ai/food-decide")
+    Call<FoodDecideResponse> foodDecide(@Body FoodDecideRequest request);
 
     @GET("accounts/blocked")
     Call<AccountsListResponse> getBlockedAccounts(@Header("Authorization") String authHeader);

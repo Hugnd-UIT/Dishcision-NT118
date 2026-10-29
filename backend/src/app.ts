@@ -19,6 +19,26 @@ import notificationRoutes from './routes/notification.routes';
 import reportRoutes from './routes/report.routes';
 import adminRoutes from './routes/admin.routes';
 import helpRoutes from './routes/help.routes';
+import extraRoutes from './routes/extra.routes';
+
+import {
+  getBlockedAccounts,
+  unblockAccount,
+  getRestrictedAccounts,
+  unrestrictAccount,
+  getPrivacySettings,
+  updatePrivacySettings,
+} from './controllers/user.controller';
+import {
+  getSessions,
+  revokeSession,
+  get2FAStatus,
+  disable2FA,
+  verify2FA,
+} from './controllers/auth.controller';
+import { createReport } from './controllers/report.controller';
+import { getTicketDetail, createTicket } from './controllers/help.controller';
+import { optionalAuth } from './middlewares/auth.middleware';
 import { errorHandler } from './middlewares/error.middleware';
 import { notFound } from './middlewares/not-found.middleware';
 
@@ -35,7 +55,7 @@ app.use(cors({
 // ── Rate Limiting ─────────────────────────
 app.use(rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 200,
+  max: 500,
   standardHeaders: true,
   legacyHeaders: false,
 }));
@@ -71,6 +91,35 @@ app.use(`${API_PREFIX}/notifications`, notificationRoutes);
 app.use(`${API_PREFIX}/reports`, reportRoutes);
 app.use(`${API_PREFIX}/admin`, adminRoutes);
 app.use(`${API_PREFIX}/help`, helpRoutes);
+app.use(`${API_PREFIX}`, extraRoutes);
+
+// ── Mobile App Compatibility Aliases ─────
+// (Cho phép mobile-app gọi các đường dẫn ngắn mà không bị 404)
+app.get(`${API_PREFIX}/accounts/blocked`, optionalAuth, getBlockedAccounts);
+app.post(`${API_PREFIX}/accounts/unblock`, optionalAuth, unblockAccount);
+app.get(`${API_PREFIX}/accounts/restricted`, optionalAuth, getRestrictedAccounts);
+app.post(`${API_PREFIX}/accounts/unrestrict`, optionalAuth, unrestrictAccount);
+
+app.get(`${API_PREFIX}/privacy`, optionalAuth, getPrivacySettings);
+app.post(`${API_PREFIX}/privacy/update`, optionalAuth, updatePrivacySettings);
+
+app.get(`${API_PREFIX}/sessions`, optionalAuth, getSessions);
+app.post(`${API_PREFIX}/sessions/revoke`, optionalAuth, revokeSession);
+
+app.get(`${API_PREFIX}/2fa/status`, optionalAuth, get2FAStatus);
+app.post(`${API_PREFIX}/2fa/verify`, optionalAuth, verify2FA);
+app.post(`${API_PREFIX}/2fa/disable`, optionalAuth, disable2FA);
+
+app.post(`${API_PREFIX}/report`, optionalAuth, (req, res) => {
+  if (!req.body.reason) req.body.reason = 'Other';
+  createReport(req, res);
+});
+
+app.get(`${API_PREFIX}/help/ticket`, optionalAuth, (req, res) => {
+  req.params.ticketId = (req.query.ticketId as string) || '1';
+  getTicketDetail(req, res);
+});
+app.post(`${API_PREFIX}/help/ticket`, optionalAuth, createTicket);
 
 // ── Error Handling ────────────────────────
 app.use(notFound);

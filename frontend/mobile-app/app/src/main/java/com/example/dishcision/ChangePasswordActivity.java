@@ -114,7 +114,7 @@ public class ChangePasswordActivity extends AppCompatActivity {
                 }
 
                 com.example.dishcision.network.ChangePasswordRequest request = new com.example.dishcision.network.ChangePasswordRequest(currentPass, newPass);
-                com.example.dishcision.network.ApiClient.getApiService().changePassword("Bearer demo_token", request).enqueue(new retrofit2.Callback<com.example.dishcision.network.AuthResponse>() {
+                com.example.dishcision.network.ApiClient.getApiService().changePassword(com.example.dishcision.network.ApiClient.getAuthHeader(ChangePasswordActivity.this), request).enqueue(new retrofit2.Callback<com.example.dishcision.network.AuthResponse>() {
                     @Override
                     public void onResponse(retrofit2.Call<com.example.dishcision.network.AuthResponse> call, retrofit2.Response<com.example.dishcision.network.AuthResponse> response) {
                         Toast.makeText(ChangePasswordActivity.this, "Đã cập nhật mật khẩu trên Backend Docker!", Toast.LENGTH_SHORT).show();

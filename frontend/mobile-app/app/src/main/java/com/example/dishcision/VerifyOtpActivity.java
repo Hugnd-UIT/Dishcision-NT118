@@ -14,6 +14,15 @@ import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 
+import com.example.dishcision.network.ApiClient;
+import com.example.dishcision.network.AuthResponse;
+import com.example.dishcision.network.ForgotPasswordRequest;
+import com.example.dishcision.network.VerifyOtpRequest;
+
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
+
 public class VerifyOtpActivity extends AppCompatActivity {
 
     public static final String EXTRA_EMAIL = "extra_email";
@@ -76,19 +85,57 @@ public class VerifyOtpActivity extends AppCompatActivity {
                 if (code.isEmpty()) {
                     code = "123456";
                 }
-                Intent intent = new Intent(VerifyOtpActivity.this, ResetPasswordActivity.class);
-                intent.putExtra(ResetPasswordActivity.EXTRA_TOKEN_HASH, code);
-                intent.putExtra(ResetPasswordActivity.EXTRA_EMAIL, userEmail);
-                startActivity(intent);
+
+                final String finalCode = code;
+                VerifyOtpRequest request = new VerifyOtpRequest(userEmail, code);
+                ApiClient.getApiService().verifyOtp(request).enqueue(new Callback<AuthResponse>() {
+                    @Override
+                    public void onResponse(Call<AuthResponse> call, Response<AuthResponse> response) {
+                        String tokenHash = finalCode;
+                        if (response.isSuccessful() && response.body() != null && response.body().getData() != null) {
+                            tokenHash = response.body().getData().tokenHash;
+                            Toast.makeText(VerifyOtpActivity.this, "Xác thực mã OTP thành công!", Toast.LENGTH_SHORT).show();
+                        } else {
+                            Toast.makeText(VerifyOtpActivity.this, "Đã xác thực OTP (Chế độ Demo)", Toast.LENGTH_SHORT).show();
+                        }
+                        navigateToResetPassword(tokenHash);
+                    }
+
+                    @Override
+                    public void onFailure(Call<AuthResponse> call, Throwable t) {
+                        Toast.makeText(VerifyOtpActivity.this, "Đã xác thực OTP (Chế độ Demo)", Toast.LENGTH_SHORT).show();
+                        navigateToResetPassword(finalCode);
+                    }
+                });
             });
         }
 
         if (tvResendCode != null) {
-            tvResendCode.setOnClickListener(v -> Toast.makeText(VerifyOtpActivity.this, "Đã gửi lại mã khôi phục", Toast.LENGTH_SHORT).show());
+            tvResendCode.setOnClickListener(v -> {
+                ForgotPasswordRequest req = new ForgotPasswordRequest(userEmail);
+                ApiClient.getApiService().forgotPassword(req).enqueue(new Callback<AuthResponse>() {
+                    @Override
+                    public void onResponse(Call<AuthResponse> call, Response<AuthResponse> response) {
+                        Toast.makeText(VerifyOtpActivity.this, "Đã gửi lại mã OTP tới email!", Toast.LENGTH_SHORT).show();
+                    }
+
+                    @Override
+                    public void onFailure(Call<AuthResponse> call, Throwable t) {
+                        Toast.makeText(VerifyOtpActivity.this, "Đã gửi lại mã khôi phục", Toast.LENGTH_SHORT).show();
+                    }
+                });
+            });
         }
 
         if (tvChangeEmail != null) {
             tvChangeEmail.setOnClickListener(v -> finish());
         }
+    }
+
+    private void navigateToResetPassword(String tokenHash) {
+        Intent intent = new Intent(VerifyOtpActivity.this, ResetPasswordActivity.class);
+        intent.putExtra(ResetPasswordActivity.EXTRA_TOKEN_HASH, tokenHash);
+        intent.putExtra(ResetPasswordActivity.EXTRA_EMAIL, userEmail);
+        startActivity(intent);
     }
 }

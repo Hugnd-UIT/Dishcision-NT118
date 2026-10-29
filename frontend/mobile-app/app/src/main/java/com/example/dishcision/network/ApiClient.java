@@ -1,5 +1,7 @@
 package com.example.dishcision.network;
 
+import android.content.Context;
+import android.content.SharedPreferences;
 import java.util.concurrent.TimeUnit;
 
 import okhttp3.OkHttpClient;
@@ -26,6 +28,16 @@ public class ApiClient {
 
     public static String getBaseUrl() {
         return baseUrl;
+    }
+
+    public static String getAuthHeader(Context context) {
+        if (context == null) return "Bearer demo_token";
+        SharedPreferences prefs = context.getSharedPreferences("DishcisionPrefs", Context.MODE_PRIVATE);
+        String token = prefs.getString("access_token", null);
+        if (token != null && !token.isEmpty()) {
+            return "Bearer " + token;
+        }
+        return "Bearer demo_token";
     }
 
     public static ApiService getApiService() {
