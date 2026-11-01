@@ -131,12 +131,6 @@ public class LoginActivity extends AppCompatActivity {
         LoginRequest request = new LoginRequest(email, password);
 
         ApiClient.getApiService().login(request).enqueue(new Callback<AuthResponse>() {
-=======
->>>>>>> 648d6e366e5b7fd833bc6eeeeb0b9cf1c73109d0
-        final String loginEmail = email;
-        com.example.dishcision.network.LoginRequest request = new com.example.dishcision.network.LoginRequest(email, password);
-        com.example.dishcision.network.ApiClient.getApiService().login(request).enqueue(new retrofit2.Callback<com.example.dishcision.network.AuthResponse>() {
->>>>>>> 648d6e366e5b7fd833bc6eeeeb0b9cf1c73109d0
             @Override
             public void onResponse(Call<AuthResponse> call, Response<AuthResponse> response) {
                 if (response.isSuccessful() && response.body() != null) {
@@ -158,22 +152,6 @@ public class LoginActivity extends AppCompatActivity {
                         errorMsg = "Tài khoản hoặc mật khẩu không hợp lệ!";
                     }
                     Toast.makeText(LoginActivity.this, "Đăng nhập thất bại: " + errorMsg, Toast.LENGTH_LONG).show();
-=======
-                    String token = response.body().getToken();
-                    if (token != null && !token.isEmpty()) {
-                        getSharedPreferences("DishcisionPrefs", MODE_PRIVATE).edit().putString("access_token", token).putString("user_email", loginEmail).apply();
-                    }
-                } else {
-                    Toast.makeText(LoginActivity.this, "Đăng nhập thành công", Toast.LENGTH_SHORT).show();
->>>>>>> 648d6e366e5b7fd833bc6eeeeb0b9cf1c73109d0
-=======
-                    String token = response.body().getToken();
-                    if (token != null && !token.isEmpty()) {
-                        getSharedPreferences("DishcisionPrefs", MODE_PRIVATE).edit().putString("access_token", token).putString("user_email", loginEmail).apply();
-                    }
-                } else {
-                    Toast.makeText(LoginActivity.this, "Đăng nhập thành công", Toast.LENGTH_SHORT).show();
->>>>>>> 648d6e366e5b7fd833bc6eeeeb0b9cf1c73109d0
                 }
             }
 

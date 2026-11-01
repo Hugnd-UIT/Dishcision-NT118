@@ -15,6 +15,15 @@ import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 
+import com.example.dishcision.network.ApiClient;
+import com.example.dishcision.network.AuthResponse;
+import com.example.dishcision.network.ChangePasswordRequest;
+import com.example.dishcision.network.TokenManager;
+
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
+
 public class ChangePasswordActivity extends AppCompatActivity {
 
     private ImageView btnBack;
@@ -113,19 +122,13 @@ public class ChangePasswordActivity extends AppCompatActivity {
                     return;
                 }
 
-                com.example.dishcision.network.TokenManager tokenManager = new com.example.dishcision.network.TokenManager(ChangePasswordActivity.this);
+                TokenManager tokenManager = new TokenManager(ChangePasswordActivity.this);
                 String authToken = tokenManager.getFormattedToken();
 
-                com.example.dishcision.network.ChangePasswordRequest request = new com.example.dishcision.network.ChangePasswordRequest(currentPass, newPass);
-                com.example.dishcision.network.ApiClient.getApiService().changePassword(authToken, request).enqueue(new retrofit2.Callback<com.example.dishcision.network.AuthResponse>() {
-=======
-                com.example.dishcision.network.ApiClient.getApiService().changePassword(com.example.dishcision.network.ApiClient.getAuthHeader(ChangePasswordActivity.this), request).enqueue(new retrofit2.Callback<com.example.dishcision.network.AuthResponse>() {
->>>>>>> 648d6e366e5b7fd833bc6eeeeb0b9cf1c73109d0
-=======
-                com.example.dishcision.network.ApiClient.getApiService().changePassword(com.example.dishcision.network.ApiClient.getAuthHeader(ChangePasswordActivity.this), request).enqueue(new retrofit2.Callback<com.example.dishcision.network.AuthResponse>() {
->>>>>>> 648d6e366e5b7fd833bc6eeeeb0b9cf1c73109d0
+                ChangePasswordRequest request = new ChangePasswordRequest(currentPass, newPass);
+                ApiClient.getApiService().changePassword(authToken, request).enqueue(new Callback<AuthResponse>() {
                     @Override
-                    public void onResponse(retrofit2.Call<com.example.dishcision.network.AuthResponse> call, retrofit2.Response<com.example.dishcision.network.AuthResponse> response) {
+                    public void onResponse(Call<AuthResponse> call, Response<AuthResponse> response) {
                         if (response.isSuccessful()) {
                             Toast.makeText(ChangePasswordActivity.this, "Đã cập nhật mật khẩu thành công!", Toast.LENGTH_SHORT).show();
                             finish();
@@ -141,7 +144,7 @@ public class ChangePasswordActivity extends AppCompatActivity {
                     }
 
                     @Override
-                    public void onFailure(retrofit2.Call<com.example.dishcision.network.AuthResponse> call, Throwable t) {
+                    public void onFailure(Call<AuthResponse> call, Throwable t) {
                         Toast.makeText(ChangePasswordActivity.this, "Lỗi kết nối Server API: " + t.getMessage(), Toast.LENGTH_LONG).show();
                     }
                 });

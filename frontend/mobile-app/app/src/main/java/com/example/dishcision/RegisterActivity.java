@@ -134,18 +134,23 @@ public class RegisterActivity extends AppCompatActivity {
             return;
         }
 
+        Toast.makeText(this, "⏳ Đang xử lý đăng ký tài khoản...", Toast.LENGTH_SHORT).show();
+        if (btnRegister != null) btnRegister.setEnabled(false);
+
         TokenManager tokenManager = new TokenManager(this);
         RegisterRequest request = new RegisterRequest(fullName, email, password);
 
         ApiClient.getApiService().register(request).enqueue(new Callback<AuthResponse>() {
             @Override
             public void onResponse(Call<AuthResponse> call, Response<AuthResponse> response) {
+                if (btnRegister != null) btnRegister.setEnabled(true);
+
                 if (response.isSuccessful() && response.body() != null) {
                     AuthResponse authData = response.body();
                     String token = authData.getToken();
                     tokenManager.saveAuthData(token, email, fullName);
 
-                    Toast.makeText(RegisterActivity.this, "Đăng ký tài khoản thành công!", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(RegisterActivity.this, "🎉 Đăng ký tài khoản thành công!", Toast.LENGTH_SHORT).show();
                     Intent intent = new Intent(RegisterActivity.this, LoginActivity.class);
                     startActivity(intent);
                     finish();
@@ -170,7 +175,8 @@ public class RegisterActivity extends AppCompatActivity {
 
             @Override
             public void onFailure(Call<AuthResponse> call, Throwable t) {
-                Toast.makeText(RegisterActivity.this, "Lỗi kết nối Server API Docker: " + t.getMessage(), Toast.LENGTH_LONG).show();
+                if (btnRegister != null) btnRegister.setEnabled(true);
+                Toast.makeText(RegisterActivity.this, "Lỗi kết nối Server API: " + t.getMessage(), Toast.LENGTH_LONG).show();
             }
         });
     }
