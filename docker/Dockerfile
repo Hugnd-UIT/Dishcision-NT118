@@ -25,6 +25,9 @@ COPY --from=builder /app/dist* ./dist/
 COPY --from=builder /app/prisma* ./prisma/
 COPY package*.json ./
 
+RUN mkdir -p /app/uploads/images /app/uploads/videos && \
+    chown -R appuser:nodejs /app/uploads
+
 USER appuser
 EXPOSE 3000
 

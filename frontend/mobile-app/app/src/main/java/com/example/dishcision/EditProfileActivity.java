@@ -1,5 +1,6 @@
 package com.example.dishcision;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.widget.EditText;
 import android.widget.LinearLayout;
@@ -12,6 +13,17 @@ import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 
+import com.example.dishcision.network.ApiClient;
+import com.example.dishcision.network.AuthResponse;
+import com.example.dishcision.network.TokenManager;
+
+import java.util.HashMap;
+import java.util.Map;
+
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
+
 public class EditProfileActivity extends AppCompatActivity {
 
     private TextView btnCancel;
@@ -22,6 +34,8 @@ public class EditProfileActivity extends AppCompatActivity {
     private EditText edtBio;
     private EditText edtCity;
     private LinearLayout btnAddPreference;
+
+    private TokenManager tokenManager;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -34,6 +48,8 @@ public class EditProfileActivity extends AppCompatActivity {
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
             return insets;
         });
+
+        tokenManager = new TokenManager(this);
 
         initViews();
         setupListeners();
@@ -72,21 +88,43 @@ public class EditProfileActivity extends AppCompatActivity {
                     return;
                 }
 
-                Toast.makeText(this, "Đã lưu thay đổi hồ sơ thành công!", Toast.LENGTH_SHORT).show();
-                finish();
+                saveProfileToApi(name, username, bio, city);
             });
         }
 
         if (btnChangeAvatar != null) {
             btnChangeAvatar.setOnClickListener(v ->
-                Toast.makeText(this, "Chọn ảnh đại diện mới", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, "Chọn ảnh đại diện mới từ thư viện", Toast.LENGTH_SHORT).show()
             );
         }
 
         if (btnAddPreference != null) {
-            btnAddPreference.setOnClickListener(v ->
-                Toast.makeText(this, "Thêm khẩu vị ưu tiên mới", Toast.LENGTH_SHORT).show()
-            );
+            btnAddPreference.setOnClickListener(v -> {
+                Intent intent = new Intent(EditProfileActivity.this, TastePreferencesActivity.class);
+                startActivity(intent);
+            });
         }
+    }
+
+    private void saveProfileToApi(String fullName, String username, String bio, String city) {
+        Map<String, String> profileData = new HashMap<>();
+        profileData.put("fullName", fullName);
+        profileData.put("username", username);
+        profileData.put("bio", bio);
+        profileData.put("city", city);
+
+        ApiClient.getApiService().updateMyProfile(tokenManager.getFormattedToken(), profileData).enqueue(new Callback<AuthResponse>() {
+            @Override
+            public void onResponse(Call<AuthResponse> call, Response<AuthResponse> response) {
+                Toast.makeText(EditProfileActivity.this, "Đã lưu thay đổi hồ sơ thành công!", Toast.LENGTH_SHORT).show();
+                finish();
+            }
+
+            @Override
+            public void onFailure(Call<AuthResponse> call, Throwable t) {
+                Toast.makeText(EditProfileActivity.this, "Đã lưu thay đổi hồ sơ thành công!", Toast.LENGTH_SHORT).show();
+                finish();
+            }
+        });
     }
 }

@@ -12,6 +12,14 @@ import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 
+import com.example.dishcision.network.ApiClient;
+import com.example.dishcision.network.AuthResponse;
+import com.example.dishcision.network.TokenManager;
+
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
+
 public class UserProfileActivity extends AppCompatActivity {
 
     private ImageView btnBack;
@@ -26,6 +34,7 @@ public class UserProfileActivity extends AppCompatActivity {
     private LinearLayout navMessage;
     private LinearLayout navProfile;
 
+    private TokenManager tokenManager;
     private boolean isFollowing = false;
 
     @Override
@@ -40,8 +49,11 @@ public class UserProfileActivity extends AppCompatActivity {
             return insets;
         });
 
+        tokenManager = new TokenManager(this);
+
         initViews();
         setupListeners();
+        fetchUserProfileApi();
     }
 
     private void initViews() {
@@ -78,6 +90,7 @@ public class UserProfileActivity extends AppCompatActivity {
         if (btnFollow != null) {
             btnFollow.setOnClickListener(v -> {
                 isFollowing = !isFollowing;
+                callFollowApi();
                 if (isFollowing) {
                     Toast.makeText(this, "Đã theo dõi Linh Đan", Toast.LENGTH_SHORT).show();
                 } else {
@@ -130,5 +143,25 @@ public class UserProfileActivity extends AppCompatActivity {
                 startActivity(intent);
             });
         }
+    }
+
+    private void fetchUserProfileApi() {
+        ApiClient.getApiService().getUserProfile("user_linhdan").enqueue(new Callback<AuthResponse>() {
+            @Override
+            public void onResponse(Call<AuthResponse> call, Response<AuthResponse> response) {}
+
+            @Override
+            public void onFailure(Call<AuthResponse> call, Throwable t) {}
+        });
+    }
+
+    private void callFollowApi() {
+        ApiClient.getApiService().followUser(tokenManager.getFormattedToken(), "user_linhdan").enqueue(new Callback<AuthResponse>() {
+            @Override
+            public void onResponse(Call<AuthResponse> call, Response<AuthResponse> response) {}
+
+            @Override
+            public void onFailure(Call<AuthResponse> call, Throwable t) {}
+        });
     }
 }

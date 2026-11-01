@@ -1,5 +1,4 @@
 import { Router } from 'express';
-import multer from 'multer';
 import {
   getNewsfeed,
   createPost,
@@ -15,22 +14,18 @@ import {
 import { getComments, createComment } from '../controllers/comment.controller';
 import { savePost, unsavePost } from '../controllers/social.controller';
 import { authenticate, optionalAuth } from '../middlewares/auth.middleware';
+import { mediaUpload } from '../middlewares/upload.middleware';
 import {
   validate,
   createPostSchema,
   createCommentSchema,
 } from '../middlewares/validate.middleware';
 
-const upload = multer({
-  storage: multer.memoryStorage(),
-  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB
-});
-
 const router = Router();
 
 router.get('/', optionalAuth, getNewsfeed);
 router.post('/', authenticate, validate(createPostSchema), createPost);
-router.post('/upload-media', authenticate, upload.single('file'), uploadMedia);
+router.post('/upload-media', optionalAuth, mediaUpload.single('file'), uploadMedia);
 
 router.get('/:postId', optionalAuth, getPostById);
 router.put('/:postId', authenticate, updatePost);

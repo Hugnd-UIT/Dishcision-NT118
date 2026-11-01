@@ -86,6 +86,7 @@ public class ChatNicknamesActivity extends AppCompatActivity {
                     tvFormTitle.setText("Thêm biệt danh cho " + name);
                 }
                 if (edtNicknameInput != null) {
+                    edtNicknameInput.setText("");
                     edtNicknameInput.requestFocus();
                 }
             });
@@ -98,6 +99,7 @@ public class ChatNicknamesActivity extends AppCompatActivity {
                     tvFormTitle.setText("Thêm biệt danh cho Bạn");
                 }
                 if (edtNicknameInput != null) {
+                    edtNicknameInput.setText("");
                     edtNicknameInput.requestFocus();
                 }
             });
@@ -119,14 +121,20 @@ public class ChatNicknamesActivity extends AppCompatActivity {
                     return;
                 }
 
-                if (targetUserForNickname.equals("Bạn")) {
+                if ("Bạn".equals(targetUserForNickname)) {
                     if (tvNickname2 != null) tvNickname2.setText("Biệt danh: " + input);
+                    if (btnAddNickname2 != null) btnAddNickname2.setText("Chỉnh sửa");
                 } else {
                     if (tvNickname1 != null) tvNickname1.setText("Biệt danh: " + input);
+                    if (btnAddNickname1 != null) btnAddNickname1.setText("Chỉnh sửa");
                 }
 
                 if (tvFormSubtext != null) {
                     tvFormSubtext.setText("Đã áp dụng biệt danh: “" + input + "” cho " + targetUserForNickname);
+                }
+
+                if (edtNicknameInput != null) {
+                    edtNicknameInput.setText("");
                 }
 
                 Toast.makeText(this, "Đã đặt biệt danh: " + input, Toast.LENGTH_SHORT).show();

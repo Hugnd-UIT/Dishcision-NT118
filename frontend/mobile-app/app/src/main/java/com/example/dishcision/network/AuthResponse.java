@@ -13,6 +13,9 @@ public class AuthResponse {
     @SerializedName(value = "token", alternate = {"accessToken", "access_token", "jwt"})
     private String token;
 
+    @SerializedName("data")
+    private AuthData data;
+
     public boolean isSuccess() {
         return success;
     }
@@ -30,10 +33,34 @@ public class AuthResponse {
     }
 
     public String getToken() {
-        return token;
+        if (token != null && !token.isEmpty()) return token;
+        if (data != null && data.accessToken != null) return data.accessToken;
+        return "";
     }
 
     public void setToken(String token) {
         this.token = token;
+    }
+
+    public AuthData getData() {
+        return data;
+    }
+
+    public void setData(AuthData data) {
+        this.data = data;
+    }
+
+    public static class AuthData {
+        @SerializedName("tokenHash")
+        public String tokenHash;
+
+        @SerializedName("testOtp")
+        public String testOtp;
+
+        @SerializedName("accessToken")
+        public String accessToken;
+
+        @SerializedName("refreshToken")
+        public String refreshToken;
     }
 }

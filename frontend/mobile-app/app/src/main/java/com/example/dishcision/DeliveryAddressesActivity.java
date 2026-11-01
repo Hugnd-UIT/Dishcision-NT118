@@ -1,5 +1,6 @@
 package com.example.dishcision;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
@@ -61,14 +62,29 @@ public class DeliveryAddressesActivity extends AppCompatActivity {
             });
         }
 
-        if (btnEditAddress1 != null || btnEditAddress2 != null || btnAddAddress != null) {
-            android.view.View.OnClickListener openAddAddress = v -> {
-                android.content.Intent intent = new android.content.Intent(DeliveryAddressesActivity.this, AddAddressActivity.class);
+        if (btnEditAddress1 != null) {
+            btnEditAddress1.setOnClickListener(v -> {
+                Intent intent = new Intent(DeliveryAddressesActivity.this, AddAddressActivity.class);
+                intent.putExtra("ADDRESS_LABEL", "Nhà riêng");
+                intent.putExtra("ADDRESS_DETAIL", "12 Đường Minh Họa");
                 startActivity(intent);
-            };
-            if (btnEditAddress1 != null) btnEditAddress1.setOnClickListener(openAddAddress);
-            if (btnEditAddress2 != null) btnEditAddress2.setOnClickListener(openAddAddress);
-            if (btnAddAddress != null) btnAddAddress.setOnClickListener(openAddAddress);
+            });
+        }
+
+        if (btnEditAddress2 != null) {
+            btnEditAddress2.setOnClickListener(v -> {
+                Intent intent = new Intent(DeliveryAddressesActivity.this, AddAddressActivity.class);
+                intent.putExtra("ADDRESS_LABEL", "Công ty");
+                intent.putExtra("ADDRESS_DETAIL", "Tòa nhà Ví Dụ · Tầng 3");
+                startActivity(intent);
+            });
+        }
+
+        if (btnAddAddress != null) {
+            btnAddAddress.setOnClickListener(v -> {
+                Intent intent = new Intent(DeliveryAddressesActivity.this, AddAddressActivity.class);
+                startActivity(intent);
+            });
         }
     }
 }

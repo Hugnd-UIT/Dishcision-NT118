@@ -57,27 +57,36 @@ public class SharedMediaActivity extends AppCompatActivity {
         }
 
         if (tabPhotos != null) {
-            tabPhotos.setOnClickListener(v ->
-                Toast.makeText(this, "Xem danh sách ảnh đã chia sẻ", Toast.LENGTH_SHORT).show()
-            );
+            tabPhotos.setOnClickListener(v -> {
+                selectTab(tabPhotos, tabFiles, tabLinks);
+                Toast.makeText(this, "Đang hiển thị Ảnh đã chia sẻ (24)", Toast.LENGTH_SHORT).show();
+            });
         }
 
         if (tabFiles != null) {
-            tabFiles.setOnClickListener(v ->
-                Toast.makeText(this, "Xem danh sách tệp đính kèm", Toast.LENGTH_SHORT).show()
-            );
+            tabFiles.setOnClickListener(v -> {
+                selectTab(tabFiles, tabPhotos, tabLinks);
+                Toast.makeText(this, "Đang hiển thị Tệp đính kèm (5)", Toast.LENGTH_SHORT).show();
+            });
         }
 
         if (tabLinks != null) {
-            tabLinks.setOnClickListener(v ->
-                Toast.makeText(this, "Xem danh sách liên kết web", Toast.LENGTH_SHORT).show()
-            );
+            tabLinks.setOnClickListener(v -> {
+                selectTab(tabLinks, tabPhotos, tabFiles);
+                Toast.makeText(this, "Đang hiển thị Liên kết web (12)", Toast.LENGTH_SHORT).show();
+            });
         }
 
         if (btnLoadMoreMedia != null) {
             btnLoadMoreMedia.setOnClickListener(v ->
-                Toast.makeText(this, "Tải thêm phương tiện đã chia sẻ", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, "Đã tải thêm tất cả phương tiện!", Toast.LENGTH_SHORT).show()
             );
         }
+    }
+
+    private void selectTab(LinearLayout activeTab, LinearLayout inactiveTab1, LinearLayout inactiveTab2) {
+        if (activeTab != null) activeTab.setBackgroundResource(R.drawable.bg_button_light_blue);
+        if (inactiveTab1 != null) inactiveTab1.setBackgroundResource(0);
+        if (inactiveTab2 != null) inactiveTab2.setBackgroundResource(0);
     }
 }

@@ -1,12 +1,10 @@
 package com.example.dishcision;
 
 import android.content.Intent;
-import android.graphics.Color;
 import android.os.Bundle;
 import android.text.InputType;
 import android.text.SpannableString;
 import android.text.Spanned;
-import android.text.TextPaint;
 import android.text.method.LinkMovementMethod;
 import android.text.style.ClickableSpan;
 import android.view.View;
@@ -22,6 +20,17 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
+
+import com.example.dishcision.network.ApiClient;
+import com.example.dishcision.network.AuthResponse;
+import com.example.dishcision.network.RegisterRequest;
+import com.example.dishcision.network.TokenManager;
+
+import org.json.JSONObject;
+
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
 
 public class RegisterActivity extends AppCompatActivity {
 
@@ -90,30 +99,78 @@ public class RegisterActivity extends AppCompatActivity {
     }
 
     private void performRegister() {
-        String fullName = edtFullName != null ? edtFullName.getText().toString().trim() : "Minh An";
-        String email = edtRegisterEmail != null ? edtRegisterEmail.getText().toString().trim() : "minhan@dishcision.com";
-        String password = edtRegisterPassword != null ? edtRegisterPassword.getText().toString().trim() : "password123";
+        String fullName = edtFullName != null ? edtFullName.getText().toString().trim() : "";
+        String email = edtRegisterEmail != null ? edtRegisterEmail.getText().toString().trim() : "";
+        String password = edtRegisterPassword != null ? edtRegisterPassword.getText().toString().trim() : "";
+        String confirmPassword = edtConfirmPassword != null ? edtConfirmPassword.getText().toString().trim() : "";
 
-        com.example.dishcision.network.RegisterRequest request = new com.example.dishcision.network.RegisterRequest(fullName, email, password);
-        com.example.dishcision.network.ApiClient.getApiService().register(request).enqueue(new retrofit2.Callback<com.example.dishcision.network.AuthResponse>() {
+        if (fullName.isEmpty()) {
+            Toast.makeText(this, "Vui lòng nhập Họ và tên!", Toast.LENGTH_SHORT).show();
+            if (edtFullName != null) edtFullName.requestFocus();
+            return;
+        }
+
+        if (email.isEmpty()) {
+            Toast.makeText(this, "Vui lòng nhập Email!", Toast.LENGTH_SHORT).show();
+            if (edtRegisterEmail != null) edtRegisterEmail.requestFocus();
+            return;
+        }
+
+        if (!android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
+            Toast.makeText(this, "Định dạng Email không hợp lệ!", Toast.LENGTH_SHORT).show();
+            if (edtRegisterEmail != null) edtRegisterEmail.requestFocus();
+            return;
+        }
+
+        if (password.isEmpty() || password.length() < 6) {
+            Toast.makeText(this, "Mật khẩu phải từ 6 ký tự trở lên!", Toast.LENGTH_SHORT).show();
+            if (edtRegisterPassword != null) edtRegisterPassword.requestFocus();
+            return;
+        }
+
+        if (!password.equals(confirmPassword)) {
+            Toast.makeText(this, "Mật khẩu xác nhận không trùng khớp!", Toast.LENGTH_SHORT).show();
+            if (edtConfirmPassword != null) edtConfirmPassword.requestFocus();
+            return;
+        }
+
+        TokenManager tokenManager = new TokenManager(this);
+        RegisterRequest request = new RegisterRequest(fullName, email, password);
+
+        ApiClient.getApiService().register(request).enqueue(new Callback<AuthResponse>() {
             @Override
-            public void onResponse(retrofit2.Call<com.example.dishcision.network.AuthResponse> call, retrofit2.Response<com.example.dishcision.network.AuthResponse> response) {
+            public void onResponse(Call<AuthResponse> call, Response<AuthResponse> response) {
                 if (response.isSuccessful() && response.body() != null) {
-                    Toast.makeText(RegisterActivity.this, "Đăng ký Backend Docker thành công!", Toast.LENGTH_SHORT).show();
+                    AuthResponse authData = response.body();
+                    String token = authData.getToken();
+                    tokenManager.saveAuthData(token, email, fullName);
+
+                    Toast.makeText(RegisterActivity.this, "Đăng ký tài khoản thành công!", Toast.LENGTH_SHORT).show();
+                    Intent intent = new Intent(RegisterActivity.this, LoginActivity.class);
+                    startActivity(intent);
+                    finish();
                 } else {
-                    Toast.makeText(RegisterActivity.this, "Đăng ký thành công (Chế độ Local Demo)", Toast.LENGTH_SHORT).show();
+                    String cleanError = "Email này đã tồn tại trên hệ thống!";
+                    if (response.code() == 409) {
+                        cleanError = "Email hoặc Tên đăng nhập này đã được sử dụng!";
+                    } else if (response.errorBody() != null) {
+                        try {
+                            String rawJson = response.errorBody().string();
+                            JSONObject jsonObject = new JSONObject(rawJson);
+                            if (jsonObject.has("message")) {
+                                cleanError = jsonObject.getString("message");
+                            } else if (jsonObject.has("error")) {
+                                cleanError = jsonObject.getString("error");
+                            }
+                        } catch (Exception ignored) {}
+                    }
+                    Toast.makeText(RegisterActivity.this, "Đăng ký thất bại: " + cleanError, Toast.LENGTH_LONG).show();
                 }
-                Intent intent = new Intent(RegisterActivity.this, LoginActivity.class);
-                startActivity(intent);
-                finish();
             }
 
             @Override
-            public void onFailure(retrofit2.Call<com.example.dishcision.network.AuthResponse> call, Throwable t) {
-                Toast.makeText(RegisterActivity.this, "Đăng ký thành công (Chế độ Local Demo)", Toast.LENGTH_SHORT).show();
-                Intent intent = new Intent(RegisterActivity.this, LoginActivity.class);
-                startActivity(intent);
-                finish();
+            public void onFailure(Call<AuthResponse> call, Throwable t) {
+                Toast.makeText(RegisterActivity.this, "Lỗi kết nối Server API Docker: " + t.getMessage(), Toast.LENGTH_LONG).show();
             }
         });
     }
@@ -139,13 +196,6 @@ public class RegisterActivity extends AppCompatActivity {
                     Intent intent = new Intent(RegisterActivity.this, TermsOfServiceActivity.class);
                     startActivity(intent);
                 }
-
-                @Override
-                public void updateDrawState(@NonNull TextPaint ds) {
-                    super.updateDrawState(ds);
-                    ds.setColor(Color.parseColor("#FF5722"));
-                    ds.setUnderlineText(true);
-                }
             }, termsStart, termsEnd, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
         }
 
@@ -156,29 +206,10 @@ public class RegisterActivity extends AppCompatActivity {
                     Intent intent = new Intent(RegisterActivity.this, PrivacyPolicyActivity.class);
                     startActivity(intent);
                 }
-
-                @Override
-                public void updateDrawState(@NonNull TextPaint ds) {
-                    super.updateDrawState(ds);
-                    ds.setColor(Color.parseColor("#FF5722"));
-                    ds.setUnderlineText(true);
-                }
             }, privacyStart, privacyEnd, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
         }
 
         tvRegisterTerms.setText(spannableString);
         tvRegisterTerms.setMovementMethod(LinkMovementMethod.getInstance());
-    }
-
-    public String getEnteredFullName() {
-        return edtFullName != null ? edtFullName.getText().toString().trim() : "";
-    }
-
-    public String getEnteredRegisterEmail() {
-        return edtRegisterEmail != null ? edtRegisterEmail.getText().toString().trim() : "";
-    }
-
-    public String getEnteredRegisterPassword() {
-        return edtRegisterPassword != null ? edtRegisterPassword.getText().toString() : "";
     }
 }

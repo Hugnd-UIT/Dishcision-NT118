@@ -3,6 +3,7 @@ package com.example.dishcision;
 import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextWatcher;
+import android.view.View;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
@@ -77,8 +78,14 @@ public class SearchInChatActivity extends AppCompatActivity {
                 @Override
                 public void onTextChanged(CharSequence s, int start, int before, int count) {
                     String query = s.toString().trim();
-                    if (tvMatchHeader != null) {
-                        tvMatchHeader.setText("Tin nhắn khớp với “" + query + "”");
+                    if (query.isEmpty()) {
+                        if (tvMatchHeader != null) tvMatchHeader.setText("Nhập từ khóa để tìm trong đoạn chat");
+                        if (cardResult1 != null) cardResult1.setVisibility(View.GONE);
+                        if (cardResult2 != null) cardResult2.setVisibility(View.GONE);
+                    } else {
+                        if (tvMatchHeader != null) tvMatchHeader.setText("Tìm thấy kết quả cho “" + query + "”");
+                        if (cardResult1 != null) cardResult1.setVisibility(View.VISIBLE);
+                        if (cardResult2 != null) cardResult2.setVisibility(View.VISIBLE);
                     }
                 }
 
@@ -89,14 +96,14 @@ public class SearchInChatActivity extends AppCompatActivity {
 
         if (cardResult1 != null) {
             cardResult1.setOnClickListener(v -> {
-                Toast.makeText(this, "Đến vị trí tin nhắn của Maya Lin", Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, "Chuyển tới vị trí tin nhắn", Toast.LENGTH_SHORT).show();
                 finish();
             });
         }
 
         if (cardResult2 != null) {
             cardResult2.setOnClickListener(v -> {
-                Toast.makeText(this, "Đến vị trí tin nhắn của Bạn", Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, "Chuyển tới vị trí tin nhắn", Toast.LENGTH_SHORT).show();
                 finish();
             });
         }

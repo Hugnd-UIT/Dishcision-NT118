@@ -84,15 +84,15 @@ public class ChatThemeActivity extends AppCompatActivity {
         }
 
         if (cardThemeOrange != null) {
-            cardThemeOrange.setOnClickListener(v -> updateTheme("Cam Ớt Cay"));
+            cardThemeOrange.setOnClickListener(v -> updateTheme("Cam Ớt Cay", 0xFFFF5A36));
         }
 
         if (cardThemeGreen != null) {
-            cardThemeGreen.setOnClickListener(v -> updateTheme("Trà xanh"));
+            cardThemeGreen.setOnClickListener(v -> updateTheme("Trà xanh", 0xFF82B396));
         }
 
         if (cardThemePurple != null) {
-            cardThemePurple.setOnClickListener(v -> updateTheme("Khoai môn"));
+            cardThemePurple.setOnClickListener(v -> updateTheme("Khoai môn", 0xFFB29DC8));
         }
 
         if (boxEmojiNoodle != null) boxEmojiNoodle.setOnClickListener(v -> updateEmoji("🍜"));
@@ -109,12 +109,15 @@ public class ChatThemeActivity extends AppCompatActivity {
         }
     }
 
-    private void updateTheme(String themeName) {
+    private void updateTheme(String themeName, int colorHex) {
         selectedTheme = themeName;
         if (tvPreviewThemeTitle != null) {
             tvPreviewThemeTitle.setText("XEM TRƯỚC · " + themeName.toUpperCase());
         }
-        Toast.makeText(this, "Đã xem trước chủ đề: " + themeName, Toast.LENGTH_SHORT).show();
+        if (previewEmojiBubble != null) {
+            previewEmojiBubble.setBackgroundColor(colorHex);
+        }
+        Toast.makeText(this, "Đã chọn chủ đề xem trước: " + themeName, Toast.LENGTH_SHORT).show();
     }
 
     private void updateEmoji(String emoji) {

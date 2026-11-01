@@ -14,6 +14,13 @@ import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 
+import com.example.dishcision.network.ApiClient;
+import com.example.dishcision.network.TokenManager;
+
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
+
 public class NotificationsActivity extends AppCompatActivity {
 
     private ImageView btnBack;
@@ -27,6 +34,9 @@ public class NotificationsActivity extends AppCompatActivity {
     private LinearLayout itemNotify3;
     private View dotUnread1;
 
+    private TokenManager tokenManager;
+    private boolean isUnread1 = true;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -39,8 +49,11 @@ public class NotificationsActivity extends AppCompatActivity {
             return insets;
         });
 
+        tokenManager = new TokenManager(this);
+
         initViews();
         setupListeners();
+        fetchNotificationsFromApi();
     }
 
     private void initViews() {
@@ -69,33 +82,50 @@ public class NotificationsActivity extends AppCompatActivity {
 
         if (btnMarkAllRead != null) {
             btnMarkAllRead.setOnClickListener(v -> {
+                isUnread1 = false;
                 if (dotUnread1 != null) {
                     dotUnread1.setVisibility(View.GONE);
                 }
                 if (itemNotify1 != null) {
                     itemNotify1.setBackgroundColor(0xFFFFFFFF);
                 }
+                markNotificationReadApi("notify_1");
                 Toast.makeText(this, "Đã đánh dấu tất cả là đã đọc", Toast.LENGTH_SHORT).show();
             });
         }
 
         if (chipAll != null) {
-            chipAll.setOnClickListener(v ->
-                Toast.makeText(this, "Hiển thị tất cả thông báo", Toast.LENGTH_SHORT).show()
-            );
+            chipAll.setOnClickListener(v -> {
+                chipAll.setBackgroundResource(R.drawable.bg_button_light_blue);
+                chipUnread.setBackgroundResource(0);
+                if (itemNotify1 != null) itemNotify1.setVisibility(View.VISIBLE);
+                if (itemNotify2 != null) itemNotify2.setVisibility(View.VISIBLE);
+                if (itemNotify3 != null) itemNotify3.setVisibility(View.VISIBLE);
+                Toast.makeText(this, "Hiển thị tất cả thông báo", Toast.LENGTH_SHORT).show();
+            });
         }
 
         if (chipUnread != null) {
-            chipUnread.setOnClickListener(v ->
-                Toast.makeText(this, "Lọc thông báo chưa đọc", Toast.LENGTH_SHORT).show()
-            );
+            chipUnread.setOnClickListener(v -> {
+                chipUnread.setBackgroundResource(R.drawable.bg_button_light_blue);
+                chipAll.setBackgroundResource(0);
+                if (itemNotify1 != null) itemNotify1.setVisibility(isUnread1 ? View.VISIBLE : View.GONE);
+                if (itemNotify2 != null) itemNotify2.setVisibility(View.GONE);
+                if (itemNotify3 != null) itemNotify3.setVisibility(View.GONE);
+                Toast.makeText(this, "Lọc thông báo chưa đọc", Toast.LENGTH_SHORT).show();
+            });
         }
 
         if (itemNotify1 != null) {
             itemNotify1.setOnClickListener(v -> {
+                isUnread1 = false;
                 if (dotUnread1 != null) {
                     dotUnread1.setVisibility(View.GONE);
                 }
+                if (itemNotify1 != null) {
+                    itemNotify1.setBackgroundColor(0xFFFFFFFF);
+                }
+                markNotificationReadApi("notify_1");
                 Intent intent = new Intent(NotificationsActivity.this, MyReviewsActivity.class);
                 startActivity(intent);
             });
@@ -115,5 +145,25 @@ public class NotificationsActivity extends AppCompatActivity {
                 startActivity(intent);
             });
         }
+    }
+
+    private void fetchNotificationsFromApi() {
+        ApiClient.getApiService().getNotifications(tokenManager.getFormattedToken()).enqueue(new Callback<Object>() {
+            @Override
+            public void onResponse(Call<Object> call, Response<Object> response) {}
+
+            @Override
+            public void onFailure(Call<Object> call, Throwable t) {}
+        });
+    }
+
+    private void markNotificationReadApi(String notificationId) {
+        ApiClient.getApiService().markNotificationRead(tokenManager.getFormattedToken(), notificationId).enqueue(new Callback<Object>() {
+            @Override
+            public void onResponse(Call<Object> call, Response<Object> response) {}
+
+            @Override
+            public void onFailure(Call<Object> call, Throwable t) {}
+        });
     }
 }

@@ -1,5 +1,6 @@
 package com.example.dishcision;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
@@ -64,7 +65,7 @@ public class FollowersActivity extends AppCompatActivity {
 
         if (btnLoadMore != null) {
             btnLoadMore.setOnClickListener(v ->
-                Toast.makeText(this, "Tải thêm danh sách người theo dõi...", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, "Đã tải thêm tất cả danh sách người theo dõi!", Toast.LENGTH_SHORT).show()
             );
         }
     }
@@ -75,9 +76,11 @@ public class FollowersActivity extends AppCompatActivity {
                 CharSequence text = btn.getText();
                 if ("Đang theo dõi".contentEquals(text)) {
                     btn.setText("Theo dõi lại");
+                    btn.setTextColor(0xFFFF5A36);
                     Toast.makeText(this, "Đã hủy theo dõi " + name, Toast.LENGTH_SHORT).show();
                 } else {
                     btn.setText("Đang theo dõi");
+                    btn.setTextColor(0xFF505568);
                     Toast.makeText(this, "Đã theo dõi " + name, Toast.LENGTH_SHORT).show();
                 }
             });

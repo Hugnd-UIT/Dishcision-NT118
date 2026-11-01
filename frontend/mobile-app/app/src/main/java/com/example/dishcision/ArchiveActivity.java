@@ -1,8 +1,10 @@
 package com.example.dishcision;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.activity.EdgeToEdge;
@@ -14,6 +16,9 @@ import androidx.core.view.WindowInsetsCompat;
 public class ArchiveActivity extends AppCompatActivity {
 
     private ImageView btnBack;
+    private LinearLayout tabArchivedPosts;
+    private LinearLayout tabArchivedStory;
+
     private LinearLayout btnViewPost1;
     private LinearLayout btnRestore1;
     private LinearLayout btnViewPost2;
@@ -39,6 +44,9 @@ public class ArchiveActivity extends AppCompatActivity {
 
     private void initViews() {
         btnBack = findViewById(R.id.btnBack);
+        tabArchivedPosts = findViewById(R.id.tabArchivedPosts);
+        tabArchivedStory = findViewById(R.id.tabArchivedStory);
+
         btnViewPost1 = findViewById(R.id.btnViewPost1);
         btnRestore1 = findViewById(R.id.btnRestore1);
         btnViewPost2 = findViewById(R.id.btnViewPost2);
@@ -52,43 +60,60 @@ public class ArchiveActivity extends AppCompatActivity {
             btnBack.setOnClickListener(v -> finish());
         }
 
+        if (tabArchivedPosts != null) {
+            tabArchivedPosts.setOnClickListener(v -> {
+                tabArchivedPosts.setBackgroundResource(R.drawable.bg_tab_active_white);
+                if (tabArchivedStory != null) tabArchivedStory.setBackgroundResource(0);
+                Toast.makeText(this, "Xem kho Bài viết đã lưu trữ", Toast.LENGTH_SHORT).show();
+            });
+        }
+
+        if (tabArchivedStory != null) {
+            tabArchivedStory.setOnClickListener(v -> {
+                tabArchivedStory.setBackgroundResource(R.drawable.bg_tab_active_white);
+                if (tabArchivedPosts != null) tabArchivedPosts.setBackgroundResource(0);
+                Toast.makeText(this, "Xem kho Story đã lưu trữ", Toast.LENGTH_SHORT).show();
+            });
+        }
+
         if (btnViewPost1 != null) {
             btnViewPost1.setOnClickListener(v -> {
-                android.content.Intent intent = new android.content.Intent(ArchiveActivity.this, MyReviewsActivity.class);
+                Intent intent = new Intent(ArchiveActivity.this, MyReviewsActivity.class);
                 startActivity(intent);
             });
         }
 
         if (btnRestore1 != null) {
-            btnRestore1.setOnClickListener(v ->
-                Toast.makeText(this, "Đã khôi phục bài viết về hồ sơ", Toast.LENGTH_SHORT).show()
-            );
+            btnRestore1.setOnClickListener(v -> {
+                TextView tv = btnRestore1.findViewById(android.R.id.text1);
+                Toast.makeText(this, "Đã khôi phục bài viết 'Matcha' về hồ sơ", Toast.LENGTH_SHORT).show();
+            });
         }
 
         if (btnViewPost2 != null) {
             btnViewPost2.setOnClickListener(v -> {
-                android.content.Intent intent = new android.content.Intent(ArchiveActivity.this, MyReviewsActivity.class);
+                Intent intent = new Intent(ArchiveActivity.this, MyReviewsActivity.class);
                 startActivity(intent);
             });
         }
 
         if (btnRestore2 != null) {
-            btnRestore2.setOnClickListener(v ->
-                Toast.makeText(this, "Đã khôi phục bài viết về hồ sơ", Toast.LENGTH_SHORT).show()
-            );
+            btnRestore2.setOnClickListener(v -> {
+                Toast.makeText(this, "Đã khôi phục bài viết 'Ramen' về hồ sơ", Toast.LENGTH_SHORT).show();
+            });
         }
 
         if (btnViewPost3 != null) {
             btnViewPost3.setOnClickListener(v -> {
-                android.content.Intent intent = new android.content.Intent(ArchiveActivity.this, MyReviewsActivity.class);
+                Intent intent = new Intent(ArchiveActivity.this, MyReviewsActivity.class);
                 startActivity(intent);
             });
         }
 
         if (btnRestore3 != null) {
-            btnRestore3.setOnClickListener(v ->
-                Toast.makeText(this, "Đã khôi phục bài viết về hồ sơ", Toast.LENGTH_SHORT).show()
-            );
+            btnRestore3.setOnClickListener(v -> {
+                Toast.makeText(this, "Đã khôi phục bài viết 'Burger' về hồ sơ", Toast.LENGTH_SHORT).show();
+            });
         }
     }
 }

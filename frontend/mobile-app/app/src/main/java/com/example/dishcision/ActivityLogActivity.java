@@ -1,12 +1,15 @@
 package com.example.dishcision;
 
+import android.content.Intent;
 import android.os.Bundle;
+import android.view.MenuItem;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.Toast;
 
 import androidx.activity.EdgeToEdge;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.widget.PopupMenu;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
@@ -47,20 +50,38 @@ public class ActivityLogActivity extends AppCompatActivity {
         }
 
         if (spinnerTime != null) {
-            spinnerTime.setOnClickListener(v ->
-                Toast.makeText(this, "Lọc theo thời gian: Tháng 10, 2026", Toast.LENGTH_SHORT).show()
-            );
+            spinnerTime.setOnClickListener(v -> {
+                PopupMenu popup = new PopupMenu(this, spinnerTime);
+                popup.getMenu().add("Tất cả thời gian");
+                popup.getMenu().add("Hôm nay");
+                popup.getMenu().add("7 ngày qua");
+                popup.getMenu().add("Tháng này");
+                popup.setOnMenuItemClickListener((MenuItem item) -> {
+                    Toast.makeText(this, "Lọc thời gian: " + item.getTitle(), Toast.LENGTH_SHORT).show();
+                    return true;
+                });
+                popup.show();
+            });
         }
 
         if (spinnerType != null) {
-            spinnerType.setOnClickListener(v ->
-                Toast.makeText(this, "Lọc theo loại hoạt động", Toast.LENGTH_SHORT).show()
-            );
+            spinnerType.setOnClickListener(v -> {
+                PopupMenu popup = new PopupMenu(this, spinnerType);
+                popup.getMenu().add("Tất cả hoạt động");
+                popup.getMenu().add("Bài đánh giá");
+                popup.getMenu().add("Lượt thích món ăn");
+                popup.getMenu().add("Bình luận");
+                popup.setOnMenuItemClickListener((MenuItem item) -> {
+                    Toast.makeText(this, "Lọc loại hoạt động: " + item.getTitle(), Toast.LENGTH_SHORT).show();
+                    return true;
+                });
+                popup.show();
+            });
         }
 
         if (btnArchive != null) {
             btnArchive.setOnClickListener(v -> {
-                android.content.Intent intent = new android.content.Intent(ActivityLogActivity.this, ArchiveActivity.class);
+                Intent intent = new Intent(ActivityLogActivity.this, ArchiveActivity.class);
                 startActivity(intent);
             });
         }

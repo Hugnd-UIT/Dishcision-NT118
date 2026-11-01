@@ -1,6 +1,6 @@
 import { Response } from 'express';
 import { prisma } from '../config/prisma';
-import { getCache, setCache, delCache, CACHE_TTL } from '../config/redis';
+import { redis, getCache, setCache, delCache, CACHE_TTL } from '../config/redis';
 import { successResponse, paginatedResponse, errorResponse } from '../utils/response';
 import { AuthRequest } from '../middlewares/auth.middleware';
 
@@ -123,3 +123,164 @@ export function formatPost(post: any) {
     sharesCount: _count?.shares ?? 0,
   };
 }
+
+// ── Privacy & Blocked/Restricted Accounts ─────────
+
+const DEFAULT_PRIVACY = {
+  newPosts: 'friends',
+  profileInfo: 'only_me',
+  followingList: 'friends',
+  findEmail: 'no_one',
+  friendRequests: 'friends_of_friends',
+  messages: 'friends',
+  comments: 'friends',
+};
+
+const DEFAULT_BLOCKED = [
+  { id: 1, name: 'Minh Anh', initials: 'MA', status: 'Đã chặn' },
+  { id: 2, name: 'Hoàng Nam', initials: 'HN', status: 'Đã chặn' },
+  { id: 3, name: 'Thanh Trúc', initials: 'TT', status: 'Đã chặn' },
+];
+
+const DEFAULT_RESTRICTED = [
+  { id: 101, name: 'Ngọc Linh', initials: 'NL', status: 'Đã hạn chế' },
+];
+
+export async function getPrivacySettings(req: AuthRequest, res: Response): Promise<void> {
+  const userId = req.user?.userId || 1;
+  const raw = await redis.get(`user:${userId}:privacy`);
+
+  let privacy = DEFAULT_PRIVACY;
+  if (raw) {
+    try {
+      privacy = { ...DEFAULT_PRIVACY, ...JSON.parse(raw) };
+    } catch {
+      privacy = DEFAULT_PRIVACY;
+    }
+  } else {
+    await redis.set(`user:${userId}:privacy`, JSON.stringify(DEFAULT_PRIVACY));
+  }
+
+  res.status(200).json({
+    success: true,
+    data: privacy,
+    message: 'Lấy cài đặt quyền riêng tư thành công',
+  });
+}
+
+export async function updatePrivacySettings(req: AuthRequest, res: Response): Promise<void> {
+  const userId = req.user?.userId || 1;
+  const updates = req.body;
+
+  const raw = await redis.get(`user:${userId}:privacy`);
+  let privacy = DEFAULT_PRIVACY;
+  if (raw) {
+    try {
+      privacy = { ...DEFAULT_PRIVACY, ...JSON.parse(raw) };
+    } catch {
+      privacy = DEFAULT_PRIVACY;
+    }
+  }
+
+  const updatedPrivacy = { ...privacy, ...updates };
+  await redis.set(`user:${userId}:privacy`, JSON.stringify(updatedPrivacy));
+
+  res.status(200).json({
+    success: true,
+    data: updatedPrivacy,
+    message: 'Cập nhật quyền riêng tư thành công',
+  });
+}
+
+export async function getBlockedAccounts(req: AuthRequest, res: Response): Promise<void> {
+  const userId = req.user?.userId || 1;
+  const raw = await redis.get(`user:${userId}:blocked`);
+
+  let blocked = DEFAULT_BLOCKED;
+  if (raw) {
+    try {
+      blocked = JSON.parse(raw);
+    } catch {
+      blocked = DEFAULT_BLOCKED;
+    }
+  } else {
+    await redis.set(`user:${userId}:blocked`, JSON.stringify(DEFAULT_BLOCKED));
+  }
+
+  res.status(200).json({
+    success: true,
+    data: blocked,
+    message: 'Lấy danh sách đã chặn thành công',
+  });
+}
+
+export async function unblockAccount(req: AuthRequest, res: Response): Promise<void> {
+  const userId = req.user?.userId || 1;
+  const { accountId } = req.body;
+
+  const raw = await redis.get(`user:${userId}:blocked`);
+  let blocked = DEFAULT_BLOCKED;
+  if (raw) {
+    try {
+      blocked = JSON.parse(raw);
+    } catch {
+      blocked = DEFAULT_BLOCKED;
+    }
+  }
+
+  blocked = blocked.filter((item: any) => item.id !== accountId && String(item.id) !== String(accountId));
+  await redis.set(`user:${userId}:blocked`, JSON.stringify(blocked));
+
+  res.status(200).json({
+    success: true,
+    data: blocked,
+    message: 'Đã bỏ chặn tài khoản thành công',
+  });
+}
+
+export async function getRestrictedAccounts(req: AuthRequest, res: Response): Promise<void> {
+  const userId = req.user?.userId || 1;
+  const raw = await redis.get(`user:${userId}:restricted`);
+
+  let restricted = DEFAULT_RESTRICTED;
+  if (raw) {
+    try {
+      restricted = JSON.parse(raw);
+    } catch {
+      restricted = DEFAULT_RESTRICTED;
+    }
+  } else {
+    await redis.set(`user:${userId}:restricted`, JSON.stringify(DEFAULT_RESTRICTED));
+  }
+
+  res.status(200).json({
+    success: true,
+    data: restricted,
+    message: 'Lấy danh sách bị hạn chế thành công',
+  });
+}
+
+export async function unrestrictAccount(req: AuthRequest, res: Response): Promise<void> {
+  const userId = req.user?.userId || 1;
+  const { accountId } = req.body;
+
+  const raw = await redis.get(`user:${userId}:restricted`);
+  let restricted = DEFAULT_RESTRICTED;
+  if (raw) {
+    try {
+      restricted = JSON.parse(raw);
+    } catch {
+      restricted = DEFAULT_RESTRICTED;
+    }
+  }
+
+  restricted = restricted.filter((item: any) => item.id !== accountId && String(item.id) !== String(accountId));
+  await redis.set(`user:${userId}:restricted`, JSON.stringify(restricted));
+
+  res.status(200).json({
+    success: true,
+    data: restricted,
+    message: 'Đã bỏ hạn chế tài khoản thành công',
+  });
+}
+

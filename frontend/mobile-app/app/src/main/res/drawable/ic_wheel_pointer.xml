@@ -1,0 +1,14 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="28dp"
+    android:height="28dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+  <!-- Downward pointing triangle pointer for decision wheel -->
+  <path
+      android:fillColor="#E64A19"
+      android:pathData="M12,22L2.5,4.5h19z"/>
+  <path
+      android:fillColor="#FF5722"
+      android:pathData="M12,20L4,6h16z"/>
+</vector>
+

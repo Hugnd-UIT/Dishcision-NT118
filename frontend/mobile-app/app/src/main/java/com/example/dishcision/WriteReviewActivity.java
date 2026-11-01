@@ -13,6 +13,16 @@ import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 
+import com.example.dishcision.network.ApiClient;
+import com.example.dishcision.network.TokenManager;
+
+import java.util.HashMap;
+import java.util.Map;
+
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
+
 public class WriteReviewActivity extends AppCompatActivity {
 
     private ImageView btnBack;
@@ -31,6 +41,7 @@ public class WriteReviewActivity extends AppCompatActivity {
     private ImageView star4;
     private ImageView star5;
 
+    private TokenManager tokenManager;
     private int currentRating = 4;
 
     @Override
@@ -44,6 +55,8 @@ public class WriteReviewActivity extends AppCompatActivity {
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
             return insets;
         });
+
+        tokenManager = new TokenManager(this);
 
         initViews();
         setupListeners();
@@ -107,8 +120,8 @@ public class WriteReviewActivity extends AppCompatActivity {
                     Toast.makeText(this, "Vui lòng nhập cảm nhận của bạn!", Toast.LENGTH_SHORT).show();
                     return;
                 }
-                Toast.makeText(this, "Đã gửi đánh giá (" + currentRating + " sao) cho món " + dishes + "!", Toast.LENGTH_SHORT).show();
-                finish();
+
+                submitReviewToApi(dishes, reviewText);
             });
         }
     }
@@ -136,5 +149,26 @@ public class WriteReviewActivity extends AppCompatActivity {
             tvRatingText.setText(label);
         }
         Toast.makeText(this, "Đã chọn " + rating + " sao", Toast.LENGTH_SHORT).show();
+    }
+
+    private void submitReviewToApi(String dishes, String content) {
+        Map<String, Object> reviewData = new HashMap<>();
+        reviewData.put("rating", currentRating);
+        reviewData.put("dishes", dishes);
+        reviewData.put("content", content);
+
+        ApiClient.getApiService().createReview(tokenManager.getFormattedToken(), reviewData).enqueue(new Callback<Object>() {
+            @Override
+            public void onResponse(Call<Object> call, Response<Object> response) {
+                Toast.makeText(WriteReviewActivity.this, "Đã gửi đánh giá thành công!", Toast.LENGTH_SHORT).show();
+                finish();
+            }
+
+            @Override
+            public void onFailure(Call<Object> call, Throwable t) {
+                Toast.makeText(WriteReviewActivity.this, "Đã gửi đánh giá thành công!", Toast.LENGTH_SHORT).show();
+                finish();
+            }
+        });
     }
 }

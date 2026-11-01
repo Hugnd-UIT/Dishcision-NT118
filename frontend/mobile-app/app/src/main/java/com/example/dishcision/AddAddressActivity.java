@@ -1,6 +1,7 @@
 package com.example.dishcision;
 
 import android.os.Bundle;
+import android.view.MenuItem;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
@@ -9,6 +10,7 @@ import android.widget.Toast;
 
 import androidx.activity.EdgeToEdge;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.widget.PopupMenu;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
@@ -48,6 +50,7 @@ public class AddAddressActivity extends AppCompatActivity {
 
         initViews();
         setupListeners();
+        checkForPrefill();
     }
 
     private void initViews() {
@@ -76,22 +79,53 @@ public class AddAddressActivity extends AppCompatActivity {
 
         if (spinnerCity != null) {
             spinnerCity.setOnClickListener(v -> {
-                if (tvSelectedCity != null) tvSelectedCity.setText("Hà Nội");
-                Toast.makeText(this, "Đã chọn: Hà Nội", Toast.LENGTH_SHORT).show();
+                PopupMenu popup = new PopupMenu(this, spinnerCity);
+                popup.getMenu().add("Hà Nội");
+                popup.getMenu().add("TP. Hồ Chí Minh");
+                popup.getMenu().add("Đà Nẵng");
+                popup.setOnMenuItemClickListener((MenuItem item) -> {
+                    if (tvSelectedCity != null) {
+                        tvSelectedCity.setText(item.getTitle());
+                        tvSelectedCity.setTextColor(0xFF141B2B);
+                    }
+                    return true;
+                });
+                popup.show();
             });
         }
 
         if (spinnerDistrict != null) {
             spinnerDistrict.setOnClickListener(v -> {
-                if (tvSelectedDistrict != null) tvSelectedDistrict.setText("Ba Đình");
-                Toast.makeText(this, "Đã chọn: Ba Đình", Toast.LENGTH_SHORT).show();
+                PopupMenu popup = new PopupMenu(this, spinnerDistrict);
+                popup.getMenu().add("Ba Đình");
+                popup.getMenu().add("Cầu Giấy");
+                popup.getMenu().add("Quận 1");
+                popup.getMenu().add("Thủ Đức");
+                popup.setOnMenuItemClickListener((MenuItem item) -> {
+                    if (tvSelectedDistrict != null) {
+                        tvSelectedDistrict.setText(item.getTitle());
+                        tvSelectedDistrict.setTextColor(0xFF141B2B);
+                    }
+                    return true;
+                });
+                popup.show();
             });
         }
 
         if (spinnerWard != null) {
             spinnerWard.setOnClickListener(v -> {
-                if (tvSelectedWard != null) tvSelectedWard.setText("Phường Điện Biên");
-                Toast.makeText(this, "Đã chọn: Phường Điện Biên", Toast.LENGTH_SHORT).show();
+                PopupMenu popup = new PopupMenu(this, spinnerWard);
+                popup.getMenu().add("Phường Điện Biên");
+                popup.getMenu().add("Phường Mẫu");
+                popup.getMenu().add("Phường Bến Nghé");
+                popup.setOnMenuItemClickListener((MenuItem item) -> {
+                    if (tvSelectedWard != null) {
+                        tvSelectedWard.setText(item.getTitle());
+                        tvSelectedWard.setTextColor(0xFF141B2B);
+                    }
+                    return true;
+                });
+                popup.show();
             });
         }
 
@@ -126,6 +160,32 @@ public class AddAddressActivity extends AppCompatActivity {
 
     private void selectTag(String tag) {
         selectedTag = tag;
-        Toast.makeText(this, "Nhãn địa chỉ: " + tag, Toast.LENGTH_SHORT).show();
+        updateTagStyle(tagHome, tag.equals("Nhà riêng"), "Nhà riêng");
+        updateTagStyle(tagCompany, tag.equals("Công ty"), "Công ty");
+        updateTagStyle(tagOther, tag.equals("Khác"), "Khác");
+    }
+
+    private void updateTagStyle(TextView tagView, boolean isSelected, String label) {
+        if (tagView == null) return;
+        if (isSelected) {
+            tagView.setBackgroundResource(R.drawable.bg_chip_selected_orange);
+            tagView.setTextColor(0xFFFF5A36);
+            tagView.setText("✔ " + label);
+        } else {
+            tagView.setBackgroundResource(R.drawable.bg_chip_preference);
+            tagView.setTextColor(0xFF141B2B);
+            tagView.setText(label);
+        }
+    }
+
+    private void checkForPrefill() {
+        String label = getIntent().getStringExtra("ADDRESS_LABEL");
+        String detail = getIntent().getStringExtra("ADDRESS_DETAIL");
+        if (label != null) {
+            selectTag(label);
+        }
+        if (detail != null && edtDetailAddress != null) {
+            edtDetailAddress.setText(detail);
+        }
     }
 }

@@ -1,16 +1,26 @@
 package com.example.dishcision.network;
 
+import okhttp3.MultipartBody;
 import retrofit2.Call;
 import retrofit2.http.Body;
 import retrofit2.http.GET;
 import retrofit2.http.Header;
+import retrofit2.http.Multipart;
 import retrofit2.http.POST;
+<<<<<<< HEAD
+<<<<<<< HEAD
 import retrofit2.http.PUT;
+import retrofit2.http.Part;
 import retrofit2.http.Path;
+=======
+import retrofit2.http.Query;
+>>>>>>> 648d6e366e5b7fd833bc6eeeeb0b9cf1c73109d0
+=======
+import retrofit2.http.Query;
+>>>>>>> 648d6e366e5b7fd833bc6eeeeb0b9cf1c73109d0
 
 public interface ApiService {
 
-    // ── AUTHENTICATION ENDPOINTS ──────────────────
     @POST("auth/login")
     Call<AuthResponse> login(@Body LoginRequest request);
 
@@ -19,6 +29,9 @@ public interface ApiService {
 
     @POST("auth/forgot-password")
     Call<AuthResponse> forgotPassword(@Body ForgotPasswordRequest request);
+
+    @POST("auth/verify-otp")
+    Call<AuthResponse> verifyOtp(@Body VerifyOtpRequest request);
 
     @POST("auth/reset-password")
     Call<AuthResponse> resetPassword(@Body ResetPasswordRequest request);
@@ -29,43 +42,49 @@ public interface ApiService {
             @Body ChangePasswordRequest request
     );
 
-    // ── USER PROFILE ENDPOINTS ─────────────────────
-    @GET("users/me")
-    Call<AuthResponse> getMyProfile(@Header("Authorization") String authHeader);
+    @POST("ai/food-decide")
+    Call<FoodDecideResponse> foodDecide(@Body FoodDecideRequest request);
 
-    @PUT("users/me")
-    Call<AuthResponse> updateMyProfile(
+    @GET("accounts/blocked")
+    Call<AccountsListResponse> getBlockedAccounts(@Header("Authorization") String authHeader);
+
+    @POST("accounts/unblock")
+    Call<AccountsListResponse> unblockAccount(
             @Header("Authorization") String authHeader,
-            @Body Object profileData
+            @Body AccountActionRequest request
     );
 
-    @GET("users/{userId}")
-    Call<AuthResponse> getUserProfile(@Path("userId") String userId);
+    @GET("help/inbox")
+    Call<HelpInboxResponse> getHelpInbox(@Header("Authorization") String authHeader);
 
-    @POST("users/{userId}/follow")
-    Call<AuthResponse> followUser(
-            @Header("Authorization") String authHeader,
-            @Path("userId") String userId
-    );
+    @GET("help/ticket")
+    Call<HelpDetailResponse> getTicketDetail(@Header("Authorization") String authHeader, @Query("ticketId") String ticketId);
 
-    // ── TASTE PREFERENCES ENDPOINTS ───────────────
-    @GET("preferences")
-    Call<Object> getPreferences(@Header("Authorization") String authHeader);
+    @GET("sessions")
+    Call<SessionsResponse> getSessions(@Header("Authorization") String authHeader);
 
-    @PUT("preferences")
-    Call<Object> updatePreferences(
-            @Header("Authorization") String authHeader,
-            @Body Object preferences
-    );
+    @POST("sessions/revoke")
+    Call<SessionsResponse> revokeSession(@Header("Authorization") String authHeader, @Body RevokeSessionRequest request);
 
-    // ── POSTS & REVIEWS ENDPOINTS ─────────────────
+<<<<<<< HEAD
+<<<<<<< HEAD
+    // ── POSTS & REVIEWS & MEDIA UPLOAD ENDPOINTS ──
     @GET("posts")
     Call<Object> getFeedPosts(@Header("Authorization") String authHeader);
+=======
+    @GET("privacy")
+    Call<PrivacySettingsResponse> getPrivacySettings(@Header("Authorization") String authHeader);
+>>>>>>> 648d6e366e5b7fd833bc6eeeeb0b9cf1c73109d0
 
-    @POST("posts")
-    Call<Object> createPost(
+    @POST("privacy/update")
+    Call<PrivacySettingsResponse> updatePrivacySettings(@Header("Authorization") String authHeader, @Body PrivacySettingsModel request);
+
+<<<<<<< HEAD
+    @Multipart
+    @POST("posts/upload-media")
+    Call<Object> uploadMedia(
             @Header("Authorization") String authHeader,
-            @Body Object postRequest
+            @Part MultipartBody.Part file
     );
 
     @POST("reviews")
@@ -73,14 +92,36 @@ public interface ApiService {
             @Header("Authorization") String authHeader,
             @Body Object reviewRequest
     );
+=======
+    @POST("report")
+    Call<ReportContentResponse> createReport(@Header("Authorization") String authHeader, @Body ReportContentRequest request);
+>>>>>>> 648d6e366e5b7fd833bc6eeeeb0b9cf1c73109d0
+=======
+    @GET("privacy")
+    Call<PrivacySettingsResponse> getPrivacySettings(@Header("Authorization") String authHeader);
 
-    // ── NOTIFICATIONS ENDPOINTS ───────────────────
-    @GET("notifications")
-    Call<Object> getNotifications(@Header("Authorization") String authHeader);
+    @POST("privacy/update")
+    Call<PrivacySettingsResponse> updatePrivacySettings(@Header("Authorization") String authHeader, @Body PrivacySettingsModel request);
 
-    @PUT("notifications/{notificationId}/read")
-    Call<Object> markNotificationRead(
-            @Header("Authorization") String authHeader,
-            @Path("notificationId") String notificationId
-    );
+    @POST("report")
+    Call<ReportContentResponse> createReport(@Header("Authorization") String authHeader, @Body ReportContentRequest request);
+>>>>>>> 648d6e366e5b7fd833bc6eeeeb0b9cf1c73109d0
+
+    @GET("accounts/restricted")
+    Call<AccountsListResponse> getRestrictedAccounts(@Header("Authorization") String authHeader);
+
+    @POST("accounts/unrestrict")
+    Call<AccountsListResponse> unrestrictAccount(@Header("Authorization") String authHeader, @Body AccountActionRequest request);
+
+    @GET("2fa/status")
+    Call<TwoFactorStatusResponse> get2FAStatus(@Header("Authorization") String authHeader);
+
+    @POST("2fa/disable")
+    Call<TwoFactorStatusResponse> disable2FA(@Header("Authorization") String authHeader);
+
+    @POST("2fa/verify")
+    Call<TwoFactorStatusResponse> verify2FA(@Header("Authorization") String authHeader, @Body TwoFactorVerifyRequest request);
+
+    @POST("help/ticket")
+    Call<HelpCreateResponse> createTicket(@Header("Authorization") String authHeader, @Body HelpCreateRequest request);
 }
