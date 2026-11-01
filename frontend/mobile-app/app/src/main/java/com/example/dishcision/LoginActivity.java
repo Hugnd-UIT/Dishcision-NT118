@@ -121,8 +121,6 @@ public class LoginActivity extends AppCompatActivity {
             return;
         }
 
-<<<<<<< HEAD
-<<<<<<< HEAD
         if (password.isEmpty()) {
             Toast.makeText(this, "Vui lòng nhập Mật khẩu!", Toast.LENGTH_SHORT).show();
             if (edtPassword != null) edtPassword.requestFocus();
@@ -134,7 +132,6 @@ public class LoginActivity extends AppCompatActivity {
 
         ApiClient.getApiService().login(request).enqueue(new Callback<AuthResponse>() {
 =======
-=======
 >>>>>>> 648d6e366e5b7fd833bc6eeeeb0b9cf1c73109d0
         final String loginEmail = email;
         com.example.dishcision.network.LoginRequest request = new com.example.dishcision.network.LoginRequest(email, password);
@@ -143,8 +140,6 @@ public class LoginActivity extends AppCompatActivity {
             @Override
             public void onResponse(Call<AuthResponse> call, Response<AuthResponse> response) {
                 if (response.isSuccessful() && response.body() != null) {
-<<<<<<< HEAD
-<<<<<<< HEAD
                     AuthResponse authData = response.body();
                     String token = authData.getToken();
                     tokenManager.saveAuthData(token, email, "");
@@ -183,16 +178,8 @@ public class LoginActivity extends AppCompatActivity {
             }
 
             @Override
-<<<<<<< HEAD
             public void onFailure(Call<AuthResponse> call, Throwable t) {
                 Toast.makeText(LoginActivity.this, "Lỗi kết nối Server API Docker: " + t.getMessage(), Toast.LENGTH_LONG).show();
-=======
-            public void onFailure(retrofit2.Call<com.example.dishcision.network.AuthResponse> call, Throwable t) {
-                Toast.makeText(LoginActivity.this, "Đăng nhập thành công", Toast.LENGTH_SHORT).show();
-                Intent intent = new Intent(LoginActivity.this, HomeActivity.class);
-                startActivity(intent);
-                finish();
->>>>>>> 648d6e366e5b7fd833bc6eeeeb0b9cf1c73109d0
             }
         });
     }

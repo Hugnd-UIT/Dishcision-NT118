@@ -7,11 +7,10 @@ import retrofit2.http.GET;
 import retrofit2.http.Header;
 import retrofit2.http.Multipart;
 import retrofit2.http.POST;
-<<<<<<< HEAD
-<<<<<<< HEAD
 import retrofit2.http.PUT;
 import retrofit2.http.Part;
 import retrofit2.http.Path;
+import retrofit2.http.Query;
 =======
 import retrofit2.http.Query;
 >>>>>>> 648d6e366e5b7fd833bc6eeeeb0b9cf1c73109d0
@@ -66,20 +65,16 @@ public interface ApiService {
     @POST("sessions/revoke")
     Call<SessionsResponse> revokeSession(@Header("Authorization") String authHeader, @Body RevokeSessionRequest request);
 
-<<<<<<< HEAD
-<<<<<<< HEAD
     // ── POSTS & REVIEWS & MEDIA UPLOAD ENDPOINTS ──
     @GET("posts")
     Call<Object> getFeedPosts(@Header("Authorization") String authHeader);
-=======
+
     @GET("privacy")
     Call<PrivacySettingsResponse> getPrivacySettings(@Header("Authorization") String authHeader);
->>>>>>> 648d6e366e5b7fd833bc6eeeeb0b9cf1c73109d0
 
     @POST("privacy/update")
     Call<PrivacySettingsResponse> updatePrivacySettings(@Header("Authorization") String authHeader, @Body PrivacySettingsModel request);
 
-<<<<<<< HEAD
     @Multipart
     @POST("posts/upload-media")
     Call<Object> uploadMedia(
@@ -92,10 +87,9 @@ public interface ApiService {
             @Header("Authorization") String authHeader,
             @Body Object reviewRequest
     );
-=======
+
     @POST("report")
     Call<ReportContentResponse> createReport(@Header("Authorization") String authHeader, @Body ReportContentRequest request);
->>>>>>> 648d6e366e5b7fd833bc6eeeeb0b9cf1c73109d0
 =======
     @GET("privacy")
     Call<PrivacySettingsResponse> getPrivacySettings(@Header("Authorization") String authHeader);
@@ -110,6 +104,20 @@ public interface ApiService {
     @GET("accounts/restricted")
     Call<AccountsListResponse> getRestrictedAccounts(@Header("Authorization") String authHeader);
 
+=======
+    @GET("privacy")
+    Call<PrivacySettingsResponse> getPrivacySettings(@Header("Authorization") String authHeader);
+
+    @POST("privacy/update")
+    Call<PrivacySettingsResponse> updatePrivacySettings(@Header("Authorization") String authHeader, @Body PrivacySettingsModel request);
+
+    @POST("report")
+    Call<ReportContentResponse> createReport(@Header("Authorization") String authHeader, @Body ReportContentRequest request);
+
+    @GET("accounts/restricted")
+    Call<AccountsListResponse> getRestrictedAccounts(@Header("Authorization") String authHeader);
+
+>>>>>>> 648d6e366e5b7fd833bc6eeeeb0b9cf1c73109d0
     @POST("accounts/unrestrict")
     Call<AccountsListResponse> unrestrictAccount(@Header("Authorization") String authHeader, @Body AccountActionRequest request);
 

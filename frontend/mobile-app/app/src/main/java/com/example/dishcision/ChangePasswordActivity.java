@@ -117,8 +117,6 @@ public class ChangePasswordActivity extends AppCompatActivity {
                 String authToken = tokenManager.getFormattedToken();
 
                 com.example.dishcision.network.ChangePasswordRequest request = new com.example.dishcision.network.ChangePasswordRequest(currentPass, newPass);
-<<<<<<< HEAD
-<<<<<<< HEAD
                 com.example.dishcision.network.ApiClient.getApiService().changePassword(authToken, request).enqueue(new retrofit2.Callback<com.example.dishcision.network.AuthResponse>() {
 =======
                 com.example.dishcision.network.ApiClient.getApiService().changePassword(com.example.dishcision.network.ApiClient.getAuthHeader(ChangePasswordActivity.this), request).enqueue(new retrofit2.Callback<com.example.dishcision.network.AuthResponse>() {
