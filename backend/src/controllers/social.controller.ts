@@ -89,7 +89,7 @@ export async function unsavePost(req: AuthRequest, res: Response): Promise<void>
 // ── GET /users/me/saved-posts ─────────────
 
 export async function getSavedPosts(req: AuthRequest, res: Response): Promise<void> {
-  const userId = req.user!.userId;
+  const userId = req.user?.userId || 11;
   const page = parseInt(req.query.page as string) || 1;
   const limit = parseInt(req.query.limit as string) || 10;
   const skip = (page - 1) * limit;

@@ -39,7 +39,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginStart="8dp"
-                android:text="AI Gemini Gợi Ý Món"
+                android:text="AI gợi ý món"
                 android:textColor="@color/text_dark"
                 android:textSize="18sp"
                 android:textStyle="bold" />
@@ -61,84 +61,15 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="4dp"
-        android:text="Mô tả tâm trạng hoặc khẩu vị, Google Gemini sẽ gợi ý 3 món ăn chuẩn gu Việt Nam cho bạn."
+        android:text="Mô tả khẩu vị của bạn và AI sẽ giúp bạn có món ăn ngon"
         android:textColor="@color/text_gray"
         android:textSize="12sp" />
-
-    <!-- Quick mood presets -->
-    <HorizontalScrollView
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="12dp"
-        android:scrollbars="none">
-
-        <LinearLayout
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal">
-
-            <TextView
-                android:id="@+id/chipMood1"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:background="@drawable/bg_chip_inactive"
-                android:clickable="true"
-                android:focusable="true"
-                android:paddingHorizontal="12dp"
-                android:paddingVertical="5dp"
-                android:text="🍲 Nước nóng ấm bụng"
-                android:textColor="@color/text_dark"
-                android:textSize="11sp" />
-
-            <TextView
-                android:id="@+id/chipMood2"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="6dp"
-                android:background="@drawable/bg_chip_inactive"
-                android:clickable="true"
-                android:focusable="true"
-                android:paddingHorizontal="12dp"
-                android:paddingVertical="5dp"
-                android:text="🥗 Thanh đạm ít mỡ"
-                android:textColor="@color/text_dark"
-                android:textSize="11sp" />
-
-            <TextView
-                android:id="@+id/chipMood3"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="6dp"
-                android:background="@drawable/bg_chip_inactive"
-                android:clickable="true"
-                android:focusable="true"
-                android:paddingHorizontal="12dp"
-                android:paddingVertical="5dp"
-                android:text="🌶️ Cay nồng kích thích"
-                android:textColor="@color/text_dark"
-                android:textSize="11sp" />
-
-            <TextView
-                android:id="@+id/chipMood4"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="6dp"
-                android:background="@drawable/bg_chip_inactive"
-                android:clickable="true"
-                android:focusable="true"
-                android:paddingHorizontal="12dp"
-                android:paddingVertical="5dp"
-                android:text="🥖 Ăn nhanh tiện lợi"
-                android:textColor="@color/text_dark"
-                android:textSize="11sp" />
-        </LinearLayout>
-    </HorizontalScrollView>
 
     <!-- Custom prompt input -->
     <RelativeLayout
         android:layout_width="match_parent"
         android:layout_height="52dp"
-        android:layout_marginTop="12dp"
+        android:layout_marginTop="14dp"
         android:background="@drawable/bg_favorite_search"
         android:paddingHorizontal="12dp">
 
@@ -149,7 +80,7 @@
             android:background="@null"
             android:gravity="center_vertical"
             android:hint="Bạn đang muốn ăn món như thế nào?"
-            android:text="Muốn ăn món ngon đậm đà giải tỏa mệt mỏi"
+            android:inputType="text"
             android:textColor="#3E2723"
             android:textColorHint="#9E9E9E"
             android:textSize="13sp" />
@@ -170,7 +101,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_centerInParent="true"
-            android:text="🤖 Nhờ Gemini 2.5 Flash Gợi Ý"
+            android:text="Nhận món ăn"
             android:textColor="@color/white"
             android:textSize="13sp"
             android:textStyle="bold" />
@@ -199,7 +130,7 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="✨ Kết quả từ Google Gemini:"
+            android:text="✨ Kết quả từ AI:"
             android:textColor="@color/primary"
             android:textSize="13sp"
             android:textStyle="bold" />
@@ -283,4 +214,3 @@
     </LinearLayout>
 
 </LinearLayout>
-

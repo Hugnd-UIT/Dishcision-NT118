@@ -128,6 +128,7 @@
             app:tint="#8C6D63" />
 
         <EditText
+            android:id="@+id/edtSearchShare"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:layout_centerVertical="true"
@@ -141,12 +142,12 @@
             android:textSize="13sp" />
     </RelativeLayout>
 
-    <!-- Quick Contacts Row -->
+    <!-- Quick Contacts Row Header -->
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="14dp"
-        android:text="Gửi trong Dishcision"
+        android:text="Gửi cho bạn bè"
         android:textColor="@color/text_gray"
         android:textSize="12sp"
         android:textStyle="bold" />
@@ -157,88 +158,175 @@
         android:layout_marginTop="10dp"
         android:orientation="horizontal">
 
+        <!-- Contact 1: Maya Lin -->
         <LinearLayout
-            android:layout_width="64dp"
+            android:id="@+id/contactMaya"
+            android:layout_width="72dp"
             android:layout_height="wrap_content"
+            android:clickable="true"
+            android:focusable="true"
             android:gravity="center_horizontal"
             android:orientation="vertical">
 
             <RelativeLayout
-                android:layout_width="48dp"
-                android:layout_height="48dp"
-                android:background="@drawable/bg_logo_circle">
+                android:layout_width="52dp"
+                android:layout_height="52dp">
 
-                <ImageView
-                    android:layout_width="match_parent"
-                    android:layout_height="match_parent"
-                    android:contentDescription="@string/app_name"
-                    android:scaleType="fitCenter"
-                    android:src="@drawable/logo" />
+                <RelativeLayout
+                    android:layout_width="48dp"
+                    android:layout_height="48dp"
+                    android:layout_centerInParent="true"
+                    android:background="@drawable/bg_logo_circle">
+
+                    <ImageView
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:contentDescription="@string/app_name"
+                        android:scaleType="fitCenter"
+                        android:src="@drawable/logo" />
+                </RelativeLayout>
+
+                <!-- Checkmark Tick Badge -->
+                <TextView
+                    android:id="@+id/tickMaya"
+                    android:layout_width="18dp"
+                    android:layout_height="18dp"
+                    android:layout_alignParentEnd="true"
+                    android:layout_alignParentTop="true"
+                    android:background="@drawable/bg_badge_verified"
+                    android:gravity="center"
+                    android:text="✓"
+                    android:textColor="#0A8050"
+                    android:textSize="11sp"
+                    android:textStyle="bold"
+                    android:visibility="gone" />
             </RelativeLayout>
 
             <TextView
-                android:layout_width="wrap_content"
+                android:id="@+id/tvNameMaya"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="4dp"
+                android:ellipsize="end"
+                android:gravity="center"
+                android:maxLines="1"
                 android:text="Maya Lin"
                 android:textColor="@color/text_dark"
                 android:textSize="11sp" />
         </LinearLayout>
 
+        <!-- Contact 2: Linh Đan -->
         <LinearLayout
-            android:layout_width="64dp"
+            android:id="@+id/contactFriends"
+            android:layout_width="72dp"
             android:layout_height="wrap_content"
-            android:layout_marginStart="10dp"
+            android:layout_marginStart="8dp"
+            android:clickable="true"
+            android:focusable="true"
             android:gravity="center_horizontal"
             android:orientation="vertical">
 
             <RelativeLayout
-                android:layout_width="48dp"
-                android:layout_height="48dp"
-                android:background="@drawable/bg_logo_circle">
+                android:layout_width="52dp"
+                android:layout_height="52dp">
 
-                <ImageView
-                    android:layout_width="24dp"
-                    android:layout_height="24dp"
+                <RelativeLayout
+                    android:layout_width="48dp"
+                    android:layout_height="48dp"
                     android:layout_centerInParent="true"
-                    android:contentDescription="@string/app_name"
-                    android:src="@drawable/ic_group_outline" />
+                    android:background="@drawable/bg_logo_circle">
+
+                    <ImageView
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:contentDescription="@string/app_name"
+                        android:scaleType="fitCenter"
+                        android:src="@drawable/logo" />
+                </RelativeLayout>
+
+                <!-- Checkmark Tick Badge -->
+                <TextView
+                    android:id="@+id/tickFriends"
+                    android:layout_width="18dp"
+                    android:layout_height="18dp"
+                    android:layout_alignParentEnd="true"
+                    android:layout_alignParentTop="true"
+                    android:background="@drawable/bg_badge_verified"
+                    android:gravity="center"
+                    android:text="✓"
+                    android:textColor="#0A8050"
+                    android:textSize="11sp"
+                    android:textStyle="bold"
+                    android:visibility="gone" />
             </RelativeLayout>
 
             <TextView
-                android:layout_width="wrap_content"
+                android:id="@+id/tvNameFriends"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="4dp"
-                android:text="Bạn bè"
+                android:ellipsize="end"
+                android:gravity="center"
+                android:maxLines="1"
+                android:text="Linh Đan"
                 android:textColor="@color/text_dark"
                 android:textSize="11sp" />
         </LinearLayout>
 
+        <!-- Contact 3: Quang Huy -->
         <LinearLayout
-            android:layout_width="64dp"
+            android:id="@+id/contactGroup"
+            android:layout_width="72dp"
             android:layout_height="wrap_content"
-            android:layout_marginStart="10dp"
+            android:layout_marginStart="8dp"
+            android:clickable="true"
+            android:focusable="true"
             android:gravity="center_horizontal"
             android:orientation="vertical">
 
             <RelativeLayout
-                android:layout_width="48dp"
-                android:layout_height="48dp"
-                android:background="@drawable/bg_logo_circle">
+                android:layout_width="52dp"
+                android:layout_height="52dp">
 
-                <ImageView
-                    android:layout_width="24dp"
-                    android:layout_height="24dp"
+                <RelativeLayout
+                    android:layout_width="48dp"
+                    android:layout_height="48dp"
                     android:layout_centerInParent="true"
-                    android:contentDescription="@string/app_name"
-                    android:src="@drawable/ic_store" />
+                    android:background="@drawable/bg_logo_circle">
+
+                    <ImageView
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:contentDescription="@string/app_name"
+                        android:scaleType="fitCenter"
+                        android:src="@drawable/logo" />
+                </RelativeLayout>
+
+                <!-- Checkmark Tick Badge -->
+                <TextView
+                    android:id="@+id/tickGroup"
+                    android:layout_width="18dp"
+                    android:layout_height="18dp"
+                    android:layout_alignParentEnd="true"
+                    android:layout_alignParentTop="true"
+                    android:background="@drawable/bg_badge_verified"
+                    android:gravity="center"
+                    android:text="✓"
+                    android:textColor="#0A8050"
+                    android:textSize="11sp"
+                    android:textStyle="bold"
+                    android:visibility="gone" />
             </RelativeLayout>
 
             <TextView
-                android:layout_width="wrap_content"
+                android:id="@+id/tvNameGroup"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="4dp"
-                android:text="Nhóm ăn ngon"
+                android:ellipsize="end"
+                android:gravity="center"
+                android:maxLines="1"
+                android:text="Quang Huy"
                 android:textColor="@color/text_dark"
                 android:textSize="11sp" />
         </LinearLayout>
@@ -252,6 +340,7 @@
         android:orientation="horizontal">
 
         <TextView
+            android:id="@+id/btnCopyLink"
             android:layout_width="0dp"
             android:layout_height="match_parent"
             android:layout_marginEnd="6dp"
@@ -279,7 +368,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_centerInParent="true"
-                android:text="✈️ Gửi trong Dishcision"
+                android:text="Chia sẻ bài viết"
                 android:textColor="@color/white"
                 android:textSize="13sp"
                 android:textStyle="bold" />

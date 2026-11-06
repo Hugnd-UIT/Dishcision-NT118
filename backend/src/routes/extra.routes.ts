@@ -5,6 +5,7 @@ import {
   getDishDetail,
   getDishes,
   getStoreDetail,
+  getFollowingRestaurants,
   getAddresses,
   addAddress,
   deleteAddress,
@@ -23,10 +24,12 @@ router.post('/upload/multiple', optionalAuth, mediaUpload.array('files', 10), up
 router.get('/stories', optionalAuth, getStories);
 router.post('/stories', optionalAuth, createStory);
 
-// Dishes & Stores (DishDetailActivity, StoreDetailActivity)
+// Dishes & Stores (DishDetailActivity, StoreDetailActivity, FavoriteRestaurantsActivity)
 router.get('/dishes', optionalAuth, getDishes);
 router.get('/dishes/:id', optionalAuth, getDishDetail);
 router.get('/stores/:id', optionalAuth, getStoreDetail);
+router.get('/restaurants/following', optionalAuth, getFollowingRestaurants);
+router.get('/restaurants', optionalAuth, getFollowingRestaurants);
 
 // Delivery Addresses (DeliveryAddressesActivity, AddAddressActivity)
 router.get('/users/me/addresses', optionalAuth, getAddresses);

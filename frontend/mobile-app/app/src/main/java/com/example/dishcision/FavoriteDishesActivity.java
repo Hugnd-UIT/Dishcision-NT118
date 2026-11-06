@@ -14,6 +14,13 @@ import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 
+import com.example.dishcision.network.ApiClient;
+import com.example.dishcision.network.FeedPostsResponse;
+
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
+
 public class FavoriteDishesActivity extends AppCompatActivity {
 
     private ImageView btnBack;
@@ -47,6 +54,7 @@ public class FavoriteDishesActivity extends AppCompatActivity {
 
         initViews();
         setupListeners();
+        fetchFavoriteDishesFromBackend();
     }
 
     private void initViews() {
@@ -138,5 +146,16 @@ public class FavoriteDishesActivity extends AppCompatActivity {
         selectedChip.setTypeface(null, Typeface.BOLD);
 
         currentActiveChip = selectedChip;
+    }
+
+    private void fetchFavoriteDishesFromBackend() {
+        String authHeader = ApiClient.getAuthHeader(this);
+        ApiClient.getApiService().getSavedPosts(authHeader).enqueue(new Callback<FeedPostsResponse>() {
+            @Override
+            public void onResponse(Call<FeedPostsResponse> call, Response<FeedPostsResponse> response) {}
+
+            @Override
+            public void onFailure(Call<FeedPostsResponse> call, Throwable t) {}
+        });
     }
 }

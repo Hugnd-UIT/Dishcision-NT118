@@ -17,6 +17,31 @@
         android:scaleType="centerCrop"
         android:src="@drawable/logo" />
 
+    <!-- Left & Right Touch Overlay Areas for Story Navigation -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_above="@id/layoutReplyBar"
+        android:layout_below="@id/layoutStoryHeader"
+        android:orientation="horizontal">
+
+        <View
+            android:id="@+id/btnPrevStory"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="3.5"
+            android:clickable="true"
+            android:focusable="true" />
+
+        <View
+            android:id="@+id/btnNextStory"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="6.5"
+            android:clickable="true"
+            android:focusable="true" />
+    </LinearLayout>
+
     <!-- Top & Bottom Gradient Overlay for legibility -->
     <View
         android:layout_width="match_parent"
@@ -42,12 +67,14 @@
         android:orientation="horizontal">
 
         <View
+            android:id="@+id/segment1"
             android:layout_width="0dp"
             android:layout_height="match_parent"
             android:layout_weight="1"
             android:background="@color/white" />
 
         <View
+            android:id="@+id/segment2"
             android:layout_width="0dp"
             android:layout_height="match_parent"
             android:layout_marginStart="4dp"
@@ -55,6 +82,7 @@
             android:background="#66FFFFFF" />
 
         <View
+            android:id="@+id/segment3"
             android:layout_width="0dp"
             android:layout_height="match_parent"
             android:layout_marginStart="4dp"

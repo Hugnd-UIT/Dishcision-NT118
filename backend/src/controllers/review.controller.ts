@@ -21,7 +21,7 @@ const AUTHOR_SELECT = {
 // ── GET /reviews ──────────────────────────
 
 export async function getReviews(req: Request, res: Response): Promise<void> {
-  const { restaurantName, rating, page = '1', limit = '10' } = req.query;
+  const { restaurantName, rating, authorId, page = '1', limit = '10' } = req.query;
   const p = parseInt(page as string);
   const l = parseInt(limit as string);
   const skip = (p - 1) * l;
@@ -29,6 +29,10 @@ export async function getReviews(req: Request, res: Response): Promise<void> {
   const where: any = {};
   if (restaurantName) where.restaurantName = { contains: restaurantName as string, mode: 'insensitive' };
   if (rating) where.rating = parseInt(rating as string);
+  if (authorId) {
+    const aid = parseInt(authorId as string);
+    if (!isNaN(aid)) where.authorId = aid;
+  }
 
   const [reviews, total] = await Promise.all([
     prisma.review.findMany({

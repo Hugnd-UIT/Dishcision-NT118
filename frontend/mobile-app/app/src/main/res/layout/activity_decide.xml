@@ -25,10 +25,11 @@
             android:orientation="horizontal">
 
             <ImageView
-                android:layout_width="20dp"
-                android:layout_height="20dp"
+                android:layout_width="28dp"
+                android:layout_height="28dp"
                 android:contentDescription="@string/app_name"
-                android:src="@drawable/ic_dice" />
+                android:scaleType="fitCenter"
+                android:src="@drawable/logo" />
 
             <TextView
                 android:layout_width="wrap_content"
@@ -54,22 +55,6 @@
                 android:contentDescription="@string/app_name"
                 android:focusable="true"
                 android:src="@drawable/ic_notification" />
-
-            <RelativeLayout
-                android:layout_width="28dp"
-                android:layout_height="28dp"
-                android:layout_marginStart="12dp"
-                android:layout_toEndOf="@id/btnNotification"
-                android:background="@drawable/bg_logo_circle"
-                android:padding="6dp">
-
-                <ImageView
-                    android:layout_width="match_parent"
-                    android:layout_height="match_parent"
-                    android:contentDescription="@string/app_name"
-                    android:scaleType="fitCenter"
-                    android:src="@drawable/logo" />
-            </RelativeLayout>
         </RelativeLayout>
     </RelativeLayout>
 
@@ -316,7 +301,7 @@
                     android:gravity="center_vertical"
                     android:orientation="horizontal">
 
-                    <!-- AI Gemini Suggestion Button -->
+                    <!-- AI Suggestion Button -->
                     <LinearLayout
                         android:id="@+id/btnAiSuggest"
                         android:layout_width="wrap_content"
@@ -330,17 +315,10 @@
                         android:paddingHorizontal="12dp"
                         android:paddingVertical="6dp">
 
-                        <ImageView
-                            android:layout_width="16dp"
-                            android:layout_height="16dp"
-                            android:contentDescription="@string/app_name"
-                            android:src="@drawable/ic_sparkle" />
-
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:layout_marginStart="4dp"
-                            android:text="✨ AI Gợi ý món"
+                            android:text="AI gợi ý"
                             android:textColor="#E65100"
                             android:textSize="12sp"
                             android:textStyle="bold" />
@@ -413,6 +391,20 @@
                         android:paddingHorizontal="14dp"
                         android:paddingVertical="6dp"
                         android:text="12 món"
+                        android:textColor="@color/text_dark"
+                        android:textSize="12sp" />
+
+                    <TextView
+                        android:id="@+id/chip15Items"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="8dp"
+                        android:background="@drawable/bg_chip_inactive"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:paddingHorizontal="14dp"
+                        android:paddingVertical="6dp"
+                        android:text="15 món"
                         android:textColor="@color/text_dark"
                         android:textSize="12sp" />
                 </LinearLayout>
@@ -499,14 +491,6 @@
                         android:textStyle="bold" />
                 </RelativeLayout>
 
-                <TextView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="2dp"
-                    android:text="Mỗi dòng là một món ăn trên vòng quay"
-                    android:textColor="@color/text_gray"
-                    android:textSize="12sp" />
-
                 <RelativeLayout
                     android:layout_width="match_parent"
                     android:layout_height="120dp"
@@ -541,7 +525,7 @@
                         android:layout_centerVertical="true"
                         android:clickable="true"
                         android:focusable="true"
-                        android:text="🗑 Xóa trắng"
+                        android:text="Xóa tất cả"
                         android:textColor="@color/text_gray"
                         android:textSize="13sp" />
 
@@ -563,7 +547,7 @@
                             android:layout_centerInParent="true"
                             android:clickable="false"
                             android:focusable="false"
-                            android:text="🔄 Cập nhật vòng quay"
+                            android:text="Cập nhật vòng quay"
                             android:textColor="@color/white"
                             android:textSize="12sp"
                             android:textStyle="bold" />

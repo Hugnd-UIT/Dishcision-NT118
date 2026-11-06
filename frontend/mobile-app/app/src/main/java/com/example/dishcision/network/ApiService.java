@@ -38,7 +38,7 @@ public interface ApiService {
 
     // ── USER PROFILE ENDPOINTS ─────────────────────
     @GET("users/me")
-    Call<AuthResponse> getMyProfile(@Header("Authorization") String authHeader);
+    Call<UserProfileResponse> getMyProfile(@Header("Authorization") String authHeader);
 
     @PUT("users/me")
     Call<AuthResponse> updateMyProfile(
@@ -47,7 +47,16 @@ public interface ApiService {
     );
 
     @GET("users/{userId}")
-    Call<AuthResponse> getUserProfile(@Path("userId") String userId);
+    Call<UserProfileResponse> getUserProfile(@Path("userId") String userId);
+
+    @GET("users/me/posts")
+    Call<FeedPostsResponse> getMyPosts(@Header("Authorization") String authHeader);
+
+    @GET("users/{userId}/posts")
+    Call<FeedPostsResponse> getUserPosts(
+            @Header("Authorization") String authHeader,
+            @Path("userId") String userId
+    );
 
     @POST("users/{userId}/follow")
     Call<AuthResponse> followUser(
@@ -92,7 +101,26 @@ public interface ApiService {
 
     // ── POSTS & REVIEWS & MEDIA UPLOAD ENDPOINTS ──
     @GET("posts")
-    Call<Object> getFeedPosts(@Header("Authorization") String authHeader);
+    Call<FeedPostsResponse> getFeedPosts(@Header("Authorization") String authHeader);
+
+    @GET("users/me/saved-posts")
+    Call<FeedPostsResponse> getSavedPosts(@Header("Authorization") String authHeader);
+
+    @GET("restaurants/following")
+    Call<FollowingRestaurantsResponse> getFollowingRestaurants(@Header("Authorization") String authHeader);
+
+    @GET("reviews")
+    Call<ReviewsResponse> getReviews(
+            @Query("restaurantName") String restaurantName,
+            @Query("rating") Integer rating,
+            @Query("authorId") String authorId
+    );
+
+    @POST("posts/{postId}/bookmark")
+    Call<Object> bookmarkPost(
+            @Header("Authorization") String authHeader,
+            @Path("postId") String postId
+    );
 
     @GET("privacy")
     Call<PrivacySettingsResponse> getPrivacySettings(@Header("Authorization") String authHeader);

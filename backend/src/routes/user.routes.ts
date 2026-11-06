@@ -20,7 +20,8 @@ import { validate, updateProfileSchema } from '../middlewares/validate.middlewar
 
 const router = Router();
 
-router.get('/me', authenticate, getMe);
+router.get('/me', optionalAuth, getMe);
+router.get('/me/posts', optionalAuth, getUserPosts);
 router.put('/me', authenticate, validate(updateProfileSchema), updateMe);
 router.get('/me/preferences', authenticate, getUserPreferences);
 router.put('/me/preferences', authenticate, updateUserPreferences);

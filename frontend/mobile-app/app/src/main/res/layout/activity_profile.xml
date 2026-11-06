@@ -342,6 +342,7 @@
                     android:orientation="vertical">
 
                     <TextView
+                        android:id="@+id/tvPostsCount"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="142"
@@ -371,6 +372,7 @@
                     android:orientation="vertical">
 
                     <TextView
+                        android:id="@+id/tvFollowersCount"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="24.8k"
@@ -400,6 +402,7 @@
                     android:orientation="vertical">
 
                     <TextView
+                        android:id="@+id/tvFollowingCount"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="680"

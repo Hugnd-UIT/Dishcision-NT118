@@ -15,12 +15,26 @@ import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 
+import com.example.dishcision.network.ApiClient;
+import com.example.dishcision.network.FeedPostsResponse;
 import com.google.android.material.bottomsheet.BottomSheetDialog;
+
+import java.util.List;
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
 
 public class MyPostsActivity extends AppCompatActivity {
 
     private ImageView btnBack;
     private ImageView btnNotification;
+
+    private TextView tvAuthorName1;
+    private TextView tvAuthorName2;
+    private TextView tvCaption1;
+    private TextView tvCaption2;
+    private TextView tvHashtags1;
+    private TextView tvHashtags2;
 
     private LinearLayout btnLike1;
     private LinearLayout btnLike2;
@@ -53,11 +67,19 @@ public class MyPostsActivity extends AppCompatActivity {
 
         initViews();
         setupListeners();
+        fetchMyPostsFromBackend();
     }
 
     private void initViews() {
         btnBack = findViewById(R.id.btnBack);
         btnNotification = findViewById(R.id.btnNotification);
+
+        tvAuthorName1 = findViewById(R.id.tvAuthorName1);
+        tvAuthorName2 = findViewById(R.id.tvAuthorName2);
+        tvCaption1 = findViewById(R.id.tvCaption1);
+        tvCaption2 = findViewById(R.id.tvCaption2);
+        tvHashtags1 = findViewById(R.id.tvHashtags1);
+        tvHashtags2 = findViewById(R.id.tvHashtags2);
 
         btnLike1 = findViewById(R.id.btnLike1);
         btnLike2 = findViewById(R.id.btnLike2);
@@ -173,5 +195,77 @@ public class MyPostsActivity extends AppCompatActivity {
         }
 
         bottomSheetDialog.show();
+    }
+
+    private void fetchMyPostsFromBackend() {
+        String authHeader = ApiClient.getAuthHeader(this);
+        ApiClient.getApiService().getMyPosts(authHeader).enqueue(new Callback<FeedPostsResponse>() {
+            @Override
+            public void onResponse(Call<FeedPostsResponse> call, Response<FeedPostsResponse> response) {
+                if (response.isSuccessful() && response.body() != null && response.body().getData() != null) {
+                    List<FeedPostsResponse.PostItem> posts = response.body().getData();
+                    bindMyPosts(posts);
+                }
+            }
+
+            @Override
+            public void onFailure(Call<FeedPostsResponse> call, Throwable t) {}
+        });
+    }
+
+    private void bindMyPosts(List<FeedPostsResponse.PostItem> posts) {
+        if (posts == null || posts.isEmpty()) return;
+
+        if (posts.size() > 0) {
+            FeedPostsResponse.PostItem p1 = posts.get(0);
+            if (p1.author != null && tvAuthorName1 != null && p1.author.fullName != null) {
+                tvAuthorName1.setText(p1.author.fullName);
+            }
+            if (tvCaption1 != null && p1.content != null) {
+                String authorPrefix = (p1.author != null && p1.author.username != null) ? p1.author.username + " " : "";
+                tvCaption1.setText(authorPrefix + p1.content);
+            }
+            if (tvHashtags1 != null && p1.hashtags != null && !p1.hashtags.isEmpty()) {
+                StringBuilder sb = new StringBuilder();
+                for (String h : p1.hashtags) {
+                    sb.append("#").append(h).append(" ");
+                }
+                tvHashtags1.setText(sb.toString().trim());
+            }
+            if (btnLike1 != null && p1.likesCount > 0) {
+                TextView txt = (TextView) btnLike1.getChildAt(1);
+                if (txt != null) txt.setText(p1.likesCount + " Thích");
+            }
+            if (btnComment1 != null && p1.commentsCount > 0) {
+                TextView txt = (TextView) btnComment1.getChildAt(1);
+                if (txt != null) txt.setText(p1.commentsCount + " Bình luận");
+            }
+        }
+
+        if (posts.size() > 1) {
+            FeedPostsResponse.PostItem p2 = posts.get(1);
+            if (p2.author != null && tvAuthorName2 != null && p2.author.fullName != null) {
+                tvAuthorName2.setText(p2.author.fullName);
+            }
+            if (tvCaption2 != null && p2.content != null) {
+                String authorPrefix = (p2.author != null && p2.author.username != null) ? p2.author.username + " " : "";
+                tvCaption2.setText(authorPrefix + p2.content);
+            }
+            if (tvHashtags2 != null && p2.hashtags != null && !p2.hashtags.isEmpty()) {
+                StringBuilder sb = new StringBuilder();
+                for (String h : p2.hashtags) {
+                    sb.append("#").append(h).append(" ");
+                }
+                tvHashtags2.setText(sb.toString().trim());
+            }
+            if (btnLike2 != null && p2.likesCount > 0) {
+                TextView txt = (TextView) btnLike2.getChildAt(1);
+                if (txt != null) txt.setText(p2.likesCount + " Thích");
+            }
+            if (btnComment2 != null && p2.commentsCount > 0) {
+                TextView txt = (TextView) btnComment2.getChildAt(1);
+                if (txt != null) txt.setText(p2.commentsCount + " Bình luận");
+            }
+        }
     }
 }
