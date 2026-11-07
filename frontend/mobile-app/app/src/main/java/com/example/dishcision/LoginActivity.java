@@ -94,6 +94,7 @@ public class LoginActivity extends AppCompatActivity {
                                         .putString("user_email", email)
                                         .putString("user_name", fullName)
                                         .putString("avatar_url", photoUrl)
+                                        .putBoolean("is_google_login", true)
                                         .apply();
 
                                 new TokenManager(LoginActivity.this).saveAuthData("google_token_" + System.currentTimeMillis(), email, fullName);
@@ -191,6 +192,10 @@ public class LoginActivity extends AppCompatActivity {
                     AuthResponse authData = response.body();
                     String token = authData.getToken();
                     tokenManager.saveAuthData(token, email, "");
+
+                    getSharedPreferences("DishcisionPrefs", MODE_PRIVATE).edit()
+                            .putBoolean("is_google_login", false)
+                            .apply();
 
                     Toast.makeText(LoginActivity.this, "Đăng nhập thành công!", Toast.LENGTH_SHORT).show();
                     Intent intent = new Intent(LoginActivity.this, HomeActivity.class);

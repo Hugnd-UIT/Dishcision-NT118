@@ -359,7 +359,15 @@ export async function changePassword(req: AuthRequest, res: Response): Promise<v
   const userId = req.user?.userId || 1;
 
   const user = await prisma.user.findUnique({ where: { id: userId } });
-  if (!user || !(await comparePassword(currentPassword, user.passwordHash))) {
+  if (!user) {
+    errorResponse(res, 'User not found', 404);
+    return;
+  }
+  if (!user.passwordHash || user.passwordHash === '') {
+    errorResponse(res, 'Tài khoản đăng nhập bằng Google không sử dụng mật khẩu', 400);
+    return;
+  }
+  if (!(await comparePassword(currentPassword, user.passwordHash))) {
     errorResponse(res, 'Current password is incorrect', 401);
     return;
   }

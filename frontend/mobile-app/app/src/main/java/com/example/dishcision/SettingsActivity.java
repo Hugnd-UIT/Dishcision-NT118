@@ -57,6 +57,10 @@ public class SettingsActivity extends AppCompatActivity {
         btnAccountManagement = findViewById(R.id.btnAccountManagement);
         btnSecurityLogin = findViewById(R.id.btnSecurityLogin);
         btnChangePassword = findViewById(R.id.btnChangePassword);
+        boolean isGoogleLogin = getSharedPreferences("DishcisionPrefs", MODE_PRIVATE).getBoolean("is_google_login", false);
+        if (isGoogleLogin && btnChangePassword != null) {
+            btnChangePassword.setVisibility(android.view.View.GONE);
+        }
         btnPrivacy = findViewById(R.id.btnPrivacy);
 
         btnTastePreferences = findViewById(R.id.btnTastePreferences);

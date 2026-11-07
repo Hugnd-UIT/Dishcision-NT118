@@ -63,6 +63,10 @@ public class SecurityLoginActivity extends AppCompatActivity {
         tv2FAStatusTag = findViewById(R.id.tv2FAStatusTag);
         btnSetup2FA = findViewById(R.id.btnSetup2FA);
         btnChangePassword = findViewById(R.id.btnChangePassword);
+        boolean isGoogleLogin = getSharedPreferences("DishcisionPrefs", MODE_PRIVATE).getBoolean("is_google_login", false);
+        if (isGoogleLogin && btnChangePassword != null) {
+            btnChangePassword.setVisibility(android.view.View.GONE);
+        }
         btnActiveSessions = findViewById(R.id.btnActiveSessions);
     }
 

@@ -34,3 +34,4 @@ public class AuthHelper {
         activity.finish();
     }
 }
+
