@@ -171,13 +171,7 @@ public class SettingsActivity extends AppCompatActivity {
         }
 
         if (btnLogout != null) {
-            btnLogout.setOnClickListener(v -> {
-                Toast.makeText(this, "Đã đăng xuất tài khoản", Toast.LENGTH_SHORT).show();
-                Intent intent = new Intent(SettingsActivity.this, LoginActivity.class);
-                intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-                startActivity(intent);
-                finish();
-            });
+            btnLogout.setOnClickListener(v -> com.example.dishcision.network.AuthHelper.logout(SettingsActivity.this));
         }
 
         if (btnDeleteAccount != null) {

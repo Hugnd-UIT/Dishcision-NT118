@@ -75,13 +75,7 @@ public class AccountMenuActivity extends AppCompatActivity {
         }
 
         if (menuLogout != null) {
-            menuLogout.setOnClickListener(v -> {
-                Toast.makeText(this, "Đã đăng xuất tài khoản", Toast.LENGTH_SHORT).show();
-                Intent intent = new Intent(AccountMenuActivity.this, LoginActivity.class);
-                intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-                startActivity(intent);
-                finish();
-            });
+            menuLogout.setOnClickListener(v -> com.example.dishcision.network.AuthHelper.logout(AccountMenuActivity.this));
         }
     }
 }

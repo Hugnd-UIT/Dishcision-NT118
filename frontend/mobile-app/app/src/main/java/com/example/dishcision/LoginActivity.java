@@ -129,8 +129,10 @@ public class LoginActivity extends AppCompatActivity {
         if (btnGoogleLogin != null) {
             btnGoogleLogin.setOnClickListener(v -> {
                 if (mGoogleSignInClient != null && googleSignInLauncher != null) {
-                    Intent signInIntent = mGoogleSignInClient.getSignInIntent();
-                    googleSignInLauncher.launch(signInIntent);
+                    mGoogleSignInClient.signOut().addOnCompleteListener(task -> {
+                        Intent signInIntent = mGoogleSignInClient.getSignInIntent();
+                        googleSignInLauncher.launch(signInIntent);
+                    });
                 }
             });
         }

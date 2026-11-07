@@ -134,8 +134,10 @@ public class RegisterActivity extends AppCompatActivity {
         if (btnGoogleRegister != null) {
             btnGoogleRegister.setOnClickListener(v -> {
                 if (mGoogleSignInClient != null && googleSignInLauncher != null) {
-                    Intent signInIntent = mGoogleSignInClient.getSignInIntent();
-                    googleSignInLauncher.launch(signInIntent);
+                    mGoogleSignInClient.signOut().addOnCompleteListener(task -> {
+                        Intent signInIntent = mGoogleSignInClient.getSignInIntent();
+                        googleSignInLauncher.launch(signInIntent);
+                    });
                 }
             });
         }
