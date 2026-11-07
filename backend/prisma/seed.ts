@@ -141,6 +141,109 @@ async function main() {
     },
   });
 
+  // Mock Users for Mobile App Home Screen & Discussions
+  const mayaLin = await prisma.user.upsert({
+    where: { username: 'mayafoodie' },
+    update: {},
+    create: {
+      username: 'mayafoodie',
+      email: 'mayafoodie@dishcision.com',
+      passwordHash: userPasswordHash,
+      fullName: 'Maya Lin',
+      role: Role.User,
+      accountStatus: AccountStatus.Active,
+      avatarUrl: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=400',
+      bio: 'Foodie đam mê các món chay thanh đạm 🥗✨',
+      gender: 'Female',
+      dateOfBirth: new Date('2000-03-12'),
+    },
+  });
+
+  const julianCole = await prisma.user.upsert({
+    where: { username: 'juliancole' },
+    update: {},
+    create: {
+      username: 'juliancole',
+      email: 'juliancole@dishcision.com',
+      passwordHash: userPasswordHash,
+      fullName: 'Julian Cole',
+      role: Role.User,
+      accountStatus: AccountStatus.Active,
+      avatarUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400',
+      bio: 'Pasta lover & Italian cuisine enthusiast 🍝🇮🇹',
+      gender: 'Male',
+      dateOfBirth: new Date('1997-08-25'),
+    },
+  });
+
+  const anNhien = await prisma.user.upsert({
+    where: { username: 'annhien_food' },
+    update: {},
+    create: {
+      username: 'annhien_food',
+      email: 'annhien@dishcision.com',
+      passwordHash: userPasswordHash,
+      fullName: 'An Nhiên',
+      role: Role.User,
+      accountStatus: AccountStatus.Active,
+      avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400',
+      bio: 'Tiệm bánh ngọt và những tách trà chiều 🍰🍓',
+      gender: 'Female',
+      dateOfBirth: new Date('2001-11-05'),
+    },
+  });
+
+  const minhAnh = await prisma.user.upsert({
+    where: { username: 'minhanh' },
+    update: {},
+    create: {
+      username: 'minhanh',
+      email: 'minhanh@dishcision.com',
+      passwordHash: userPasswordHash,
+      fullName: 'Minh Anh',
+      role: Role.User,
+      accountStatus: AccountStatus.Active,
+      avatarUrl: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=400',
+      bio: 'Thực khách sành ăn Hà Nội 🥗',
+      gender: 'Female',
+      dateOfBirth: new Date('2002-04-18'),
+    },
+  });
+
+  const linhHa = await prisma.user.upsert({
+    where: { username: 'linhha' },
+    update: {},
+    create: {
+      username: 'linhha',
+      email: 'linhha@dishcision.com',
+      passwordHash: userPasswordHash,
+      fullName: 'Linh Hà',
+      role: Role.User,
+      accountStatus: AccountStatus.Active,
+      avatarUrl: 'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=400',
+      bio: 'Mê đồ chay và trà thảo mộc 🍵',
+      gender: 'Female',
+      dateOfBirth: new Date('1999-07-22'),
+    },
+  });
+
+  const quangTran = await prisma.user.upsert({
+    where: { username: 'quangtran' },
+    update: {},
+    create: {
+      username: 'quangtran',
+      email: 'quangtran@dishcision.com',
+      passwordHash: userPasswordHash,
+      fullName: 'Quang Trần',
+      role: Role.User,
+      accountStatus: AccountStatus.Active,
+      avatarUrl: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=400',
+      bio: 'Đam mê ẩm thực Địa Trung Hải & nấm truffle 🍄',
+      gender: 'Male',
+      dateOfBirth: new Date('1996-10-30'),
+    },
+  });
+
   // ─────────────────────────────────────────
   // 3. SEED FOOD PREFERENCES
   // ─────────────────────────────────────────
@@ -168,7 +271,7 @@ async function main() {
 
   // Assign user preferences
   await prisma.userPreference.deleteMany({
-    where: { userId: { in: [userA.id, userB.id, userC.id] } },
+    where: { userId: { in: [userA.id, userB.id, userC.id, mayaLin.id, julianCole.id, anNhien.id] } },
   });
 
   await prisma.userPreference.createMany({
@@ -180,6 +283,10 @@ async function main() {
       { userId: userB.id, preferenceId: preferences[5].id }, // Healthy
       { userId: userC.id, preferenceId: preferences[0].id }, // Cay nồng
       { userId: userC.id, preferenceId: preferences[7].id }, // Lẩu & nướng
+      { userId: mayaLin.id, preferenceId: preferences[2].id }, // Ăn chay
+      { userId: mayaLin.id, preferenceId: preferences[5].id }, // Healthy
+      { userId: julianCole.id, preferenceId: preferences[0].id }, // Cay nồng
+      { userId: anNhien.id, preferenceId: preferences[1].id }, // Ngọt ngào
     ],
   });
 
@@ -211,7 +318,58 @@ async function main() {
   // ─────────────────────────────────────────
   console.log('📝 Seeding posts...');
 
+  // Clean up existing posts and post relations for idempotency
+  await prisma.report.deleteMany({});
+  await prisma.commentLike.deleteMany({});
+  await prisma.comment.deleteMany({});
+  await prisma.postLike.deleteMany({});
+  await prisma.postShare.deleteMany({});
+  await prisma.savedPost.deleteMany({});
+  await prisma.postImage.deleteMany({});
+  await prisma.post.deleteMany({});
+
+  const now = new Date();
   const postsData = [
+    // 1. Post by Maya Lin (Home Card 1)
+    {
+      authorId: mayaLin.id,
+      content:
+        'Tìm thấy tô salad ngũ sắc tươi ngon nhất phố! Từng hạt đậu gà rang giòn ngấm vị ớt paprika xông khói kết hợp xốt tahini béo bùi chuẩn vị. Cực kỳ đáng thử! 🥗✨',
+      locationUrl: 'https://maps.google.com/?q=The+Green+Fork+Bistro',
+      voucherCode: 'SALADVEG15',
+      hashtags: ['MonChay', 'AnLanhManh', 'AmThucXanh'],
+      createdAt: new Date(now.getTime() - 2 * 3600 * 1000), // 2 hours ago
+      images: [
+        { imageUrl: 'https://images.unsplash.com/photo-1540420773420-3366772f4999?w=800', displayOrder: 1 },
+      ],
+    },
+    // 2. Post by Julian Cole (Home Card 2)
+    {
+      authorId: julianCole.id,
+      content:
+        'Món pasta thủ công tươi mới vừa ra lò chiều nay! Sốt kem béo mịn thơm lừng mùi nấm truffle thượng hạng. Mời cả nhà cùng thưởng thức! 🍝🇮🇹',
+      locationUrl: 'https://maps.google.com/?q=Trattoria+Bella',
+      voucherCode: 'TRUFFLE20',
+      hashtags: ['ItalianFood', 'Pasta', 'TruffleLover'],
+      createdAt: new Date(now.getTime() - 4 * 3600 * 1000), // 4 hours ago
+      images: [
+        { imageUrl: 'https://images.unsplash.com/photo-1551183053-bf91a1d81141?w=800', displayOrder: 1 },
+      ],
+    },
+    // 3. Post by An Nhiên (Home Card 3)
+    {
+      authorId: anNhien.id,
+      content:
+        'Bánh mousse dâu tây mọng nước ngọt thanh nhẹ dịu, lớp kem mềm mịn tan ngay trong miệng. Rất hợp cho buổi trà chiều thư giãn cùng bạn bè! 🍰🍓',
+      locationUrl: 'https://maps.google.com/?q=Tiem+Banh+Ngot+Nha+An',
+      voucherCode: 'MOUSSE10',
+      hashtags: ['BanhNgot', 'DessertLover', 'TraChieu'],
+      createdAt: new Date(now.getTime() - 6 * 3600 * 1000), // 6 hours ago
+      images: [
+        { imageUrl: 'https://images.unsplash.com/photo-1565958011703-44f9829ba187?w=800', displayOrder: 1 },
+      ],
+    },
+    // 4. Restaurant & Community Posts
     {
       authorId: phothin.id,
       content:
@@ -219,6 +377,7 @@ async function main() {
       locationUrl: 'https://maps.google.com/?q=Pho+Thin+13+Lo+Duc+Hanoi',
       voucherCode: 'PHOTHIN10',
       hashtags: ['phothin', 'phohanoi', 'phobotailan', 'monngonhanoi'],
+      createdAt: new Date(now.getTime() - 24 * 3600 * 1000),
       images: [
         { imageUrl: 'https://images.unsplash.com/photo-1582878826629-29b7ad1cdc43?w=800', displayOrder: 1 },
         { imageUrl: 'https://images.unsplash.com/photo-1569058242253-92a9c755a0ec?w=800', displayOrder: 2 },
@@ -231,6 +390,7 @@ async function main() {
       locationUrl: 'https://maps.google.com/?q=Banh+Mi+25+Hang+Ca',
       voucherCode: 'BANHMI25K',
       hashtags: ['banhmi', 'banhmi25', 'streetfood', 'vietnamesebread'],
+      createdAt: new Date(now.getTime() - 48 * 3600 * 1000),
       images: [
         { imageUrl: 'https://images.unsplash.com/photo-1626082927389-6cd097cdc6ec?w=800', displayOrder: 1 },
       ],
@@ -242,6 +402,7 @@ async function main() {
       locationUrl: 'https://maps.google.com/?q=Bun+Cha+Huong+Lien+24+Le+Van+Huu',
       voucherCode: 'OBAMASET',
       hashtags: ['bunchahuonglien', 'bunchaobama', 'hanoicuisine', 'amthucviet'],
+      createdAt: new Date(now.getTime() - 72 * 3600 * 1000),
       images: [
         { imageUrl: 'https://images.unsplash.com/photo-1559847844-5315695dadae?w=800', displayOrder: 1 },
       ],
@@ -252,6 +413,7 @@ async function main() {
         'Sáng nay ghé làm bát bún ốc cô Huệ phố Hàng Giầy. Ốc to giòn sần sật, nước dùng chua thanh vị giấm bỗng và cay the của ớt chưng. Đúng chuẩn vị ốc Hà Nội xưa!',
       locationUrl: 'https://maps.google.com/?q=Bun+Oc+Co+Hue+Hang+Giay',
       hashtags: ['bunoc', 'hanggiay', 'hanoifoodie', 'monngonmoingay'],
+      createdAt: new Date(now.getTime() - 96 * 3600 * 1000),
       images: [
         { imageUrl: 'https://images.unsplash.com/photo-1541832676-9b763b0239ab?w=800', displayOrder: 1 },
       ],
@@ -262,6 +424,7 @@ async function main() {
         'Cuối tuần ghé quán cafe tone trắng phong cách Nhật Bản nhẹ nhàng cực chill ☕ Bánh matcha crepe ở đây mềm mịn, vị ngọt vừa vặn không hề bị gắt. Rất đáng thử nha!',
       locationUrl: 'https://maps.google.com/?q=Cafe+Chill+Hoan+Kiem',
       hashtags: ['coffee', 'cafehanoi', 'matcha', 'weekendchill'],
+      createdAt: new Date(now.getTime() - 120 * 3600 * 1000),
       images: [
         { imageUrl: 'https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?w=800', displayOrder: 1 },
         { imageUrl: 'https://images.unsplash.com/photo-1554118811-1e0d58224f24?w=800', displayOrder: 2 },
@@ -289,13 +452,36 @@ async function main() {
   // Likes
   await prisma.postLike.createMany({
     data: [
+      // Post 1 (Maya Lin)
       { userId: userA.id, postId: createdPosts[0].id },
       { userId: userB.id, postId: createdPosts[0].id },
       { userId: userC.id, postId: createdPosts[0].id },
+      { userId: julianCole.id, postId: createdPosts[0].id },
+      { userId: anNhien.id, postId: createdPosts[0].id },
+      { userId: minhAnh.id, postId: createdPosts[0].id },
+      { userId: linhHa.id, postId: createdPosts[0].id },
+      { userId: quangTran.id, postId: createdPosts[0].id },
+      // Post 2 (Julian Cole)
+      { userId: mayaLin.id, postId: createdPosts[1].id },
       { userId: userA.id, postId: createdPosts[1].id },
-      { userId: userC.id, postId: createdPosts[1].id },
+      { userId: userB.id, postId: createdPosts[1].id },
+      { userId: anNhien.id, postId: createdPosts[1].id },
+      { userId: minhAnh.id, postId: createdPosts[1].id },
+      { userId: quangTran.id, postId: createdPosts[1].id },
+      // Post 3 (An Nhiên)
+      { userId: mayaLin.id, postId: createdPosts[2].id },
+      { userId: julianCole.id, postId: createdPosts[2].id },
       { userId: userB.id, postId: createdPosts[2].id },
+      { userId: userC.id, postId: createdPosts[2].id },
+      { userId: linhHa.id, postId: createdPosts[2].id },
+      // Other posts
+      { userId: userA.id, postId: createdPosts[3].id },
+      { userId: userB.id, postId: createdPosts[3].id },
       { userId: userC.id, postId: createdPosts[3].id },
+      { userId: userA.id, postId: createdPosts[4].id },
+      { userId: userC.id, postId: createdPosts[4].id },
+      { userId: userB.id, postId: createdPosts[5].id },
+      { userId: userC.id, postId: createdPosts[6].id },
     ],
     skipDuplicates: true,
   });
@@ -304,7 +490,10 @@ async function main() {
   await prisma.postShare.createMany({
     data: [
       { userId: userA.id, postId: createdPosts[0].id },
-      { userId: userB.id, postId: createdPosts[1].id },
+      { userId: userB.id, postId: createdPosts[0].id },
+      { userId: minhAnh.id, postId: createdPosts[1].id },
+      { userId: userA.id, postId: createdPosts[3].id },
+      { userId: userB.id, postId: createdPosts[4].id },
     ],
     skipDuplicates: true,
   });
@@ -313,8 +502,12 @@ async function main() {
   await prisma.savedPost.createMany({
     data: [
       { userId: userA.id, postId: createdPosts[0].id },
-      { userId: userA.id, postId: createdPosts[2].id },
-      { userId: userB.id, postId: createdPosts[4].id },
+      { userId: quangTran.id, postId: createdPosts[0].id },
+      { userId: mayaLin.id, postId: createdPosts[1].id },
+      { userId: userB.id, postId: createdPosts[2].id },
+      { userId: userA.id, postId: createdPosts[3].id },
+      { userId: userA.id, postId: createdPosts[5].id },
+      { userId: userB.id, postId: createdPosts[7].id },
     ],
     skipDuplicates: true,
   });
@@ -324,9 +517,62 @@ async function main() {
   // ─────────────────────────────────────────
   console.log('💬 Seeding comments...');
 
-  const comment1 = await prisma.comment.create({
+  // Comments for Post 1 (Maya Lin)
+  const commentMaya1 = await prisma.comment.create({
     data: {
       postId: createdPosts[0].id,
+      authorId: minhAnh.id,
+      content: 'Nhìn tươi ngon quá chị ơi! Quán này có bán mang về không ạ? 🥗',
+    },
+  });
+
+  await prisma.comment.create({
+    data: {
+      postId: createdPosts[0].id,
+      authorId: linhHa.id,
+      content: 'Có nha bạn, mình vừa đặt qua app tuần trước ship nhanh lắm nè! ✨',
+      parentCommentId: commentMaya1.id,
+    },
+  });
+
+  await prisma.comment.create({
+    data: {
+      postId: createdPosts[0].id,
+      authorId: quangTran.id,
+      content: 'Đậu gà ở đây làm đỉnh thật sự, ăn giòn bùi không bị khô chút nào 💯',
+    },
+  });
+
+  // Comments for Post 2 (Julian Cole)
+  await prisma.comment.create({
+    data: {
+      postId: createdPosts[1].id,
+      authorId: mayaLin.id,
+      content: 'Pasta thủ công nhìn hấp dẫn quá anh! Sốt nấm truffle chuẩn phong cách Ý 🍝🇮🇹',
+    },
+  });
+
+  await prisma.comment.create({
+    data: {
+      postId: createdPosts[1].id,
+      authorId: quangTran.id,
+      content: 'Sốt kem béo mịn ngậy mùi truffle, đĩa này chuẩn 10/10 luôn!',
+    },
+  });
+
+  // Comments for Post 3 (An Nhiên)
+  await prisma.comment.create({
+    data: {
+      postId: createdPosts[2].id,
+      authorId: minhAnh.id,
+      content: 'Bánh mousse dâu tây xinh xỉu! Cuối tuần nhất định phải ghé thử cùng hội bạn 🍰🍓',
+    },
+  });
+
+  // Existing comments for other posts
+  const comment1 = await prisma.comment.create({
+    data: {
+      postId: createdPosts[3].id,
       authorId: userA.id,
       content: 'Phở Thìn ăn từ nhỏ đến lớn vẫn mê nhất là nước dùng nhiều béo và hành!',
     },
@@ -334,7 +580,7 @@ async function main() {
 
   await prisma.comment.create({
     data: {
-      postId: createdPosts[0].id,
+      postId: createdPosts[3].id,
       authorId: phothin.id,
       content: 'Cảm ơn bạn đã luôn ủng hộ Phở Thìn suốt nhiều năm qua ạ! ❤️',
       parentCommentId: comment1.id,
@@ -343,7 +589,7 @@ async function main() {
 
   await prisma.comment.create({
     data: {
-      postId: createdPosts[1].id,
+      postId: createdPosts[4].id,
       authorId: userB.id,
       content: 'Bánh mì pate ở đây ngon số dzách luôn, khách Tây khách Việt lúc nào cũng đông!',
     },

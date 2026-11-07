@@ -58,20 +58,17 @@
         android:layout_marginTop="10dp">
 
         <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_alignParentStart="true"
-            android:layout_centerVertical="true"
-            android:text="Tất cả bình luận"
-            android:textColor="@color/text_gray"
-            android:textSize="13sp" />
-
-        <TextView
+            android:id="@+id/btnSortComments"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_alignParentEnd="true"
             android:layout_centerVertical="true"
-            android:text="Mới nhất ∨"
+            android:background="@drawable/bg_chip_inactive"
+            android:clickable="true"
+            android:focusable="true"
+            android:paddingHorizontal="12dp"
+            android:paddingVertical="6dp"
+            android:text="Mới nhất ▼"
             android:textColor="@color/text_dark"
             android:textSize="13sp"
             android:textStyle="bold" />
@@ -84,6 +81,7 @@
         android:layout_marginTop="12dp">
 
         <LinearLayout
+            android:id="@+id/containerCommentsList"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical">
@@ -164,12 +162,16 @@
                             android:textSize="12sp" />
 
                         <TextView
+                            android:id="@+id/btnReply1"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:layout_marginStart="16dp"
+                            android:clickable="true"
+                            android:focusable="true"
                             android:text="Trả lời"
-                            android:textColor="@color/text_gray"
-                            android:textSize="12sp" />
+                            android:textColor="@color/primary"
+                            android:textSize="12sp"
+                            android:textStyle="bold" />
                     </LinearLayout>
 
                     <!-- Nested Reply: Linh Hà -->
@@ -243,6 +245,25 @@
                                 android:text="Cảm ơn Minh Anh, rất vui vì bạn thích nhé!"
                                 android:textColor="@color/text_dark"
                                 android:textSize="12sp" />
+
+                            <LinearLayout
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="4dp"
+                                android:gravity="center_vertical"
+                                android:orientation="horizontal">
+
+                                <TextView
+                                    android:id="@+id/btnReplyReply1"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:clickable="true"
+                                    android:focusable="true"
+                                    android:text="Trả lời"
+                                    android:textColor="@color/primary"
+                                    android:textSize="11sp"
+                                    android:textStyle="bold" />
+                            </LinearLayout>
                         </LinearLayout>
                     </LinearLayout>
                 </LinearLayout>
@@ -309,6 +330,33 @@
                         android:text="Có thể bổ sung thêm một vài ví dụ thực tế không? Mình muốn tìm hiểu kỹ hơn."
                         android:textColor="@color/text_dark"
                         android:textSize="13sp" />
+
+                    <LinearLayout
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="4dp"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="👍 1"
+                            android:textColor="@color/text_gray"
+                            android:textSize="12sp" />
+
+                        <TextView
+                            android:id="@+id/btnReply2"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="16dp"
+                            android:clickable="true"
+                            android:focusable="true"
+                            android:text="Trả lời"
+                            android:textColor="@color/primary"
+                            android:textSize="12sp"
+                            android:textStyle="bold" />
+                    </LinearLayout>
                 </LinearLayout>
             </LinearLayout>
 
@@ -325,11 +373,81 @@
         android:padding="12dp">
 
         <TextView
+            android:id="@+id/tvCommentInputHeader"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="LH  Bình luận với tên Linh Hà"
             android:textColor="@color/text_gray"
             android:textSize="12sp" />
+
+        <!-- 5 Popular Emoji Bar -->
+        <LinearLayout
+            android:id="@+id/layoutEmojiBar"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
+            android:background="@drawable/bg_chip_inactive"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingHorizontal="10dp"
+            android:paddingVertical="4dp"
+            android:visibility="gone">
+
+            <TextView
+                android:id="@+id/emojiHeart"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:clickable="true"
+                android:focusable="true"
+                android:gravity="center"
+                android:text="❤️"
+                android:textSize="20sp" />
+
+            <TextView
+                android:id="@+id/emojiLaugh"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:clickable="true"
+                android:focusable="true"
+                android:gravity="center"
+                android:text="😂"
+                android:textSize="20sp" />
+
+            <TextView
+                android:id="@+id/emojiLove"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:clickable="true"
+                android:focusable="true"
+                android:gravity="center"
+                android:text="😍"
+                android:textSize="20sp" />
+
+            <TextView
+                android:id="@+id/emojiFire"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:clickable="true"
+                android:focusable="true"
+                android:gravity="center"
+                android:text="🔥"
+                android:textSize="20sp" />
+
+            <TextView
+                android:id="@+id/emojiClap"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:clickable="true"
+                android:focusable="true"
+                android:gravity="center"
+                android:text="👏"
+                android:textSize="20sp" />
+        </LinearLayout>
 
         <EditText
             android:id="@+id/edtCommentInput"
@@ -337,7 +455,7 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="6dp"
             android:background="@null"
-            android:hint="Mình sẽ bổ sung thêm ví dụ trong bản cập nhật tới nhé!"
+            android:hint="Viết bình luận của bạn..."
             android:inputType="textMultiLine"
             android:textColor="#3E2723"
             android:textColorHint="#9E8A83"
@@ -357,26 +475,25 @@
                 android:orientation="horizontal">
 
                 <TextView
+                    android:id="@+id/btnEmojiPicker"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:padding="4dp"
                     android:text="😃"
-                    android:textSize="18sp" />
+                    android:textSize="20sp" />
 
                 <TextView
+                    android:id="@+id/btnAttachFileComment"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginStart="14dp"
-                    android:text="&#64;"
-                    android:textColor="@color/text_dark"
-                    android:textSize="16sp"
-                    android:textStyle="bold" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="14dp"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:padding="4dp"
                     android:text="📎"
-                    android:textSize="16sp" />
+                    android:textSize="18sp" />
             </LinearLayout>
 
             <RelativeLayout

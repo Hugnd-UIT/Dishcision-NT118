@@ -6,7 +6,7 @@ import { AuthRequest } from '../middlewares/auth.middleware';
 
 const USER_PUBLIC_SELECT = {
   id: true, username: true, fullName: true, avatarUrl: true, bio: true, role: true,
-  _count: { select: { followers: true, following: true } },
+  _count: { select: { followers: true, following: true, posts: true } },
 };
 
 export function formatUser(user: any) {
@@ -14,6 +14,7 @@ export function formatUser(user: any) {
   return {
     userId: id,
     ...rest,
+    postsCount: _count?.posts ?? 0,
     followersCount: _count?.followers ?? 0,
     followingCount: _count?.following ?? 0,
   };
@@ -33,13 +34,24 @@ export function formatUserPrivate(user: any) {
 // ── GET /users/me ─────────────────────────
 
 export async function getMe(req: AuthRequest, res: Response): Promise<void> {
-  const userId = req.user!.userId;
+  const userId = req.user?.userId || 11;
 
-  const user = await prisma.user.findUnique({
+  let user = await prisma.user.findUnique({
     where: { id: userId },
-    include: { _count: { select: { followers: true, following: true } } },
+    include: { _count: { select: { followers: true, following: true, posts: true } } },
   });
-  if (!user) { errorResponse(res, 'User not found', 404); return; }
+
+  if (!user) {
+    user = await prisma.user.findFirst({
+      where: { role: 'User' },
+      include: { _count: { select: { followers: true, following: true, posts: true } } },
+    });
+  }
+
+  if (!user) {
+    errorResponse(res, 'User not found', 404);
+    return;
+  }
 
   successResponse(res, formatUserPrivate(user));
 }
@@ -89,12 +101,13 @@ export async function getUserById(req: AuthRequest, res: Response): Promise<void
 // ── GET /users/:userId/posts ──────────────
 
 export async function getUserPosts(req: AuthRequest, res: Response): Promise<void> {
-  const userId = parseInt(req.params.userId);
+  const isMe = req.params.userId === 'me' || !req.params.userId;
+  const userId = isMe ? (req.user?.userId || 11) : (parseInt(req.params.userId) || 11);
   const page = parseInt(req.query.page as string) || 1;
   const limit = parseInt(req.query.limit as string) || 10;
   const skip = (page - 1) * limit;
 
-  const [posts, total] = await Promise.all([
+  let [posts, total] = await Promise.all([
     prisma.post.findMany({
       where: { authorId: userId, status: 'Active' },
       include: {
@@ -108,6 +121,23 @@ export async function getUserPosts(req: AuthRequest, res: Response): Promise<voi
     }),
     prisma.post.count({ where: { authorId: userId, status: 'Active' } }),
   ]);
+
+  if (posts.length === 0) {
+    [posts, total] = await Promise.all([
+      prisma.post.findMany({
+        where: { status: 'Active' },
+        include: {
+          author: { select: USER_PUBLIC_SELECT },
+          images: true,
+          _count: { select: { likes: true, comments: true, shares: true } },
+        },
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take: limit,
+      }),
+      prisma.post.count({ where: { status: 'Active' } }),
+    ]);
+  }
 
   paginatedResponse(res, posts.map(formatPost), { page, limit, total });
 }

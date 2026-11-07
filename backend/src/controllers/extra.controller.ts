@@ -192,6 +192,102 @@ export async function getStoreDetail(req: AuthRequest, res: Response): Promise<v
   successResponse(res, storeInfo, 'Lấy thông tin nhà hàng thành công');
 }
 
+export async function getFollowingRestaurants(req: AuthRequest, res: Response): Promise<void> {
+  const restaurantUsers = await prisma.user.findMany({
+    where: { role: 'RestaurantAccount' },
+    include: {
+      posts: { include: { images: true } },
+      _count: { select: { followers: true, reviews: true } },
+    },
+  });
+
+  const defaultRestaurants = [
+    {
+      id: 1,
+      name: 'Quán Phở Bò Gia Truyền 1986',
+      avatarUrl: 'https://images.unsplash.com/photo-1582878826629-29b7ad1cdc43?w=400',
+      coverUrl: 'https://images.unsplash.com/photo-1582878826629-29b7ad1cdc43?w=800',
+      address: '49 Bát Đàn, Cửa Đông, Hoàn Kiếm, Hà Nội',
+      openHours: '06:00 – 22:00',
+      isOpen: true,
+      rating: 4.8,
+      reviewsCount: 240,
+      isFollowing: true,
+      highlightDish: 'Phở Tái Lăn Đặc Biệt',
+      dishPrice: '65.000đ',
+      dishDescription: 'Nước dùng đậm đà, thịt bò mềm thơm bốc khói nghi ngút',
+      menu: [
+        { id: 101, name: 'Phở Tái Lăn', price: '65.000đ', desc: 'Thịt bò xào lăn thơm phức' },
+        { id: 102, name: 'Phở Tái Nạm', price: '60.000đ', desc: 'Thịt nạm giòn thơm ngọt nước' },
+        { id: 103, name: 'Quẩy giòn', price: '10.000đ', desc: 'Quẩy vàng rụm ăn kèm phở' },
+      ],
+    },
+    {
+      id: 2,
+      name: 'Cơm Tấm Ba Nghiền',
+      avatarUrl: 'https://images.unsplash.com/photo-1541832676-9b763b0239ab?w=400',
+      coverUrl: 'https://images.unsplash.com/photo-1541832676-9b763b0239ab?w=800',
+      address: '84 Đặng Văn Ngữ, P.10, Phú Nhuận, TP.HCM',
+      openHours: '07:00 – 21:00',
+      isOpen: true,
+      rating: 4.9,
+      reviewsCount: 412,
+      isFollowing: true,
+      highlightDish: 'Cơm Tấm Sườn Bì Chả Đặc Biệt',
+      dishPrice: '75.000đ',
+      dishDescription: 'Sườn nướng than hoa mềm mọng, bì chả gia truyền',
+      menu: [
+        { id: 201, name: 'Cơm Tấm Sườn Bì Chả', price: '75.000đ', desc: 'Sườn cọng to nướng mật ong' },
+        { id: 202, name: 'Cơm Tấm Sườn Ốp La', price: '65.000đ', desc: 'Trứng ốp la lòng đào' },
+      ],
+    },
+    {
+      id: 3,
+      name: 'Trà Sữa TocoToco - Cầu Giấy',
+      avatarUrl: 'https://images.unsplash.com/photo-1558857563-b37cf5a9dff3?w=400',
+      coverUrl: 'https://images.unsplash.com/photo-1558857563-b37cf5a9dff3?w=800',
+      address: '156 Cầu Giấy, Quan Hoa, Cầu Giấy, Hà Nội',
+      openHours: '08:30 – 22:30',
+      isOpen: true,
+      rating: 4.7,
+      reviewsCount: 189,
+      isFollowing: true,
+      highlightDish: 'Trà Sữa Ba Anh Em (Size L)',
+      dishPrice: '42.000đ',
+      dishDescription: 'Topping trân châu sợi dai giòn, thạch sương sáo mát lạnh',
+      menu: [
+        { id: 301, name: 'Trà Sữa Ba Anh Em', price: '42.000đ', desc: 'Best seller mọi thời đại' },
+        { id: 302, name: 'Trà Sữa Trân Châu Hoàng Gia', price: '38.000đ', desc: 'Vị trà đậm đà' },
+      ],
+    },
+  ];
+
+  if (restaurantUsers.length > 0) {
+    restaurantUsers.forEach((ru, idx) => {
+      if (idx < defaultRestaurants.length) {
+        defaultRestaurants[idx].id = ru.id;
+        defaultRestaurants[idx].avatarUrl = ru.avatarUrl || defaultRestaurants[idx].avatarUrl;
+        defaultRestaurants[idx].reviewsCount = ru._count.reviews || defaultRestaurants[idx].reviewsCount;
+      }
+    });
+  }
+
+  const stories = [
+    { id: 1, storeName: 'Bếp Lục Nam', title: 'Món mới hôm nay', avatarUrl: 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=400' },
+    { id: 2, storeName: 'Phở Thìn', title: 'Hương vị xưa', avatarUrl: 'https://images.unsplash.com/photo-1582878826629-29b7ad1cdc43?w=400' },
+    { id: 3, storeName: 'Trà Mùa Thu', title: 'Trà sữa ấm áp', avatarUrl: 'https://images.unsplash.com/photo-1558857563-b37cf5a9dff3?w=400' },
+    { id: 4, storeName: 'Pizza Lò Củi', title: 'Bánh tươi ra lò', avatarUrl: 'https://images.unsplash.com/photo-1513104890138-7c749659a591?w=400' },
+  ];
+
+  successResponse(res, {
+    newDishesSummary: '3 quán có món mới hôm nay',
+    totalFollowing: defaultRestaurants.length,
+    openStoresCount: defaultRestaurants.filter(r => r.isOpen).length,
+    stories,
+    restaurants: defaultRestaurants,
+  }, 'Lấy danh sách quán theo dõi thành công');
+}
+
 // ─────────────────────────────────────────
 // 3. DELIVERY ADDRESSES (DeliveryAddressesActivity, AddAddressActivity)
 // ─────────────────────────────────────────

@@ -45,6 +45,7 @@ public class DecideActivity extends AppCompatActivity {
     };
 
     // Header & Bottom nav
+    private View btnHeaderTitle;
     private ImageView btnNotification;
     private LinearLayout navHome;
     private LinearLayout navCreate;
@@ -68,6 +69,7 @@ public class DecideActivity extends AppCompatActivity {
     private TextView chip8Items;
     private TextView chip10Items;
     private TextView chip12Items;
+    private TextView chip15Items;
 
     // Edit Dish List Box
     private EditText edtDishList;
@@ -97,6 +99,7 @@ public class DecideActivity extends AppCompatActivity {
     }
 
     private void initViews() {
+        btnHeaderTitle = findViewById(R.id.topHeader);
         btnNotification = findViewById(R.id.btnNotification);
         navHome = findViewById(R.id.navHome);
         navCreate = findViewById(R.id.navCreate);
@@ -117,6 +120,7 @@ public class DecideActivity extends AppCompatActivity {
         chip8Items = findViewById(R.id.chip8Items);
         chip10Items = findViewById(R.id.chip10Items);
         chip12Items = findViewById(R.id.chip12Items);
+        chip15Items = findViewById(R.id.chip15Items);
 
         edtDishList = findViewById(R.id.edtDishList);
         btnClearDishList = findViewById(R.id.btnClearDishList);
@@ -173,6 +177,7 @@ public class DecideActivity extends AppCompatActivity {
         setChipStyle(chip8Items, activeCount == 8);
         setChipStyle(chip10Items, activeCount == 10);
         setChipStyle(chip12Items, activeCount == 12);
+        setChipStyle(chip15Items, activeCount == 15);
     }
 
     private void setChipStyle(TextView chip, boolean isActive) {
@@ -189,6 +194,10 @@ public class DecideActivity extends AppCompatActivity {
     }
 
     private void setDishPresetCount(int count) {
+        if (count > 15) {
+            Toast.makeText(this, "Bạn đã đạt giới hạn vòng quay", Toast.LENGTH_SHORT).show();
+            return;
+        }
         currentDishes.clear();
         for (int i = 0; i < count && i < MASTER_DISH_POOL.length; i++) {
             currentDishes.add(MASTER_DISH_POOL[i]);
@@ -209,6 +218,7 @@ public class DecideActivity extends AppCompatActivity {
         if (chip8Items != null) chip8Items.setOnClickListener(v -> setDishPresetCount(8));
         if (chip10Items != null) chip10Items.setOnClickListener(v -> setDishPresetCount(10));
         if (chip12Items != null) chip12Items.setOnClickListener(v -> setDishPresetCount(12));
+        if (chip15Items != null) chip15Items.setOnClickListener(v -> setDishPresetCount(15));
 
         // Minus (-) Button
         if (btnDecreaseItem != null) {
@@ -223,10 +233,10 @@ public class DecideActivity extends AppCompatActivity {
             });
         }
 
-        // Plus (+) Button
+        // Plus (+) Button (Max 15 items limit)
         if (btnIncreaseItem != null) {
             btnIncreaseItem.setOnClickListener(v -> {
-                if (currentDishes.size() < MASTER_DISH_POOL.length) {
+                if (currentDishes.size() < 15) {
                     for (String candidate : MASTER_DISH_POOL) {
                         if (!currentDishes.contains(candidate)) {
                             currentDishes.add(candidate);
@@ -236,7 +246,7 @@ public class DecideActivity extends AppCompatActivity {
                     updateUI();
                     Toast.makeText(this, "Hiện có " + currentDishes.size() + " món trên vòng quay", Toast.LENGTH_SHORT).show();
                 } else {
-                    Toast.makeText(this, "Đã đạt số món tối đa (" + MASTER_DISH_POOL.length + " món)!", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(this, "Bạn đã đạt giới hạn vòng quay", Toast.LENGTH_SHORT).show();
                 }
             });
         }
@@ -248,7 +258,7 @@ public class DecideActivity extends AppCompatActivity {
                     edtDishList.setText("");
                     edtDishList.requestFocus();
                 }
-                Toast.makeText(this, "Đã xóa danh sách món ăn, hãy nhập các món mới!", Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, "Đã xóa tất cả danh sách món ăn!", Toast.LENGTH_SHORT).show();
             });
         }
 
@@ -295,10 +305,6 @@ public class DecideActivity extends AppCompatActivity {
         dialog.setContentView(dialogView);
 
         ImageView btnCloseAiDialog = dialogView.findViewById(R.id.btnCloseAiDialog);
-        TextView chipMood1 = dialogView.findViewById(R.id.chipMood1);
-        TextView chipMood2 = dialogView.findViewById(R.id.chipMood2);
-        TextView chipMood3 = dialogView.findViewById(R.id.chipMood3);
-        TextView chipMood4 = dialogView.findViewById(R.id.chipMood4);
         EditText edtAiCraving = dialogView.findViewById(R.id.edtAiCraving);
         RelativeLayout btnCallGemini = dialogView.findViewById(R.id.btnCallGemini);
         TextView tvBtnCallGemini = dialogView.findViewById(R.id.tvBtnCallGemini);
@@ -314,11 +320,6 @@ public class DecideActivity extends AppCompatActivity {
 
         if (btnCloseAiDialog != null) btnCloseAiDialog.setOnClickListener(v -> dialog.dismiss());
 
-        if (chipMood1 != null) chipMood1.setOnClickListener(v -> { if (edtAiCraving != null) edtAiCraving.setText("Thèm món nước nóng hổi đậm đà"); });
-        if (chipMood2 != null) chipMood2.setOnClickListener(v -> { if (edtAiCraving != null) edtAiCraving.setText("Ăn thanh đạm, nhiều rau ít dầu mỡ"); });
-        if (chipMood3 != null) chipMood3.setOnClickListener(v -> { if (edtAiCraving != null) edtAiCraving.setText("Món cay nồng kích thích giải tỏa mệt mỏi"); });
-        if (chipMood4 != null) chipMood4.setOnClickListener(v -> { if (edtAiCraving != null) edtAiCraving.setText("Món ăn nhanh gọn, tiện lợi và tiết kiệm"); });
-
         final List<String> aiSuggestedDishes = new ArrayList<>();
 
         if (btnCallGemini != null) {
@@ -329,7 +330,7 @@ public class DecideActivity extends AppCompatActivity {
                 }
 
                 if (pbAiLoading != null) pbAiLoading.setVisibility(View.VISIBLE);
-                if (tvBtnCallGemini != null) tvBtnCallGemini.setText("Gemini AI đang suy nghĩ...");
+                if (tvBtnCallGemini != null) tvBtnCallGemini.setText("Đang suy nghĩ...");
                 btnCallGemini.setEnabled(false);
 
                 FoodDecideRequest request = new FoodDecideRequest(promptText, "Bình dân", 1, promptText);
@@ -338,7 +339,7 @@ public class DecideActivity extends AppCompatActivity {
                     public void onResponse(Call<FoodDecideResponse> call, Response<FoodDecideResponse> response) {
                         btnCallGemini.setEnabled(true);
                         if (pbAiLoading != null) pbAiLoading.setVisibility(View.GONE);
-                        if (tvBtnCallGemini != null) tvBtnCallGemini.setText("🤖 Nhờ Gemini 2.5 Flash Gợi Ý Lại");
+                        if (tvBtnCallGemini != null) tvBtnCallGemini.setText("Nhận món ăn");
 
                         aiSuggestedDishes.clear();
                         if (response.isSuccessful() && response.body() != null && response.body().getData() != null) {
@@ -375,14 +376,14 @@ public class DecideActivity extends AppCompatActivity {
                         }
 
                         if (containerAiResults != null) containerAiResults.setVisibility(View.VISIBLE);
-                        Toast.makeText(DecideActivity.this, "Google Gemini đã gợi ý xong 3 món!", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(DecideActivity.this, "Đã gợi ý xong 3 món ngon!", Toast.LENGTH_SHORT).show();
                     }
 
                     @Override
                     public void onFailure(Call<FoodDecideResponse> call, Throwable t) {
                         btnCallGemini.setEnabled(true);
                         if (pbAiLoading != null) pbAiLoading.setVisibility(View.GONE);
-                        if (tvBtnCallGemini != null) tvBtnCallGemini.setText("🤖 Nhờ Gemini 2.5 Flash Gợi Ý");
+                        if (tvBtnCallGemini != null) tvBtnCallGemini.setText("Nhận món ăn");
 
                         aiSuggestedDishes.clear();
                         aiSuggestedDishes.add("Phở Bò Tái Lăn");
@@ -451,6 +452,11 @@ public class DecideActivity extends AppCompatActivity {
             return;
         }
 
+        if (validDishes.size() > 15) {
+            Toast.makeText(this, "Bạn đã đạt giới hạn vòng quay", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
         currentDishes.clear();
         currentDishes.addAll(validDishes);
 
@@ -482,6 +488,10 @@ public class DecideActivity extends AppCompatActivity {
         if (edtDishList != null) {
             List<String> typedList = parseDishesFromText(edtDishList.getText().toString());
             if (typedList.size() >= 2 && !typedList.equals(currentDishes)) {
+                if (typedList.size() > 15) {
+                    Toast.makeText(this, "Bạn đã đạt giới hạn vòng quay", Toast.LENGTH_SHORT).show();
+                    return;
+                }
                 currentDishes.clear();
                 currentDishes.addAll(typedList);
                 if (wheelView != null) {

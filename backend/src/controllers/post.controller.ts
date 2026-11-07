@@ -88,6 +88,10 @@ export async function createPost(req: AuthRequest, res: Response): Promise<void>
 
 export async function getPostById(req: Request, res: Response): Promise<void> {
   const postId = parseInt(req.params.postId);
+  if (isNaN(postId)) {
+    errorResponse(res, 'Invalid post ID', 400);
+    return;
+  }
 
   const cacheKey = `post:${postId}`;
   const cached = await getCache(cacheKey);

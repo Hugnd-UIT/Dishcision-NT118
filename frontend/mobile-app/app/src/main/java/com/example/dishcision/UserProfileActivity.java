@@ -15,6 +15,7 @@ import androidx.core.view.WindowInsetsCompat;
 import com.example.dishcision.network.ApiClient;
 import com.example.dishcision.network.AuthResponse;
 import com.example.dishcision.network.TokenManager;
+import com.example.dishcision.network.UserProfileResponse;
 
 import retrofit2.Call;
 import retrofit2.Callback;
@@ -146,12 +147,12 @@ public class UserProfileActivity extends AppCompatActivity {
     }
 
     private void fetchUserProfileApi() {
-        ApiClient.getApiService().getUserProfile("user_linhdan").enqueue(new Callback<AuthResponse>() {
+        ApiClient.getApiService().getUserProfile("user_linhdan").enqueue(new Callback<UserProfileResponse>() {
             @Override
-            public void onResponse(Call<AuthResponse> call, Response<AuthResponse> response) {}
+            public void onResponse(Call<UserProfileResponse> call, Response<UserProfileResponse> response) {}
 
             @Override
-            public void onFailure(Call<AuthResponse> call, Throwable t) {}
+            public void onFailure(Call<UserProfileResponse> call, Throwable t) {}
         });
     }
 

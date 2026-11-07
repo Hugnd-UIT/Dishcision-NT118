@@ -12,7 +12,7 @@ import {
   uploadMedia,
 } from '../controllers/post.controller';
 import { getComments, createComment } from '../controllers/comment.controller';
-import { savePost, unsavePost } from '../controllers/social.controller';
+import { savePost, unsavePost, getSavedPosts } from '../controllers/social.controller';
 import { authenticate, optionalAuth } from '../middlewares/auth.middleware';
 import { mediaUpload } from '../middlewares/upload.middleware';
 import {
@@ -24,6 +24,7 @@ import {
 const router = Router();
 
 router.get('/', optionalAuth, getNewsfeed);
+router.get('/saved', optionalAuth, getSavedPosts);
 router.post('/', authenticate, validate(createPostSchema), createPost);
 router.post('/upload-media', optionalAuth, mediaUpload.single('file'), uploadMedia);
 

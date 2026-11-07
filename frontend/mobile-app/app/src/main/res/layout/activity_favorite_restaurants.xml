@@ -99,6 +99,7 @@
             </LinearLayout>
 
             <LinearLayout
+                android:id="@+id/navDecide"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
@@ -124,6 +125,7 @@
             </LinearLayout>
 
             <LinearLayout
+                android:id="@+id/navCreate"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
@@ -156,6 +158,7 @@
             </LinearLayout>
 
             <LinearLayout
+                android:id="@+id/navMessages"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
@@ -181,6 +184,7 @@
             </LinearLayout>
 
             <LinearLayout
+                android:id="@+id/navProfile"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
@@ -229,32 +233,19 @@
             <LinearLayout
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:background="@drawable/bg_badge_verified"
                 android:gravity="center_vertical"
-                android:orientation="horizontal">
+                android:orientation="horizontal"
+                android:paddingHorizontal="12dp"
+                android:paddingVertical="6dp">
 
-                <LinearLayout
+                <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:background="@drawable/bg_badge_verified"
-                    android:gravity="center_vertical"
-                    android:orientation="horizontal"
-                    android:paddingHorizontal="10dp"
-                    android:paddingVertical="5dp">
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="3 quán có món mới"
-                        android:textColor="#0A8050"
-                        android:textSize="12sp"
-                        android:textStyle="bold" />
-
-                    <View
-                        android:layout_width="6dp"
-                        android:layout_height="6dp"
-                        android:layout_marginStart="6dp"
-                        android:background="@drawable/bg_badge_verified" />
-                </LinearLayout>
+                    android:text="3 quán có món mới hôm nay"
+                    android:textColor="#0A8050"
+                    android:textSize="12sp"
+                    android:textStyle="bold" />
             </LinearLayout>
 
             <!-- 2. Search & Filter Bar -->
@@ -354,13 +345,13 @@
                         android:focusable="true"
                         android:paddingHorizontal="16dp"
                         android:paddingVertical="8dp"
-                        android:text="Gần tôi (&lt; 3km)"
+                        android:text="Món mới"
                         android:textColor="@color/text_dark"
                         android:textSize="13sp" />
                 </LinearLayout>
             </HorizontalScrollView>
 
-            <!-- 4. Stories Section: Món mới hôm nay từ quán ruột -->
+            <!-- 4. Stories Section -->
             <RelativeLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -377,20 +368,11 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="🔥 Món mới hôm nay từ quán ruột"
+                        android:text="Story quán ăn"
                         android:textColor="@color/text_dark"
                         android:textSize="15sp"
                         android:textStyle="bold" />
                 </LinearLayout>
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_alignParentEnd="true"
-                    android:layout_centerVertical="true"
-                    android:text="Vuốt xem"
-                    android:textColor="@color/text_gray"
-                    android:textSize="12sp" />
             </RelativeLayout>
 
             <!-- Horizontal Stories List -->
@@ -552,6 +534,7 @@
 
             <!-- 5. Restaurant List Card 1: Quán Phở Bò Gia Truyền 1986 -->
             <LinearLayout
+                android:id="@+id/cardStore1"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="20dp"
@@ -584,7 +567,7 @@
                             android:background="@drawable/bg_badge_verified"
                             android:paddingHorizontal="10dp"
                             android:paddingVertical="5dp"
-                            android:text="🟢 Đang mở cửa"
+                            android:text="Đang mở cửa"
                             android:textColor="#0A8050"
                             android:textSize="12sp"
                             android:textStyle="bold" />
@@ -643,6 +626,7 @@
                         android:orientation="horizontal">
 
                         <TextView
+                            android:id="@+id/tvStoreName1"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="Quán Phở Bò Gia Truyền 1986"
@@ -675,6 +659,7 @@
                         android:orientation="horizontal">
 
                         <TextView
+                            android:id="@+id/btnFollowStore1"
                             android:layout_width="0dp"
                             android:layout_height="match_parent"
                             android:layout_marginEnd="6dp"
@@ -683,7 +668,7 @@
                             android:clickable="true"
                             android:focusable="true"
                             android:gravity="center"
-                            android:text="✔ Đang theo dõi"
+                            android:text="Đang theo dõi"
                             android:textColor="@color/text_dark"
                             android:textSize="13sp"
                             android:textStyle="bold" />
@@ -709,6 +694,7 @@
                         </LinearLayout>
 
                         <RelativeLayout
+                            android:id="@+id/btnShareStore1"
                             android:layout_width="44dp"
                             android:layout_height="match_parent"
                             android:layout_marginStart="6dp"
@@ -729,6 +715,7 @@
 
             <!-- 6. Restaurant List Card 2: Cơm Tấm Ba Nghiền -->
             <LinearLayout
+                android:id="@+id/cardStore2"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="16dp"
@@ -761,7 +748,7 @@
                             android:background="@drawable/bg_badge_verified"
                             android:paddingHorizontal="10dp"
                             android:paddingVertical="5dp"
-                            android:text="🟢 Đang mở cửa"
+                            android:text="Đang mở cửa"
                             android:textColor="#0A8050"
                             android:textSize="12sp"
                             android:textStyle="bold" />
@@ -820,6 +807,7 @@
                         android:orientation="horizontal">
 
                         <TextView
+                            android:id="@+id/tvStoreName2"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="Cơm Tấm Ba Nghiền"
@@ -852,6 +840,7 @@
                         android:orientation="horizontal">
 
                         <TextView
+                            android:id="@+id/btnFollowStore2"
                             android:layout_width="0dp"
                             android:layout_height="match_parent"
                             android:layout_marginEnd="6dp"
@@ -860,7 +849,7 @@
                             android:clickable="true"
                             android:focusable="true"
                             android:gravity="center"
-                            android:text="✔ Đang theo dõi"
+                            android:text="Đang theo dõi"
                             android:textColor="@color/text_dark"
                             android:textSize="13sp"
                             android:textStyle="bold" />
@@ -886,6 +875,7 @@
                         </LinearLayout>
 
                         <RelativeLayout
+                            android:id="@+id/btnShareStore2"
                             android:layout_width="44dp"
                             android:layout_height="match_parent"
                             android:layout_marginStart="6dp"
@@ -906,6 +896,7 @@
 
             <!-- 7. Restaurant List Card 3: Trà Sữa TocoToco -->
             <LinearLayout
+                android:id="@+id/cardStore3"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="16dp"
@@ -938,7 +929,7 @@
                             android:background="@drawable/bg_badge_verified"
                             android:paddingHorizontal="10dp"
                             android:paddingVertical="5dp"
-                            android:text="🟢 Đang mở cửa"
+                            android:text="Đang mở cửa"
                             android:textColor="#0A8050"
                             android:textSize="12sp"
                             android:textStyle="bold" />
@@ -997,6 +988,7 @@
                         android:orientation="horizontal">
 
                         <TextView
+                            android:id="@+id/tvStoreName3"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="Trà Sữa TocoToco - Cầu Giấy"
@@ -1029,6 +1021,7 @@
                         android:orientation="horizontal">
 
                         <TextView
+                            android:id="@+id/btnFollowStore3"
                             android:layout_width="0dp"
                             android:layout_height="match_parent"
                             android:layout_marginEnd="6dp"
@@ -1037,7 +1030,7 @@
                             android:clickable="true"
                             android:focusable="true"
                             android:gravity="center"
-                            android:text="✔ Đang theo dõi"
+                            android:text="Đang theo dõi"
                             android:textColor="@color/text_dark"
                             android:textSize="13sp"
                             android:textStyle="bold" />
@@ -1063,6 +1056,7 @@
                         </LinearLayout>
 
                         <RelativeLayout
+                            android:id="@+id/btnShareStore3"
                             android:layout_width="44dp"
                             android:layout_height="match_parent"
                             android:layout_marginStart="6dp"

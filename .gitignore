@@ -5,3 +5,6 @@ backend/uploads/images/*
 !backend/uploads/images/.gitkeep
 backend/uploads/videos/*
 !backend/uploads/videos/.gitkeep
+
+deploy.bat
+deploy.py

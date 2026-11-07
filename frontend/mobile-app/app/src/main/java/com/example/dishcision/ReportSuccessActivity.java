@@ -31,11 +31,19 @@ public class ReportSuccessActivity extends AppCompatActivity {
         btnBack = findViewById(R.id.btnBack);
         btnViewInbox = findViewById(R.id.btnViewInbox);
 
-        if (btnBack != null) btnBack.setOnClickListener(v -> finish());
-        
+        if (btnBack != null) {
+            btnBack.setOnClickListener(v -> {
+                Intent intent = new Intent(this, HomeActivity.class);
+                intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+                startActivity(intent);
+                finish();
+            });
+        }
+
         if (btnViewInbox != null) {
             btnViewInbox.setOnClickListener(v -> {
-                Intent intent = new Intent(this, HelpInboxActivity.class);
+                Intent intent = new Intent(this, HomeActivity.class);
+                intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
                 startActivity(intent);
                 finish();
             });
