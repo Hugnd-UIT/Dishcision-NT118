@@ -8,3 +8,4 @@ backend/uploads/videos/*
 
 deploy.bat
 deploy.py
+setup_ssl.py

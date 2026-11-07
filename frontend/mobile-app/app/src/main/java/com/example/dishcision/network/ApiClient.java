@@ -15,8 +15,7 @@ import retrofit2.converter.gson.GsonConverterFactory;
 
 public class ApiClient {
 
-    // IP máy đang chạy Docker Backend (VPS)
-    private static String baseUrl = "http://103.118.28.57:3000/api/v1/";
+    private static String baseUrl = "https://dishcision.duckdns.org/api/v1/";
     private static Retrofit retrofit = null;
 
     public static void setBaseUrl(String newBaseUrl) {
