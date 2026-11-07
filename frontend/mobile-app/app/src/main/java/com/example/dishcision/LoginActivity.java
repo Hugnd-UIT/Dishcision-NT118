@@ -96,6 +96,8 @@ public class LoginActivity extends AppCompatActivity {
                                         .putString("avatar_url", photoUrl)
                                         .apply();
 
+                                new TokenManager(LoginActivity.this).saveAuthData("google_token_" + System.currentTimeMillis(), email, fullName);
+
                                 Toast.makeText(this, "Đăng nhập Google thành công: " + fullName, Toast.LENGTH_SHORT).show();
                                 Intent intent = new Intent(LoginActivity.this, HomeActivity.class);
                                 startActivity(intent);

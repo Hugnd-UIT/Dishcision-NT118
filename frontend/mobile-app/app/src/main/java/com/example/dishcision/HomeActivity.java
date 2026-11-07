@@ -309,7 +309,10 @@ public class HomeActivity extends AppCompatActivity {
 
         if (menuLogout != null) {
             menuLogout.setOnClickListener(v -> {
+                new com.example.dishcision.network.TokenManager(HomeActivity.this).clearAuth();
+                getSharedPreferences("DishcisionPrefs", MODE_PRIVATE).edit().clear().apply();
                 Intent intent = new Intent(HomeActivity.this, LoginActivity.class);
+                intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
                 startActivity(intent);
                 finish();
             });
