@@ -17,6 +17,8 @@ import android.widget.Toast;
 import androidx.activity.EdgeToEdge;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
@@ -25,6 +27,12 @@ import com.example.dishcision.network.ApiClient;
 import com.example.dishcision.network.AuthResponse;
 import com.example.dishcision.network.LoginRequest;
 import com.example.dishcision.network.TokenManager;
+import com.google.android.gms.auth.api.signin.GoogleSignIn;
+import com.google.android.gms.auth.api.signin.GoogleSignInAccount;
+import com.google.android.gms.auth.api.signin.GoogleSignInClient;
+import com.google.android.gms.auth.api.signin.GoogleSignInOptions;
+import com.google.android.gms.common.api.ApiException;
+import com.google.android.gms.tasks.Task;
 
 import retrofit2.Call;
 import retrofit2.Callback;
@@ -41,6 +49,8 @@ public class LoginActivity extends AppCompatActivity {
     private TextView tvCreateAccount;
 
     private boolean isPasswordVisible = false;
+    private GoogleSignInClient mGoogleSignInClient;
+    private ActivityResultLauncher<Intent> googleSignInLauncher;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -55,8 +65,48 @@ public class LoginActivity extends AppCompatActivity {
         });
 
         initViews();
+        setupGoogleSignIn();
         setupListeners();
         setupTermsAndPrivacy();
+    }
+
+    private void setupGoogleSignIn() {
+        GoogleSignInOptions gso = new GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
+                .requestEmail()
+                .requestProfile()
+                .build();
+
+        mGoogleSignInClient = GoogleSignIn.getClient(this, gso);
+
+        googleSignInLauncher = registerForActivityResult(
+                new ActivityResultContracts.StartActivityForResult(),
+                result -> {
+                    if (result.getResultCode() == RESULT_OK && result.getData() != null) {
+                        Task<GoogleSignInAccount> task = GoogleSignIn.getSignedInAccountFromIntent(result.getData());
+                        try {
+                            GoogleSignInAccount account = task.getResult(ApiException.class);
+                            if (account != null) {
+                                String email = account.getEmail();
+                                String fullName = account.getDisplayName();
+                                String photoUrl = account.getPhotoUrl() != null ? account.getPhotoUrl().toString() : "";
+
+                                getSharedPreferences("DishcisionPrefs", MODE_PRIVATE).edit()
+                                        .putString("user_email", email)
+                                        .putString("user_name", fullName)
+                                        .putString("avatar_url", photoUrl)
+                                        .apply();
+
+                                Toast.makeText(this, "Đăng nhập Google thành công: " + fullName, Toast.LENGTH_SHORT).show();
+                                Intent intent = new Intent(LoginActivity.this, HomeActivity.class);
+                                startActivity(intent);
+                                finish();
+                            }
+                        } catch (ApiException e) {
+                            Toast.makeText(this, "Đăng nhập Google thất bại (Mã: " + e.getStatusCode() + ")", Toast.LENGTH_SHORT).show();
+                        }
+                    }
+                }
+        );
     }
 
     private void initViews() {
@@ -76,10 +126,10 @@ public class LoginActivity extends AppCompatActivity {
 
         if (btnGoogleLogin != null) {
             btnGoogleLogin.setOnClickListener(v -> {
-                Toast.makeText(this, "Đăng nhập Google", Toast.LENGTH_SHORT).show();
-                Intent intent = new Intent(LoginActivity.this, HomeActivity.class);
-                startActivity(intent);
-                finish();
+                if (mGoogleSignInClient != null && googleSignInLauncher != null) {
+                    Intent signInIntent = mGoogleSignInClient.getSignInIntent();
+                    googleSignInLauncher.launch(signInIntent);
+                }
             });
         }
 
