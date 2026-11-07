@@ -15,8 +15,8 @@ import retrofit2.converter.gson.GsonConverterFactory;
 
 public class ApiClient {
 
-    // IP Wi-Fi thực tế của máy bạn đang chạy Docker Backend
-    private static String baseUrl = "http://192.168.1.36:3000/api/v1/";
+    // IP Wi-Fi hiện tại của máy bạn kết nối Docker Backend
+    private static String baseUrl = "http://172.30.40.250:3000/api/v1/";
     private static Retrofit retrofit = null;
 
     public static void setBaseUrl(String newBaseUrl) {

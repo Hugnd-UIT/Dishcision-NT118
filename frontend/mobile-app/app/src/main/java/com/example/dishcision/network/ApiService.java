@@ -6,6 +6,7 @@ import retrofit2.http.Body;
 import retrofit2.http.GET;
 import retrofit2.http.Header;
 import retrofit2.http.Multipart;
+import retrofit2.http.PATCH;
 import retrofit2.http.POST;
 import retrofit2.http.PUT;
 import retrofit2.http.Part;
@@ -56,10 +57,10 @@ public interface ApiService {
     );
 
     // ── TASTE PREFERENCES ENDPOINTS ───────────────
-    @GET("preferences")
+    @GET("preferences/me")
     Call<Object> getPreferences(@Header("Authorization") String authHeader);
 
-    @PUT("preferences")
+    @PUT("preferences/me")
     Call<Object> updatePreferences(
             @Header("Authorization") String authHeader,
             @Body Object preferences
@@ -138,7 +139,7 @@ public interface ApiService {
     @GET("notifications")
     Call<Object> getNotifications(@Header("Authorization") String authHeader);
 
-    @PUT("notifications/{notificationId}/read")
+    @PATCH("notifications/{notificationId}/read")
     Call<Object> markNotificationRead(
             @Header("Authorization") String authHeader,
             @Path("notificationId") String notificationId
