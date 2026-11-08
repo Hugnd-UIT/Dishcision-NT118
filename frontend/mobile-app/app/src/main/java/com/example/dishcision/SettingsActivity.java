@@ -57,6 +57,10 @@ public class SettingsActivity extends AppCompatActivity {
         btnAccountManagement = findViewById(R.id.btnAccountManagement);
         btnSecurityLogin = findViewById(R.id.btnSecurityLogin);
         btnChangePassword = findViewById(R.id.btnChangePassword);
+        boolean isGoogleLogin = getSharedPreferences("DishcisionPrefs", MODE_PRIVATE).getBoolean("is_google_login", false);
+        if (isGoogleLogin && btnChangePassword != null) {
+            btnChangePassword.setVisibility(android.view.View.GONE);
+        }
         btnPrivacy = findViewById(R.id.btnPrivacy);
 
         btnTastePreferences = findViewById(R.id.btnTastePreferences);
@@ -171,13 +175,7 @@ public class SettingsActivity extends AppCompatActivity {
         }
 
         if (btnLogout != null) {
-            btnLogout.setOnClickListener(v -> {
-                Toast.makeText(this, "Đã đăng xuất tài khoản", Toast.LENGTH_SHORT).show();
-                Intent intent = new Intent(SettingsActivity.this, LoginActivity.class);
-                intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-                startActivity(intent);
-                finish();
-            });
+            btnLogout.setOnClickListener(v -> com.example.dishcision.network.AuthHelper.logout(SettingsActivity.this));
         }
 
         if (btnDeleteAccount != null) {

@@ -11,6 +11,10 @@ import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 
+import android.content.SharedPreferences;
+
+import com.example.dishcision.network.TokenManager;
+
 public class MainActivity extends AppCompatActivity {
 
     private static final int SPLASH_DELAY = 2000;
@@ -40,7 +44,13 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private boolean checkUserLoggedIn() {
-        return false;
+        TokenManager tokenManager = new TokenManager(this);
+        if (tokenManager.isLoggedIn()) return true;
+
+        SharedPreferences prefs = getSharedPreferences("DishcisionPrefs", MODE_PRIVATE);
+        String token = prefs.getString("access_token", null);
+        String googleEmail = prefs.getString("user_email", null);
+        return (token != null && !token.trim().isEmpty()) || (googleEmail != null && !googleEmail.trim().isEmpty());
     }
 
     private void navigateToHome() {

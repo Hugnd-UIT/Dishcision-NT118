@@ -17,6 +17,8 @@ import android.widget.Toast;
 import androidx.activity.EdgeToEdge;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
@@ -25,6 +27,12 @@ import com.example.dishcision.network.ApiClient;
 import com.example.dishcision.network.AuthResponse;
 import com.example.dishcision.network.RegisterRequest;
 import com.example.dishcision.network.TokenManager;
+import com.google.android.gms.auth.api.signin.GoogleSignIn;
+import com.google.android.gms.auth.api.signin.GoogleSignInAccount;
+import com.google.android.gms.auth.api.signin.GoogleSignInClient;
+import com.google.android.gms.auth.api.signin.GoogleSignInOptions;
+import com.google.android.gms.common.api.ApiException;
+import com.google.android.gms.tasks.Task;
 
 import org.json.JSONObject;
 
@@ -40,9 +48,12 @@ public class RegisterActivity extends AppCompatActivity {
     private EditText edtConfirmPassword;
     private ImageView btnToggleRegisterPassword;
     private RelativeLayout btnRegister;
+    private RelativeLayout btnGoogleRegister;
     private TextView tvLoginLink;
 
     private boolean isRegisterPasswordVisible = false;
+    private GoogleSignInClient mGoogleSignInClient;
+    private ActivityResultLauncher<Intent> googleSignInLauncher;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -57,8 +68,52 @@ public class RegisterActivity extends AppCompatActivity {
         });
 
         initViews();
+        setupGoogleSignIn();
         setupListeners();
         setupRegisterTermsAndPrivacy();
+    }
+
+    private void setupGoogleSignIn() {
+        GoogleSignInOptions gso = new GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
+                .requestEmail()
+                .requestProfile()
+                .build();
+
+        mGoogleSignInClient = GoogleSignIn.getClient(this, gso);
+
+        googleSignInLauncher = registerForActivityResult(
+                new ActivityResultContracts.StartActivityForResult(),
+                result -> {
+                    if (result.getResultCode() == RESULT_OK && result.getData() != null) {
+                        Task<GoogleSignInAccount> task = GoogleSignIn.getSignedInAccountFromIntent(result.getData());
+                        try {
+                            GoogleSignInAccount account = task.getResult(ApiException.class);
+                            if (account != null) {
+                                String email = account.getEmail();
+                                String fullName = account.getDisplayName();
+                                String photoUrl = account.getPhotoUrl() != null ? account.getPhotoUrl().toString() : "";
+
+                                // Save locally
+                                getSharedPreferences("DishcisionPrefs", MODE_PRIVATE).edit()
+                                        .putString("user_email", email)
+                                        .putString("user_name", fullName)
+                                        .putString("avatar_url", photoUrl)
+                                        .putBoolean("is_google_login", true)
+                                        .apply();
+
+                                new TokenManager(RegisterActivity.this).saveAuthData("google_token_" + System.currentTimeMillis(), email, fullName);
+
+                                Toast.makeText(this, "Đăng ký thành công với Google: " + fullName, Toast.LENGTH_SHORT).show();
+                                Intent intent = new Intent(RegisterActivity.this, HomeActivity.class);
+                                startActivity(intent);
+                                finish();
+                            }
+                        } catch (ApiException e) {
+                            Toast.makeText(this, "Đăng ký Google thất bại (Mã: " + e.getStatusCode() + ")", Toast.LENGTH_SHORT).show();
+                        }
+                    }
+                }
+        );
     }
 
     private void initViews() {
@@ -68,12 +123,24 @@ public class RegisterActivity extends AppCompatActivity {
         edtConfirmPassword = findViewById(R.id.edtConfirmPassword);
         btnToggleRegisterPassword = findViewById(R.id.btnToggleRegisterPassword);
         btnRegister = findViewById(R.id.btnRegister);
+        btnGoogleRegister = findViewById(R.id.btnGoogleRegister);
         tvLoginLink = findViewById(R.id.tvLoginLink);
     }
 
     private void setupListeners() {
         if (btnRegister != null) {
             btnRegister.setOnClickListener(v -> performRegister());
+        }
+
+        if (btnGoogleRegister != null) {
+            btnGoogleRegister.setOnClickListener(v -> {
+                if (mGoogleSignInClient != null && googleSignInLauncher != null) {
+                    mGoogleSignInClient.signOut().addOnCompleteListener(task -> {
+                        Intent signInIntent = mGoogleSignInClient.getSignInIntent();
+                        googleSignInLauncher.launch(signInIntent);
+                    });
+                }
+            });
         }
 
         if (btnToggleRegisterPassword != null && edtRegisterPassword != null) {
@@ -149,6 +216,9 @@ public class RegisterActivity extends AppCompatActivity {
                     AuthResponse authData = response.body();
                     String token = authData.getToken();
                     tokenManager.saveAuthData(token, email, fullName);
+                    getSharedPreferences("DishcisionPrefs", MODE_PRIVATE).edit()
+                            .putBoolean("is_google_login", false)
+                            .apply();
 
                     Toast.makeText(RegisterActivity.this, "🎉 Đăng ký tài khoản thành công!", Toast.LENGTH_SHORT).show();
                     Intent intent = new Intent(RegisterActivity.this, LoginActivity.class);

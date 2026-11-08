@@ -182,6 +182,65 @@ export async function login(req: Request, res: Response): Promise<void> {
   });
 }
 
+// ── Google Auth (Sign in / Auto Sign up) ───
+
+export async function googleAuth(req: Request, res: Response): Promise<void> {
+  const { email, fullName, avatarUrl } = req.body;
+  if (!email) {
+    errorResponse(res, 'Email is required', 400);
+    return;
+  }
+
+  let user = await prisma.user.findUnique({
+    where: { email },
+    include: { _count: { select: { followers: true, following: true } } },
+  });
+
+  if (!user) {
+    const baseUsername = email.split('@')[0].replace(/[^a-zA-Z0-9_]/g, '');
+    let username = baseUsername;
+    const existing = await prisma.user.findUnique({ where: { username } });
+    if (existing) {
+      username = `${baseUsername}_${Math.floor(1000 + Math.random() * 9000)}`;
+    }
+
+    user = await prisma.user.create({
+      data: {
+        email,
+        username,
+        fullName: fullName || baseUsername,
+        avatarUrl: avatarUrl || null,
+        passwordHash: '',
+        role: 'User',
+        accountStatus: 'Active',
+      },
+      include: { _count: { select: { followers: true, following: true } } },
+    });
+  }
+
+  if (user.accountStatus !== 'Active') {
+    errorResponse(res, `Account is ${user.accountStatus.toLowerCase()}`, 403);
+    return;
+  }
+
+  const accessToken = generateAccessToken({ userId: user.id, role: user.role });
+  const refreshToken = generateRefreshToken({ userId: user.id });
+  await prisma.user.update({ where: { id: user.id }, data: { refreshToken } });
+
+  res.status(200).json({
+    success: true,
+    message: 'Google authentication successful',
+    token: accessToken,
+    accessToken,
+    data: {
+      accessToken,
+      refreshToken,
+      expiresIn: getExpiresIn(),
+      user: formatUser(user),
+    },
+  });
+}
+
 // ── Logout ────────────────────────────────
 
 export async function logout(req: AuthRequest, res: Response): Promise<void> {
@@ -300,7 +359,15 @@ export async function changePassword(req: AuthRequest, res: Response): Promise<v
   const userId = req.user?.userId || 1;
 
   const user = await prisma.user.findUnique({ where: { id: userId } });
-  if (!user || !(await comparePassword(currentPassword, user.passwordHash))) {
+  if (!user) {
+    errorResponse(res, 'User not found', 404);
+    return;
+  }
+  if (!user.passwordHash || user.passwordHash === '') {
+    errorResponse(res, 'Tài khoản đăng nhập bằng Google không sử dụng mật khẩu', 400);
+    return;
+  }
+  if (!(await comparePassword(currentPassword, user.passwordHash))) {
     errorResponse(res, 'Current password is incorrect', 401);
     return;
   }

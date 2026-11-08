@@ -308,11 +308,7 @@ public class HomeActivity extends AppCompatActivity {
         }
 
         if (menuLogout != null) {
-            menuLogout.setOnClickListener(v -> {
-                Intent intent = new Intent(HomeActivity.this, LoginActivity.class);
-                startActivity(intent);
-                finish();
-            });
+            menuLogout.setOnClickListener(v -> com.example.dishcision.network.AuthHelper.logout(HomeActivity.this));
         }
 
         // User Avatars in Feed
@@ -783,10 +779,22 @@ public class HomeActivity extends AppCompatActivity {
             }
         });
 
+        // Check if signed in via Google
+        android.content.SharedPreferences prefs = getSharedPreferences("DishcisionPrefs", MODE_PRIVATE);
+        String googleName = prefs.getString("user_name", null);
+        String googleEmail = prefs.getString("user_email", null);
+        if (googleName != null && tvSidebarUserName != null) {
+            tvSidebarUserName.setText(googleName);
+        }
+        if (googleEmail != null && tvSidebarUserHandle != null) {
+            tvSidebarUserHandle.setText(googleEmail);
+        }
+
         // Fetch User Profile for Sidebar
         ApiClient.getApiService().getMyProfile(authHeader).enqueue(new Callback<UserProfileResponse>() {
             @Override
             public void onResponse(Call<UserProfileResponse> call, Response<UserProfileResponse> response) {
+                if (googleName != null) return; // Keep Google user name if logged in with Google
                 if (response.isSuccessful() && response.body() != null && response.body().getData() != null) {
                     UserProfileResponse.UserData user = response.body().getData();
                     if (tvSidebarUserName != null && user.fullName != null) {
