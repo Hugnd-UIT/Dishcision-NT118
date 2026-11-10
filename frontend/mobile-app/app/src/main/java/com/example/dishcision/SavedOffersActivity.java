@@ -26,6 +26,7 @@ public class SavedOffersActivity extends AppCompatActivity {
         });
 
         initViews();
+        com.example.dishcision.network.CurrentUserBinder.bindInline(this, findViewById(R.id.tvProfileNameHandle));
         setupListeners();
     }
 

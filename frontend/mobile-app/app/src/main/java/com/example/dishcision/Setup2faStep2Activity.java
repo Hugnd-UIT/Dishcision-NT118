@@ -51,6 +51,11 @@ public class Setup2faStep2Activity extends AppCompatActivity {
         edt2FACode = findViewById(R.id.edt2FACode);
         btnConfirm = findViewById(R.id.btnConfirm);
         btnBackGuide = findViewById(R.id.btnBackGuide);
+
+        com.example.dishcision.network.CurrentUserBinder.bind(this,
+                findViewById(R.id.imgAvatar),
+                findViewById(R.id.tvProfileName),
+                findViewById(R.id.tvProfileHandle));
     }
 
     private void setupListeners() {
@@ -77,7 +82,7 @@ public class Setup2faStep2Activity extends AppCompatActivity {
         }
 
         TwoFactorVerifyRequest request = new TwoFactorVerifyRequest(code);
-        ApiClient.getApiService().verify2FA("Bearer dummy_token", request).enqueue(new Callback<TwoFactorStatusResponse>() {
+        ApiClient.getApiService().verify2FA(ApiClient.getAuthHeader(this), request).enqueue(new Callback<TwoFactorStatusResponse>() {
             @Override
             public void onResponse(@NonNull Call<TwoFactorStatusResponse> call, @NonNull Response<TwoFactorStatusResponse> response) {
                 if (response.isSuccessful() && response.body() != null && response.body().isSuccess()) {

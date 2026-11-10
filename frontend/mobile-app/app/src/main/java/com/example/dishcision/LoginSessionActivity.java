@@ -95,7 +95,7 @@ public class LoginSessionActivity extends AppCompatActivity {
     }
 
     private void fetchSessionsFromBackend() {
-        ApiClient.getApiService().getSessions("Bearer dummy_token").enqueue(new Callback<SessionsResponse>() {
+        ApiClient.getApiService().getSessions(ApiClient.getAuthHeader(this)).enqueue(new Callback<SessionsResponse>() {
             @Override
             public void onResponse(@NonNull Call<SessionsResponse> call, @NonNull Response<SessionsResponse> response) {
                 if (response.isSuccessful() && response.body() != null && response.body().getData() != null) {
@@ -121,7 +121,7 @@ public class LoginSessionActivity extends AppCompatActivity {
 
     private void revokeSessionOnBackend(String sessionId, int sessionIndex) {
         RevokeSessionRequest request = new RevokeSessionRequest(sessionId);
-        ApiClient.getApiService().revokeSession("Bearer dummy_token", request).enqueue(new Callback<SessionsResponse>() {
+        ApiClient.getApiService().revokeSession(ApiClient.getAuthHeader(this), request).enqueue(new Callback<SessionsResponse>() {
             @Override
             public void onResponse(@NonNull Call<SessionsResponse> call, @NonNull Response<SessionsResponse> response) {
                 if (sessionIndex == 1) {
@@ -149,7 +149,7 @@ public class LoginSessionActivity extends AppCompatActivity {
         if (isSession2Active) toRevoke.add("session-3");
 
         RevokeSessionRequest request = new RevokeSessionRequest(toRevoke);
-        ApiClient.getApiService().revokeSession("Bearer dummy_token", request).enqueue(new Callback<SessionsResponse>() {
+        ApiClient.getApiService().revokeSession(ApiClient.getAuthHeader(this), request).enqueue(new Callback<SessionsResponse>() {
             @Override
             public void onResponse(@NonNull Call<SessionsResponse> call, @NonNull Response<SessionsResponse> response) {
                 isSession1Active = false;

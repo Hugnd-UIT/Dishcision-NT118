@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:layout_marginEnd="8dp"
+    android:background="@drawable/bg_chip_preference"
+    android:gravity="center_vertical"
+    android:orientation="horizontal"
+    android:paddingHorizontal="14dp"
+    android:paddingVertical="8dp">
+
+    <TextView
+        android:id="@+id/tvChipName"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textColor="#141B2B"
+        android:textSize="13sp" />
+
+    <ImageView
+        android:id="@+id/btnRemoveChip"
+        android:layout_width="16dp"
+        android:layout_height="16dp"
+        android:layout_marginStart="6dp"
+        android:background="?attr/selectableItemBackgroundBorderless"
+        android:clickable="true"
+        android:contentDescription="Remove"
+        android:focusable="true"
+        android:src="@drawable/ic_close"
+        app:tint="#6B7280" />
+</LinearLayout>

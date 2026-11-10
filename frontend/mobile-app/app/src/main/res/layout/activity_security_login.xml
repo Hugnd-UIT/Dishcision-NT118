@@ -106,7 +106,7 @@
                     android:layout_height="48dp"
                     android:background="@drawable/bg_avatar_circle"
                     android:clipToOutline="true"
-                    android:contentDescription="@string/security_user_name"
+                    android:contentDescription="@string/app_name"
                     android:scaleType="centerCrop"
                     android:src="@drawable/logo" />
 
@@ -120,7 +120,7 @@
                         android:id="@+id/tvProfileName"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="@string/security_user_name"
+                        android:text=""
                         android:textColor="@color/text_dark"
                         android:textSize="16sp"
                         android:textStyle="bold" />
@@ -130,7 +130,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="2dp"
-                        android:text="@string/security_user_handle"
+                        android:text=""
                         android:textColor="@color/text_gray"
                         android:textSize="13sp" />
                 </LinearLayout>

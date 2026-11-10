@@ -53,6 +53,7 @@ public class MyReviewsActivity extends AppCompatActivity {
         });
 
         initViews();
+        com.example.dishcision.network.CurrentUserBinder.bind(this, findViewById(R.id.imgAvatar), findViewById(R.id.tvProfileName), null);
         setupListeners();
         fetchReviewsFromBackend();
     }

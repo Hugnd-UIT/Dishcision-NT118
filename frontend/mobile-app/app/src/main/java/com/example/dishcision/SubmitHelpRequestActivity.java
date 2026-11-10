@@ -93,7 +93,7 @@ public class SubmitHelpRequestActivity extends AppCompatActivity {
         }
 
         HelpCreateRequest req = new HelpCreateRequest(subject, title, desc, email);
-        ApiClient.getApiService().createTicket("Bearer dummy_token", req).enqueue(new Callback<HelpCreateResponse>() {
+        ApiClient.getApiService().createTicket(ApiClient.getAuthHeader(this), req).enqueue(new Callback<HelpCreateResponse>() {
             @Override
             public void onResponse(@NonNull Call<HelpCreateResponse> call, @NonNull Response<HelpCreateResponse> response) {
                 Toast.makeText(SubmitHelpRequestActivity.this, "Đã gửi yêu cầu hỗ trợ", Toast.LENGTH_SHORT).show();

@@ -256,7 +256,7 @@ public class PrivacyRadioChoiceActivity extends AppCompatActivity {
     }
 
     private void fetchCurrentSettingFromBackend() {
-        ApiClient.getApiService().getPrivacySettings("Bearer dummy_token").enqueue(new Callback<PrivacySettingsResponse>() {
+        ApiClient.getApiService().getPrivacySettings(ApiClient.getAuthHeader(this)).enqueue(new Callback<PrivacySettingsResponse>() {
             @Override
             public void onResponse(@NonNull Call<PrivacySettingsResponse> call, @NonNull Response<PrivacySettingsResponse> response) {
                 if (response.isSuccessful() && response.body() != null && response.body().getData() != null) {
@@ -294,7 +294,7 @@ public class PrivacyRadioChoiceActivity extends AppCompatActivity {
     }
 
     private void savePrivacyToBackend() {
-        ApiClient.getApiService().updatePrivacySettings("Bearer dummy_token", currentPrivacy).enqueue(new Callback<PrivacySettingsResponse>() {
+        ApiClient.getApiService().updatePrivacySettings(ApiClient.getAuthHeader(this), currentPrivacy).enqueue(new Callback<PrivacySettingsResponse>() {
             @Override
             public void onResponse(@NonNull Call<PrivacySettingsResponse> call, @NonNull Response<PrivacySettingsResponse> response) {
                 Toast.makeText(PrivacyRadioChoiceActivity.this, "Đã lưu thay đổi", Toast.LENGTH_SHORT).show();

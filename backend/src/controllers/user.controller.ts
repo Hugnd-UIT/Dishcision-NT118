@@ -3,6 +3,7 @@ import { prisma } from '../config/prisma';
 import { redis, getCache, setCache, delCache, CACHE_TTL } from '../config/redis';
 import { successResponse, paginatedResponse, errorResponse } from '../utils/response';
 import { AuthRequest } from '../middlewares/auth.middleware';
+import { getExpiresIn, verifyAccessToken } from '../utils/auth';
 
 const USER_PUBLIC_SELECT = {
   id: true, username: true, fullName: true, avatarUrl: true, bio: true, role: true,
@@ -10,10 +11,14 @@ const USER_PUBLIC_SELECT = {
 };
 
 export function formatUser(user: any) {
-  const { id, _count, ...rest } = user;
+  const { id, _count, preferences, ...rest } = user;
+  const prefNames = preferences
+    ? preferences.map((up: any) => (up.preference ? up.preference.name : up.name || up)).filter(Boolean)
+    : [];
   return {
     userId: id,
     ...rest,
+    preferences: prefNames,
     postsCount: _count?.posts ?? 0,
     followersCount: _count?.followers ?? 0,
     followingCount: _count?.following ?? 0,
@@ -38,13 +43,19 @@ export async function getMe(req: AuthRequest, res: Response): Promise<void> {
 
   let user = await prisma.user.findUnique({
     where: { id: userId },
-    include: { _count: { select: { followers: true, following: true, posts: true } } },
+    include: {
+      _count: { select: { followers: true, following: true, posts: true } },
+      preferences: { include: { preference: true } },
+    },
   });
 
   if (!user) {
     user = await prisma.user.findFirst({
       where: { role: 'User' },
-      include: { _count: { select: { followers: true, following: true, posts: true } } },
+      include: {
+        _count: { select: { followers: true, following: true, posts: true } },
+        preferences: { include: { preference: true } },
+      },
     });
   }
 
@@ -60,18 +71,54 @@ export async function getMe(req: AuthRequest, res: Response): Promise<void> {
 
 export async function updateMe(req: AuthRequest, res: Response): Promise<void> {
   const userId = req.user!.userId;
-  const { fullName, bio, gender, dateOfBirth, avatarUrl } = req.body;
+  const { username, fullName, bio, gender, dateOfBirth, avatarUrl, preferences } = req.body;
+  console.log('updateMe userId:', userId, 'preferences:', preferences);
+
+  if (username) {
+    const existing = await prisma.user.findFirst({
+      where: { username, NOT: { id: userId } },
+    });
+    if (existing) {
+      errorResponse(res, 'Tên người dùng này đã được sử dụng', 409);
+      return;
+    }
+  }
+
+  if (Array.isArray(preferences)) {
+    const prefIds: number[] = [];
+    for (const pName of preferences) {
+      if (!pName || typeof pName !== 'string') continue;
+      const cleanName = pName.trim();
+      if (!cleanName) continue;
+      let pref = await prisma.foodPreference.findFirst({ where: { name: cleanName } });
+      if (!pref) {
+        pref = await prisma.foodPreference.create({ data: { name: cleanName } });
+      }
+      prefIds.push(pref.id);
+    }
+    await prisma.userPreference.deleteMany({ where: { userId } });
+    if (prefIds.length > 0) {
+      await prisma.userPreference.createMany({
+        data: prefIds.map(preferenceId => ({ userId, preferenceId })),
+        skipDuplicates: true,
+      });
+    }
+  }
 
   const user = await prisma.user.update({
     where: { id: userId },
     data: {
+      username: username || undefined,
       fullName,
       bio,
       gender,
       dateOfBirth: dateOfBirth ? new Date(dateOfBirth) : undefined,
       avatarUrl,
     },
-    include: { _count: { select: { followers: true, following: true } } },
+    include: {
+      _count: { select: { followers: true, following: true } },
+      preferences: { include: { preference: true } },
+    },
   });
 
   await delCache(`user:${userId}`);
@@ -139,7 +186,22 @@ export async function getUserPosts(req: AuthRequest, res: Response): Promise<voi
     ]);
   }
 
-  paginatedResponse(res, posts.map(formatPost), { page, limit, total });
+  const formatted = await attachSavedFlags(posts.map(formatPost), req.user?.userId);
+  paginatedResponse(res, formatted, { page, limit, total });
+}
+
+/** Adds `isSaved` to each formatted post for the signed-in user (false for guests). */
+export async function attachSavedFlags<T extends { postId: number }>(
+  posts: T[],
+  userId?: number,
+): Promise<(T & { isSaved: boolean })[]> {
+  if (!userId || posts.length === 0) return posts.map((p) => ({ ...p, isSaved: false }));
+  const saved = await prisma.savedPost.findMany({
+    where: { userId, postId: { in: posts.map((p) => p.postId) } },
+    select: { postId: true },
+  });
+  const savedIds = new Set(saved.map((s) => s.postId));
+  return posts.map((p) => ({ ...p, isSaved: savedIds.has(p.postId) }));
 }
 
 export function formatPost(post: any) {
@@ -314,3 +376,36 @@ export async function unrestrictAccount(req: AuthRequest, res: Response): Promis
   });
 }
 
+
+// ── Delete own account ───────────────────
+// Tries a hard delete; if related rows block it (FK constraints), the account is deactivated instead
+// so it can no longer sign in. Either way the current token is revoked.
+export async function deleteMe(req: AuthRequest, res: Response): Promise<void> {
+  // Never trust the demo fallback in `authenticate` for an irreversible action:
+  // require a real, verifiable access token and take the user id from it.
+  const token = req.headers.authorization?.startsWith('Bearer ') ? req.headers.authorization.split(' ')[1] : '';
+  let userId: number;
+  try {
+    userId = verifyAccessToken(token).userId;
+  } catch {
+    errorResponse(res, 'Invalid or expired token', 401);
+    return;
+  }
+
+  let mode: 'deleted' | 'deactivated' = 'deleted';
+  try {
+    await prisma.user.delete({ where: { id: userId } });
+  } catch {
+    mode = 'deactivated';
+    await prisma.user.update({
+      where: { id: userId },
+      data: { accountStatus: 'Suspended', refreshToken: null },
+    });
+  }
+
+  await redis.set(`blacklist:${token}`, '1', 'EX', getExpiresIn());
+  const keys = ['privacy', 'blocked', 'restricted', 'sessions', '2fa_enabled'].map((k) => `user:${userId}:${k}`);
+  await redis.del(...keys);
+
+  successResponse(res, { mode }, mode === 'deleted' ? 'Tài khoản đã được xóa' : 'Tài khoản đã bị vô hiệu hóa');
+}

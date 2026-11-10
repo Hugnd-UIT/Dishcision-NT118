@@ -104,7 +104,8 @@
                     android:layout_height="wrap_content"
                     android:layout_below="@id/tvBannerTitle"
                     android:layout_marginTop="2dp"
-                    android:text="Maya Chen • @mayafoodie"
+                    android:id="@+id/tvProfileNameHandle"
+                    android:text=""
                     android:textColor="@color/text_gray"
                     android:textSize="13sp" />
             </RelativeLayout>

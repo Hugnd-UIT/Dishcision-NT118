@@ -221,51 +221,10 @@
                 android:scrollbars="none">
 
                 <LinearLayout
+                    android:id="@+id/layoutProfileTags"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:orientation="horizontal">
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginEnd="8dp"
-                        android:background="@drawable/bg_tag_chip_pink"
-                        android:clickable="true"
-                        android:focusable="true"
-                        android:paddingHorizontal="12dp"
-                        android:paddingVertical="6dp"
-                        android:text="#SourdoughHunt"
-                        android:textColor="#FF5A36"
-                        android:textSize="12sp"
-                        android:textStyle="bold" />
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginEnd="8dp"
-                        android:background="@drawable/bg_tag_chip_pink"
-                        android:clickable="true"
-                        android:focusable="true"
-                        android:paddingHorizontal="12dp"
-                        android:paddingVertical="6dp"
-                        android:text="#RamenChronicles"
-                        android:textColor="#FF5A36"
-                        android:textSize="12sp"
-                        android:textStyle="bold" />
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:background="@drawable/bg_tag_chip_pink"
-                        android:clickable="true"
-                        android:focusable="true"
-                        android:paddingHorizontal="12dp"
-                        android:paddingVertical="6dp"
-                        android:text="#PlantForward"
-                        android:textColor="#FF5A36"
-                        android:textSize="12sp"
-                        android:textStyle="bold" />
-                </LinearLayout>
+                    android:orientation="horizontal" />
             </HorizontalScrollView>
 
             <!-- Action Buttons Row -->
@@ -335,9 +294,13 @@
                 android:paddingVertical="16dp">
 
                 <LinearLayout
+                    android:id="@+id/colPosts"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:foreground="?attr/selectableItemBackground"
                     android:gravity="center"
                     android:orientation="vertical">
 
@@ -345,7 +308,7 @@
                         android:id="@+id/tvPostsCount"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="142"
+                        android:text="0"
                         android:textColor="#141B2B"
                         android:textSize="20sp"
                         android:textStyle="bold" />
@@ -354,7 +317,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="2dp"
-                        android:text="Posts"
+                        android:text="Bài viết"
                         android:textColor="#6B7280"
                         android:textSize="12sp" />
                 </LinearLayout>
@@ -365,9 +328,13 @@
                     android:background="#D9DCE5" />
 
                 <LinearLayout
+                    android:id="@+id/colFollowers"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:foreground="?attr/selectableItemBackground"
                     android:gravity="center"
                     android:orientation="vertical">
 
@@ -375,7 +342,7 @@
                         android:id="@+id/tvFollowersCount"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="24.8k"
+                        android:text="0"
                         android:textColor="#141B2B"
                         android:textSize="20sp"
                         android:textStyle="bold" />
@@ -384,7 +351,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="2dp"
-                        android:text="Followers"
+                        android:text="Người theo dõi"
                         android:textColor="#6B7280"
                         android:textSize="12sp" />
                 </LinearLayout>
@@ -395,9 +362,13 @@
                     android:background="#D9DCE5" />
 
                 <LinearLayout
+                    android:id="@+id/colFollowing"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:foreground="?attr/selectableItemBackground"
                     android:gravity="center"
                     android:orientation="vertical">
 
@@ -405,7 +376,7 @@
                         android:id="@+id/tvFollowingCount"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="680"
+                        android:text="0"
                         android:textColor="#141B2B"
                         android:textSize="20sp"
                         android:textStyle="bold" />
@@ -414,114 +385,67 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="2dp"
-                        android:text="Following"
+                        android:text="Đang theo dõi"
                         android:textColor="#6B7280"
                         android:textSize="12sp" />
                 </LinearLayout>
             </LinearLayout>
 
-            <!-- Tabs Section Header -->
+            <!-- My Posts Section Header (Voucher tab removed) -->
             <LinearLayout
+                android:id="@+id/tabMyPosts"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="20dp"
-                android:orientation="horizontal">
+                android:clickable="true"
+                android:focusable="true"
+                android:foreground="?attr/selectableItemBackground"
+                android:orientation="vertical">
 
-                <!-- Active Tab: My Posts -->
                 <LinearLayout
-                    android:id="@+id/tabMyPosts"
-                    android:layout_width="0dp"
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:clickable="true"
-                    android:focusable="true"
-                    android:foreground="?attr/selectableItemBackground"
-                    android:gravity="center"
-                    android:orientation="vertical">
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
 
-                    <LinearLayout
+                    <ImageView
+                        android:layout_width="20dp"
+                        android:layout_height="20dp"
+                        android:contentDescription="Grid"
+                        android:src="@drawable/ic_grid"
+                        app:tint="#FF5A36" />
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="8dp"
+                        android:layout_weight="1"
+                        android:text="Bài viết của tôi"
+                        android:textColor="#141B2B"
+                        android:textSize="16sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/tvMyPostsBadge"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:gravity="center_vertical"
-                        android:orientation="horizontal">
-
-                        <ImageView
-                            android:layout_width="18dp"
-                            android:layout_height="18dp"
-                            android:contentDescription="Grid"
-                            android:src="@drawable/ic_grid" />
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginStart="6dp"
-                            android:text="My Posts"
-                            android:textColor="#141B2B"
-                            android:textSize="15sp"
-                            android:textStyle="bold" />
-                    </LinearLayout>
-
-                    <View
-                        android:layout_width="match_parent"
-                        android:layout_height="3dp"
-                        android:layout_marginTop="8dp"
-                        android:background="#FF5A36" />
+                        android:background="@drawable/bg_badge_tastemaker"
+                        android:paddingHorizontal="10dp"
+                        android:paddingVertical="4dp"
+                        android:text="Xem tất cả ›"
+                        android:textColor="#FF5A36"
+                        android:textSize="12sp"
+                        android:textStyle="bold" />
                 </LinearLayout>
 
-                <!-- Inactive Tab: Saved Vouchers -->
-                <LinearLayout
-                    android:id="@+id/tabSavedVouchers"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:clickable="true"
-                    android:focusable="true"
-                    android:foreground="?attr/selectableItemBackground"
-                    android:gravity="center"
-                    android:orientation="vertical">
-
-                    <LinearLayout
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:gravity="center_vertical"
-                        android:orientation="horizontal">
-
-                        <ImageView
-                            android:layout_width="18dp"
-                            android:layout_height="18dp"
-                            android:contentDescription="Ticket"
-                            android:src="@drawable/ic_ticket" />
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginStart="6dp"
-                            android:text="Saved Vouchers"
-                            android:textColor="#6B7280"
-                            android:textSize="15sp" />
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginStart="6dp"
-                            android:background="@drawable/bg_button_light_blue"
-                            android:paddingHorizontal="6dp"
-                            android:paddingVertical="2dp"
-                            android:text="4"
-                            android:textColor="#505568"
-                            android:textSize="11sp"
-                            android:textStyle="bold" />
-                    </LinearLayout>
-
-                    <View
-                        android:layout_width="match_parent"
-                        android:layout_height="1dp"
-                        android:layout_marginTop="10dp"
-                        android:background="#E9EBF4" />
-                </LinearLayout>
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="2dp"
+                    android:layout_marginTop="10dp"
+                    android:background="#FF5A36" />
             </LinearLayout>
 
-            <!-- Grid of Posts (3 columns) -->
+            <!-- Grid of Posts (3 columns with real photos) -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -530,36 +454,48 @@
 
                 <!-- Post Row 1 -->
                 <LinearLayout
+                    android:id="@+id/rowGridPosts1"
                     android:layout_width="match_parent"
                     android:layout_height="120dp"
                     android:layout_marginBottom="8dp"
                     android:orientation="horizontal">
 
-                    <!-- Item 1 -->
-                    <FrameLayout
+                    <!-- Item 1: Phở Thìn -->
+                    <androidx.cardview.widget.CardView
+                        android:id="@+id/cardGridPost1"
                         android:layout_width="0dp"
                         android:layout_height="match_parent"
                         android:layout_marginEnd="4dp"
                         android:layout_weight="1"
-                        android:background="#E3E8FA"
+                        app:cardCornerRadius="8dp"
+                        app:cardElevation="0dp"
                         android:clickable="true"
                         android:focusable="true"
                         android:foreground="?attr/selectableItemBackground">
 
                         <ImageView
-                            android:layout_width="18dp"
-                            android:layout_height="18dp"
+                            android:id="@+id/imgGridPost1"
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:background="#E3E8FA"
+                            android:scaleType="centerCrop"
+                            android:src="@drawable/logo" />
+
+                        <ImageView
+                            android:layout_width="16dp"
+                            android:layout_height="16dp"
                             android:layout_gravity="top|end"
-                            android:layout_margin="8dp"
+                            android:layout_margin="6dp"
                             android:contentDescription="Bookmark"
                             android:src="@drawable/ic_bookmark"
                             app:tint="#FFFFFF" />
 
                         <TextView
+                            android:id="@+id/tvGridRating1"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:layout_gravity="bottom|start"
-                            android:layout_margin="8dp"
+                            android:layout_margin="6dp"
                             android:background="@drawable/bg_badge_green_rating"
                             android:paddingHorizontal="6dp"
                             android:paddingVertical="3dp"
@@ -567,24 +503,35 @@
                             android:textColor="#FFFFFF"
                             android:textSize="11sp"
                             android:textStyle="bold" />
-                    </FrameLayout>
+                    </androidx.cardview.widget.CardView>
 
-                    <!-- Item 2 -->
-                    <FrameLayout
+                    <!-- Item 2: Bánh mì Huỳnh Hoa -->
+                    <androidx.cardview.widget.CardView
+                        android:id="@+id/cardGridPost2"
                         android:layout_width="0dp"
                         android:layout_height="match_parent"
                         android:layout_marginHorizontal="2dp"
                         android:layout_weight="1"
-                        android:background="#D8E0F8"
+                        app:cardCornerRadius="8dp"
+                        app:cardElevation="0dp"
                         android:clickable="true"
                         android:focusable="true"
                         android:foreground="?attr/selectableItemBackground">
 
+                        <ImageView
+                            android:id="@+id/imgGridPost2"
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:background="#D8E0F8"
+                            android:scaleType="centerCrop"
+                            android:src="@drawable/logo" />
+
                         <TextView
+                            android:id="@+id/tvGridRating2"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:layout_gravity="bottom|start"
-                            android:layout_margin="8dp"
+                            android:layout_margin="6dp"
                             android:background="@drawable/bg_badge_orange_rating"
                             android:paddingHorizontal="6dp"
                             android:paddingVertical="3dp"
@@ -592,24 +539,35 @@
                             android:textColor="#FFFFFF"
                             android:textSize="11sp"
                             android:textStyle="bold" />
-                    </FrameLayout>
+                    </androidx.cardview.widget.CardView>
 
-                    <!-- Item 3 -->
-                    <FrameLayout
+                    <!-- Item 3: Bún Chả -->
+                    <androidx.cardview.widget.CardView
+                        android:id="@+id/cardGridPost3"
                         android:layout_width="0dp"
                         android:layout_height="match_parent"
                         android:layout_marginStart="4dp"
                         android:layout_weight="1"
-                        android:background="#E3E8FA"
+                        app:cardCornerRadius="8dp"
+                        app:cardElevation="0dp"
                         android:clickable="true"
                         android:focusable="true"
                         android:foreground="?attr/selectableItemBackground">
 
+                        <ImageView
+                            android:id="@+id/imgGridPost3"
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:background="#E3E8FA"
+                            android:scaleType="centerCrop"
+                            android:src="@drawable/logo" />
+
                         <TextView
+                            android:id="@+id/tvGridRating3"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:layout_gravity="bottom|start"
-                            android:layout_margin="8dp"
+                            android:layout_margin="6dp"
                             android:background="@drawable/bg_badge_orange_rating"
                             android:paddingHorizontal="6dp"
                             android:paddingVertical="3dp"
@@ -617,32 +575,44 @@
                             android:textColor="#FFFFFF"
                             android:textSize="11sp"
                             android:textStyle="bold" />
-                    </FrameLayout>
+                    </androidx.cardview.widget.CardView>
                 </LinearLayout>
 
                 <!-- Post Row 2 -->
                 <LinearLayout
+                    android:id="@+id/rowGridPosts2"
                     android:layout_width="match_parent"
                     android:layout_height="120dp"
                     android:layout_marginBottom="8dp"
                     android:orientation="horizontal">
 
-                    <!-- Item 4 -->
-                    <FrameLayout
+                    <!-- Item 4: Cơm Tấm -->
+                    <androidx.cardview.widget.CardView
+                        android:id="@+id/cardGridPost4"
                         android:layout_width="0dp"
                         android:layout_height="match_parent"
                         android:layout_marginEnd="4dp"
                         android:layout_weight="1"
-                        android:background="#D8E0F8"
+                        app:cardCornerRadius="8dp"
+                        app:cardElevation="0dp"
                         android:clickable="true"
                         android:focusable="true"
                         android:foreground="?attr/selectableItemBackground">
 
+                        <ImageView
+                            android:id="@+id/imgGridPost4"
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:background="#D8E0F8"
+                            android:scaleType="centerCrop"
+                            android:src="@drawable/logo" />
+
                         <TextView
+                            android:id="@+id/tvGridRating4"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:layout_gravity="bottom|start"
-                            android:layout_margin="8dp"
+                            android:layout_margin="6dp"
                             android:background="@drawable/bg_badge_green_rating"
                             android:paddingHorizontal="6dp"
                             android:paddingVertical="3dp"
@@ -650,32 +620,43 @@
                             android:textColor="#FFFFFF"
                             android:textSize="11sp"
                             android:textStyle="bold" />
-                    </FrameLayout>
+                    </androidx.cardview.widget.CardView>
 
-                    <!-- Item 5 -->
-                    <FrameLayout
+                    <!-- Item 5: Gỏi Cuốn -->
+                    <androidx.cardview.widget.CardView
+                        android:id="@+id/cardGridPost5"
                         android:layout_width="0dp"
                         android:layout_height="match_parent"
                         android:layout_marginHorizontal="2dp"
                         android:layout_weight="1"
-                        android:background="#E3E8FA"
+                        app:cardCornerRadius="8dp"
+                        app:cardElevation="0dp"
                         android:clickable="true"
                         android:focusable="true"
                         android:foreground="?attr/selectableItemBackground">
 
                         <ImageView
-                            android:layout_width="18dp"
-                            android:layout_height="18dp"
+                            android:id="@+id/imgGridPost5"
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:background="#E3E8FA"
+                            android:scaleType="centerCrop"
+                            android:src="@drawable/logo" />
+
+                        <ImageView
+                            android:layout_width="16dp"
+                            android:layout_height="16dp"
                             android:layout_gravity="top|end"
-                            android:layout_margin="8dp"
+                            android:layout_margin="6dp"
                             android:contentDescription="Reel"
                             android:src="@drawable/ic_film_reel" />
 
                         <TextView
+                            android:id="@+id/tvGridRating5"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:layout_gravity="bottom|start"
-                            android:layout_margin="8dp"
+                            android:layout_margin="6dp"
                             android:background="@drawable/bg_badge_orange_rating"
                             android:paddingHorizontal="6dp"
                             android:paddingVertical="3dp"
@@ -683,33 +664,55 @@
                             android:textColor="#FFFFFF"
                             android:textSize="11sp"
                             android:textStyle="bold" />
-                    </FrameLayout>
+                    </androidx.cardview.widget.CardView>
 
-                    <!-- Item 6 -->
-                    <FrameLayout
+                    <!-- Item 6: Tráng Miệng -->
+                    <androidx.cardview.widget.CardView
+                        android:id="@+id/cardGridPost6"
                         android:layout_width="0dp"
                         android:layout_height="match_parent"
                         android:layout_marginStart="4dp"
                         android:layout_weight="1"
-                        android:background="#D8E0F8"
+                        app:cardCornerRadius="8dp"
+                        app:cardElevation="0dp"
                         android:clickable="true"
                         android:focusable="true"
                         android:foreground="?attr/selectableItemBackground">
 
+                        <ImageView
+                            android:id="@+id/imgGridPost6"
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:background="#D8E0F8"
+                            android:scaleType="centerCrop"
+                            android:src="@drawable/logo" />
+
                         <TextView
+                            android:id="@+id/tvGridRating6"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:layout_gravity="bottom|start"
-                            android:layout_margin="8dp"
+                            android:layout_margin="6dp"
                             android:background="@drawable/bg_badge_green_rating"
                             android:paddingHorizontal="6dp"
                             android:paddingVertical="3dp"
-                            android:text="👍92%"
+                            android:text="🍧92%"
                             android:textColor="#FFFFFF"
                             android:textSize="11sp"
                             android:textStyle="bold" />
-                    </FrameLayout>
+                    </androidx.cardview.widget.CardView>
                 </LinearLayout>
+
+                <TextView
+                    android:id="@+id/tvEmptyPosts"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center"
+                    android:padding="24dp"
+                    android:text="Chưa có bài viết nào"
+                    android:textColor="#8E93A6"
+                    android:textSize="14sp"
+                    android:visibility="gone" />
             </LinearLayout>
         </LinearLayout>
     </ScrollView>

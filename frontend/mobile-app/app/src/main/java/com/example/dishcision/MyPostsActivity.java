@@ -11,11 +11,14 @@ import android.widget.Toast;
 
 import androidx.activity.EdgeToEdge;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.widget.PopupMenu;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 
 import com.example.dishcision.network.ApiClient;
+import com.example.dishcision.network.SavePostButton;
+import com.example.dishcision.network.ImageLoader;
 import com.example.dishcision.network.FeedPostsResponse;
 import com.google.android.material.bottomsheet.BottomSheetDialog;
 
@@ -47,11 +50,28 @@ public class MyPostsActivity extends AppCompatActivity {
     private ImageView btnShare2;
     private ImageView btnBookmark1;
     private ImageView btnBookmark2;
+    private ImageView btnOptions1;
+    private ImageView btnOptions2;
+
+    private TextView tvLocation1;
+    private TextView tvLocation2;
+    private TextView tvPostTime1;
+    private TextView tvPostTime2;
+    private ImageView imgAvatar1;
+    private ImageView imgAvatar2;
+    private ImageView imgPost1;
+    private ImageView imgPost2;
 
     private boolean isLiked1 = false;
     private boolean isLiked2 = false;
-    private boolean isBookmarked1 = false;
-    private boolean isBookmarked2 = false;
+    private SavePostButton saveButton1;
+    private SavePostButton saveButton2;
+
+    public static final String EXTRA_POST_INDEX = "POST_INDEX";
+
+    // Single source of truth for comment counts so the button, "Xem tất cả" and the sheet agree
+    private int commentCount1 = 84;
+    private int commentCount2 = 84;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -67,7 +87,49 @@ public class MyPostsActivity extends AppCompatActivity {
 
         initViews();
         setupListeners();
+        updateCommentCountViews();
+        scrollToRequestedPost();
         fetchMyPostsFromBackend();
+    }
+
+    /** Scrolls so the post tapped in the profile grid sits at the top; earlier posts stay above it. */
+    private void scrollToRequestedPost() {
+        int index = getIntent().getIntExtra(EXTRA_POST_INDEX, 1);
+        if (index <= 1) return;
+
+        android.widget.ScrollView scrollFeed = findViewById(R.id.scrollFeed);
+        LinearLayout feedContent = findViewById(R.id.feedContent);
+        View target = findViewById(R.id.cardPost2); // only 2 post cards exist; later grid items map to the last one
+        if (scrollFeed == null || feedContent == null || target == null) return;
+
+        scrollFeed.post(() -> {
+            int targetTop = target.getTop() - feedContent.getPaddingTop();
+            // Make sure there is enough room below so the target can actually reach the top edge
+            int spaceBelow = feedContent.getHeight() - targetTop;
+            int missing = scrollFeed.getHeight() - spaceBelow;
+            if (missing > 0) {
+                feedContent.setPadding(feedContent.getPaddingLeft(), feedContent.getPaddingTop(),
+                        feedContent.getPaddingRight(), feedContent.getPaddingBottom() + missing);
+                scrollFeed.post(() -> scrollFeed.scrollTo(0, targetTop));
+            } else {
+                scrollFeed.scrollTo(0, targetTop);
+            }
+        });
+    }
+
+    private void updateCommentCountViews() {
+        setCommentTexts(btnComment1, btnViewComments1, commentCount1);
+        setCommentTexts(btnComment2, btnViewComments2, commentCount2);
+    }
+
+    private void setCommentTexts(LinearLayout btnComment, TextView btnViewAll, int count) {
+        if (btnComment != null) {
+            TextView txt = (TextView) btnComment.getChildAt(1);
+            if (txt != null) txt.setText(count + " Bình luận");
+        }
+        if (btnViewAll != null) {
+            btnViewAll.setText("Xem tất cả " + count + " bình luận");
+        }
     }
 
     private void initViews() {
@@ -92,6 +154,25 @@ public class MyPostsActivity extends AppCompatActivity {
         btnShare2 = findViewById(R.id.btnShare2);
         btnBookmark1 = findViewById(R.id.btnBookmark1);
         btnBookmark2 = findViewById(R.id.btnBookmark2);
+        btnOptions1 = findViewById(R.id.btnOptions1);
+        btnOptions2 = findViewById(R.id.btnOptions2);
+
+        tvLocation1 = findViewById(R.id.tvLocation1);
+        tvLocation2 = findViewById(R.id.tvLocation2);
+        tvPostTime1 = findViewById(R.id.tvPostTime1);
+        tvPostTime2 = findViewById(R.id.tvPostTime2);
+        imgAvatar1 = findViewById(R.id.imgAvatar1);
+        imgAvatar2 = findViewById(R.id.imgAvatar2);
+        imgPost1 = findViewById(R.id.imgPost1);
+        imgPost2 = findViewById(R.id.imgPost2);
+
+        // Preload default high quality food images
+        if (imgPost1 != null) {
+            ImageLoader.loadImage(imgPost1, "https://images.unsplash.com/photo-1582878826629-29b7ad1cdc43?w=800");
+        }
+        if (imgPost2 != null) {
+            ImageLoader.loadImage(imgPost2, "https://images.unsplash.com/photo-1626804475297-41608ea09aeb?w=800");
+        }
     }
 
     private void setupListeners() {
@@ -142,43 +223,155 @@ public class MyPostsActivity extends AppCompatActivity {
         }
 
         // Comments
-        View.OnClickListener commentsListener = v -> openCommentsBottomSheet();
-        if (btnComment1 != null) btnComment1.setOnClickListener(commentsListener);
-        if (btnComment2 != null) btnComment2.setOnClickListener(commentsListener);
-        if (btnViewComments1 != null) btnViewComments1.setOnClickListener(commentsListener);
-        if (btnViewComments2 != null) btnViewComments2.setOnClickListener(commentsListener);
+        View.OnClickListener comments1 = v -> openCommentsBottomSheet(commentCount1);
+        View.OnClickListener comments2 = v -> openCommentsBottomSheet(commentCount2);
+        if (btnComment1 != null) btnComment1.setOnClickListener(comments1);
+        if (btnComment2 != null) btnComment2.setOnClickListener(comments2);
+        if (btnViewComments1 != null) btnViewComments1.setOnClickListener(comments1);
+        if (btnViewComments2 != null) btnViewComments2.setOnClickListener(comments2);
 
         // Share
         View.OnClickListener shareListener = v -> openShareBottomSheet();
         if (btnShare1 != null) btnShare1.setOnClickListener(shareListener);
         if (btnShare2 != null) btnShare2.setOnClickListener(shareListener);
 
-        // Bookmark
-        if (btnBookmark1 != null) {
-            btnBookmark1.setOnClickListener(v -> {
-                isBookmarked1 = !isBookmarked1;
-                btnBookmark1.setImageResource(isBookmarked1 ? R.drawable.ic_bookmark_filled : R.drawable.ic_bookmark);
-                Toast.makeText(this, isBookmarked1 ? "Đã lưu vào bộ sưu tập" : "Đã bỏ lưu", Toast.LENGTH_SHORT).show();
-            });
-        }
+        // Bookmark: save the post to "Bài viết đã lưu"
+        saveButton1 = new SavePostButton(this, btnBookmark1);
+        saveButton2 = new SavePostButton(this, btnBookmark2);
 
-        if (btnBookmark2 != null) {
-            btnBookmark2.setOnClickListener(v -> {
-                isBookmarked2 = !isBookmarked2;
-                btnBookmark2.setImageResource(isBookmarked2 ? R.drawable.ic_bookmark_filled : R.drawable.ic_bookmark);
-                Toast.makeText(this, isBookmarked2 ? "Đã lưu vào bộ sưu tập" : "Đã bỏ lưu", Toast.LENGTH_SHORT).show();
-            });
+        if (btnOptions1 != null) {
+            btnOptions1.setOnClickListener(v -> openPostOptionsBottomSheet(1));
+        }
+        if (btnOptions2 != null) {
+            btnOptions2.setOnClickListener(v -> openPostOptionsBottomSheet(2));
         }
     }
 
-    private void openCommentsBottomSheet() {
+    private void openPostOptionsBottomSheet(int postIndex) {
+        BottomSheetDialog bottomSheetDialog = new BottomSheetDialog(this);
+        View dialogView = getLayoutInflater().inflate(R.layout.layout_dialog_post_options, null);
+        bottomSheetDialog.setContentView(dialogView);
+
+        View btnClose = dialogView.findViewById(R.id.btnCloseOptions);
+        View layoutEditPost = dialogView.findViewById(R.id.layoutEditPost);
+        View layoutCopyLink = dialogView.findViewById(R.id.layoutCopyLink);
+        View layoutSharePost = dialogView.findViewById(R.id.layoutSharePost);
+        View layoutArchivePost = dialogView.findViewById(R.id.layoutArchivePost);
+        View layoutDeletePost = dialogView.findViewById(R.id.layoutDeletePost);
+
+        if (btnClose != null) {
+            btnClose.setOnClickListener(v -> bottomSheetDialog.dismiss());
+        }
+
+        if (layoutEditPost != null) {
+            layoutEditPost.setOnClickListener(v -> {
+                bottomSheetDialog.dismiss();
+                showEditPostDialog(postIndex);
+            });
+        }
+
+        if (layoutCopyLink != null) {
+            layoutCopyLink.setOnClickListener(v -> {
+                bottomSheetDialog.dismiss();
+                android.content.ClipboardManager clipboard = (android.content.ClipboardManager) getSystemService(CLIPBOARD_SERVICE);
+                android.content.ClipData clip = android.content.ClipData.newPlainText("Post Link", "https://dishcision.app/posts/" + postIndex);
+                if (clipboard != null) clipboard.setPrimaryClip(clip);
+                Toast.makeText(this, "Đã sao chép liên kết bài viết", Toast.LENGTH_SHORT).show();
+            });
+        }
+
+        if (layoutSharePost != null) {
+            layoutSharePost.setOnClickListener(v -> {
+                bottomSheetDialog.dismiss();
+                openShareBottomSheet();
+            });
+        }
+
+        if (layoutArchivePost != null) {
+            layoutArchivePost.setOnClickListener(v -> {
+                bottomSheetDialog.dismiss();
+                Toast.makeText(this, "Đã lưu trữ bài viết", Toast.LENGTH_SHORT).show();
+            });
+        }
+
+        if (layoutDeletePost != null) {
+            layoutDeletePost.setOnClickListener(v -> {
+                bottomSheetDialog.dismiss();
+                showDeleteConfirmDialog(postIndex);
+            });
+        }
+
+        bottomSheetDialog.show();
+    }
+
+    private void showEditPostDialog(int postIndex) {
+        TextView tvCaption = postIndex == 1 ? tvCaption1 : tvCaption2;
+        String currentCaption = tvCaption != null ? tvCaption.getText().toString() : "";
+
+        android.widget.EditText input = new android.widget.EditText(this);
+        input.setText(currentCaption);
+        input.setPadding(40, 30, 40, 30);
+
+        new androidx.appcompat.app.AlertDialog.Builder(this)
+                .setTitle("Chỉnh sửa bài viết")
+                .setView(input)
+                .setPositiveButton("Lưu", (dialog, which) -> {
+                    String updated = input.getText().toString().trim();
+                    if (!updated.isEmpty() && tvCaption != null) {
+                        tvCaption.setText(updated);
+                        Toast.makeText(this, "Đã cập nhật bài viết thành công", Toast.LENGTH_SHORT).show();
+                    }
+                })
+                .setNegativeButton("Hủy", null)
+                .show();
+    }
+
+    private void showDeleteConfirmDialog(int postIndex) {
+        new androidx.appcompat.app.AlertDialog.Builder(this)
+                .setTitle("Xóa bài viết?")
+                .setMessage("Bạn có chắc chắn muốn xóa bài viết này không? Hành động này không thể hoàn tác.")
+                .setPositiveButton("Xóa", (dialog, which) -> {
+                    View card = postIndex == 1
+                            ? findViewById(R.id.cardPost1)
+                            : findViewById(R.id.cardPost2);
+                    if (card != null) {
+                        card.setVisibility(View.GONE);
+                    }
+                    Toast.makeText(this, "Đã xóa bài viết thành công", Toast.LENGTH_SHORT).show();
+                })
+                .setNegativeButton("Hủy", null)
+                .show();
+    }
+
+    private void openCommentsBottomSheet(int commentCount) {
         BottomSheetDialog bottomSheetDialog = new BottomSheetDialog(this);
         View dialogView = getLayoutInflater().inflate(R.layout.layout_dialog_comments, null);
         bottomSheetDialog.setContentView(dialogView);
 
+        TextView tvCommentsTitle = dialogView.findViewById(R.id.tvCommentsTitle);
+        if (tvCommentsTitle != null) {
+            tvCommentsTitle.setText("Bình luận  " + commentCount);
+        }
+
         View btnCloseComments = dialogView.findViewById(R.id.btnCloseComments);
         if (btnCloseComments != null) {
             btnCloseComments.setOnClickListener(v -> bottomSheetDialog.dismiss());
+        }
+
+        TextView btnSortComments = dialogView.findViewById(R.id.btnSortComments);
+        if (btnSortComments != null) {
+            btnSortComments.setOnClickListener(v -> {
+                PopupMenu popupMenu = new PopupMenu(MyPostsActivity.this, btnSortComments);
+                popupMenu.getMenu().add("Phù hợp nhất");
+                popupMenu.getMenu().add("Mới nhất");
+                popupMenu.getMenu().add("Tất cả bình luận");
+                popupMenu.setOnMenuItemClickListener(item -> {
+                    btnSortComments.setText(item.getTitle() + " ▼");
+                    Toast.makeText(MyPostsActivity.this, "Sắp xếp: " + item.getTitle(), Toast.LENGTH_SHORT).show();
+                    return true;
+                });
+                popupMenu.show();
+            });
         }
 
         bottomSheetDialog.show();
@@ -218,8 +411,18 @@ public class MyPostsActivity extends AppCompatActivity {
 
         if (posts.size() > 0) {
             FeedPostsResponse.PostItem p1 = posts.get(0);
+            if (saveButton1 != null) saveButton1.bind(p1.postId, p1.isSaved, p1.author != null ? p1.author.fullName : null);
             if (p1.author != null && tvAuthorName1 != null && p1.author.fullName != null) {
                 tvAuthorName1.setText(p1.author.fullName);
+            }
+            if (p1.locationUrl != null && tvLocation1 != null) {
+                tvLocation1.setText(p1.locationUrl);
+            }
+            if (p1.author != null && p1.author.avatarUrl != null && imgAvatar1 != null) {
+                ImageLoader.loadAvatar(imgAvatar1, p1.author.avatarUrl);
+            }
+            if (p1.images != null && !p1.images.isEmpty() && imgPost1 != null) {
+                ImageLoader.loadImage(imgPost1, p1.images.get(0).imageUrl);
             }
             if (tvCaption1 != null && p1.content != null) {
                 String authorPrefix = (p1.author != null && p1.author.username != null) ? p1.author.username + " " : "";
@@ -236,16 +439,29 @@ public class MyPostsActivity extends AppCompatActivity {
                 TextView txt = (TextView) btnLike1.getChildAt(1);
                 if (txt != null) txt.setText(p1.likesCount + " Thích");
             }
-            if (btnComment1 != null && p1.commentsCount > 0) {
-                TextView txt = (TextView) btnComment1.getChildAt(1);
-                if (txt != null) txt.setText(p1.commentsCount + " Bình luận");
+            if (p1.commentsCount > 0) {
+                commentCount1 = p1.commentsCount;
+                setCommentTexts(btnComment1, btnViewComments1, commentCount1);
+            }
+            if (tvPostTime1 != null && p1.createdAt != null) {
+                tvPostTime1.setText(formatTime(p1.createdAt) + " • 🌐");
             }
         }
 
         if (posts.size() > 1) {
             FeedPostsResponse.PostItem p2 = posts.get(1);
+            if (saveButton2 != null) saveButton2.bind(p2.postId, p2.isSaved, p2.author != null ? p2.author.fullName : null);
             if (p2.author != null && tvAuthorName2 != null && p2.author.fullName != null) {
                 tvAuthorName2.setText(p2.author.fullName);
+            }
+            if (p2.locationUrl != null && tvLocation2 != null) {
+                tvLocation2.setText(p2.locationUrl);
+            }
+            if (p2.author != null && p2.author.avatarUrl != null && imgAvatar2 != null) {
+                ImageLoader.loadAvatar(imgAvatar2, p2.author.avatarUrl);
+            }
+            if (p2.images != null && !p2.images.isEmpty() && imgPost2 != null) {
+                ImageLoader.loadImage(imgPost2, p2.images.get(0).imageUrl);
             }
             if (tvCaption2 != null && p2.content != null) {
                 String authorPrefix = (p2.author != null && p2.author.username != null) ? p2.author.username + " " : "";
@@ -262,10 +478,60 @@ public class MyPostsActivity extends AppCompatActivity {
                 TextView txt = (TextView) btnLike2.getChildAt(1);
                 if (txt != null) txt.setText(p2.likesCount + " Thích");
             }
-            if (btnComment2 != null && p2.commentsCount > 0) {
-                TextView txt = (TextView) btnComment2.getChildAt(1);
-                if (txt != null) txt.setText(p2.commentsCount + " Bình luận");
+            if (p2.commentsCount > 0) {
+                commentCount2 = p2.commentsCount;
+                setCommentTexts(btnComment2, btnViewComments2, commentCount2);
             }
+            if (tvPostTime2 != null && p2.createdAt != null) {
+                tvPostTime2.setText(formatTime(p2.createdAt) + " • 🌐");
+            }
+        }
+    }
+
+    public static String formatTime(String isoDateString) {
+        if (isoDateString == null || isoDateString.trim().isEmpty()) {
+            return "Vừa xong";
+        }
+        try {
+            java.text.SimpleDateFormat sdf;
+            if (isoDateString.contains(".")) {
+                sdf = new java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", java.util.Locale.US);
+            } else {
+                sdf = new java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", java.util.Locale.US);
+            }
+            sdf.setTimeZone(java.util.TimeZone.getTimeZone("UTC"));
+            java.util.Date postDate = sdf.parse(isoDateString);
+            if (postDate == null) return "Vừa xong";
+
+            long now = System.currentTimeMillis();
+            long diff = now - postDate.getTime();
+            if (diff < 0) diff = 0;
+
+            long diffSeconds = diff / 1000;
+            long diffMinutes = diffSeconds / 60;
+            long diffHours = diffMinutes / 60;
+            long diffDays = diffHours / 24;
+
+            if (diffSeconds < 60) {
+                return "Vừa xong";
+            } else if (diffMinutes < 60) {
+                return diffMinutes + " phút trước";
+            } else if (diffHours < 24) {
+                return diffHours + " giờ trước";
+            } else if (diffDays < 7) {
+                return diffDays + " ngày trước";
+            } else {
+                java.util.Calendar calNow = java.util.Calendar.getInstance();
+                java.util.Calendar calPost = java.util.Calendar.getInstance();
+                calPost.setTime(postDate);
+                if (calNow.get(java.util.Calendar.YEAR) == calPost.get(java.util.Calendar.YEAR)) {
+                    return new java.text.SimpleDateFormat("d 'tháng' M", new java.util.Locale("vi", "VN")).format(postDate);
+                } else {
+                    return new java.text.SimpleDateFormat("d 'tháng' M, yyyy", new java.util.Locale("vi", "VN")).format(postDate);
+                }
+            }
+        } catch (Exception e) {
+            return "Vừa xong";
         }
     }
 }

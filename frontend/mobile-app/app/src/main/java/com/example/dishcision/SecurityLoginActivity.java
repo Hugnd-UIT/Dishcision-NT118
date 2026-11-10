@@ -68,6 +68,11 @@ public class SecurityLoginActivity extends AppCompatActivity {
             btnChangePassword.setVisibility(android.view.View.GONE);
         }
         btnActiveSessions = findViewById(R.id.btnActiveSessions);
+
+        com.example.dishcision.network.CurrentUserBinder.bind(this,
+                findViewById(R.id.imgAvatar),
+                findViewById(R.id.tvProfileName),
+                findViewById(R.id.tvProfileHandle));
     }
 
     private void setupListeners() {
@@ -102,7 +107,7 @@ public class SecurityLoginActivity extends AppCompatActivity {
     }
 
     private void fetch2FAStatusFromBackend() {
-        ApiClient.getApiService().get2FAStatus("Bearer dummy_token").enqueue(new Callback<TwoFactorStatusResponse>() {
+        ApiClient.getApiService().get2FAStatus(ApiClient.getAuthHeader(this)).enqueue(new Callback<TwoFactorStatusResponse>() {
             @Override
             public void onResponse(@NonNull Call<TwoFactorStatusResponse> call, @NonNull Response<TwoFactorStatusResponse> response) {
                 if (response.isSuccessful() && response.body() != null) {
@@ -121,7 +126,7 @@ public class SecurityLoginActivity extends AppCompatActivity {
     }
 
     private void disable2FAOnBackend() {
-        ApiClient.getApiService().disable2FA("Bearer dummy_token").enqueue(new Callback<TwoFactorStatusResponse>() {
+        ApiClient.getApiService().disable2FA(ApiClient.getAuthHeader(this)).enqueue(new Callback<TwoFactorStatusResponse>() {
             @Override
             public void onResponse(@NonNull Call<TwoFactorStatusResponse> call, @NonNull Response<TwoFactorStatusResponse> response) {
                 is2FAEnabled = false;

@@ -1,40 +1,44 @@
 package com.example.dishcision;
 
+import android.Manifest;
+import android.content.ActivityNotFoundException;
 import android.content.Intent;
+import android.content.pm.PackageInfo;
+import android.content.pm.PackageManager;
+import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
+import android.provider.Settings;
+import android.view.View;
 import android.widget.ImageView;
-import android.widget.LinearLayout;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.activity.EdgeToEdge;
+import androidx.annotation.NonNull;
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.SwitchCompat;
+import androidx.core.app.NotificationManagerCompat;
+import androidx.core.content.ContextCompat;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 
+import com.example.dishcision.network.AuthHelper;
+import com.example.dishcision.network.CurrentUserBinder;
+import com.example.dishcision.network.ImageLoader;
+import com.example.dishcision.network.NotificationPrefs;
+
 public class SettingsActivity extends AppCompatActivity {
 
-    private ImageView btnBack;
-    private LinearLayout btnAccountManagement;
-    private LinearLayout btnSecurityLogin;
-    private LinearLayout btnChangePassword;
-    private LinearLayout btnPrivacy;
+    private static final int REQ_POST_NOTIFICATIONS = 4101;
 
-    private LinearLayout btnTastePreferences;
-    private LinearLayout btnDeliveryAddresses;
-
-    private LinearLayout btnNotificationSettings;
+    private ImageView imgAvatar;
+    private TextView tvUserName;
+    private TextView tvUserHandle;
     private SwitchCompat switchPush;
     private SwitchCompat switchEmailPromos;
-
-    private LinearLayout btnHelpCenter;
-    private LinearLayout btnHelpInbox;
-    private LinearLayout btnTerms;
-    private LinearLayout btnAppRating;
-
-    private LinearLayout btnLogout;
-    private LinearLayout btnDeleteAccount;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -48,141 +52,257 @@ public class SettingsActivity extends AppCompatActivity {
             return insets;
         });
 
-        initViews();
-        setupListeners();
-    }
-
-    private void initViews() {
-        btnBack = findViewById(R.id.btnBack);
-        btnAccountManagement = findViewById(R.id.btnAccountManagement);
-        btnSecurityLogin = findViewById(R.id.btnSecurityLogin);
-        btnChangePassword = findViewById(R.id.btnChangePassword);
-        boolean isGoogleLogin = getSharedPreferences("DishcisionPrefs", MODE_PRIVATE).getBoolean("is_google_login", false);
-        if (isGoogleLogin && btnChangePassword != null) {
-            btnChangePassword.setVisibility(android.view.View.GONE);
-        }
-        btnPrivacy = findViewById(R.id.btnPrivacy);
-
-        btnTastePreferences = findViewById(R.id.btnTastePreferences);
-        btnDeliveryAddresses = findViewById(R.id.btnDeliveryAddresses);
-
-        btnNotificationSettings = findViewById(R.id.btnNotificationSettings);
+        imgAvatar = findViewById(R.id.imgAvatar);
+        tvUserName = findViewById(R.id.tvUserName);
+        tvUserHandle = findViewById(R.id.tvUserHandle);
         switchPush = findViewById(R.id.switchPush);
         switchEmailPromos = findViewById(R.id.switchEmailPromos);
 
-        btnHelpCenter = findViewById(R.id.btnHelpCenter);
-        btnHelpInbox = findViewById(R.id.btnHelpInbox);
-        btnTerms = findViewById(R.id.btnTerms);
-        btnAppRating = findViewById(R.id.btnAppRating);
+        boolean isGoogleLogin = getSharedPreferences("DishcisionPrefs", MODE_PRIVATE).getBoolean("is_google_login", false);
+        if (isGoogleLogin) {
+            // Google accounts have no Dishcision password to change
+            setVisible(R.id.btnChangePassword, false);
+        }
 
-        btnLogout = findViewById(R.id.btnLogout);
-        btnDeleteAccount = findViewById(R.id.btnDeleteAccount);
+        setupNavigationRows();
+        setupNotificationSwitches();
+        setupActionRows();
+        showAppVersion();
     }
 
-    private void setupListeners() {
-        if (btnBack != null) {
-            btnBack.setOnClickListener(v -> finish());
-        }
+    @Override
+    protected void onResume() {
+        super.onResume();
+        CurrentUserBinder.bind(this, imgAvatar, tvUserName, tvUserHandle);
+        // Values may have been changed on the Notification settings screen
+        bindSwitchSilently(switchPush, NotificationPrefs.get(this, NotificationPrefs.PUSH) && systemAllowsNotifications());
+        bindSwitchSilently(switchEmailPromos, NotificationPrefs.get(this, NotificationPrefs.EMAIL_PROMOS));
+    }
 
-        if (btnAccountManagement != null) {
-            btnAccountManagement.setOnClickListener(v -> {
-                Intent intent = new Intent(SettingsActivity.this, EditProfileActivity.class);
-                startActivity(intent);
-            });
-        }
+    // ── Rows that open another screen ─────────────
 
-        if (btnSecurityLogin != null) {
-            btnSecurityLogin.setOnClickListener(v -> {
-                Intent intent = new Intent(SettingsActivity.this, SecurityLoginActivity.class);
-                startActivity(intent);
-            });
-        }
+    private void setupNavigationRows() {
+        View back = findViewById(R.id.btnBack);
+        if (back != null) back.setOnClickListener(v -> finish());
 
-        if (btnChangePassword != null) {
-            btnChangePassword.setOnClickListener(v -> {
-                Intent intent = new Intent(SettingsActivity.this, ChangePasswordActivity.class);
-                startActivity(intent);
-            });
-        }
+        // Account
+        openOnClick(R.id.cardUserProfile, EditProfileActivity.class);
+        openOnClick(R.id.btnAccountManagement, EditProfileActivity.class);
+        openOnClick(R.id.btnSecurityLogin, SecurityLoginActivity.class);
+        openOnClick(R.id.btnChangePassword, ChangePasswordActivity.class);
+        openOnClick(R.id.btnPrivacy, PrivacySettingsActivity.class);
+        openOnClick(R.id.btnBlockedAccounts, BlockedAccountsActivity.class);
+        openOnClick(R.id.btnRestrictedAccounts, RestrictedAccountsActivity.class);
 
-        if (btnPrivacy != null) {
-            btnPrivacy.setOnClickListener(v -> {
-                Intent intent = new Intent(SettingsActivity.this, PrivacyPolicyActivity.class);
-                startActivity(intent);
-            });
-        }
+        // Your activity
+        openOnClick(R.id.btnSavedPosts, FavoriteDishesActivity.class);
+        openOnClick(R.id.btnFavoriteRestaurants, FavoriteRestaurantsActivity.class);
+        openOnClick(R.id.btnMyReviews, MyReviewsActivity.class);
+        openOnClick(R.id.btnSavedOffers, SavedOffersActivity.class);
+        openOnClick(R.id.btnArchive, ArchiveActivity.class);
+        openOnClick(R.id.btnActivityLog, ActivityLogActivity.class);
 
-        if (btnTastePreferences != null) {
-            btnTastePreferences.setOnClickListener(v -> {
-                Intent intent = new Intent(SettingsActivity.this, TastePreferencesActivity.class);
-                startActivity(intent);
-            });
-        }
+        // Food preferences
+        openOnClick(R.id.btnTastePreferences, TastePreferencesActivity.class);
+        openOnClick(R.id.btnDeliveryAddresses, DeliveryAddressesActivity.class);
 
-        if (btnDeliveryAddresses != null) {
-            btnDeliveryAddresses.setOnClickListener(v -> {
-                Intent intent = new Intent(SettingsActivity.this, DeliveryAddressesActivity.class);
-                startActivity(intent);
-            });
-        }
+        // Notifications
+        openOnClick(R.id.btnNotificationSettings, NotificationSettingsActivity.class);
 
-        if (btnNotificationSettings != null) {
-            btnNotificationSettings.setOnClickListener(v -> {
-                Intent intent = new Intent(SettingsActivity.this, NotificationSettingsActivity.class);
-                startActivity(intent);
-            });
-        }
+        // Help & info
+        openOnClick(R.id.btnHelpCenter, HelpCenterActivity.class);
+        openOnClick(R.id.btnHelpInbox, HelpInboxActivity.class);
+        openOnClick(R.id.btnTerms, TermsOfServiceActivity.class);
 
+        // System
+        openOnClick(R.id.btnDeleteAccount, DeleteAccountActivity.class);
+    }
+
+    private void openOnClick(int viewId, Class<?> target) {
+        View view = findViewById(viewId);
+        if (view != null) {
+            view.setOnClickListener(v -> startActivity(new Intent(this, target)));
+        }
+    }
+
+    // ── Notification switches ─────────────────────
+
+    private void setupNotificationSwitches() {
         if (switchPush != null) {
-            switchPush.setOnCheckedChangeListener((buttonView, isChecked) -> {
-                String status = isChecked ? "Bật" : "Tắt";
-                Toast.makeText(this, "Thông báo đẩy: " + status, Toast.LENGTH_SHORT).show();
-            });
+            switchPush.setOnCheckedChangeListener((b, isChecked) -> onPushToggled(isChecked));
         }
-
         if (switchEmailPromos != null) {
-            switchEmailPromos.setOnCheckedChangeListener((buttonView, isChecked) -> {
-                String status = isChecked ? "Bật" : "Tắt";
-                Toast.makeText(this, "Email nhận tin: " + status, Toast.LENGTH_SHORT).show();
+            switchEmailPromos.setOnCheckedChangeListener((b, isChecked) -> {
+                NotificationPrefs.set(this, NotificationPrefs.EMAIL_PROMOS, isChecked);
+                Toast.makeText(this, isChecked ? "Đã bật email nhận tin & khuyến mãi" : "Đã tắt email nhận tin & khuyến mãi",
+                        Toast.LENGTH_SHORT).show();
             });
         }
+        // Tapping anywhere on the row flips its switch
+        View rowPush = findViewById(R.id.rowPush);
+        if (rowPush != null && switchPush != null) rowPush.setOnClickListener(v -> switchPush.toggle());
+        View rowEmail = findViewById(R.id.rowEmailPromos);
+        if (rowEmail != null && switchEmailPromos != null) rowEmail.setOnClickListener(v -> switchEmailPromos.toggle());
+    }
 
-        if (btnHelpCenter != null) {
-            btnHelpCenter.setOnClickListener(v -> {
-                Intent intent = new Intent(SettingsActivity.this, HelpCenterActivity.class);
-                startActivity(intent);
-            });
+    private void onPushToggled(boolean enable) {
+        if (!enable) {
+            NotificationPrefs.set(this, NotificationPrefs.PUSH, false);
+            Toast.makeText(this, "Đã tắt thông báo đẩy", Toast.LENGTH_SHORT).show();
+            return;
         }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU
+                && ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS)
+                != PackageManager.PERMISSION_GRANTED) {
+            requestPermissions(new String[]{Manifest.permission.POST_NOTIFICATIONS}, REQ_POST_NOTIFICATIONS);
+            return;
+        }
+        if (!NotificationManagerCompat.from(this).areNotificationsEnabled()) {
+            bindSwitchSilently(switchPush, false);
+            showOpenSystemNotificationSettings();
+            return;
+        }
+        NotificationPrefs.set(this, NotificationPrefs.PUSH, true);
+        Toast.makeText(this, "Đã bật thông báo đẩy", Toast.LENGTH_SHORT).show();
+    }
 
-        if (btnHelpInbox != null) {
-            btnHelpInbox.setOnClickListener(v -> {
-                Intent intent = new Intent(SettingsActivity.this, HelpInboxActivity.class);
-                startActivity(intent);
-            });
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        if (requestCode != REQ_POST_NOTIFICATIONS) return;
+        boolean granted = grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED;
+        if (granted) {
+            NotificationPrefs.set(this, NotificationPrefs.PUSH, true);
+            Toast.makeText(this, "Đã bật thông báo đẩy", Toast.LENGTH_SHORT).show();
+        } else {
+            NotificationPrefs.set(this, NotificationPrefs.PUSH, false);
+            bindSwitchSilently(switchPush, false);
+            showOpenSystemNotificationSettings();
         }
+    }
 
-        if (btnTerms != null) {
-            btnTerms.setOnClickListener(v -> {
-                Intent intent = new Intent(SettingsActivity.this, TermsOfServiceActivity.class);
-                startActivity(intent);
-            });
+    private boolean systemAllowsNotifications() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU
+                && ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS)
+                != PackageManager.PERMISSION_GRANTED) {
+            return false;
         }
+        return NotificationManagerCompat.from(this).areNotificationsEnabled();
+    }
 
-        if (btnAppRating != null) {
-            btnAppRating.setOnClickListener(v ->
-                Toast.makeText(this, "Cảm ơn bạn đã đánh giá ứng dụng Dishcision!", Toast.LENGTH_SHORT).show()
-            );
-        }
+    private void showOpenSystemNotificationSettings() {
+        new AlertDialog.Builder(this)
+                .setTitle("Thông báo đang bị tắt")
+                .setMessage("Dishcision chưa được phép gửi thông báo. Mở cài đặt hệ thống để bật?")
+                .setNegativeButton("Để sau", null)
+                .setPositiveButton("Mở cài đặt", (d, w) -> {
+                    Intent intent;
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                        intent = new Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS)
+                                .putExtra(Settings.EXTRA_APP_PACKAGE, getPackageName());
+                    } else {
+                        intent = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+                                Uri.fromParts("package", getPackageName(), null));
+                    }
+                    startActivity(intent);
+                })
+                .show();
+    }
 
-        if (btnLogout != null) {
-            btnLogout.setOnClickListener(v -> com.example.dishcision.network.AuthHelper.logout(SettingsActivity.this));
-        }
+    /** Sets a switch without firing its listener. */
+    private void bindSwitchSilently(SwitchCompat sw, boolean checked) {
+        if (sw == null) return;
+        sw.setOnCheckedChangeListener(null);
+        sw.setChecked(checked);
+        setupNotificationSwitches();
+    }
 
-        if (btnDeleteAccount != null) {
-            btnDeleteAccount.setOnClickListener(v -> {
-                Intent intent = new Intent(SettingsActivity.this, DeleteAccountActivity.class);
-                startActivity(intent);
-            });
+    // ── Rows that perform an action ───────────────
+
+    private void setupActionRows() {
+        View rate = findViewById(R.id.btnAppRating);
+        if (rate != null) rate.setOnClickListener(v -> openStoreListing());
+
+        View share = findViewById(R.id.btnShareApp);
+        if (share != null) share.setOnClickListener(v -> shareApp());
+
+        View clearCache = findViewById(R.id.btnClearCache);
+        if (clearCache != null) clearCache.setOnClickListener(v -> confirmClearCache());
+
+        View logout = findViewById(R.id.btnLogout);
+        if (logout != null) logout.setOnClickListener(v -> confirmLogout());
+    }
+
+    private void openStoreListing() {
+        String pkg = getPackageName();
+        try {
+            startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse("market://details?id=" + pkg)));
+        } catch (ActivityNotFoundException e) {
+            startActivity(new Intent(Intent.ACTION_VIEW,
+                    Uri.parse("https://play.google.com/store/apps/details?id=" + pkg)));
         }
+    }
+
+    private void shareApp() {
+        Intent send = new Intent(Intent.ACTION_SEND);
+        send.setType("text/plain");
+        send.putExtra(Intent.EXTRA_SUBJECT, "Dishcision");
+        send.putExtra(Intent.EXTRA_TEXT,
+                "Hôm nay ăn gì? Thử Dishcision để chọn món và khám phá quán ngon: "
+                        + "https://play.google.com/store/apps/details?id=" + getPackageName());
+        startActivity(Intent.createChooser(send, "Chia sẻ Dishcision"));
+    }
+
+    private void confirmClearCache() {
+        new AlertDialog.Builder(this)
+                .setTitle("Xóa bộ nhớ đệm?")
+                .setMessage("Ảnh đã tải sẽ được tải lại khi bạn xem. Tài khoản và cài đặt của bạn không bị ảnh hưởng.")
+                .setNegativeButton("Hủy", null)
+                .setPositiveButton("Xóa", (d, w) -> {
+                    int freedKb = ImageLoader.clearCache();
+                    deleteDirContents(getCacheDir());
+                    String size = freedKb >= 1024 ? (freedKb / 1024) + " MB" : freedKb + " KB";
+                    Toast.makeText(this, "Đã xóa bộ nhớ đệm (" + size + " ảnh)", Toast.LENGTH_SHORT).show();
+                })
+                .show();
+    }
+
+    private static void deleteDirContents(java.io.File dir) {
+        if (dir == null) return;
+        java.io.File[] children = dir.listFiles();
+        if (children == null) return;
+        for (java.io.File child : children) {
+            if (child.isDirectory()) deleteDirContents(child);
+            //noinspection ResultOfMethodCallIgnored
+            child.delete();
+        }
+    }
+
+    private void confirmLogout() {
+        String name = tvUserName != null ? tvUserName.getText().toString() : "";
+        new AlertDialog.Builder(this)
+                .setTitle("Đăng xuất?")
+                .setMessage(name.isEmpty() ? "Bạn có chắc muốn đăng xuất khỏi Dishcision?"
+                        : "Bạn có chắc muốn đăng xuất tài khoản " + name + "?")
+                .setNegativeButton("Hủy", null)
+                .setPositiveButton("Đăng xuất", (d, w) -> AuthHelper.logout(this))
+                .show();
+    }
+
+    private void showAppVersion() {
+        TextView tvVersion = findViewById(R.id.tvAppVersion);
+        if (tvVersion == null) return;
+        try {
+            PackageInfo info = getPackageManager().getPackageInfo(getPackageName(), 0);
+            long code = Build.VERSION.SDK_INT >= Build.VERSION_CODES.P ? info.getLongVersionCode() : info.versionCode;
+            tvVersion.setText("Phiên bản " + info.versionName + " (Build " + code + ")");
+        } catch (PackageManager.NameNotFoundException e) {
+            tvVersion.setText("Phiên bản —");
+        }
+    }
+
+    private void setVisible(int viewId, boolean visible) {
+        View view = findViewById(viewId);
+        if (view != null) view.setVisibility(visible ? View.VISIBLE : View.GONE);
     }
 }

@@ -108,7 +108,7 @@ public class HelpInboxActivity extends AppCompatActivity {
     }
 
     private void fetchInboxFromBackend() {
-        ApiClient.getApiService().getHelpInbox("Bearer dummy_token").enqueue(new Callback<HelpInboxResponse>() {
+        ApiClient.getApiService().getHelpInbox(ApiClient.getAuthHeader(this)).enqueue(new Callback<HelpInboxResponse>() {
             @Override
             public void onResponse(@NonNull Call<HelpInboxResponse> call, @NonNull Response<HelpInboxResponse> response) {
                 if (response.isSuccessful() && response.body() != null && response.body().getData() != null) {

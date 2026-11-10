@@ -121,7 +121,7 @@ public class BlockedAccountsActivity extends AppCompatActivity {
     }
 
     private void fetchBlockedAccountsFromBackend() {
-        ApiClient.getApiService().getBlockedAccounts("Bearer dummy_token").enqueue(new Callback<AccountsListResponse>() {
+        ApiClient.getApiService().getBlockedAccounts(ApiClient.getAuthHeader(this)).enqueue(new Callback<AccountsListResponse>() {
             @Override
             public void onResponse(@NonNull Call<AccountsListResponse> call, @NonNull Response<AccountsListResponse> response) {
                 if (response.isSuccessful() && response.body() != null && response.body().getData() != null) {
@@ -148,7 +148,7 @@ public class BlockedAccountsActivity extends AppCompatActivity {
 
     private void unblockOnBackend(int id) {
         AccountActionRequest req = new AccountActionRequest(id);
-        ApiClient.getApiService().unblockAccount("Bearer dummy_token", req).enqueue(new Callback<AccountsListResponse>() {
+        ApiClient.getApiService().unblockAccount(ApiClient.getAuthHeader(this), req).enqueue(new Callback<AccountsListResponse>() {
             @Override
             public void onResponse(@NonNull Call<AccountsListResponse> call, @NonNull Response<AccountsListResponse> response) {
                 if (id == 1) is1Blocked = false;

@@ -34,7 +34,7 @@
             android:layout_centerVertical="true"
             android:layout_marginStart="16dp"
             android:layout_toEndOf="@id/btnBack"
-            android:text="Món Ăn Yêu Thích"
+            android:text="Bài viết đã lưu"
             android:textColor="@color/text_dark"
             android:textSize="18sp"
             android:textStyle="bold" />
@@ -238,7 +238,8 @@
                     android:background="@drawable/bg_badge_expert"
                     android:paddingHorizontal="10dp"
                     android:paddingVertical="5dp"
-                    android:text="18 món đã lưu"
+                    android:id="@+id/tvSavedCount"
+                    android:text="Đang tải..."
                     android:textColor="@color/primary"
                     android:textSize="12sp"
                     android:textStyle="bold" />
@@ -247,7 +248,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginStart="8dp"
-                    android:text="• Sẵn sàng chọn món"
+                    android:text="• Chỉ mình bạn thấy"
                     android:textColor="@color/text_gray"
                     android:textSize="13sp" />
             </LinearLayout>
@@ -280,7 +281,7 @@
                     android:layout_toStartOf="@id/btnSearchFilter"
                     android:layout_toEndOf="@id/imgSearchIcon"
                     android:background="@null"
-                    android:hint="Tìm kiếm món ruột, địa điểm..."
+                    android:hint="Tìm theo món, quán, người đăng..."
                     android:inputType="text"
                     android:textColor="#3E2723"
                     android:textColorHint="#9E8A83"
@@ -299,8 +300,9 @@
                     app:tint="#3E2723" />
             </RelativeLayout>
 
-            <!-- 3. Category Filter Chips -->
+            <!-- 3. Category Filter Chips (hidden: saved posts carry no dish category) -->
             <HorizontalScrollView
+                android:visibility="gone"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="14dp"
@@ -383,185 +385,25 @@
                 </LinearLayout>
             </HorizontalScrollView>
 
-            <!-- 4. Dish Card 1: Phở Bò Tái Lăn Hà Nội -->
+            <!-- 4. Saved posts (filled from GET users/me/saved-posts) -->
             <LinearLayout
+                android:id="@+id/savedPostsContainer"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="16dp"
-                android:background="@drawable/bg_card"
-                android:orientation="vertical">
+                android:orientation="vertical" />
 
-                <RelativeLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="210dp">
-
-                    <ImageView
-                        android:layout_width="match_parent"
-                        android:layout_height="match_parent"
-                        android:contentDescription="@string/app_name"
-                        android:scaleType="centerCrop"
-                        android:src="@drawable/logo" />
-
-                    <LinearLayout
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_alignParentStart="true"
-                        android:layout_alignParentTop="true"
-                        android:layout_margin="12dp"
-                        android:orientation="horizontal">
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:background="@drawable/bg_badge_category"
-                            android:paddingHorizontal="10dp"
-                            android:paddingVertical="5dp"
-                            android:text="Món nước"
-                            android:textColor="@color/text_dark"
-                            android:textSize="12sp"
-                            android:textStyle="bold" />
-
-                        <LinearLayout
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginStart="8dp"
-                            android:background="@drawable/bg_badge_rating"
-                            android:gravity="center_vertical"
-                            android:orientation="horizontal"
-                            android:paddingHorizontal="8dp"
-                            android:paddingVertical="5dp">
-
-                            <ImageView
-                                android:layout_width="14dp"
-                                android:layout_height="14dp"
-                                android:contentDescription="@string/app_name"
-                                android:src="@drawable/ic_star" />
-
-                            <TextView
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:layout_marginStart="4dp"
-                                android:text="4.9"
-                                android:textColor="@color/text_dark"
-                                android:textSize="12sp"
-                                android:textStyle="bold" />
-                        </LinearLayout>
-                    </LinearLayout>
-
-                    <RelativeLayout
-                        android:layout_width="36dp"
-                        android:layout_height="36dp"
-                        android:layout_alignParentTop="true"
-                        android:layout_alignParentEnd="true"
-                        android:layout_margin="12dp"
-                        android:background="@drawable/bg_heart_circle"
-                        android:clickable="true"
-                        android:focusable="true">
-
-                        <ImageView
-                            android:layout_width="20dp"
-                            android:layout_height="20dp"
-                            android:layout_centerInParent="true"
-                            android:contentDescription="@string/app_name"
-                            android:src="@drawable/ic_heart" />
-                    </RelativeLayout>
-
-                    <!-- Bottom Overlay Bar -->
-                    <RelativeLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="48dp"
-                        android:layout_alignParentBottom="true"
-                        android:background="@drawable/bg_gradient_overlay"
-                        android:paddingHorizontal="14dp"
-                        android:paddingBottom="8dp">
-
-                        <LinearLayout
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_alignParentStart="true"
-                            android:layout_centerVertical="true"
-                            android:gravity="center_vertical"
-                            android:orientation="horizontal">
-
-                            <ImageView
-                                android:layout_width="16dp"
-                                android:layout_height="16dp"
-                                android:contentDescription="@string/app_name"
-                                android:src="@drawable/ic_navigation_store" />
-
-                            <TextView
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:layout_marginStart="6dp"
-                                android:text="Quán Phở Gia Truyền 1986"
-                                android:textColor="@color/white"
-                                android:textSize="13sp"
-                                android:textStyle="bold" />
-                        </LinearLayout>
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_alignParentEnd="true"
-                            android:layout_centerVertical="true"
-                            android:text="45k – 65k"
-                            android:textColor="#52E3A0"
-                            android:textSize="13sp"
-                            android:textStyle="bold" />
-                    </RelativeLayout>
-                </RelativeLayout>
-
-                <!-- Body Content -->
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:padding="14dp">
-
-                    <TextView
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:text="Phở Bò Tái Lăn Hà Nội"
-                        android:textColor="@color/text_dark"
-                        android:textSize="17sp"
-                        android:textStyle="bold" />
-
-                    <TextView
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="4dp"
-                        android:ellipsize="end"
-                        android:maxLines="2"
-                        android:text="Bò xào tái mềm thơm nức mũi, nước dùng ngọt thanh gia truyền hầm từ xương bò 12 tiếng..."
-                        android:textColor="@color/text_gray"
-                        android:textSize="13sp" />
-
-                    <LinearLayout
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="12dp"
-                        android:clickable="true"
-                        android:focusable="true"
-                        android:gravity="center_vertical"
-                        android:orientation="horizontal">
-
-                        <ImageView
-                            android:layout_width="16dp"
-                            android:layout_height="16dp"
-                            android:contentDescription="@string/app_name"
-                            android:src="@drawable/ic_navigate_link" />
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginStart="6dp"
-                            android:text="Xem quán"
-                            android:textColor="@color/primary"
-                            android:textSize="13sp"
-                            android:textStyle="bold" />
-                    </LinearLayout>
-                </LinearLayout>
-            </LinearLayout>
+            <TextView
+                android:id="@+id/tvEmptySaved"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="48dp"
+                android:gravity="center"
+                android:lineSpacingExtra="4dp"
+                android:text="Chưa có bài viết nào được lưu.
+Bấm biểu tượng 🔖 trên một bài viết để lưu vào đây."
+                android:textColor="@color/text_gray"
+                android:textSize="14sp"
+                android:visibility="gone" />
 
         </LinearLayout>
     </ScrollView>

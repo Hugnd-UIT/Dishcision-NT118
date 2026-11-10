@@ -3,6 +3,7 @@ package com.example.dishcision.network;
 import okhttp3.MultipartBody;
 import retrofit2.Call;
 import retrofit2.http.Body;
+import retrofit2.http.DELETE;
 import retrofit2.http.GET;
 import retrofit2.http.Header;
 import retrofit2.http.Multipart;
@@ -65,6 +66,24 @@ public interface ApiService {
             @Path("userId") String userId
     );
 
+    @DELETE("users/{userId}/follow")
+    Call<AuthResponse> unfollowUser(
+            @Header("Authorization") String authHeader,
+            @Path("userId") String userId
+    );
+
+    @GET("users/{userId}/followers")
+    Call<FollowersListResponse> getFollowers(
+            @Header("Authorization") String authHeader,
+            @Path("userId") String userId
+    );
+
+    @GET("users/{userId}/following")
+    Call<FollowersListResponse> getFollowing(
+            @Header("Authorization") String authHeader,
+            @Path("userId") String userId
+    );
+
     // ── TASTE PREFERENCES ENDPOINTS ───────────────
     @GET("preferences/me")
     Call<Object> getPreferences(@Header("Authorization") String authHeader);
@@ -79,10 +98,10 @@ public interface ApiService {
     @POST("ai/food-decide")
     Call<FoodDecideResponse> foodDecide(@Body FoodDecideRequest request);
 
-    @GET("accounts/blocked")
+    @GET("users/me/blocked")
     Call<AccountsListResponse> getBlockedAccounts(@Header("Authorization") String authHeader);
 
-    @POST("accounts/unblock")
+    @POST("users/me/unblock")
     Call<AccountsListResponse> unblockAccount(
             @Header("Authorization") String authHeader,
             @Body AccountActionRequest request
@@ -91,13 +110,13 @@ public interface ApiService {
     @GET("help/inbox")
     Call<HelpInboxResponse> getHelpInbox(@Header("Authorization") String authHeader);
 
-    @GET("help/ticket")
-    Call<HelpDetailResponse> getTicketDetail(@Header("Authorization") String authHeader, @Query("ticketId") String ticketId);
+    @GET("help/tickets/{ticketId}")
+    Call<HelpDetailResponse> getTicketDetail(@Header("Authorization") String authHeader, @Path("ticketId") String ticketId);
 
-    @GET("sessions")
+    @GET("auth/sessions")
     Call<SessionsResponse> getSessions(@Header("Authorization") String authHeader);
 
-    @POST("sessions/revoke")
+    @POST("auth/sessions/revoke")
     Call<SessionsResponse> revokeSession(@Header("Authorization") String authHeader, @Body RevokeSessionRequest request);
 
     // ── POSTS & REVIEWS & MEDIA UPLOAD ENDPOINTS ──
@@ -105,7 +124,7 @@ public interface ApiService {
     Call<FeedPostsResponse> getFeedPosts(@Header("Authorization") String authHeader);
 
     @GET("users/me/saved-posts")
-    Call<FeedPostsResponse> getSavedPosts(@Header("Authorization") String authHeader);
+    Call<FeedPostsResponse> getSavedPosts(@Header("Authorization") String authHeader, @Query("limit") int limit);
 
     @GET("restaurants/following")
     Call<FollowingRestaurantsResponse> getFollowingRestaurants(@Header("Authorization") String authHeader);
@@ -117,21 +136,34 @@ public interface ApiService {
             @Query("authorId") String authorId
     );
 
-    @POST("posts/{postId}/bookmark")
-    Call<Object> bookmarkPost(
+    @POST("posts/{postId}/save")
+    Call<Object> savePost(
             @Header("Authorization") String authHeader,
-            @Path("postId") String postId
+            @Path("postId") int postId
     );
 
-    @GET("privacy")
+    @DELETE("posts/{postId}/save")
+    Call<Object> unsavePost(
+            @Header("Authorization") String authHeader,
+            @Path("postId") int postId
+    );
+
+    @GET("users/me/privacy")
     Call<PrivacySettingsResponse> getPrivacySettings(@Header("Authorization") String authHeader);
 
-    @POST("privacy/update")
+    @PUT("users/me/privacy")
     Call<PrivacySettingsResponse> updatePrivacySettings(@Header("Authorization") String authHeader, @Body PrivacySettingsModel request);
 
     @Multipart
+    @POST("upload")
+    Call<UploadResponse> uploadSingleImage(
+            @Header("Authorization") String authHeader,
+            @Part MultipartBody.Part file
+    );
+
+    @Multipart
     @POST("posts/upload-media")
-    Call<Object> uploadMedia(
+    Call<UploadResponse> uploadMedia(
             @Header("Authorization") String authHeader,
             @Part MultipartBody.Part file
     );
@@ -142,26 +174,32 @@ public interface ApiService {
             @Body Object reviewRequest
     );
 
-    @POST("report")
+    @POST("reports")
     Call<ReportContentResponse> createReport(@Header("Authorization") String authHeader, @Body ReportContentRequest request);
 
-    @GET("accounts/restricted")
+    @GET("users/me/restricted")
     Call<AccountsListResponse> getRestrictedAccounts(@Header("Authorization") String authHeader);
 
-    @POST("accounts/unrestrict")
+    @POST("users/me/unrestrict")
     Call<AccountsListResponse> unrestrictAccount(@Header("Authorization") String authHeader, @Body AccountActionRequest request);
 
-    @GET("2fa/status")
+    @GET("auth/2fa/status")
     Call<TwoFactorStatusResponse> get2FAStatus(@Header("Authorization") String authHeader);
 
-    @POST("2fa/disable")
+    @POST("auth/2fa/disable")
     Call<TwoFactorStatusResponse> disable2FA(@Header("Authorization") String authHeader);
 
-    @POST("2fa/verify")
+    @POST("auth/2fa/verify")
     Call<TwoFactorStatusResponse> verify2FA(@Header("Authorization") String authHeader, @Body TwoFactorVerifyRequest request);
 
-    @POST("help/ticket")
+    @POST("help/tickets")
     Call<HelpCreateResponse> createTicket(@Header("Authorization") String authHeader, @Body HelpCreateRequest request);
+
+    @POST("auth/logout")
+    Call<Object> logout(@Header("Authorization") String authHeader);
+
+    @DELETE("users/me")
+    Call<Object> deleteMyAccount(@Header("Authorization") String authHeader);
 
     // ── NOTIFICATIONS ENDPOINTS ───────────────────
     @GET("notifications")

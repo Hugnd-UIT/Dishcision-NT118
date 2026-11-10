@@ -27,6 +27,7 @@ import androidx.core.view.WindowInsetsCompat;
 import androidx.drawerlayout.widget.DrawerLayout;
 
 import com.example.dishcision.network.ApiClient;
+import com.example.dishcision.network.SavePostButton;
 import com.example.dishcision.network.FeedPostsResponse;
 import com.example.dishcision.network.UserProfileResponse;
 import com.google.android.material.bottomsheet.BottomSheetDialog;
@@ -99,9 +100,7 @@ public class HomeActivity extends AppCompatActivity {
     private boolean isLiked2 = false;
     private boolean isLiked3 = false;
 
-    private boolean isBookmarked1 = false;
-    private boolean isBookmarked2 = false;
-    private boolean isBookmarked3 = false;
+    private final SavePostButton[] saveButtons = new SavePostButton[3];
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -419,47 +418,23 @@ public class HomeActivity extends AppCompatActivity {
         if (btnShare2 != null) btnShare2.setOnClickListener(openShare);
         if (btnShare3 != null) btnShare3.setOnClickListener(openShare);
 
-        // Yellow Bookmarks
-        if (btnBookmark1 != null) {
-            btnBookmark1.setOnClickListener(v -> {
-                isBookmarked1 = !isBookmarked1;
-                if (isBookmarked1) {
-                    btnBookmark1.setImageResource(R.drawable.ic_bookmark_filled);
-                    Toast.makeText(this, "Đã lưu bài viết của Maya Lin vào bộ sưu tập", Toast.LENGTH_SHORT).show();
-                } else {
-                    btnBookmark1.setImageResource(R.drawable.ic_bookmark);
-                }
-            });
-        }
-
-        if (btnBookmark2 != null) {
-            btnBookmark2.setOnClickListener(v -> {
-                isBookmarked2 = !isBookmarked2;
-                if (isBookmarked2) {
-                    btnBookmark2.setImageResource(R.drawable.ic_bookmark_filled);
-                    Toast.makeText(this, "Đã lưu bài viết của Julian Cole vào bộ sưu tập", Toast.LENGTH_SHORT).show();
-                } else {
-                    btnBookmark2.setImageResource(R.drawable.ic_bookmark);
-                }
-            });
-        }
-
-        if (btnBookmark3 != null) {
-            btnBookmark3.setOnClickListener(v -> {
-                isBookmarked3 = !isBookmarked3;
-                if (isBookmarked3) {
-                    btnBookmark3.setImageResource(R.drawable.ic_bookmark_filled);
-                    Toast.makeText(this, "Đã lưu bài viết của An Nhiên vào bộ sưu tập", Toast.LENGTH_SHORT).show();
-                } else {
-                    btnBookmark3.setImageResource(R.drawable.ic_bookmark);
-                }
-            });
-        }
+        // Bookmarks: save the post to "Bài viết đã lưu"
+        saveButtons[0] = new SavePostButton(this, btnBookmark1);
+        saveButtons[1] = new SavePostButton(this, btnBookmark2);
+        saveButtons[2] = new SavePostButton(this, btnBookmark3);
 
         // Options (3 dots)
         ImageView btnOptions1 = findViewById(R.id.btnOptions1);
         if (btnOptions1 != null) {
             btnOptions1.setOnClickListener(v -> openPostOptionsBottomSheet());
+        }
+        ImageView btnOptions2 = findViewById(R.id.btnOptions2);
+        if (btnOptions2 != null) {
+            btnOptions2.setOnClickListener(v -> openPostOptionsBottomSheet());
+        }
+        ImageView btnOptions3 = findViewById(R.id.btnOptions3);
+        if (btnOptions3 != null) {
+            btnOptions3.setOnClickListener(v -> openPostOptionsBottomSheet());
         }
     }
 
@@ -555,9 +530,9 @@ public class HomeActivity extends AppCompatActivity {
         if (btnSortComments != null) {
             btnSortComments.setOnClickListener(v -> {
                 PopupMenu popupMenu = new PopupMenu(HomeActivity.this, btnSortComments);
+                popupMenu.getMenu().add("Phù hợp nhất");
                 popupMenu.getMenu().add("Mới nhất");
-                popupMenu.getMenu().add("Cũ nhất");
-                popupMenu.getMenu().add("Nhiều lượt thích nhất");
+                popupMenu.getMenu().add("Tất cả bình luận");
                 popupMenu.setOnMenuItemClickListener(item -> {
                     btnSortComments.setText(item.getTitle() + " ▼");
                     Toast.makeText(HomeActivity.this, "Sắp xếp: " + item.getTitle(), Toast.LENGTH_SHORT).show();
@@ -750,7 +725,42 @@ public class HomeActivity extends AppCompatActivity {
         BottomSheetDialog bottomSheetDialog = new BottomSheetDialog(HomeActivity.this);
         bottomSheetDialog.setContentView(dialogView);
 
+        View btnClose = dialogView.findViewById(R.id.btnCloseOptions);
+        View layoutCopyLink = dialogView.findViewById(R.id.layoutCopyLink);
+        View layoutSharePost = dialogView.findViewById(R.id.layoutSharePost);
         View btnReportPost = dialogView.findViewById(R.id.btnReportPost);
+        View layoutEditPost = dialogView.findViewById(R.id.layoutEditPost);
+        View layoutArchivePost = dialogView.findViewById(R.id.layoutArchivePost);
+        View layoutDeletePost = dialogView.findViewById(R.id.layoutDeletePost);
+        View dividerDelete = dialogView.findViewById(R.id.dividerDelete);
+
+        if (layoutEditPost != null) layoutEditPost.setVisibility(View.GONE);
+        if (layoutArchivePost != null) layoutArchivePost.setVisibility(View.GONE);
+        if (layoutDeletePost != null) layoutDeletePost.setVisibility(View.GONE);
+        if (dividerDelete != null) dividerDelete.setVisibility(View.GONE);
+        if (btnReportPost != null) btnReportPost.setVisibility(View.VISIBLE);
+
+        if (btnClose != null) {
+            btnClose.setOnClickListener(v -> bottomSheetDialog.dismiss());
+        }
+
+        if (layoutCopyLink != null) {
+            layoutCopyLink.setOnClickListener(v -> {
+                bottomSheetDialog.dismiss();
+                android.content.ClipboardManager clipboard = (android.content.ClipboardManager) getSystemService(CLIPBOARD_SERVICE);
+                android.content.ClipData clip = android.content.ClipData.newPlainText("Post Link", "https://dishcision.app/posts/feed");
+                if (clipboard != null) clipboard.setPrimaryClip(clip);
+                Toast.makeText(this, "Đã sao chép liên kết bài viết", Toast.LENGTH_SHORT).show();
+            });
+        }
+
+        if (layoutSharePost != null) {
+            layoutSharePost.setOnClickListener(v -> {
+                bottomSheetDialog.dismiss();
+                openShareBottomSheet();
+            });
+        }
+
         if (btnReportPost != null) {
             btnReportPost.setOnClickListener(v -> {
                 bottomSheetDialog.dismiss();
@@ -814,6 +824,13 @@ public class HomeActivity extends AppCompatActivity {
     private void bindFeedData(List<FeedPostsResponse.PostItem> posts) {
         if (posts == null || posts.isEmpty()) return;
 
+        for (int i = 0; i < saveButtons.length && i < posts.size(); i++) {
+            FeedPostsResponse.PostItem p = posts.get(i);
+            if (saveButtons[i] != null) {
+                saveButtons[i].bind(p.postId, p.isSaved, p.author != null ? p.author.fullName : null);
+            }
+        }
+
         // Bind Card 1
         if (posts.size() > 0) {
             FeedPostsResponse.PostItem p1 = posts.get(0);
@@ -822,6 +839,11 @@ public class HomeActivity extends AppCompatActivity {
             }
             if (p1.author != null && tvUsername1 != null && p1.author.username != null) {
                 tvUsername1.setText(p1.author.username);
+            }
+            if (tvLocation1 != null) {
+                String loc = (p1.locationUrl != null && !p1.locationUrl.isEmpty()) ? p1.locationUrl : "The Green Fork Bistro";
+                String timeStr = MyPostsActivity.formatTime(p1.createdAt);
+                tvLocation1.setText(loc + " • " + timeStr);
             }
             if (tvPostText1 != null && p1.content != null) {
                 tvPostText1.setText(p1.content);
@@ -848,6 +870,11 @@ public class HomeActivity extends AppCompatActivity {
             FeedPostsResponse.PostItem p2 = posts.get(1);
             if (p2.author != null && tvAuthorName2 != null && p2.author.fullName != null) {
                 tvAuthorName2.setText(p2.author.fullName);
+            }
+            if (tvLocation2 != null) {
+                String loc = (p2.locationUrl != null && !p2.locationUrl.isEmpty()) ? p2.locationUrl : "Trattoria Bella";
+                String timeStr = MyPostsActivity.formatTime(p2.createdAt);
+                tvLocation2.setText(loc + " • " + timeStr);
             }
             if (tvPostText2 != null && p2.content != null) {
                 tvPostText2.setText(p2.content);
@@ -877,6 +904,11 @@ public class HomeActivity extends AppCompatActivity {
             }
             if (p3.author != null && tvUsername3 != null && p3.author.username != null) {
                 tvUsername3.setText(p3.author.username);
+            }
+            if (tvLocation3 != null) {
+                String loc = (p3.locationUrl != null && !p3.locationUrl.isEmpty()) ? p3.locationUrl : "Tiệm Bánh Ngọt Nhà An";
+                String timeStr = MyPostsActivity.formatTime(p3.createdAt);
+                tvLocation3.setText(loc + " • " + timeStr);
             }
             if (tvPostText3 != null && p3.content != null) {
                 tvPostText3.setText(p3.content);

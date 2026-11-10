@@ -1,6 +1,6 @@
 package com.example.dishcision;
 
-import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.widget.CheckBox;
 import android.widget.ImageView;
@@ -18,7 +18,9 @@ import com.example.dishcision.network.ApiClient;
 import com.example.dishcision.network.TokenManager;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
 import retrofit2.Call;
 import retrofit2.Callback;
@@ -63,6 +65,7 @@ public class TastePreferencesActivity extends AppCompatActivity {
         tokenManager = new TokenManager(this);
 
         initViews();
+        loadSavedPreferences();
         setupListeners();
         fetchPreferencesApi();
     }
@@ -83,6 +86,23 @@ public class TastePreferencesActivity extends AppCompatActivity {
         chkGluten = findViewById(R.id.chkGluten);
         chkSoy = findViewById(R.id.chkSoy);
         btnSaveTasteSettings = findViewById(R.id.btnSaveTasteSettings);
+    }
+
+    private void loadSavedPreferences() {
+        SharedPreferences prefs = getSharedPreferences("DishcisionPrefs", MODE_PRIVATE);
+        Set<String> savedTastes = prefs.getStringSet("user_taste_preferences", null);
+        if (savedTastes != null) {
+            isSpicySelected = savedTastes.contains("🌶️ Chua cay");
+            isRichSelected = savedTastes.contains("🍲 Đậm đà");
+            isSoupSelected = savedTastes.contains("🍜 Món nước");
+            isSourdoughSelected = savedTastes.contains("🥖 Bánh mì sourdough");
+        }
+
+        toggleChipStyle(chipSpicy, isSpicySelected, "Chua cay");
+        toggleChipStyle(chipRich, isRichSelected, "Đậm đà");
+        toggleChipStyle(chipSoup, isSoupSelected, "Món nước");
+        toggleChipStyle(chipSourdough, isSourdoughSelected, "Bánh mì sourdough");
+        updateTasteCount();
     }
 
     private void setupListeners() {
@@ -123,10 +143,7 @@ public class TastePreferencesActivity extends AppCompatActivity {
         }
 
         if (btnAddTastePreference != null) {
-            btnAddTastePreference.setOnClickListener(v -> {
-                Intent intent = new Intent(TastePreferencesActivity.this, EditProfileActivity.class);
-                startActivity(intent);
-            });
+            btnAddTastePreference.setOnClickListener(v -> showAddNewTasteDialog());
         }
 
         if (btnSaveTasteSettings != null) {
@@ -140,9 +157,46 @@ public class TastePreferencesActivity extends AppCompatActivity {
                 if (chkSoy != null && chkSoy.isChecked()) allergyCount++;
 
                 int activeTasteCount = getActiveTasteCount();
-                savePreferencesToApi(activeTasteCount, allergyCount);
+
+                // Save selected tastes into SharedPreferences for EditProfileActivity
+                Set<String> newTastes = new HashSet<>();
+                if (isSpicySelected) newTastes.add("🌶️ Chua cay");
+                if (isRichSelected) newTastes.add("🍲 Đậm đà");
+                if (isSoupSelected) newTastes.add("🍜 Món nước");
+                if (isSourdoughSelected) newTastes.add("🥖 Bánh mì sourdough");
+
+                getSharedPreferences("DishcisionPrefs", MODE_PRIVATE).edit()
+                        .putStringSet("user_taste_preferences", newTastes)
+                        .apply();
+
+                savePreferencesToApi(newTastes, activeTasteCount, allergyCount);
             });
         }
+    }
+
+    private void showAddNewTasteDialog() {
+        final android.widget.EditText input = new android.widget.EditText(this);
+        input.setHint("Nhập khẩu vị (VD: Ăn chay, Ít ngọt...)");
+        int padding = (int) (16 * getResources().getDisplayMetrics().density);
+        input.setPadding(padding, padding, padding, padding);
+
+        new androidx.appcompat.app.AlertDialog.Builder(this)
+                .setTitle("Thêm khẩu vị món ăn")
+                .setView(input)
+                .setPositiveButton("Thêm", (dialog, which) -> {
+                    String newTaste = input.getText().toString().trim();
+                    if (!newTaste.isEmpty()) {
+                        android.content.SharedPreferences prefs = getSharedPreferences("DishcisionPrefs", MODE_PRIVATE);
+                        java.util.Set<String> savedSet = prefs.getStringSet("user_taste_preferences", null);
+                        java.util.Set<String> updated = savedSet != null ? new java.util.HashSet<>(savedSet) : new java.util.HashSet<>();
+                        updated.add("✨ " + newTaste);
+                        prefs.edit().putStringSet("user_taste_preferences", updated).apply();
+                        Toast.makeText(this, "Đã thêm khẩu vị: " + newTaste, Toast.LENGTH_SHORT).show();
+                        loadSavedPreferences();
+                    }
+                })
+                .setNegativeButton("Hủy", null)
+                .show();
     }
 
     private void toggleChipStyle(TextView chipView, boolean isSelected, String label) {
@@ -174,7 +228,7 @@ public class TastePreferencesActivity extends AppCompatActivity {
     }
 
     private void fetchPreferencesApi() {
-        ApiClient.getApiService().getPreferences(tokenManager.getFormattedToken()).enqueue(new Callback<Object>() {
+        ApiClient.getApiService().getPreferences(ApiClient.getAuthHeader(this)).enqueue(new Callback<Object>() {
             @Override
             public void onResponse(Call<Object> call, Response<Object> response) {}
 
@@ -183,21 +237,26 @@ public class TastePreferencesActivity extends AppCompatActivity {
         });
     }
 
-    private void savePreferencesToApi(int activeTasteCount, int allergyCount) {
+    private void savePreferencesToApi(Set<String> newTastes, int activeTasteCount, int allergyCount) {
         Map<String, Object> prefData = new HashMap<>();
+        if (newTastes != null) {
+            prefData.put("preferences", new java.util.ArrayList<>(newTastes));
+        }
         prefData.put("activeTastes", activeTasteCount);
         prefData.put("allergyCount", allergyCount);
 
-        ApiClient.getApiService().updatePreferences(tokenManager.getFormattedToken(), prefData).enqueue(new Callback<Object>() {
+        ApiClient.getApiService().updatePreferences(ApiClient.getAuthHeader(this), prefData).enqueue(new Callback<Object>() {
             @Override
             public void onResponse(Call<Object> call, Response<Object> response) {
-                Toast.makeText(TastePreferencesActivity.this, "Đã lưu " + activeTasteCount + " khẩu vị & " + allergyCount + " dị ứng lên Server!", Toast.LENGTH_SHORT).show();
+                Toast.makeText(TastePreferencesActivity.this, "Đã lưu " + activeTasteCount + " khẩu vị & " + allergyCount + " dị ứng!", Toast.LENGTH_SHORT).show();
+                setResult(RESULT_OK);
                 finish();
             }
 
             @Override
             public void onFailure(Call<Object> call, Throwable t) {
                 Toast.makeText(TastePreferencesActivity.this, "Đã lưu " + activeTasteCount + " khẩu vị & " + allergyCount + " dị ứng!", Toast.LENGTH_SHORT).show();
+                setResult(RESULT_OK);
                 finish();
             }
         });

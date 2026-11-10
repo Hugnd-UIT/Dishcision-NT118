@@ -32,6 +32,7 @@ public class AccountMenuActivity extends AppCompatActivity {
         });
 
         initViews();
+        com.example.dishcision.network.CurrentUserBinder.bind(this, null, findViewById(R.id.tvProfileName), findViewById(R.id.tvProfileHandle));
         setupListeners();
     }
 

@@ -66,8 +66,15 @@ public class FeedPostsResponse {
         @SerializedName("sharesCount")
         public int sharesCount;
 
+        @SerializedName("createdAt")
+        public String createdAt;
+
         @SerializedName("images")
         public List<PostImage> images;
+
+        /** Whether the signed-in user has saved (bookmarked) this post. */
+        @SerializedName("isSaved")
+        public boolean isSaved;
     }
 
     public static class Author {

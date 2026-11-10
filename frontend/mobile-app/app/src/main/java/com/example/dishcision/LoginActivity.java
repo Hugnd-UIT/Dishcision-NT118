@@ -26,6 +26,7 @@ import androidx.core.view.WindowInsetsCompat;
 import com.example.dishcision.network.ApiClient;
 import com.example.dishcision.network.AuthResponse;
 import com.example.dishcision.network.LoginRequest;
+import com.example.dishcision.network.RegisterRequest;
 import com.example.dishcision.network.TokenManager;
 import com.google.android.gms.auth.api.signin.GoogleSignIn;
 import com.google.android.gms.auth.api.signin.GoogleSignInAccount;
@@ -64,6 +65,7 @@ public class LoginActivity extends AppCompatActivity {
             return insets;
         });
 
+        ApiClient.init(this);
         initViews();
         setupGoogleSignIn();
         setupListeners();
@@ -97,7 +99,34 @@ public class LoginActivity extends AppCompatActivity {
                                         .putBoolean("is_google_login", true)
                                         .apply();
 
-                                new TokenManager(LoginActivity.this).saveAuthData("google_token_" + System.currentTimeMillis(), email, fullName);
+                                TokenManager tm = new TokenManager(LoginActivity.this);
+                                // Authenticate with backend using email and default password "123456" to get real JWT
+                                ApiClient.getApiService().login(new LoginRequest(email, "123456")).enqueue(new Callback<AuthResponse>() {
+                                    @Override
+                                    public void onResponse(Call<AuthResponse> call, Response<AuthResponse> response) {
+                                        if (response.isSuccessful() && response.body() != null) {
+                                            tm.saveAuthData(response.body().getToken(), email, fullName);
+                                        } else {
+                                            RegisterRequest reg = new RegisterRequest(
+                                                    fullName != null && !fullName.isEmpty() ? fullName : "User",
+                                                    email,
+                                                    "123456"
+                                            );
+                                            ApiClient.getApiService().register(reg).enqueue(new Callback<AuthResponse>() {
+                                                @Override
+                                                public void onResponse(Call<AuthResponse> c, Response<AuthResponse> r) {
+                                                    if (r.isSuccessful() && r.body() != null) {
+                                                        tm.saveAuthData(r.body().getToken(), email, fullName);
+                                                    }
+                                                }
+                                                @Override
+                                                public void onFailure(Call<AuthResponse> c, Throwable t) {}
+                                            });
+                                        }
+                                    }
+                                    @Override
+                                    public void onFailure(Call<AuthResponse> call, Throwable t) {}
+                                });
 
                                 Toast.makeText(this, "Đăng nhập Google thành công: " + fullName, Toast.LENGTH_SHORT).show();
                                 Intent intent = new Intent(LoginActivity.this, HomeActivity.class);
@@ -125,6 +154,11 @@ public class LoginActivity extends AppCompatActivity {
     private void setupListeners() {
         if (btnLogin != null) {
             btnLogin.setOnClickListener(v -> performLogin());
+        }
+
+        View layoutLogo = findViewById(R.id.layoutLogo);
+        if (layoutLogo != null) {
+            layoutLogo.setOnClickListener(v -> showServerConfigDialog());
         }
 
         if (btnGoogleLogin != null) {
@@ -217,6 +251,7 @@ public class LoginActivity extends AppCompatActivity {
             @Override
             public void onFailure(Call<AuthResponse> call, Throwable t) {
                 Toast.makeText(LoginActivity.this, "Lỗi kết nối Server API Docker: " + t.getMessage(), Toast.LENGTH_LONG).show();
+                showServerConfigDialog();
             }
         });
     }
@@ -257,5 +292,34 @@ public class LoginActivity extends AppCompatActivity {
 
         tvTerms.setText(spannableString);
         tvTerms.setMovementMethod(LinkMovementMethod.getInstance());
+    }
+
+    private void showServerConfigDialog() {
+        android.app.AlertDialog.Builder builder = new android.app.AlertDialog.Builder(this);
+        builder.setTitle("Cấu hình Server API Docker");
+
+        final android.widget.EditText input = new android.widget.EditText(this);
+        input.setHint("VD: 192.168.1.36:3000");
+        input.setText(ApiClient.getServerRootUrl().replace("http://", "").replace("https://", ""));
+        input.setPadding(40, 30, 40, 30);
+        builder.setView(input);
+
+        builder.setPositiveButton("Lưu & Thử lại", (dialog, which) -> {
+            String server = input.getText().toString().trim();
+            if (!server.isEmpty()) {
+                ApiClient.setBaseUrl(this, server);
+                Toast.makeText(this, "Đã cập nhật: " + ApiClient.getBaseUrl(), Toast.LENGTH_SHORT).show();
+                performLogin();
+            }
+        });
+
+        builder.setNegativeButton("Huỷ", (dialog, which) -> dialog.cancel());
+        builder.setNeutralButton("Mặc định (192.168.1.36)", (dialog, which) -> {
+            ApiClient.setBaseUrl(this, ApiClient.DEFAULT_BASE_URL);
+            Toast.makeText(this, "Đã khôi phục: 192.168.1.36:3000", Toast.LENGTH_SHORT).show();
+            performLogin();
+        });
+
+        builder.show();
     }
 }

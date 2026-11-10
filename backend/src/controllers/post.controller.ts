@@ -3,7 +3,7 @@ import { prisma } from '../config/prisma';
 import { getCache, setCache, delCache, delCacheByPattern, CACHE_TTL } from '../config/redis';
 import { successResponse, paginatedResponse, errorResponse } from '../utils/response';
 import { AuthRequest } from '../middlewares/auth.middleware';
-import { formatUser } from './user.controller';
+import { formatUser, attachSavedFlags } from './user.controller';
 
 export const POST_INCLUDE = {
   author: {
@@ -57,7 +57,8 @@ export async function getNewsfeed(req: AuthRequest, res: Response): Promise<void
     prisma.post.count({ where }),
   ]);
 
-  paginatedResponse(res, posts.map(formatPost), { page, limit, total });
+  const formatted = await attachSavedFlags(posts.map((p) => formatPost(p)), req.user?.userId);
+  paginatedResponse(res, formatted, { page, limit, total });
 }
 
 // ── POST /posts ───────────────────────────

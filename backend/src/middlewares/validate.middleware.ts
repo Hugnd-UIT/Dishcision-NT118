@@ -55,11 +55,13 @@ export const changePasswordSchema = z.object({
 });
 
 export const updateProfileSchema = z.object({
+  username: z.string().min(3).max(50).regex(/^[a-zA-Z0-9_.]+$/, 'Tên người dùng không hợp lệ').optional(),
   fullName: z.string().min(1).max(100).optional(),
   bio: z.string().max(255).optional(),
   gender: z.enum(['Male', 'Female', 'Other']).optional(),
   dateOfBirth: z.string().optional(),
   avatarUrl: z.string().url().optional(),
+  preferences: z.array(z.string()).optional(),
 });
 
 export const createPostSchema = z.object({

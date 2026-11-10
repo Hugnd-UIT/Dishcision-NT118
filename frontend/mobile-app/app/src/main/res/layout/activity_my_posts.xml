@@ -60,6 +60,7 @@
         android:fillViewport="true">
 
         <LinearLayout
+            android:id="@+id/feedContent"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
@@ -69,6 +70,7 @@
 
             <!-- Post Card 1: Phở Thìn -->
             <RelativeLayout
+                android:id="@+id/cardPost1"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="16dp"
@@ -90,6 +92,7 @@
                         android:padding="6dp">
 
                         <ImageView
+                            android:id="@+id/imgAvatar1"
                             android:layout_width="match_parent"
                             android:layout_height="match_parent"
                             android:contentDescription="@string/app_name"
@@ -131,6 +134,7 @@
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:layout_marginStart="4dp"
+                                android:id="@+id/tvLocation1"
                                 android:text="Phở Thìn • Lò Đúc, Hà Nội"
                                 android:textColor="@color/text_gray"
                                 android:textSize="12sp" />
@@ -159,6 +163,7 @@
                     android:background="#E8ECF4">
 
                     <ImageView
+                        android:id="@+id/imgPost1"
                         android:layout_width="match_parent"
                         android:layout_height="match_parent"
                         android:contentDescription="@string/app_name"
@@ -309,6 +314,7 @@
                     android:textSize="13sp" />
 
                 <TextView
+                    android:id="@+id/tvPostTime1"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_below="@id/btnViewComments1"
@@ -321,6 +327,7 @@
 
             <!-- Post Card 2: Bánh mì Huỳnh Hoa -->
             <RelativeLayout
+                android:id="@+id/cardPost2"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="16dp"
@@ -342,6 +349,7 @@
                         android:padding="6dp">
 
                         <ImageView
+                            android:id="@+id/imgAvatar2"
                             android:layout_width="match_parent"
                             android:layout_height="match_parent"
                             android:contentDescription="@string/app_name"
@@ -383,6 +391,7 @@
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:layout_marginStart="4dp"
+                                android:id="@+id/tvLocation2"
                                 android:text="Bánh mì Huỳnh Hoa • Quận 1, TP.HCM"
                                 android:textColor="@color/text_gray"
                                 android:textSize="12sp" />
@@ -411,6 +420,7 @@
                     android:background="#E8ECF4">
 
                     <ImageView
+                        android:id="@+id/imgPost2"
                         android:layout_width="match_parent"
                         android:layout_height="match_parent"
                         android:contentDescription="@string/app_name"
@@ -537,6 +547,7 @@
                     android:textSize="13sp" />
 
                 <TextView
+                    android:id="@+id/tvPostTime2"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_below="@id/btnViewComments2"
@@ -547,22 +558,7 @@
                     android:textSize="11sp" />
             </RelativeLayout>
 
-            <!-- Bottom End Banner -->
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="12dp"
-                android:gravity="center"
-                android:orientation="horizontal">
 
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="✔  Bạn đã xem hết bài viết của Linh"
-                    android:textColor="#C83200"
-                    android:textSize="13sp"
-                    android:textStyle="bold" />
-            </LinearLayout>
 
         </LinearLayout>
     </ScrollView>

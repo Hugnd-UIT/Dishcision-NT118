@@ -2,6 +2,8 @@ import { Router } from 'express';
 import {
   followUser,
   unfollowUser,
+  getFollowers,
+  getFollowing,
   savePost,
   unsavePost,
   getSavedPosts,
@@ -15,6 +17,8 @@ import { validate, sendMessageSchema } from '../middlewares/validate.middleware'
 const router = Router();
 
 // Follow / Unfollow
+router.get('/users/:userId/followers', authenticate, getFollowers);
+router.get('/users/:userId/following', authenticate, getFollowing);
 router.post('/users/:userId/follow', authenticate, followUser);
 router.delete('/users/:userId/follow', authenticate, unfollowUser);
 

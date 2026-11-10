@@ -2,6 +2,7 @@ import { Router } from 'express';
 import {
   getMe,
   updateMe,
+  deleteMe,
   getUserById,
   getUserPosts,
   getPrivacySettings,
@@ -23,6 +24,7 @@ const router = Router();
 router.get('/me', optionalAuth, getMe);
 router.get('/me/posts', optionalAuth, getUserPosts);
 router.put('/me', authenticate, validate(updateProfileSchema), updateMe);
+router.delete('/me', authenticate, deleteMe);
 router.get('/me/preferences', authenticate, getUserPreferences);
 router.put('/me/preferences', authenticate, updateUserPreferences);
 

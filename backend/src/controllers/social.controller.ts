@@ -62,6 +62,94 @@ export async function unfollowUser(req: AuthRequest, res: Response): Promise<voi
   successResponse(res, null, 'Unfollow successful');
 }
 
+// ── GET /users/:userId/followers ──────────
+
+export async function getFollowers(req: AuthRequest, res: Response): Promise<void> {
+  let targetId = req.params.userId === 'me' ? req.user?.userId : parseInt(req.params.userId);
+  if (!targetId || isNaN(targetId)) targetId = req.user?.userId || 1;
+  const currentUserId = req.user?.userId;
+
+  const follows = await prisma.follow.findMany({
+    where: { followingId: targetId },
+    include: {
+      follower: {
+        select: {
+          id: true,
+          username: true,
+          fullName: true,
+          avatarUrl: true,
+          bio: true,
+          role: true,
+        },
+      },
+    },
+    orderBy: { createdAt: 'desc' },
+  });
+
+  const myFollows = currentUserId
+    ? await prisma.follow.findMany({
+        where: { followerId: currentUserId },
+        select: { followingId: true },
+      })
+    : [];
+  const myFollowingSet = new Set(myFollows.map((f) => f.followingId));
+
+  const data = follows.map((f) => ({
+    userId: f.follower.id,
+    username: f.follower.username,
+    fullName: f.follower.fullName,
+    avatarUrl: f.follower.avatarUrl,
+    bio: f.follower.bio,
+    isFollowing: myFollowingSet.has(f.follower.id),
+  }));
+
+  successResponse(res, data, 'Followers retrieved successfully');
+}
+
+// ── GET /users/:userId/following ──────────
+
+export async function getFollowing(req: AuthRequest, res: Response): Promise<void> {
+  let targetId = req.params.userId === 'me' ? req.user?.userId : parseInt(req.params.userId);
+  if (!targetId || isNaN(targetId)) targetId = req.user?.userId || 1;
+  const currentUserId = req.user?.userId;
+
+  const follows = await prisma.follow.findMany({
+    where: { followerId: targetId },
+    include: {
+      following: {
+        select: {
+          id: true,
+          username: true,
+          fullName: true,
+          avatarUrl: true,
+          bio: true,
+          role: true,
+        },
+      },
+    },
+    orderBy: { createdAt: 'desc' },
+  });
+
+  const myFollows = currentUserId
+    ? await prisma.follow.findMany({
+        where: { followerId: currentUserId },
+        select: { followingId: true },
+      })
+    : [];
+  const myFollowingSet = new Set(myFollows.map((f) => f.followingId));
+
+  const data = follows.map((f) => ({
+    userId: f.following.id,
+    username: f.following.username,
+    fullName: f.following.fullName,
+    avatarUrl: f.following.avatarUrl,
+    bio: f.following.bio,
+    isFollowing: myFollowingSet.has(f.following.id),
+  }));
+
+  successResponse(res, data, 'Following list retrieved successfully');
+}
+
 // ── POST /posts/:postId/save ──────────────
 
 export async function savePost(req: AuthRequest, res: Response): Promise<void> {
@@ -69,10 +157,16 @@ export async function savePost(req: AuthRequest, res: Response): Promise<void> {
   const postId = parseInt(req.params.postId);
 
   try {
-    await prisma.savedPost.create({ data: { userId, postId } });
-    successResponse(res, null, 'Saved successfully');
+    const post = await prisma.post.findFirst({ where: { id: postId, status: 'Active' }, select: { id: true } });
+    if (!post) {
+      errorResponse(res, 'Post not found', 404);
+      return;
+    }
+    const existing = await prisma.savedPost.findFirst({ where: { userId, postId } });
+    if (!existing) await prisma.savedPost.create({ data: { userId, postId } });
+    successResponse(res, { postId, isSaved: true }, 'Saved successfully');
   } catch {
-    errorResponse(res, 'Already saved', 409);
+    errorResponse(res, 'Could not save post', 500);
   }
 }
 
@@ -112,7 +206,7 @@ export async function getSavedPosts(req: AuthRequest, res: Response): Promise<vo
     prisma.savedPost.count({ where: { userId } }),
   ]);
 
-  paginatedResponse(res, saved.map((s) => formatPost(s.post)), { page, limit, total });
+  paginatedResponse(res, saved.map((s) => ({ ...formatPost(s.post), isSaved: true })), { page, limit, total });
 }
 
 // ── GET /chats ────────────────────────────

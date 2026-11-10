@@ -21,10 +21,14 @@
             android:paddingBottom="24dp">
 
             <RelativeLayout
+                android:id="@+id/layoutLogo"
                 android:layout_width="72dp"
                 android:layout_height="72dp"
                 android:layout_gravity="center_horizontal"
                 android:background="@drawable/bg_logo_circle"
+                android:clickable="true"
+                android:focusable="true"
+                android:foreground="?attr/selectableItemBackgroundBorderless"
                 android:padding="12dp">
 
                 <ImageView

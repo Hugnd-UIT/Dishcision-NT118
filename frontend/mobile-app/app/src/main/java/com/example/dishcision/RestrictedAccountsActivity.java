@@ -79,7 +79,7 @@ public class RestrictedAccountsActivity extends AppCompatActivity {
     }
 
     private void fetchRestrictedAccountsFromBackend() {
-        ApiClient.getApiService().getRestrictedAccounts("Bearer dummy_token").enqueue(new Callback<AccountsListResponse>() {
+        ApiClient.getApiService().getRestrictedAccounts(ApiClient.getAuthHeader(this)).enqueue(new Callback<AccountsListResponse>() {
             @Override
             public void onResponse(@NonNull Call<AccountsListResponse> call, @NonNull Response<AccountsListResponse> response) {
                 if (response.isSuccessful() && response.body() != null && response.body().getData() != null) {
@@ -102,7 +102,7 @@ public class RestrictedAccountsActivity extends AppCompatActivity {
 
     private void unrestrictOnBackend(int id) {
         AccountActionRequest req = new AccountActionRequest(id);
-        ApiClient.getApiService().unrestrictAccount("Bearer dummy_token", req).enqueue(new Callback<AccountsListResponse>() {
+        ApiClient.getApiService().unrestrictAccount(ApiClient.getAuthHeader(this), req).enqueue(new Callback<AccountsListResponse>() {
             @Override
             public void onResponse(@NonNull Call<AccountsListResponse> call, @NonNull Response<AccountsListResponse> response) {
                 is1Restricted = false;

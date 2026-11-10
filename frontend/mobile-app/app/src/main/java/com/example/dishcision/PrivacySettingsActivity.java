@@ -156,7 +156,7 @@ public class PrivacySettingsActivity extends AppCompatActivity {
     }
 
     private void fetchPrivacySettingsFromBackend() {
-        ApiClient.getApiService().getPrivacySettings("Bearer dummy_token").enqueue(new Callback<PrivacySettingsResponse>() {
+        ApiClient.getApiService().getPrivacySettings(ApiClient.getAuthHeader(this)).enqueue(new Callback<PrivacySettingsResponse>() {
             @Override
             public void onResponse(@NonNull Call<PrivacySettingsResponse> call, @NonNull Response<PrivacySettingsResponse> response) {
                 if (response.isSuccessful() && response.body() != null && response.body().getData() != null) {

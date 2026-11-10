@@ -79,7 +79,7 @@ public class ReportContentActivity extends AppCompatActivity {
 
         // Assuming post 1 is being reported
         ReportContentRequest req = new ReportContentRequest(1, null, reason, desc);
-        ApiClient.getApiService().createReport("Bearer dummy_token", req).enqueue(new Callback<ReportContentResponse>() {
+        ApiClient.getApiService().createReport(ApiClient.getAuthHeader(this), req).enqueue(new Callback<ReportContentResponse>() {
             @Override
             public void onResponse(@NonNull Call<ReportContentResponse> call, @NonNull Response<ReportContentResponse> response) {
                 Intent intent = new Intent(ReportContentActivity.this, ReportSuccessActivity.class);

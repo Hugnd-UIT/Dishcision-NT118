@@ -34,6 +34,7 @@ public class ActivityLogActivity extends AppCompatActivity {
         });
 
         initViews();
+        com.example.dishcision.network.CurrentUserBinder.bind(this, findViewById(R.id.imgAvatar), findViewById(R.id.tvProfileName), findViewById(R.id.tvProfileHandle));
         setupListeners();
     }
 

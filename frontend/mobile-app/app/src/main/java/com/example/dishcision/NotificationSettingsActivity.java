@@ -16,6 +16,8 @@ import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 
+import com.example.dishcision.network.NotificationPrefs;
+
 public class NotificationSettingsActivity extends AppCompatActivity {
 
     private ImageView btnBack;
@@ -74,27 +76,48 @@ public class NotificationSettingsActivity extends AppCompatActivity {
             });
         }
 
-        setupSwitchListener(switchPush, "Thông báo đẩy");
-        setupSwitchListener(switchEmail, "Email nhận tin khuyến mãi");
-        setupSwitchListener(switchInteractions, "Tương tác trong ứng dụng");
-        setupSwitchListener(switchMessages, "Tin nhắn trò chuyện");
-        setupSwitchListener(switchFollowing, "Quán đang theo dõi");
-        setupSwitchListener(switchPromotionalOffers, "Gợi ý ưu đãi");
+        loadSwitch(switchPush, NotificationPrefs.PUSH);
+        loadSwitch(switchEmail, NotificationPrefs.EMAIL_PROMOS);
+        loadSwitch(switchInteractions, NotificationPrefs.INTERACTIONS);
+        loadSwitch(switchMessages, NotificationPrefs.MESSAGES);
+        loadSwitch(switchFollowing, NotificationPrefs.FOLLOWING);
+        loadSwitch(switchPromotionalOffers, NotificationPrefs.OFFERS);
+
+        // Category switches only matter while push notifications are on
+        if (switchPush != null) {
+            updateCategoryEnabled(switchPush.isChecked());
+            switchPush.setOnCheckedChangeListener((b, isChecked) -> updateCategoryEnabled(isChecked));
+        }
 
         if (btnSaveNotificationSettings != null) {
             btnSaveNotificationSettings.setOnClickListener(v -> {
-                Toast.makeText(this, "Đã lưu cài đặt thông báo thành công!", Toast.LENGTH_SHORT).show();
+                saveSwitch(switchPush, NotificationPrefs.PUSH);
+                saveSwitch(switchEmail, NotificationPrefs.EMAIL_PROMOS);
+                saveSwitch(switchInteractions, NotificationPrefs.INTERACTIONS);
+                saveSwitch(switchMessages, NotificationPrefs.MESSAGES);
+                saveSwitch(switchFollowing, NotificationPrefs.FOLLOWING);
+                saveSwitch(switchPromotionalOffers, NotificationPrefs.OFFERS);
+                Toast.makeText(this, "Đã lưu cài đặt thông báo", Toast.LENGTH_SHORT).show();
                 finish();
             });
         }
     }
 
-    private void setupSwitchListener(SwitchCompat switchCompat, String title) {
-        if (switchCompat != null) {
-            switchCompat.setOnCheckedChangeListener((buttonView, isChecked) -> {
-                String status = isChecked ? "Bật" : "Tắt";
-                Toast.makeText(this, title + ": " + status, Toast.LENGTH_SHORT).show();
-            });
+    private void loadSwitch(SwitchCompat sw, String key) {
+        if (sw != null) sw.setChecked(NotificationPrefs.get(this, key));
+    }
+
+    private void saveSwitch(SwitchCompat sw, String key) {
+        if (sw != null) NotificationPrefs.set(this, key, sw.isChecked());
+    }
+
+    private void updateCategoryEnabled(boolean pushOn) {
+        SwitchCompat[] categories = {switchInteractions, switchMessages, switchFollowing, switchPromotionalOffers};
+        for (SwitchCompat sw : categories) {
+            if (sw != null) {
+                sw.setEnabled(pushOn);
+                sw.setAlpha(pushOn ? 1f : 0.4f);
+            }
         }
     }
 }

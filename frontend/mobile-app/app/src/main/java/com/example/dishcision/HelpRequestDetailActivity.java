@@ -63,7 +63,7 @@ public class HelpRequestDetailActivity extends AppCompatActivity {
     }
 
     private void fetchTicketDetail(String ticketId) {
-        ApiClient.getApiService().getTicketDetail("Bearer dummy", ticketId).enqueue(new Callback<HelpDetailResponse>() {
+        ApiClient.getApiService().getTicketDetail(ApiClient.getAuthHeader(this), ticketId).enqueue(new Callback<HelpDetailResponse>() {
             @Override
             public void onResponse(@NonNull Call<HelpDetailResponse> call, @NonNull Response<HelpDetailResponse> response) {
                 if (response.isSuccessful() && response.body() != null && response.body().getData() != null) {

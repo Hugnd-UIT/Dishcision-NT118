@@ -84,12 +84,47 @@ public class DeleteAccountActivity extends AppCompatActivity {
                     Toast.makeText(this, "Vui lòng chọn ô xác nhận trước khi tiếp tục", Toast.LENGTH_SHORT).show();
                     return;
                 }
-                Toast.makeText(this, "Tài khoản của bạn đã được xóa khỏi hệ thống.", Toast.LENGTH_LONG).show();
-                Intent intent = new Intent(DeleteAccountActivity.this, LoginActivity.class);
-                intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-                startActivity(intent);
-                finish();
+                new androidx.appcompat.app.AlertDialog.Builder(this)
+                        .setTitle("Xóa vĩnh viễn tài khoản?")
+                        .setMessage("Hồ sơ, bài viết và dữ liệu của bạn sẽ bị xóa. Hành động này không thể hoàn tác.")
+                        .setNegativeButton("Hủy", null)
+                        .setPositiveButton("Xóa tài khoản", (d, w) -> deleteAccountOnBackend())
+                        .show();
             });
         }
+    }
+
+    private void deleteAccountOnBackend() {
+        if (btnConfirmDeleteAccount != null) btnConfirmDeleteAccount.setEnabled(false);
+        if (tvDeleteBtnText != null) tvDeleteBtnText.setText("Đang xóa...");
+
+        com.example.dishcision.network.ApiClient.getApiService()
+                .deleteMyAccount(com.example.dishcision.network.ApiClient.getAuthHeader(this))
+                .enqueue(new retrofit2.Callback<Object>() {
+                    @Override
+                    public void onResponse(retrofit2.Call<Object> call, retrofit2.Response<Object> response) {
+                        if (response.isSuccessful()) {
+                            Toast.makeText(DeleteAccountActivity.this, "Tài khoản của bạn đã được xóa khỏi hệ thống.", Toast.LENGTH_LONG).show();
+                            com.example.dishcision.network.AuthHelper.clearLocalSession(DeleteAccountActivity.this);
+                            Intent intent = new Intent(DeleteAccountActivity.this, LoginActivity.class);
+                            intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+                            startActivity(intent);
+                            finish();
+                        } else {
+                            onDeleteFailed("Không thể xóa tài khoản (mã " + response.code() + "). Vui lòng thử lại.");
+                        }
+                    }
+
+                    @Override
+                    public void onFailure(retrofit2.Call<Object> call, Throwable t) {
+                        onDeleteFailed("Không thể kết nối máy chủ. Vui lòng thử lại.");
+                    }
+                });
+    }
+
+    private void onDeleteFailed(String message) {
+        if (btnConfirmDeleteAccount != null) btnConfirmDeleteAccount.setEnabled(true);
+        if (tvDeleteBtnText != null) tvDeleteBtnText.setText("Xóa tài khoản");
+        Toast.makeText(this, message, Toast.LENGTH_LONG).show();
     }
 }

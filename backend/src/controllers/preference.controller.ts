@@ -48,19 +48,32 @@ export async function getUserPreferences(req: AuthRequest, res: Response): Promi
 
 export async function updateUserPreferences(req: AuthRequest, res: Response): Promise<void> {
   const userId = req.user!.userId;
-  const { preferenceIds } = req.body;
+  const { preferenceIds, preferences } = req.body;
 
-  // Verify all preferences exist
-  const count = await prisma.foodPreference.count({ where: { id: { in: preferenceIds } } });
-  if (count !== preferenceIds.length) {
-    errorResponse(res, 'One or more preference IDs are invalid', 400); return;
+  let finalIds: number[] = [];
+  if (Array.isArray(preferenceIds)) {
+    finalIds = preferenceIds;
+  } else if (Array.isArray(preferences)) {
+    for (const pName of preferences) {
+      if (!pName || typeof pName !== 'string') continue;
+      const cleanName = pName.trim();
+      if (!cleanName) continue;
+      let pref = await prisma.foodPreference.findFirst({ where: { name: cleanName } });
+      if (!pref) {
+        pref = await prisma.foodPreference.create({ data: { name: cleanName } });
+      }
+      finalIds.push(pref.id);
+    }
   }
 
   // Replace all preferences
   await prisma.userPreference.deleteMany({ where: { userId } });
-  await prisma.userPreference.createMany({
-    data: preferenceIds.map((preferenceId: number) => ({ userId, preferenceId })),
-  });
+  if (finalIds.length > 0) {
+    await prisma.userPreference.createMany({
+      data: finalIds.map((preferenceId: number) => ({ userId, preferenceId })),
+      skipDuplicates: true,
+    });
+  }
 
   successResponse(res, null, 'Preferences updated');
 }

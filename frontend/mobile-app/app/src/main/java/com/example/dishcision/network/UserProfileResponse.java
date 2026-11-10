@@ -1,6 +1,7 @@
 package com.example.dishcision.network;
 
 import com.google.gson.annotations.SerializedName;
+import java.util.List;
 
 public class UserProfileResponse {
 
@@ -55,6 +56,9 @@ public class UserProfileResponse {
 
         @SerializedName("avatarUrl")
         public String avatarUrl;
+
+        @SerializedName("preferences")
+        public List<String> preferences;
 
         @SerializedName("postsCount")
         public int postsCount;
