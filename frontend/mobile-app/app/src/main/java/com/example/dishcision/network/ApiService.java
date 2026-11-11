@@ -123,6 +123,12 @@ public interface ApiService {
     @GET("posts")
     Call<FeedPostsResponse> getFeedPosts(@Header("Authorization") String authHeader);
 
+    @POST("posts")
+    Call<CreatePostResponse> createPost(
+            @Header("Authorization") String authHeader,
+            @Body CreatePostRequest request
+    );
+
     @GET("users/me/saved-posts")
     Call<FeedPostsResponse> getSavedPosts(@Header("Authorization") String authHeader, @Query("limit") int limit);
 
@@ -146,6 +152,36 @@ public interface ApiService {
     Call<Object> unsavePost(
             @Header("Authorization") String authHeader,
             @Path("postId") int postId
+    );
+
+    @POST("posts/{postId}/likes")
+    Call<Object> likePost(
+            @Header("Authorization") String authHeader,
+            @Path("postId") int postId
+    );
+
+    @DELETE("posts/{postId}/likes")
+    Call<Object> unlikePost(
+            @Header("Authorization") String authHeader,
+            @Path("postId") int postId
+    );
+
+    @GET("posts/{postId}/comments")
+    Call<CommentsListResponse> getPostComments(
+            @Path("postId") int postId
+    );
+
+    @POST("posts/{postId}/comments")
+    Call<CreateCommentResponse> createPostComment(
+            @Header("Authorization") String authHeader,
+            @Path("postId") int postId,
+            @Body CreateCommentRequest request
+    );
+
+    @DELETE("comments/{commentId}")
+    Call<Object> deleteComment(
+            @Header("Authorization") String authHeader,
+            @Path("commentId") int commentId
     );
 
     @GET("users/me/privacy")

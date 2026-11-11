@@ -25,6 +25,7 @@
             android:layout_centerVertical="true"
             android:clickable="true"
             android:focusable="true"
+            android:padding="8dp"
             android:text="Hủy"
             android:textColor="@color/text_gray"
             android:textSize="15sp" />
@@ -50,6 +51,7 @@
             android:paddingHorizontal="16dp">
 
             <TextView
+                android:id="@+id/tvBtnPublishText"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_centerInParent="true"
@@ -83,16 +85,18 @@
                 android:orientation="horizontal">
 
                 <RelativeLayout
+                    android:id="@+id/containerAuthorAvatar"
                     android:layout_width="42dp"
                     android:layout_height="42dp"
                     android:background="@drawable/bg_logo_circle"
-                    android:padding="6dp">
+                    android:padding="2dp">
 
                     <ImageView
+                        android:id="@+id/imgAuthorAvatar"
                         android:layout_width="match_parent"
                         android:layout_height="match_parent"
                         android:contentDescription="@string/app_name"
-                        android:scaleType="fitCenter"
+                        android:scaleType="centerCrop"
                         android:src="@drawable/logo" />
                 </RelativeLayout>
 
@@ -103,17 +107,19 @@
                     android:orientation="vertical">
 
                     <TextView
+                        android:id="@+id/tvAuthorName"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Maya Chen"
+                        android:text="Người dùng"
                         android:textColor="@color/text_dark"
                         android:textSize="15sp"
                         android:textStyle="bold" />
 
                     <TextView
+                        android:id="@+id/tvAuthorHandle"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Food Enthusiast"
+                        android:text="&#64;foodie"
                         android:textColor="@color/text_gray"
                         android:textSize="12sp" />
                 </LinearLayout>
@@ -134,7 +140,7 @@
             <!-- Post Text Input Area -->
             <RelativeLayout
                 android:layout_width="match_parent"
-                android:layout_height="140dp"
+                android:layout_height="120dp"
                 android:layout_marginTop="12dp">
 
                 <EditText
@@ -158,10 +164,11 @@
                 android:layout_marginTop="10dp">
 
                 <TextView
+                    android:id="@+id/tvImageCount"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_alignParentStart="true"
-                    android:text="Hình ảnh (2/9)"
+                    android:text="Hình ảnh (0/2)"
                     android:textColor="@color/text_dark"
                     android:textSize="13sp"
                     android:textStyle="bold" />
@@ -170,7 +177,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_alignParentEnd="true"
-                    android:text="Kéo để đổi vị trí"
+                    android:text="Nhấp để thêm ảnh"
                     android:textColor="@color/text_gray"
                     android:textSize="12sp" />
             </RelativeLayout>
@@ -183,50 +190,56 @@
 
                 <!-- Image 1 -->
                 <RelativeLayout
+                    android:id="@+id/containerImg1"
                     android:layout_width="80dp"
                     android:layout_height="80dp"
+                    android:visibility="gone"
                     android:background="#E8ECF4">
 
                     <ImageView
+                        android:id="@+id/imgPreview1"
                         android:layout_width="match_parent"
                         android:layout_height="match_parent"
                         android:contentDescription="@string/app_name"
-                        android:scaleType="centerCrop"
-                        android:src="@drawable/logo" />
+                        android:scaleType="centerCrop" />
 
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_alignParentStart="true"
+                    <ImageView
+                        android:id="@+id/btnRemoveImg1"
+                        android:layout_width="20dp"
+                        android:layout_height="20dp"
                         android:layout_alignParentTop="true"
-                        android:background="#99000000"
-                        android:paddingHorizontal="4dp"
-                        android:paddingVertical="2dp"
-                        android:text="Ảnh bìa"
-                        android:textColor="@color/white"
-                        android:textSize="10sp" />
+                        android:layout_alignParentEnd="true"
+                        android:layout_margin="2dp"
+                        android:background="#88000000"
+                        android:contentDescription="@string/app_name"
+                        android:src="@drawable/ic_close"
+                        app:tint="@color/white" />
                 </RelativeLayout>
 
                 <!-- Image 2 -->
                 <RelativeLayout
+                    android:id="@+id/containerImg2"
                     android:layout_width="80dp"
                     android:layout_height="80dp"
                     android:layout_marginStart="8dp"
+                    android:visibility="gone"
                     android:background="#E8ECF4">
 
                     <ImageView
+                        android:id="@+id/imgPreview2"
                         android:layout_width="match_parent"
                         android:layout_height="match_parent"
                         android:contentDescription="@string/app_name"
-                        android:scaleType="centerCrop"
-                        android:src="@drawable/logo" />
+                        android:scaleType="centerCrop" />
 
                     <ImageView
-                        android:layout_width="18dp"
-                        android:layout_height="18dp"
+                        android:id="@+id/btnRemoveImg2"
+                        android:layout_width="20dp"
+                        android:layout_height="20dp"
                         android:layout_alignParentTop="true"
                         android:layout_alignParentEnd="true"
-                        android:layout_margin="4dp"
+                        android:layout_margin="2dp"
+                        android:background="#88000000"
                         android:contentDescription="@string/app_name"
                         android:src="@drawable/ic_close"
                         app:tint="@color/white" />
@@ -234,6 +247,7 @@
 
                 <!-- Add Button -->
                 <RelativeLayout
+                    android:id="@+id/btnAddImage"
                     android:layout_width="80dp"
                     android:layout_height="80dp"
                     android:layout_marginStart="8dp"
@@ -266,57 +280,51 @@
                 </RelativeLayout>
             </LinearLayout>
 
-            <!-- Công cụ bổ trợ (Attached items) -->
+            <!-- Additional Information Inputs -->
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="16dp"
-                android:text="Công cụ bổ trợ"
+                android:text="Thông tin bổ sung"
                 android:textColor="@color/text_dark"
                 android:textSize="13sp"
                 android:textStyle="bold" />
 
-            <LinearLayout
+            <EditText
+                android:id="@+id/edtLocationUrl"
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
-                android:orientation="horizontal">
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:background="@drawable/bg_badge_verified"
-                    android:paddingHorizontal="10dp"
-                    android:paddingVertical="5dp"
-                    android:text="📍 Pizza 4P's Bến Thành ✕"
-                    android:textColor="#0A8050"
-                    android:textSize="12sp"
-                    android:textStyle="bold" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="8dp"
-                    android:background="@drawable/bg_badge_expert"
-                    android:paddingHorizontal="10dp"
-                    android:paddingVertical="5dp"
-                    android:text="🎟 Giảm 20% đặt bàn ✕"
-                    android:textColor="@color/primary"
-                    android:textSize="12sp"
-                    android:textStyle="bold" />
-            </LinearLayout>
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
+                android:layout_height="42dp"
                 android:layout_marginTop="8dp"
                 android:background="@drawable/bg_favorite_search"
-                android:paddingHorizontal="10dp"
-                android:paddingVertical="5dp"
-                android:text="🗳 Vote: Đáng thử vs Bỏ qua ✕"
-                android:textColor="#3E2723"
-                android:textSize="12sp"
-                android:textStyle="bold" />
+                android:hint="📍 Tên địa điểm hoặc URL"
+                android:paddingHorizontal="12dp"
+                android:textColor="@color/text_dark"
+                android:textColorHint="@color/text_gray"
+                android:textSize="13sp" />
+
+            <EditText
+                android:id="@+id/edtVoucherCode"
+                android:layout_width="match_parent"
+                android:layout_height="42dp"
+                android:layout_marginTop="8dp"
+                android:background="@drawable/bg_favorite_search"
+                android:hint="🎟 Mã giảm giá / Voucher (nếu có)"
+                android:paddingHorizontal="12dp"
+                android:textColor="@color/text_dark"
+                android:textColorHint="@color/text_gray"
+                android:textSize="13sp" />
+
+            <EditText
+                android:id="@+id/edtHashtags"
+                android:layout_width="match_parent"
+                android:layout_height="42dp"
+                android:layout_marginTop="8dp"
+                android:background="@drawable/bg_favorite_search"
+                android:hint="# Hashtags (phân cách bởi dấu phẩy, VD: food, review)"
+                android:paddingHorizontal="12dp"
+                android:textColor="@color/text_dark"
+                android:textColorHint="@color/text_gray"
+                android:textSize="13sp" />
 
             <!-- Tip Box -->
             <LinearLayout
@@ -330,7 +338,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:lineSpacingExtra="2dp"
-                    android:text="💡 Mẹo tạo bài: Đính kèm địa điểm và hóa đơn/menu thực tế sẽ giúp bài viết nhận thêm 2x lượt tương tác &amp; huy hiệu Reviewer chất lượng."
+                    android:text="💡 Mẹo tạo bài: Đính kèm địa điểm và hình ảnh thực tế sẽ giúp bài viết thu hút thêm tương tác từ cộng đồng."
                     android:textColor="#555555"
                     android:textSize="12sp" />
             </LinearLayout>
