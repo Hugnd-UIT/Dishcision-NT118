@@ -92,3 +92,4 @@ public final class BottomNavHelper {
         label.setTypeface(null, active ? Typeface.BOLD : Typeface.NORMAL);
     }
 }
+
