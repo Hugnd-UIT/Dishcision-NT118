@@ -47,12 +47,6 @@ public class FavoriteRestaurantsActivity extends AppCompatActivity {
     private EditText edtSearch;
     private TextView tvSummaryBadge;
 
-    private LinearLayout navHome;
-    private LinearLayout navDecide;
-    private LinearLayout navCreate;
-    private LinearLayout navMessages;
-    private LinearLayout navProfile;
-
     private TextView chipAll;
     private TextView chipOpen;
     private TextView chipNearMe;
@@ -96,12 +90,6 @@ public class FavoriteRestaurantsActivity extends AppCompatActivity {
         edtSearch = findViewById(R.id.edtSearch);
         tvSummaryBadge = findViewById(R.id.tvSummaryBadge);
 
-        navHome = findViewById(R.id.navHome);
-        navDecide = findViewById(R.id.navDecide);
-        navCreate = findViewById(R.id.navCreate);
-        navMessages = findViewById(R.id.navMessages);
-        navProfile = findViewById(R.id.navProfile);
-
         chipAll = findViewById(R.id.chipAll);
         chipOpen = findViewById(R.id.chipOpen);
         chipNearMe = findViewById(R.id.chipNearMe);
@@ -129,18 +117,7 @@ public class FavoriteRestaurantsActivity extends AppCompatActivity {
             });
         }
 
-        if (navHome != null) {
-            navHome.setOnClickListener(v -> {
-                Intent intent = new Intent(this, HomeActivity.class);
-                intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
-                startActivity(intent);
-                finish();
-            });
-        }
-        if (navDecide != null) navDecide.setOnClickListener(v -> startActivity(new Intent(this, DecideActivity.class)));
-        if (navCreate != null) navCreate.setOnClickListener(v -> startActivity(new Intent(this, CreatePostActivity.class)));
-        if (navMessages != null) navMessages.setOnClickListener(v -> startActivity(new Intent(this, MessagesInboxActivity.class)));
-        if (navProfile != null) navProfile.setOnClickListener(v -> startActivity(new Intent(this, ProfileActivity.class)));
+        BottomNavHelper.bind(this, BottomNavHelper.TAB_NONE);
 
         if (chipAll != null) chipAll.setOnClickListener(v -> {
             if (currentActiveChip != chipAll) {

@@ -41,7 +41,6 @@ import retrofit2.Response;
 public class MyReviewsActivity extends AppCompatActivity {
 
     private ImageView btnBack;
-    private LinearLayout navHome;
     private LinearLayout btnSort;
     private LinearLayout btnWriteNewReview;
     private TextView tvSortSelected;
@@ -105,7 +104,6 @@ public class MyReviewsActivity extends AppCompatActivity {
         if (btnNotification != null) {
             btnNotification.setOnClickListener(v -> startActivity(new Intent(this, NotificationsActivity.class)));
         }
-        navHome = findViewById(R.id.navHome);
         btnSort = findViewById(R.id.btnSort);
         btnWriteNewReview = findViewById(R.id.btnWriteNewReview);
         tvSortSelected = findViewById(R.id.tvSortSelected);
@@ -147,26 +145,7 @@ public class MyReviewsActivity extends AppCompatActivity {
     private void setupListeners() {
         if (btnBack != null) btnBack.setOnClickListener(v -> finish());
 
-        if (navHome != null) {
-            navHome.setOnClickListener(v -> {
-                Intent intent = new Intent(this, HomeActivity.class);
-                intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
-                startActivity(intent);
-                finish();
-            });
-        }
-
-        LinearLayout navDecide = findViewById(R.id.navDecide);
-        if (navDecide != null) navDecide.setOnClickListener(v -> startActivity(new Intent(this, DecideActivity.class)));
-
-        View navAdd = findViewById(R.id.navAdd);
-        if (navAdd != null) navAdd.setOnClickListener(v -> openWriteReview());
-
-        LinearLayout navMessage = findViewById(R.id.navMessage);
-        if (navMessage != null) navMessage.setOnClickListener(v -> startActivity(new Intent(this, MessagesInboxActivity.class)));
-
-        LinearLayout navProfile = findViewById(R.id.navProfile);
-        if (navProfile != null) navProfile.setOnClickListener(v -> startActivity(new Intent(this, ProfileActivity.class)));
+        BottomNavHelper.bind(this, BottomNavHelper.TAB_NONE);
 
         if (btnSort != null) btnSort.setOnClickListener(v -> showSortDropdownMenu());
         if (btnWriteNewReview != null) btnWriteNewReview.setOnClickListener(v -> openWriteReview());

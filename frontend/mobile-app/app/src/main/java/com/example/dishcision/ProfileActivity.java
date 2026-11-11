@@ -93,12 +93,6 @@ public class ProfileActivity extends AppCompatActivity {
     private LinearLayout gridPostsContainer;
     private TextView tvEmptyPosts;
 
-    private LinearLayout navHome;
-    private LinearLayout navDecide;
-    private View navAdd;
-    private LinearLayout navMessage;
-    private LinearLayout navProfile;
-
     private TokenManager tokenManager;
 
     private String currentFullName = "";
@@ -183,12 +177,6 @@ public class ProfileActivity extends AppCompatActivity {
 
         gridPostsContainer = findViewById(R.id.gridPostsContainer);
         tvEmptyPosts = findViewById(R.id.tvEmptyPosts);
-
-        navHome = findViewById(R.id.navHome);
-        navDecide = findViewById(R.id.navDecide);
-        navAdd = findViewById(R.id.navAdd);
-        navMessage = findViewById(R.id.navMessage);
-        navProfile = findViewById(R.id.navProfile);
     }
 
     private void loadLocalProfileDetails() {
@@ -322,30 +310,7 @@ public class ProfileActivity extends AppCompatActivity {
             colFollowing.setOnClickListener(v -> openFollowersScreen("following"));
         }
 
-        if (navHome != null) {
-            navHome.setOnClickListener(v -> {
-                Intent intent = new Intent(ProfileActivity.this, HomeActivity.class);
-                intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
-                startActivity(intent);
-                finish();
-            });
-        }
-
-        if (navDecide != null) {
-            navDecide.setOnClickListener(v -> startActivity(new Intent(ProfileActivity.this, DecideActivity.class)));
-        }
-
-        if (navAdd != null) {
-            navAdd.setOnClickListener(v -> startActivity(new Intent(ProfileActivity.this, CreatePostActivity.class)));
-        }
-
-        if (navMessage != null) {
-            navMessage.setOnClickListener(v -> startActivity(new Intent(ProfileActivity.this, MessagesInboxActivity.class)));
-        }
-
-        if (navProfile != null) {
-            navProfile.setOnClickListener(v -> {});
-        }
+        BottomNavHelper.bind(this, BottomNavHelper.TAB_PROFILE);
     }
 
     private void openFollowersScreen(String activeTab) {

@@ -41,10 +41,6 @@ import retrofit2.Response;
 public class DecideActivity extends AppCompatActivity {
 
     private ImageView btnNotification;
-    private LinearLayout navHome;
-    private LinearLayout navCreate;
-    private LinearLayout navMessages;
-    private LinearLayout navProfile;
 
     private WheelView wheelView;
     private RelativeLayout btnSpinCenter;
@@ -92,10 +88,6 @@ public class DecideActivity extends AppCompatActivity {
 
     private void initViews() {
         btnNotification = findViewById(R.id.btnNotification);
-        navHome = findViewById(R.id.navHome);
-        navCreate = findViewById(R.id.navCreate);
-        navMessages = findViewById(R.id.navMessages);
-        navProfile = findViewById(R.id.navProfile);
 
         wheelView = findViewById(R.id.wheelView);
         btnSpinCenter = findViewById(R.id.btnSpinCenter);
@@ -285,23 +277,7 @@ public class DecideActivity extends AppCompatActivity {
         if (btnNotification != null) {
             btnNotification.setOnClickListener(v -> startActivity(new Intent(this, NotificationsActivity.class)));
         }
-        if (navHome != null) {
-            navHome.setOnClickListener(v -> {
-                Intent intent = new Intent(this, HomeActivity.class);
-                intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
-                startActivity(intent);
-                finish();
-            });
-        }
-        if (navCreate != null) {
-            navCreate.setOnClickListener(v -> startActivity(new Intent(this, CreatePostActivity.class)));
-        }
-        if (navMessages != null) {
-            navMessages.setOnClickListener(v -> startActivity(new Intent(this, MessagesInboxActivity.class)));
-        }
-        if (navProfile != null) {
-            navProfile.setOnClickListener(v -> startActivity(new Intent(this, ProfileActivity.class)));
-        }
+        BottomNavHelper.bind(this, BottomNavHelper.TAB_DECIDE);
     }
 
     private void showAiSuggestDialog() {

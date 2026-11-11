@@ -65,12 +65,6 @@ public class UserProfileActivity extends AppCompatActivity {
     private LinearLayout gridUserPostsContainer;
     private TextView tvEmptyUserPosts;
 
-    private LinearLayout navHome;
-    private LinearLayout navDecide;
-    private View navAdd;
-    private LinearLayout navMessage;
-    private LinearLayout navProfile;
-
     private TokenManager tokenManager;
     private int targetUserId = 0;
     private String displayName = "";
@@ -166,12 +160,6 @@ public class UserProfileActivity extends AppCompatActivity {
 
         gridUserPostsContainer = findViewById(R.id.gridUserPostsContainer);
         tvEmptyUserPosts = findViewById(R.id.tvEmptyUserPosts);
-
-        navHome = findViewById(R.id.navHome);
-        navDecide = findViewById(R.id.navDecide);
-        navAdd = findViewById(R.id.navAdd);
-        navMessage = findViewById(R.id.navMessage);
-        navProfile = findViewById(R.id.navProfile);
     }
 
     private void setupListeners() {
@@ -252,30 +240,7 @@ public class UserProfileActivity extends AppCompatActivity {
             });
         }
 
-        if (navHome != null) {
-            navHome.setOnClickListener(v -> {
-                Intent intent = new Intent(UserProfileActivity.this, HomeActivity.class);
-                intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
-                startActivity(intent);
-                finish();
-            });
-        }
-
-        if (navDecide != null) {
-            navDecide.setOnClickListener(v -> startActivity(new Intent(UserProfileActivity.this, DecideActivity.class)));
-        }
-
-        if (navAdd != null) {
-            navAdd.setOnClickListener(v -> startActivity(new Intent(UserProfileActivity.this, CreatePostActivity.class)));
-        }
-
-        if (navMessage != null) {
-            navMessage.setOnClickListener(v -> startActivity(new Intent(UserProfileActivity.this, MessagesInboxActivity.class)));
-        }
-
-        if (navProfile != null) {
-            navProfile.setOnClickListener(v -> startActivity(new Intent(UserProfileActivity.this, ProfileActivity.class)));
-        }
+        BottomNavHelper.bind(this, BottomNavHelper.TAB_NONE);
     }
 
     private void openFollowersScreen(String activeTab) {

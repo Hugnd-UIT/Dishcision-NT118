@@ -59,11 +59,6 @@ public class MessagesInboxActivity extends AppCompatActivity {
     private LinearLayout layoutConversationsContainer;
     private LinearLayout layoutInboxFooter;
 
-    private LinearLayout navHome;
-    private LinearLayout navDecide;
-    private View navAdd;
-    private LinearLayout navProfile;
-
     private final List<ChatsListResponse.ConversationItem> allConversations = new ArrayList<>();
     private int activeFilter = FILTER_ALL;
     private boolean firstResume = true;
@@ -116,11 +111,6 @@ public class MessagesInboxActivity extends AppCompatActivity {
         tvEmptyInbox = findViewById(R.id.tvEmptyInbox);
         layoutConversationsContainer = findViewById(R.id.layoutConversationsContainer);
         layoutInboxFooter = findViewById(R.id.layoutInboxFooter);
-
-        navHome = findViewById(R.id.navHome);
-        navDecide = findViewById(R.id.navDecide);
-        navAdd = findViewById(R.id.navAdd);
-        navProfile = findViewById(R.id.navProfile);
     }
 
     private void setupListeners() {
@@ -144,29 +134,7 @@ public class MessagesInboxActivity extends AppCompatActivity {
         if (chipRestaurants != null) chipRestaurants.setOnClickListener(v -> selectFilter(FILTER_RESTAURANTS));
         if (chipFriends != null) chipFriends.setOnClickListener(v -> selectFilter(FILTER_FRIENDS));
 
-        if (navHome != null) {
-            navHome.setOnClickListener(v -> {
-                Intent intent = new Intent(MessagesInboxActivity.this, HomeActivity.class);
-                intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
-                startActivity(intent);
-                finish();
-            });
-        }
-
-        if (navDecide != null) {
-            navDecide.setOnClickListener(v ->
-                    startActivity(new Intent(MessagesInboxActivity.this, DecideActivity.class)));
-        }
-
-        if (navAdd != null) {
-            navAdd.setOnClickListener(v ->
-                    startActivity(new Intent(MessagesInboxActivity.this, CreatePostActivity.class)));
-        }
-
-        if (navProfile != null) {
-            navProfile.setOnClickListener(v ->
-                    startActivity(new Intent(MessagesInboxActivity.this, ProfileActivity.class)));
-        }
+        BottomNavHelper.bind(this, BottomNavHelper.TAB_MESSAGES);
     }
 
     private void selectFilter(int filter) {

@@ -60,12 +60,6 @@ public class HomeActivity extends AppCompatActivity {
     private LinearLayout feedContainer;
     private TextView tvEmptyFeed;
 
-    private LinearLayout navHome;
-    private LinearLayout navDecide;
-    private LinearLayout navCreate;
-    private LinearLayout navMessages;
-    private LinearLayout navProfile;
-
     private LinearLayout menuForYou;
     private LinearLayout menuFavorites;
     private LinearLayout menuFollowing;
@@ -177,12 +171,6 @@ public class HomeActivity extends AppCompatActivity {
         feedContainer = findViewById(R.id.feedContainer);
         tvEmptyFeed = findViewById(R.id.tvEmptyFeed);
 
-        navHome = findViewById(R.id.navHome);
-        navDecide = findViewById(R.id.navDecide);
-        navCreate = findViewById(R.id.navCreate);
-        navMessages = findViewById(R.id.navMessages);
-        navProfile = findViewById(R.id.navProfile);
-
         menuForYou = findViewById(R.id.menuForYou);
         menuFavorites = findViewById(R.id.menuFavorites);
         menuFollowing = findViewById(R.id.menuFollowing);
@@ -223,12 +211,6 @@ public class HomeActivity extends AppCompatActivity {
             btnFilter.setOnClickListener(v -> startActivity(new Intent(HomeActivity.this, SearchActivity.class)));
         }
 
-        if (navHome != null) {
-            navHome.setOnClickListener(v -> {
-                if (scrollFeed != null) scrollFeed.smoothScrollTo(0, 0);
-            });
-        }
-
         if (swipeRefreshFeed != null) {
             swipeRefreshFeed.setColorSchemeColors(0xFFFF5A36, 0xFF141B2B);
             swipeRefreshFeed.setOnChildScrollUpCallback((parent, child) -> scrollFeed != null && scrollFeed.canScrollVertically(-1));
@@ -243,21 +225,14 @@ public class HomeActivity extends AppCompatActivity {
             });
         }
 
-        if (navDecide != null) {
-            navDecide.setOnClickListener(v -> startActivity(new Intent(HomeActivity.this, DecideActivity.class)));
-        }
-
-        if (navCreate != null) {
-            navCreate.setOnClickListener(v -> postFormLauncher.launch(new Intent(HomeActivity.this, CreatePostActivity.class)));
-        }
-
-        if (navMessages != null) {
-            navMessages.setOnClickListener(v -> startActivity(new Intent(HomeActivity.this, MessagesInboxActivity.class)));
-        }
-
-        if (navProfile != null) {
-            navProfile.setOnClickListener(v -> startActivity(new Intent(HomeActivity.this, ProfileActivity.class)));
-        }
+        BottomNavHelper.bind(
+                this,
+                BottomNavHelper.TAB_HOME,
+                () -> {
+                    if (scrollFeed != null) scrollFeed.smoothScrollTo(0, 0);
+                },
+                () -> postFormLauncher.launch(new Intent(HomeActivity.this, CreatePostActivity.class))
+        );
 
         if (menuForYou != null) {
             menuForYou.setOnClickListener(v -> {
