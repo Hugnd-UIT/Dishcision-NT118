@@ -104,33 +104,17 @@ public class RegisterActivity extends AppCompatActivity {
                                     @Override
                                     public void onResponse(Call<AuthResponse> call, Response<AuthResponse> response) {
                                         if (btnGoogleRegister != null) btnGoogleRegister.setEnabled(true);
-                                        if (response.isSuccessful() && response.body() != null) {
-                                            AuthResponse.AuthData data = response.body().getData();
-                                            if (data != null && data.requiresTwoFactor
-                                                    && data.tempToken != null && !data.tempToken.isEmpty()) {
-                                                String emailDisplay = (data.emailMasked != null && !data.emailMasked.isEmpty())
-                                                        ? data.emailMasked
-                                                        : (data.email != null && !data.email.isEmpty() ? data.email : email);
-                                                Toast.makeText(RegisterActivity.this, "Đã gửi mã xác thực 2FA về email!", Toast.LENGTH_SHORT).show();
-                                                Intent intent = new Intent(RegisterActivity.this, VerifyOtpActivity.class);
-                                                intent.putExtra(VerifyOtpActivity.EXTRA_MODE, VerifyOtpActivity.MODE_2FA_LOGIN);
-                                                intent.putExtra(VerifyOtpActivity.EXTRA_TEMP_TOKEN, data.tempToken);
-                                                intent.putExtra(VerifyOtpActivity.EXTRA_EMAIL, emailDisplay);
-                                                intent.putExtra(VerifyOtpActivity.EXTRA_IS_GOOGLE_LOGIN, true);
-                                                startActivity(intent);
-                                                return;
-                                            }
-                                            if (TokenManager.isValidJwtToken(response.body().getToken())) {
-                                                AuthHelper.saveSessionFromAuth(RegisterActivity.this, response.body(), email, fullName, true);
-                                                Toast.makeText(RegisterActivity.this, "Đăng ký thành công với Google: " + fullName, Toast.LENGTH_SHORT).show();
-                                                Intent intent = new Intent(RegisterActivity.this, HomeActivity.class);
-                                                intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-                                                startActivity(intent);
-                                                finish();
-                                                return;
-                                            }
+                                        if (response.isSuccessful() && response.body() != null
+                                                && TokenManager.isValidJwtToken(response.body().getToken())) {
+                                            AuthHelper.saveSessionFromAuth(RegisterActivity.this, response.body(), email, fullName, true);
+                                            Toast.makeText(RegisterActivity.this, "Đăng ký thành công với Google: " + fullName, Toast.LENGTH_SHORT).show();
+                                            Intent intent = new Intent(RegisterActivity.this, HomeActivity.class);
+                                            intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+                                            startActivity(intent);
+                                            finish();
+                                        } else {
+                                            Toast.makeText(RegisterActivity.this, "Đăng ký Google thất bại (mã " + response.code() + ")", Toast.LENGTH_LONG).show();
                                         }
-                                        Toast.makeText(RegisterActivity.this, "Đăng ký Google thất bại (mã " + response.code() + ")", Toast.LENGTH_LONG).show();
                                     }
 
                                     @Override

@@ -101,28 +101,17 @@ public class LoginActivity extends AppCompatActivity {
                                     @Override
                                     public void onResponse(Call<AuthResponse> call, Response<AuthResponse> response) {
                                         if (btnGoogleLogin != null) btnGoogleLogin.setEnabled(true);
-                                        if (response.isSuccessful() && response.body() != null) {
-                                            AuthResponse.AuthData data = response.body().getData();
-                                            if (data != null && data.requiresTwoFactor
-                                                    && data.tempToken != null && !data.tempToken.isEmpty()) {
-                                                String emailDisplay = (data.emailMasked != null && !data.emailMasked.isEmpty())
-                                                        ? data.emailMasked
-                                                        : (data.email != null && !data.email.isEmpty() ? data.email : email);
-                                                Toast.makeText(LoginActivity.this, "Đã gửi mã xác thực 2FA về email!", Toast.LENGTH_SHORT).show();
-                                                openTwoFactorVerification(data.tempToken, emailDisplay, true);
-                                                return;
-                                            }
-                                            if (TokenManager.isValidJwtToken(response.body().getToken())) {
-                                                AuthHelper.saveSessionFromAuth(LoginActivity.this, response.body(), email, fullName, true);
-                                                Toast.makeText(LoginActivity.this, "Đăng nhập Google thành công: " + fullName, Toast.LENGTH_SHORT).show();
-                                                Intent intent = new Intent(LoginActivity.this, HomeActivity.class);
-                                                intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-                                                startActivity(intent);
-                                                finish();
-                                                return;
-                                            }
+                                        if (response.isSuccessful() && response.body() != null
+                                                && TokenManager.isValidJwtToken(response.body().getToken())) {
+                                            AuthHelper.saveSessionFromAuth(LoginActivity.this, response.body(), email, fullName, true);
+                                            Toast.makeText(LoginActivity.this, "Đăng nhập Google thành công: " + fullName, Toast.LENGTH_SHORT).show();
+                                            Intent intent = new Intent(LoginActivity.this, HomeActivity.class);
+                                            intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+                                            startActivity(intent);
+                                            finish();
+                                        } else {
+                                            Toast.makeText(LoginActivity.this, "Xác thực Google thất bại (mã " + response.code() + ")", Toast.LENGTH_LONG).show();
                                         }
-                                        Toast.makeText(LoginActivity.this, "Xác thực Google thất bại (mã " + response.code() + ")", Toast.LENGTH_LONG).show();
                                     }
 
                                     @Override
@@ -230,7 +219,7 @@ public class LoginActivity extends AppCompatActivity {
                                 ? data.emailMasked
                                 : (data.email != null && !data.email.isEmpty() ? data.email : email);
                         Toast.makeText(LoginActivity.this, "Đã gửi mã xác thực 2FA về email!", Toast.LENGTH_SHORT).show();
-                        openTwoFactorVerification(data.tempToken, emailDisplay, false);
+                        openTwoFactorVerification(data.tempToken, emailDisplay);
                         return;
                     }
                     if (TokenManager.isValidJwtToken(response.body().getToken())) {
@@ -304,12 +293,11 @@ public class LoginActivity extends AppCompatActivity {
         tvTerms.setMovementMethod(LinkMovementMethod.getInstance());
     }
 
-    private void openTwoFactorVerification(String tempToken, String emailDisplay, boolean isGoogleLogin) {
+    private void openTwoFactorVerification(String tempToken, String emailDisplay) {
         Intent intent = new Intent(LoginActivity.this, VerifyOtpActivity.class);
         intent.putExtra(VerifyOtpActivity.EXTRA_MODE, VerifyOtpActivity.MODE_2FA_LOGIN);
         intent.putExtra(VerifyOtpActivity.EXTRA_TEMP_TOKEN, tempToken);
         intent.putExtra(VerifyOtpActivity.EXTRA_EMAIL, emailDisplay);
-        intent.putExtra(VerifyOtpActivity.EXTRA_IS_GOOGLE_LOGIN, isGoogleLogin);
         startActivity(intent);
     }
 

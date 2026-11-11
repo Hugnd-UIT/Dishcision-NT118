@@ -29,11 +29,13 @@ public class SecurityLoginActivity extends AppCompatActivity {
     private ImageView btnBack;
     private ImageView img2FAIcon;
     private TextView tv2FAStatusTag;
+    private TextView tv2FADesc;
     private Button btnSetup2FA;
     private LinearLayout btnChangePassword;
     private LinearLayout btnActiveSessions;
 
     private boolean is2FAEnabled = false;
+    private boolean isGoogleLogin = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -54,18 +56,22 @@ public class SecurityLoginActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
-        fetch2FAStatusFromBackend();
+        if (!isGoogleLogin) {
+            fetch2FAStatusFromBackend();
+        }
     }
 
     private void initViews() {
         btnBack = findViewById(R.id.btnBack);
         img2FAIcon = findViewById(R.id.img2FAIcon);
         tv2FAStatusTag = findViewById(R.id.tv2FAStatusTag);
+        tv2FADesc = findViewById(R.id.tv2FADesc);
         btnSetup2FA = findViewById(R.id.btnSetup2FA);
         btnChangePassword = findViewById(R.id.btnChangePassword);
-        boolean isGoogleLogin = getSharedPreferences("DishcisionPrefs", MODE_PRIVATE).getBoolean("is_google_login", false);
-        if (isGoogleLogin && btnChangePassword != null) {
-            btnChangePassword.setVisibility(android.view.View.GONE);
+        isGoogleLogin = getSharedPreferences("DishcisionPrefs", MODE_PRIVATE).getBoolean("is_google_login", false);
+        if (isGoogleLogin) {
+            if (btnChangePassword != null) btnChangePassword.setVisibility(View.GONE);
+            update2FAUIState();
         }
         btnActiveSessions = findViewById(R.id.btnActiveSessions);
 
@@ -143,6 +149,25 @@ public class SecurityLoginActivity extends AppCompatActivity {
 
     private void update2FAUIState() {
         if (tv2FAStatusTag == null || btnSetup2FA == null) return;
+
+        if (isGoogleLogin) {
+            tv2FAStatusTag.setText("Bảo vệ qua Google");
+            tv2FAStatusTag.setTextColor(Color.parseColor("#00A86B"));
+            if (img2FAIcon != null) {
+                img2FAIcon.setImageResource(R.drawable.ic_shield_check);
+                img2FAIcon.setColorFilter(Color.parseColor("#00A86B"));
+            }
+            if (tv2FADesc != null) {
+                tv2FADesc.setText("Tài khoản này đăng nhập bằng Google nên không cần bật xác thực 2FA qua email.");
+            }
+            btnSetup2FA.setVisibility(View.GONE);
+            return;
+        }
+
+        btnSetup2FA.setVisibility(View.VISIBLE);
+        if (tv2FADesc != null) {
+            tv2FADesc.setText(R.string.security_2fa_desc);
+        }
 
         if (is2FAEnabled) {
             tv2FAStatusTag.setText("Đã bật");

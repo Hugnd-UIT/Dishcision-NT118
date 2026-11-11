@@ -184,8 +184,7 @@ async function issueLoginOr2FAChallenge(
   user: any,
   req: Request,
   res: Response,
-  successMessage: string,
-  isGoogleLogin: boolean
+  successMessage: string
 ): Promise<void> {
   const isTwoFactorEnabled = (await redis.get(`user:${user.id}:2fa_enabled`)) === 'true';
   if (!isTwoFactorEnabled) {
@@ -201,7 +200,6 @@ async function issueLoginOr2FAChallenge(
     otp,
     attempts: 0,
     lastSentAt: Date.now(),
-    isGoogleLogin,
   };
 
   await redis.set(`2fa_login:${tempToken}`, JSON.stringify(payload), 'EX', 600);
@@ -307,7 +305,7 @@ export async function login(req: Request, res: Response): Promise<void> {
     return;
   }
 
-  await issueLoginOr2FAChallenge(user, req, res, 'Login successful', false);
+  await issueLoginOr2FAChallenge(user, req, res, 'Login successful');
 }
 
 export async function verifyLogin2FA(req: Request, res: Response): Promise<void> {
@@ -326,7 +324,6 @@ export async function verifyLogin2FA(req: Request, res: Response): Promise<void>
     otp: string;
     attempts: number;
     lastSentAt: number;
-    isGoogleLogin?: boolean;
   };
   try {
     stored = JSON.parse(raw);
@@ -371,12 +368,7 @@ export async function verifyLogin2FA(req: Request, res: Response): Promise<void>
     return;
   }
 
-  await issueAuthSession(
-    user,
-    req,
-    res,
-    stored.isGoogleLogin ? 'Google authentication successful' : 'Login successful'
-  );
+  await issueAuthSession(user, req, res, 'Login successful');
 }
 
 export async function resendLogin2FA(req: Request, res: Response): Promise<void> {
@@ -395,7 +387,6 @@ export async function resendLogin2FA(req: Request, res: Response): Promise<void>
     otp: string;
     attempts: number;
     lastSentAt: number;
-    isGoogleLogin?: boolean;
   };
   try {
     stored = JSON.parse(raw);
@@ -472,7 +463,7 @@ export async function googleAuth(req: Request, res: Response): Promise<void> {
     return;
   }
 
-  await issueLoginOr2FAChallenge(user, req, res, 'Google authentication successful', true);
+  await issueAuthSession(user, req, res, 'Google authentication successful');
 }
 
 // ── Logout ────────────────────────────────
@@ -632,9 +623,13 @@ export async function get2FAStatus(req: AuthRequest, res: Response): Promise<voi
 
 export async function get2FASetup(req: AuthRequest, res: Response): Promise<void> {
   const userId = req.user!.userId;
-  const user = await prisma.user.findUnique({ where: { id: userId }, select: { email: true } });
+  const user = await prisma.user.findUnique({ where: { id: userId }, select: { email: true, passwordHash: true } });
   if (!user || !user.email) {
     errorResponse(res, 'Không tìm thấy email tài khoản', 404);
+    return;
+  }
+  if (!user.passwordHash || user.passwordHash === '') {
+    errorResponse(res, 'Tài khoản đăng nhập bằng Google được bảo vệ trực tiếp qua Google', 400);
     return;
   }
 

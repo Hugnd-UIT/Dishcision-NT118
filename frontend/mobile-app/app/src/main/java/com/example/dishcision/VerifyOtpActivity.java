@@ -35,7 +35,6 @@ public class VerifyOtpActivity extends AppCompatActivity {
     public static final String EXTRA_EMAIL = "extra_email";
     public static final String EXTRA_MODE = "extra_mode";
     public static final String EXTRA_TEMP_TOKEN = "extra_temp_token";
-    public static final String EXTRA_IS_GOOGLE_LOGIN = "extra_is_google_login";
     public static final String MODE_FORGOT_PASSWORD = "forgot_password";
     public static final String MODE_2FA_LOGIN = "2fa_login";
 
@@ -58,7 +57,6 @@ public class VerifyOtpActivity extends AppCompatActivity {
     private String userEmail = "";
     private String mode = MODE_FORGOT_PASSWORD;
     private String tempToken = "";
-    private boolean isGoogleLogin = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -113,7 +111,6 @@ public class VerifyOtpActivity extends AppCompatActivity {
             if (passedToken != null) {
                 tempToken = passedToken.trim();
             }
-            isGoogleLogin = intent.getBooleanExtra(EXTRA_IS_GOOGLE_LOGIN, false);
         }
 
         if (MODE_2FA_LOGIN.equals(mode)) {
@@ -242,7 +239,7 @@ public class VerifyOtpActivity extends AppCompatActivity {
 
                 if (response.isSuccessful() && response.body() != null
                         && TokenManager.isValidJwtToken(response.body().getToken())) {
-                    AuthHelper.saveSessionFromAuth(VerifyOtpActivity.this, response.body(), userEmail, "", isGoogleLogin);
+                    AuthHelper.saveSessionFromAuth(VerifyOtpActivity.this, response.body(), userEmail, "", false);
                     Toast.makeText(VerifyOtpActivity.this, "Đăng nhập thành công!", Toast.LENGTH_SHORT).show();
                     Intent intent = new Intent(VerifyOtpActivity.this, HomeActivity.class);
                     intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
