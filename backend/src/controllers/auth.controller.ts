@@ -580,6 +580,19 @@ export async function resetPassword(req: Request, res: Response): Promise<void> 
     return;
   }
 
+  const targetUser = await prisma.user.findUnique({
+    where: { id: token.userId },
+    select: { id: true, passwordHash: true },
+  });
+  if (!targetUser) {
+    errorResponse(res, 'User not found', 404);
+    return;
+  }
+  if (targetUser.passwordHash && (await comparePassword(newPassword, targetUser.passwordHash))) {
+    errorResponse(res, 'Mật khẩu mới không được trùng với mật khẩu hiện tại', 400);
+    return;
+  }
+
   const passwordHash = await hashPassword(newPassword);
   const existingSessions = await prisma.userSession.findMany({
     where: { userId: token.userId },
@@ -614,6 +627,10 @@ export async function changePassword(req: AuthRequest, res: Response): Promise<v
   }
   if (!(await comparePassword(currentPassword, user.passwordHash))) {
     errorResponse(res, 'Current password is incorrect', 401);
+    return;
+  }
+  if (currentPassword === newPassword || (await comparePassword(newPassword, user.passwordHash))) {
+    errorResponse(res, 'Mật khẩu mới không được trùng với mật khẩu hiện tại', 400);
     return;
   }
 

@@ -153,6 +153,14 @@
                     android:src="@drawable/ic_eye" />
             </RelativeLayout>
 
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="6dp"
+                android:text="@string/password_policy_hint"
+                android:textColor="@color/text_gray"
+                android:textSize="12sp" />
+
             <!-- Confirm Password Label & Input -->
             <TextView
                 android:layout_width="wrap_content"

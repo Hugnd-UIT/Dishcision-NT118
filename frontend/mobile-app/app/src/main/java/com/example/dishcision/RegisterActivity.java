@@ -184,8 +184,8 @@ public class RegisterActivity extends AppCompatActivity {
     private void performRegister() {
         String fullName = edtFullName != null ? edtFullName.getText().toString().trim() : "";
         String email = edtRegisterEmail != null ? edtRegisterEmail.getText().toString().trim() : "";
-        String password = edtRegisterPassword != null ? edtRegisterPassword.getText().toString().trim() : "";
-        String confirmPassword = edtConfirmPassword != null ? edtConfirmPassword.getText().toString().trim() : "";
+        String password = edtRegisterPassword != null ? edtRegisterPassword.getText().toString() : "";
+        String confirmPassword = edtConfirmPassword != null ? edtConfirmPassword.getText().toString() : "";
 
         if (fullName.isEmpty()) {
             Toast.makeText(this, "Vui lòng nhập Họ và tên!", Toast.LENGTH_SHORT).show();
@@ -205,8 +205,9 @@ public class RegisterActivity extends AppCompatActivity {
             return;
         }
 
-        if (password.isEmpty() || password.length() < 6) {
-            Toast.makeText(this, "Mật khẩu phải từ 6 ký tự trở lên!", Toast.LENGTH_SHORT).show();
+        String pwError = AuthHelper.validateNewPassword(password);
+        if (pwError != null) {
+            Toast.makeText(this, pwError, Toast.LENGTH_LONG).show();
             if (edtRegisterPassword != null) edtRegisterPassword.requestFocus();
             return;
         }

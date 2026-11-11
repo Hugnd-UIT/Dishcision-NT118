@@ -16,6 +16,7 @@ import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 
 import com.example.dishcision.network.ApiClient;
+import com.example.dishcision.network.AuthHelper;
 import com.example.dishcision.network.AuthResponse;
 import com.example.dishcision.network.ChangePasswordRequest;
 
@@ -113,21 +114,31 @@ public class ChangePasswordActivity extends AppCompatActivity {
         if (btnUpdatePassword != null) {
             btnUpdatePassword.setOnClickListener(v -> {
                 String currentPass = edtCurrentPassword != null ? edtCurrentPassword.getText().toString().trim() : "";
-                String newPass = edtNewPassword != null ? edtNewPassword.getText().toString().trim() : "";
-                String confirmPass = edtConfirmNewPassword != null ? edtConfirmNewPassword.getText().toString().trim() : "";
+                String newPass = edtNewPassword != null ? edtNewPassword.getText().toString() : "";
+                String confirmPass = edtConfirmNewPassword != null ? edtConfirmNewPassword.getText().toString() : "";
 
                 if (currentPass.isEmpty()) {
                     Toast.makeText(this, "Vui lòng nhập mật khẩu hiện tại!", Toast.LENGTH_SHORT).show();
+                    if (edtCurrentPassword != null) edtCurrentPassword.requestFocus();
                     return;
                 }
 
-                if (newPass.isEmpty() || newPass.length() < 8) {
-                    Toast.makeText(this, "Mật khẩu mới phải từ 8 ký tự trở lên!", Toast.LENGTH_SHORT).show();
+                String pwError = AuthHelper.validateNewPassword(newPass);
+                if (pwError != null) {
+                    Toast.makeText(this, pwError, Toast.LENGTH_LONG).show();
+                    if (edtNewPassword != null) edtNewPassword.requestFocus();
+                    return;
+                }
+
+                if (newPass.equals(currentPass)) {
+                    Toast.makeText(this, "Mật khẩu mới không được trùng với mật khẩu hiện tại!", Toast.LENGTH_LONG).show();
+                    if (edtNewPassword != null) edtNewPassword.requestFocus();
                     return;
                 }
 
                 if (!newPass.equals(confirmPass)) {
                     Toast.makeText(this, "Mật khẩu xác nhận không trùng khớp!", Toast.LENGTH_SHORT).show();
+                    if (edtConfirmNewPassword != null) edtConfirmNewPassword.requestFocus();
                     return;
                 }
 

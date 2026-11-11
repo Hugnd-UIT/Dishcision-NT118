@@ -108,4 +108,33 @@ public class AuthHelper {
         activity.startActivity(intent);
         activity.finish();
     }
+
+    /** Validates password policy matching backend rules; returns null if valid, otherwise error text. */
+    public static String validateNewPassword(String password) {
+        if (password == null || password.isEmpty()) {
+            return "Vui lòng nhập mật khẩu!";
+        }
+        boolean hasLower = false;
+        boolean hasUpper = false;
+        boolean hasDigit = false;
+        boolean hasSpecial = false;
+        for (int i = 0; i < password.length(); i++) {
+            char c = password.charAt(i);
+            if (Character.isWhitespace(c)) {
+                return "Mật khẩu không được chứa khoảng trắng!";
+            }
+            if (c >= 'a' && c <= 'z') hasLower = true;
+            else if (c >= 'A' && c <= 'Z') hasUpper = true;
+            else if (c >= '0' && c <= '9') hasDigit = true;
+            else hasSpecial = true;
+        }
+        if (password.length() < 8 || password.length() > 100) {
+            return "Mật khẩu phải từ 8 đến 100 ký tự!";
+        }
+        if (!hasLower) return "Mật khẩu phải có ít nhất 1 chữ thường (a-z)!";
+        if (!hasUpper) return "Mật khẩu phải có ít nhất 1 chữ hoa (A-Z)!";
+        if (!hasDigit) return "Mật khẩu phải có ít nhất 1 chữ số (0-9)!";
+        if (!hasSpecial) return "Mật khẩu phải có ít nhất 1 ký tự đặc biệt (VD: @, #, !, $...)!";
+        return null;
+    }
 }

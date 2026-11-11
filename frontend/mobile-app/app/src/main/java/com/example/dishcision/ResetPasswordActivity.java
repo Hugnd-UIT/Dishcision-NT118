@@ -16,8 +16,11 @@ import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 
 import com.example.dishcision.network.ApiClient;
+import com.example.dishcision.network.AuthHelper;
 import com.example.dishcision.network.AuthResponse;
 import com.example.dishcision.network.ResetPasswordRequest;
+
+import org.json.JSONObject;
 
 import retrofit2.Call;
 import retrofit2.Callback;
@@ -139,8 +142,9 @@ public class ResetPasswordActivity extends AppCompatActivity {
             Toast.makeText(this, "Phiên đặt lại mật khẩu không hợp lệ", Toast.LENGTH_SHORT).show();
             return;
         }
-        if (newPassword.length() < 8) {
-            Toast.makeText(this, "Mật khẩu mới phải từ 8 ký tự trở lên", Toast.LENGTH_SHORT).show();
+        String pwError = AuthHelper.validateNewPassword(newPassword);
+        if (pwError != null) {
+            Toast.makeText(this, pwError, Toast.LENGTH_LONG).show();
             if (edtNewPassword != null) edtNewPassword.requestFocus();
             return;
         }
@@ -160,7 +164,16 @@ public class ResetPasswordActivity extends AppCompatActivity {
                     Toast.makeText(ResetPasswordActivity.this, "Đặt lại mật khẩu thành công!", Toast.LENGTH_SHORT).show();
                     navigateToSuccess();
                 } else {
-                    Toast.makeText(ResetPasswordActivity.this, "Không thể đặt lại mật khẩu hoặc liên kết đã hết hạn", Toast.LENGTH_LONG).show();
+                    String errMsg = "Không thể đặt lại mật khẩu hoặc liên kết đã hết hạn";
+                    if (response.errorBody() != null) {
+                        try {
+                            JSONObject json = new JSONObject(response.errorBody().string());
+                            if (json.has("message") && !json.optString("message", "").isEmpty()) {
+                                errMsg = json.getString("message");
+                            }
+                        } catch (Exception ignored) {}
+                    }
+                    Toast.makeText(ResetPasswordActivity.this, errMsg, Toast.LENGTH_LONG).show();
                 }
             }
 

@@ -22,10 +22,20 @@ export const paginationSchema = z.object({
   limit: z.coerce.number().int().min(1).max(100).default(10),
 });
 
+export const strongPasswordSchema = z
+  .string()
+  .min(8, 'Mật khẩu phải từ 8 ký tự trở lên')
+  .max(100, 'Mật khẩu không được vượt quá 100 ký tự')
+  .refine((val) => !/\s/.test(val), 'Mật khẩu không được chứa khoảng trắng')
+  .refine((val) => /[a-z]/.test(val), 'Mật khẩu phải có ít nhất 1 chữ thường')
+  .refine((val) => /[A-Z]/.test(val), 'Mật khẩu phải có ít nhất 1 chữ hoa')
+  .refine((val) => /\d/.test(val), 'Mật khẩu phải có ít nhất 1 chữ số')
+  .refine((val) => /[^A-Za-z0-9\s]/.test(val), 'Mật khẩu phải có ít nhất 1 ký tự đặc biệt');
+
 export const registerSchema = z.object({
   username: z.string().min(3).max(50).optional().or(z.literal('')),
   email: z.string().email(),
-  password: z.string().min(6),
+  password: strongPasswordSchema,
   fullName: z.string().min(1).max(100),
 });
 
@@ -75,13 +85,18 @@ export const resendLogin2FASchema = z.object({
 
 export const resetPasswordSchema = z.object({
   tokenHash: z.string().min(1),
-  newPassword: z.string().min(8),
+  newPassword: strongPasswordSchema,
 });
 
-export const changePasswordSchema = z.object({
-  currentPassword: z.string().min(1),
-  newPassword: z.string().min(8),
-});
+export const changePasswordSchema = z
+  .object({
+    currentPassword: z.string().min(1),
+    newPassword: strongPasswordSchema,
+  })
+  .refine((data) => data.newPassword !== data.currentPassword, {
+    message: 'Mật khẩu mới không được trùng với mật khẩu hiện tại',
+    path: ['newPassword'],
+  });
 
 export const updateProfileSchema = z.object({
   username: z.string().min(3).max(50).regex(/^[a-zA-Z0-9_.]+$/, 'Tên người dùng không hợp lệ').optional(),
