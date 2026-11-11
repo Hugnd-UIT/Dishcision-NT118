@@ -68,6 +68,10 @@ public class UserProfileResponse {
 
         @SerializedName("followingCount")
         public int followingCount;
+
+        /** Whether the signed-in user follows this profile (GET /users/:userId only). */
+        @SerializedName("isFollowing")
+        public boolean isFollowing;
     }
 }
 

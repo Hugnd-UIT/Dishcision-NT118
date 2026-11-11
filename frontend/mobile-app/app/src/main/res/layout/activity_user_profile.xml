@@ -134,6 +134,7 @@
                         android:orientation="vertical">
 
                         <TextView
+                            android:id="@+id/tvPostsCount"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="128"
@@ -158,6 +159,7 @@
                         android:orientation="vertical">
 
                         <TextView
+                            android:id="@+id/tvFollowersCount"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="14.2k"
@@ -182,6 +184,7 @@
                         android:orientation="vertical">
 
                         <TextView
+                            android:id="@+id/tvFollowingCount"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="385"
@@ -220,8 +223,9 @@
                 android:textColor="#6B7280"
                 android:textSize="14sp" />
 
-            <!-- Badges Row -->
+            <!-- Badges Row (no backend data yet: hidden) -->
             <LinearLayout
+                android:visibility="gone"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"
@@ -291,6 +295,7 @@
                         app:tint="#FFFFFF" />
 
                     <TextView
+                            android:id="@+id/tvFollowLabel"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginStart="6dp"

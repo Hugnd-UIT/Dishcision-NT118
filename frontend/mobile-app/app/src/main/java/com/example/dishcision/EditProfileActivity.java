@@ -454,7 +454,13 @@ public class EditProfileActivity extends AppCompatActivity {
                     }
 
                     if (response.isSuccessful() && response.body() != null && response.body().data != null) {
-                        currentAvatarUrl = response.body().data.url;
+                        // Backend returns a relative path (/uploads/...) but PUT /users/me requires an
+                        // absolute URL, so prefix the server root (same as CreatePostActivity).
+                        String uploaded = response.body().data.url;
+                        if (uploaded != null && uploaded.startsWith("/")) {
+                            uploaded = ApiClient.getServerRootUrl() + uploaded;
+                        }
+                        currentAvatarUrl = uploaded != null ? uploaded : "";
                         Toast.makeText(EditProfileActivity.this, "Tải ảnh đại diện lên thành công!", Toast.LENGTH_SHORT).show();
                     } else if (response.code() == 401) {
                         Toast.makeText(EditProfileActivity.this, "Phiên đăng nhập hết hạn, vui lòng đăng nhập lại!", Toast.LENGTH_LONG).show();

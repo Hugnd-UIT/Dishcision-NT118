@@ -60,7 +60,8 @@ export const updateProfileSchema = z.object({
   bio: z.string().max(255).optional(),
   gender: z.enum(['Male', 'Female', 'Other']).optional(),
   dateOfBirth: z.string().optional(),
-  avatarUrl: z.string().url().optional(),
+  // Absolute URL, or a relative path returned by POST /upload (/uploads/images/...).
+  avatarUrl: z.union([z.string().url(), z.string().regex(/^\/uploads\/[\w./-]+$/)]).optional(),
   preferences: z.array(z.string()).optional(),
 });
 
