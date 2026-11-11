@@ -30,6 +30,12 @@ public class TwoFactorSetupResponse {
 
         @SerializedName("otpSent")
         public boolean otpSent;
+
+        @SerializedName("alreadySent")
+        public boolean alreadySent;
+
+        @SerializedName("retryAfterSeconds")
+        public int retryAfterSeconds;
     }
 }
 

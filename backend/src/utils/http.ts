@@ -8,9 +8,14 @@ export function asyncHandler(
   };
 }
 
-export function parsePositiveInt(raw: string | undefined): number | null {
-  if (!raw || !/^\d+$/.test(raw.trim())) return null;
-  const num = Number(raw.trim());
+export function parsePositiveInt(raw: unknown): number | null {
+  if (typeof raw === 'number') {
+    return Number.isSafeInteger(raw) && raw > 0 ? raw : null;
+  }
+  if (typeof raw !== 'string') return null;
+  const trimmed = raw.trim();
+  if (!trimmed || !/^\d+$/.test(trimmed)) return null;
+  const num = Number(trimmed);
   return Number.isSafeInteger(num) && num > 0 ? num : null;
 }
 

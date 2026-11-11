@@ -99,6 +99,9 @@ async function generateUniqueUsername(seedText: string): Promise<string> {
   return candidate;
 }
 
+const OTP_RESEND_COOLDOWN_SEC = 60;
+const OTP_RESEND_COOLDOWN_MS = OTP_RESEND_COOLDOWN_SEC * 1000;
+
 type OtpEmailPurpose = 'reset_password' | 'enable_2fa' | 'login_2fa';
 
 function maskEmail(email: string): string {
@@ -227,6 +230,7 @@ async function issueLoginOr2FAChallenge(
       tempToken,
       email: emailMasked,
       emailMasked,
+      retryAfterSeconds: OTP_RESEND_COOLDOWN_SEC,
     },
   });
 }
@@ -404,8 +408,10 @@ export async function resendLogin2FA(req: Request, res: Response): Promise<void>
     return;
   }
 
-  if (stored.lastSentAt && Date.now() - stored.lastSentAt < 20000) {
-    errorResponse(res, 'Vui lòng đợi vài giây trước khi gửi lại mã', 429);
+  const elapsedMs = stored.lastSentAt ? Date.now() - stored.lastSentAt : OTP_RESEND_COOLDOWN_MS;
+  if (elapsedMs < OTP_RESEND_COOLDOWN_MS) {
+    const waitSec = Math.max(1, Math.ceil((OTP_RESEND_COOLDOWN_MS - elapsedMs) / 1000));
+    errorResponse(res, `Vui lòng đợi ${waitSec} giây trước khi gửi lại mã`, 429);
     return;
   }
 
@@ -417,14 +423,20 @@ export async function resendLogin2FA(req: Request, res: Response): Promise<void>
     lastSentAt: Date.now(),
   };
 
+  const ttl = await redis.ttl(redisKey);
   await redis.set(redisKey, JSON.stringify(updated), 'EX', 600);
   const sent = await sendOtpEmail(stored.email, newOtp, 'login_2fa');
   if (!sent) {
+    await redis.set(redisKey, raw, 'EX', ttl > 0 ? ttl : 600);
     errorResponse(res, 'Không thể gửi email mã xác thực lúc này. Vui lòng thử lại sau.', 503);
     return;
   }
 
-  successResponse(res, { email: maskEmail(stored.email) }, 'Đã gửi lại mã xác thực tới email của bạn');
+  successResponse(
+    res,
+    { email: maskEmail(stored.email), retryAfterSeconds: OTP_RESEND_COOLDOWN_SEC },
+    'Đã gửi lại mã xác thực tới email của bạn'
+  );
 }
 
 // ── Google Auth (Sign in / Auto Sign up) ───
@@ -496,12 +508,22 @@ export async function logout(req: AuthRequest, res: Response): Promise<void> {
 
 export async function forgotPassword(req: Request, res: Response): Promise<void> {
   const normalizedEmail = String(req.body.email).trim().toLowerCase();
+  const cooldownKey = `otp_cooldown:${normalizedEmail}`;
+  const cooldownTtl = await redis.ttl(cooldownKey);
+  if (cooldownTtl > 0) {
+    const waitSec = Math.min(OTP_RESEND_COOLDOWN_SEC, cooldownTtl);
+    errorResponse(res, `Vui lòng đợi ${waitSec} giây trước khi gửi lại mã`, 429);
+    return;
+  }
+
+  await redis.set(cooldownKey, '1', 'EX', OTP_RESEND_COOLDOWN_SEC);
+
   const user = await prisma.user.findFirst({
     where: { email: { equals: normalizedEmail, mode: 'insensitive' } },
   });
 
   if (user) {
-    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const otp = crypto.randomInt(100000, 1000000).toString();
     const tokenHash = crypto.randomBytes(32).toString('hex');
     const expiresAt = new Date(Date.now() + 60 * 60 * 1000);
 
@@ -517,7 +539,11 @@ export async function forgotPassword(req: Request, res: Response): Promise<void>
     sendOtpEmail(normalizedEmail, otp).catch(console.error);
   }
 
-  successResponse(res, { email: normalizedEmail, otpSent: true }, 'If that email exists, an OTP code has been sent');
+  successResponse(
+    res,
+    { email: normalizedEmail, otpSent: true, retryAfterSeconds: OTP_RESEND_COOLDOWN_SEC },
+    'If that email exists, an OTP code has been sent'
+  );
 }
 
 // ── Verify OTP ────────────────────────────
@@ -692,15 +718,19 @@ export async function get2FASetup(req: AuthRequest, res: Response): Promise<void
   if (existingRaw) {
     try {
       const existing = JSON.parse(existingRaw);
-      if (existing.lastSentAt && Date.now() - existing.lastSentAt < 15000) {
+      const elapsedMs = existing.lastSentAt ? Date.now() - existing.lastSentAt : OTP_RESEND_COOLDOWN_MS;
+      if (elapsedMs < OTP_RESEND_COOLDOWN_MS) {
+        const waitSec = Math.max(1, Math.ceil((OTP_RESEND_COOLDOWN_MS - elapsedMs) / 1000));
         res.status(200).json({
           success: true,
           data: {
             email: maskEmail(user.email),
             emailMasked: maskEmail(user.email),
             otpSent: true,
+            alreadySent: true,
+            retryAfterSeconds: waitSec,
           },
-          message: 'Mã xác thực đã được gửi tới email của bạn',
+          message: `Mã xác thực đã được gửi. Vui lòng đợi ${waitSec} giây trước khi gửi lại.`,
         });
         return;
       }
@@ -731,6 +761,8 @@ export async function get2FASetup(req: AuthRequest, res: Response): Promise<void
       email: emailMasked,
       emailMasked,
       otpSent: true,
+      alreadySent: false,
+      retryAfterSeconds: OTP_RESEND_COOLDOWN_SEC,
     },
     message: 'Mã xác thực 6 chữ số đã được gửi tới email của bạn',
   });

@@ -1,6 +1,7 @@
 package com.example.dishcision;
 
 import android.os.Bundle;
+import android.os.CountDownTimer;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
@@ -11,11 +12,13 @@ import android.widget.Toast;
 import androidx.activity.EdgeToEdge;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.content.ContextCompat;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 
 import com.example.dishcision.network.ApiClient;
+import com.example.dishcision.network.AuthHelper;
 import com.example.dishcision.network.TwoFactorSetupResponse;
 import com.example.dishcision.network.TwoFactorStatusResponse;
 import com.example.dishcision.network.TwoFactorVerifyRequest;
@@ -36,6 +39,8 @@ public class Setup2faStep2Activity extends AppCompatActivity {
     private View btnBackGuide;
     private boolean isSubmitting = false;
     private boolean isSendingCode = false;
+    private CountDownTimer resendTimer;
+    private int remainingCooldownSeconds = 0;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -52,6 +57,12 @@ public class Setup2faStep2Activity extends AppCompatActivity {
         initViews();
         setupListeners();
         requestSetupEmailOtp(false);
+    }
+
+    @Override
+    protected void onDestroy() {
+        cancelResendTimer();
+        super.onDestroy();
     }
 
     private void initViews() {
@@ -78,7 +89,10 @@ public class Setup2faStep2Activity extends AppCompatActivity {
         }
 
         if (tvResend2FACode != null) {
-            tvResend2FACode.setOnClickListener(v -> requestSetupEmailOtp(true));
+            tvResend2FACode.setOnClickListener(v -> {
+                if (isSendingCode || remainingCooldownSeconds > 0) return;
+                requestSetupEmailOtp(true);
+            });
         }
 
         if (btnConfirm != null) {
@@ -87,15 +101,14 @@ public class Setup2faStep2Activity extends AppCompatActivity {
     }
 
     private void requestSetupEmailOtp(boolean isManualResend) {
-        if (isSendingCode) return;
+        if (isSendingCode || (isManualResend && remainingCooldownSeconds > 0)) return;
         String authHeader = ApiClient.getAuthHeader(this);
         if (authHeader.isEmpty()) {
             Toast.makeText(this, "Vui lòng đăng nhập lại", Toast.LENGTH_SHORT).show();
             return;
         }
 
-        isSendingCode = true;
-        if (tvResend2FACode != null) tvResend2FACode.setEnabled(false);
+        setSendingResendState(isManualResend);
         if (tvStep2Desc != null && !isManualResend) {
             tvStep2Desc.setText("Đang gửi mã xác nhận gồm 6 chữ số tới email của bạn...");
         }
@@ -105,14 +118,19 @@ public class Setup2faStep2Activity extends AppCompatActivity {
             public void onResponse(@NonNull Call<TwoFactorSetupResponse> call, @NonNull Response<TwoFactorSetupResponse> response) {
                 isSendingCode = false;
                 if (isFinishing() || isDestroyed()) return;
-                if (tvResend2FACode != null) tvResend2FACode.setEnabled(true);
 
                 if (response.isSuccessful() && response.body() != null) {
                     TwoFactorSetupResponse.SetupData data = response.body().data;
                     String emailDisplay = "";
+                    boolean alreadySent = false;
+                    int retryAfterSeconds = AuthHelper.OTP_RESEND_COOLDOWN_SECONDS;
                     if (data != null) {
                         if (data.emailMasked != null && !data.emailMasked.isEmpty()) emailDisplay = data.emailMasked;
                         else if (data.email != null) emailDisplay = data.email;
+                        alreadySent = data.alreadySent;
+                        if (data.retryAfterSeconds > 0) {
+                            retryAfterSeconds = data.retryAfterSeconds;
+                        }
                     }
                     if (tvStep2Desc != null) {
                         tvStep2Desc.setText(emailDisplay.isEmpty()
@@ -120,14 +138,25 @@ public class Setup2faStep2Activity extends AppCompatActivity {
                                 : "Chúng tôi đã gửi mã xác nhận gồm 6 chữ số tới " + emailDisplay + ".");
                     }
                     if (isManualResend) {
-                        Toast.makeText(Setup2faStep2Activity.this, "Đã gửi lại mã xác thực tới email!", Toast.LENGTH_SHORT).show();
+                        String toastMsg = (alreadySent && response.body().message != null
+                                && !response.body().message.trim().isEmpty())
+                                ? response.body().message
+                                : "Đã gửi lại mã xác thực tới email!";
+                        Toast.makeText(Setup2faStep2Activity.this, toastMsg, Toast.LENGTH_SHORT).show();
                     }
+                    startResendCountdown(retryAfterSeconds);
                 } else {
                     String errMsg = parseErrorMessage(response, "Không thể gửi email xác thực");
                     if (tvStep2Desc != null) {
                         tvStep2Desc.setText("Chưa gửi được mã qua email. Bấm Gửi lại mã để thử lại.");
                     }
                     Toast.makeText(Setup2faStep2Activity.this, errMsg, Toast.LENGTH_LONG).show();
+                    if (response.code() == 429) {
+                        int waitSec = AuthHelper.extractCooldownSeconds(errMsg, AuthHelper.OTP_RESEND_COOLDOWN_SECONDS);
+                        startResendCountdown(waitSec);
+                    } else {
+                        resetResendButton();
+                    }
                 }
             }
 
@@ -135,13 +164,71 @@ public class Setup2faStep2Activity extends AppCompatActivity {
             public void onFailure(@NonNull Call<TwoFactorSetupResponse> call, @NonNull Throwable t) {
                 isSendingCode = false;
                 if (isFinishing() || isDestroyed()) return;
-                if (tvResend2FACode != null) tvResend2FACode.setEnabled(true);
+                resetResendButton();
                 if (tvStep2Desc != null) {
                     tvStep2Desc.setText("Lỗi kết nối máy chủ. Bấm Gửi lại mã để thử lại.");
                 }
                 Toast.makeText(Setup2faStep2Activity.this, "Không thể kết nối máy chủ", Toast.LENGTH_SHORT).show();
             }
         });
+    }
+
+    private void startResendCountdown(int seconds) {
+        if (tvResend2FACode == null) return;
+        cancelResendTimer();
+        int targetSeconds = seconds > 0 ? seconds : AuthHelper.OTP_RESEND_COOLDOWN_SECONDS;
+        remainingCooldownSeconds = targetSeconds;
+        tvResend2FACode.setEnabled(false);
+        tvResend2FACode.setClickable(false);
+        tvResend2FACode.setTextColor(ContextCompat.getColor(this, R.color.text_gray));
+        tvResend2FACode.setText("Gửi lại mã sau " + targetSeconds + "s");
+
+        resendTimer = new CountDownTimer(targetSeconds * 1000L, 1000L) {
+            @Override
+            public void onTick(long millisUntilFinished) {
+                if (isFinishing() || isDestroyed() || tvResend2FACode == null) return;
+                int sec = Math.min(targetSeconds, Math.max(1, Math.round(millisUntilFinished / 1000.0f)));
+                remainingCooldownSeconds = sec;
+                tvResend2FACode.setText("Gửi lại mã sau " + sec + "s");
+            }
+
+            @Override
+            public void onFinish() {
+                resendTimer = null;
+                remainingCooldownSeconds = 0;
+                if (isFinishing() || isDestroyed()) return;
+                if (!isSendingCode) {
+                    resetResendButton();
+                }
+            }
+        }.start();
+    }
+
+    private void setSendingResendState(boolean isManualResend) {
+        isSendingCode = true;
+        cancelResendTimer();
+        remainingCooldownSeconds = 0;
+        if (tvResend2FACode == null) return;
+        tvResend2FACode.setEnabled(false);
+        tvResend2FACode.setClickable(false);
+        tvResend2FACode.setTextColor(ContextCompat.getColor(this, R.color.text_gray));
+        tvResend2FACode.setText(isManualResend ? "Đang gửi lại mã..." : "Đang gửi mã...");
+    }
+
+    private void resetResendButton() {
+        remainingCooldownSeconds = 0;
+        if (tvResend2FACode == null) return;
+        tvResend2FACode.setEnabled(true);
+        tvResend2FACode.setClickable(true);
+        tvResend2FACode.setTextColor(ContextCompat.getColor(this, R.color.primary));
+        tvResend2FACode.setText("Gửi lại mã xác thực qua email");
+    }
+
+    private void cancelResendTimer() {
+        if (resendTimer != null) {
+            resendTimer.cancel();
+            resendTimer = null;
+        }
     }
 
     private void submit2FACodeToBackend() {

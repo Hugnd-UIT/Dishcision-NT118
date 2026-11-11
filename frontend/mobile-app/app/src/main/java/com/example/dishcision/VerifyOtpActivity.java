@@ -2,6 +2,8 @@ package com.example.dishcision;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.os.CountDownTimer;
+import android.os.SystemClock;
 import android.view.View;
 import android.widget.EditText;
 import android.widget.ImageView;
@@ -11,6 +13,7 @@ import android.widget.Toast;
 
 import androidx.activity.EdgeToEdge;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.content.ContextCompat;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
@@ -35,6 +38,7 @@ public class VerifyOtpActivity extends AppCompatActivity {
     public static final String EXTRA_EMAIL = "extra_email";
     public static final String EXTRA_MODE = "extra_mode";
     public static final String EXTRA_TEMP_TOKEN = "extra_temp_token";
+    public static final String EXTRA_RETRY_AFTER_SECONDS = "extra_retry_after_seconds";
     public static final String MODE_FORGOT_PASSWORD = "forgot_password";
     public static final String MODE_2FA_LOGIN = "2fa_login";
 
@@ -54,9 +58,16 @@ public class VerifyOtpActivity extends AppCompatActivity {
     private TextView tvResendCode;
     private TextView tvChangeEmail;
 
+    private static final String STATE_COOLDOWN_END_MS = "state_cooldown_end_ms";
+
     private String userEmail = "";
     private String mode = MODE_FORGOT_PASSWORD;
     private String tempToken = "";
+    private int initialCooldownSeconds = AuthHelper.OTP_RESEND_COOLDOWN_SECONDS;
+    private CountDownTimer resendTimer;
+    private int remainingCooldownSeconds = 0;
+    private long cooldownEndElapsedMs = 0L;
+    private boolean isResending = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -74,6 +85,29 @@ public class VerifyOtpActivity extends AppCompatActivity {
         initViews();
         setupData();
         setupListeners();
+        if (savedInstanceState != null && savedInstanceState.containsKey(STATE_COOLDOWN_END_MS)) {
+            long savedEnd = savedInstanceState.getLong(STATE_COOLDOWN_END_MS, 0L);
+            long remainingMs = savedEnd - SystemClock.elapsedRealtime();
+            if (remainingMs > 0) {
+                startResendCountdown((int) Math.ceil(remainingMs / 1000.0));
+            } else {
+                resetResendButton();
+            }
+        } else {
+            startResendCountdown(initialCooldownSeconds);
+        }
+    }
+
+    @Override
+    protected void onSaveInstanceState(Bundle outState) {
+        super.onSaveInstanceState(outState);
+        outState.putLong(STATE_COOLDOWN_END_MS, cooldownEndElapsedMs);
+    }
+
+    @Override
+    protected void onDestroy() {
+        cancelResendTimer();
+        super.onDestroy();
     }
 
     private void initViews() {
@@ -110,6 +144,10 @@ public class VerifyOtpActivity extends AppCompatActivity {
             String passedToken = intent.getStringExtra(EXTRA_TEMP_TOKEN);
             if (passedToken != null) {
                 tempToken = passedToken.trim();
+            }
+            int passedCooldown = intent.getIntExtra(EXTRA_RETRY_AFTER_SECONDS, AuthHelper.OTP_RESEND_COOLDOWN_SECONDS);
+            if (passedCooldown > 0) {
+                initialCooldownSeconds = passedCooldown;
             }
         }
 
@@ -192,6 +230,7 @@ public class VerifyOtpActivity extends AppCompatActivity {
 
         if (tvResendCode != null) {
             tvResendCode.setOnClickListener(v -> {
+                if (isResending || remainingCooldownSeconds > 0) return;
                 if (MODE_2FA_LOGIN.equals(mode)) {
                     resend2FALoginOtp();
                     return;
@@ -200,19 +239,37 @@ public class VerifyOtpActivity extends AppCompatActivity {
                     Toast.makeText(this, "Thiếu thông tin email khôi phục", Toast.LENGTH_SHORT).show();
                     return;
                 }
+                setResendingState();
                 ForgotPasswordRequest req = new ForgotPasswordRequest(userEmail);
                 ApiClient.getApiService().forgotPassword(req).enqueue(new Callback<AuthResponse>() {
                     @Override
                     public void onResponse(Call<AuthResponse> call, Response<AuthResponse> response) {
+                        isResending = false;
+                        if (isFinishing() || isDestroyed()) return;
                         if (response.isSuccessful()) {
                             Toast.makeText(VerifyOtpActivity.this, "Đã gửi lại mã OTP tới email!", Toast.LENGTH_SHORT).show();
+                            int cooldownSec = (response.body() != null && response.body().getData() != null
+                                    && response.body().getData().retryAfterSeconds > 0)
+                                    ? response.body().getData().retryAfterSeconds
+                                    : AuthHelper.OTP_RESEND_COOLDOWN_SECONDS;
+                            startResendCountdown(cooldownSec);
                         } else {
-                            Toast.makeText(VerifyOtpActivity.this, "Không thể gửi lại mã (mã " + response.code() + ")", Toast.LENGTH_SHORT).show();
+                            String err = parseErrorMessage(response, "Không thể gửi lại mã (mã " + response.code() + ")");
+                            Toast.makeText(VerifyOtpActivity.this, err, Toast.LENGTH_SHORT).show();
+                            if (response.code() == 429) {
+                                int waitSec = AuthHelper.extractCooldownSeconds(err, AuthHelper.OTP_RESEND_COOLDOWN_SECONDS);
+                                startResendCountdown(waitSec);
+                            } else {
+                                resetResendButton();
+                            }
                         }
                     }
 
                     @Override
                     public void onFailure(Call<AuthResponse> call, Throwable t) {
+                        isResending = false;
+                        if (isFinishing() || isDestroyed()) return;
+                        resetResendButton();
                         Toast.makeText(VerifyOtpActivity.this, "Lỗi kết nối máy chủ", Toast.LENGTH_SHORT).show();
                     }
                 });
@@ -269,27 +326,101 @@ public class VerifyOtpActivity extends AppCompatActivity {
             finish();
             return;
         }
-        tvResendCode.setEnabled(false);
+        setResendingState();
         ApiClient.getApiService().resendLogin2FA(new ResendLogin2FARequest(tempToken)).enqueue(new Callback<AuthResponse>() {
             @Override
             public void onResponse(Call<AuthResponse> call, Response<AuthResponse> response) {
+                isResending = false;
                 if (isFinishing() || isDestroyed()) return;
-                tvResendCode.setEnabled(true);
                 if (response.isSuccessful()) {
                     Toast.makeText(VerifyOtpActivity.this, "Đã gửi lại mã xác thực tới email!", Toast.LENGTH_SHORT).show();
+                    int cooldownSec = (response.body() != null && response.body().getData() != null
+                            && response.body().getData().retryAfterSeconds > 0)
+                            ? response.body().getData().retryAfterSeconds
+                            : AuthHelper.OTP_RESEND_COOLDOWN_SECONDS;
+                    startResendCountdown(cooldownSec);
                 } else {
                     String err = parseErrorMessage(response, "Không thể gửi lại mã (mã " + response.code() + ")");
                     Toast.makeText(VerifyOtpActivity.this, err, Toast.LENGTH_SHORT).show();
+                    if (response.code() == 429) {
+                        int waitSec = AuthHelper.extractCooldownSeconds(err, AuthHelper.OTP_RESEND_COOLDOWN_SECONDS);
+                        startResendCountdown(waitSec);
+                    } else {
+                        resetResendButton();
+                    }
                 }
             }
 
             @Override
             public void onFailure(Call<AuthResponse> call, Throwable t) {
+                isResending = false;
                 if (isFinishing() || isDestroyed()) return;
-                tvResendCode.setEnabled(true);
+                resetResendButton();
                 Toast.makeText(VerifyOtpActivity.this, "Lỗi kết nối máy chủ", Toast.LENGTH_SHORT).show();
             }
         });
+    }
+
+    private void startResendCountdown(int seconds) {
+        if (tvResendCode == null) return;
+        cancelResendTimer();
+        int targetSeconds = seconds > 0 ? seconds : AuthHelper.OTP_RESEND_COOLDOWN_SECONDS;
+        remainingCooldownSeconds = targetSeconds;
+        cooldownEndElapsedMs = SystemClock.elapsedRealtime() + targetSeconds * 1000L;
+        tvResendCode.setEnabled(false);
+        tvResendCode.setClickable(false);
+        tvResendCode.setTextColor(ContextCompat.getColor(this, R.color.text_gray));
+        tvResendCode.setText("Gửi lại mã sau " + targetSeconds + "s");
+
+        resendTimer = new CountDownTimer(targetSeconds * 1000L, 1000L) {
+            @Override
+            public void onTick(long millisUntilFinished) {
+                if (isFinishing() || isDestroyed() || tvResendCode == null) return;
+                int sec = Math.min(targetSeconds, Math.max(1, Math.round(millisUntilFinished / 1000.0f)));
+                remainingCooldownSeconds = sec;
+                tvResendCode.setText("Gửi lại mã sau " + sec + "s");
+            }
+
+            @Override
+            public void onFinish() {
+                resendTimer = null;
+                remainingCooldownSeconds = 0;
+                cooldownEndElapsedMs = 0L;
+                if (isFinishing() || isDestroyed()) return;
+                if (!isResending) {
+                    resetResendButton();
+                }
+            }
+        }.start();
+    }
+
+    private void setResendingState() {
+        isResending = true;
+        cancelResendTimer();
+        remainingCooldownSeconds = 0;
+        cooldownEndElapsedMs = 0L;
+        if (tvResendCode == null) return;
+        tvResendCode.setEnabled(false);
+        tvResendCode.setClickable(false);
+        tvResendCode.setTextColor(ContextCompat.getColor(this, R.color.text_gray));
+        tvResendCode.setText("Đang gửi lại mã...");
+    }
+
+    private void resetResendButton() {
+        remainingCooldownSeconds = 0;
+        cooldownEndElapsedMs = 0L;
+        if (tvResendCode == null) return;
+        tvResendCode.setEnabled(true);
+        tvResendCode.setClickable(true);
+        tvResendCode.setTextColor(ContextCompat.getColor(this, R.color.primary));
+        tvResendCode.setText("Gửi lại mã");
+    }
+
+    private void cancelResendTimer() {
+        if (resendTimer != null) {
+            resendTimer.cancel();
+            resendTimer = null;
+        }
     }
 
     private String parseErrorMessage(Response<?> response, String fallback) {

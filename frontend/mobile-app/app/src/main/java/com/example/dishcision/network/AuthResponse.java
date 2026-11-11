@@ -77,5 +77,8 @@ public class AuthResponse {
 
         @SerializedName("emailMasked")
         public String emailMasked;
+
+        @SerializedName("retryAfterSeconds")
+        public int retryAfterSeconds;
     }
 }

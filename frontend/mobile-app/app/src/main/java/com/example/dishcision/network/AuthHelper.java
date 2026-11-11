@@ -14,6 +14,8 @@ import retrofit2.Response;
 
 public class AuthHelper {
 
+    public static final int OTP_RESEND_COOLDOWN_SECONDS = 60;
+
     /** Per-account values cached in DishcisionPrefs; device-level settings (notifications…) are kept. */
     private static final String[] USER_CACHE_KEYS = {
             "user_id", "user_name", "user_username", "user_email", "avatar_url",
@@ -136,5 +138,20 @@ public class AuthHelper {
         if (!hasDigit) return "Mật khẩu phải có ít nhất 1 chữ số (0-9)!";
         if (!hasSpecial) return "Mật khẩu phải có ít nhất 1 ký tự đặc biệt (VD: @, #, !, $...)!";
         return null;
+    }
+
+    /** Extracts positive remaining cooldown seconds from a backend 429 message; falls back otherwise. */
+    public static int extractCooldownSeconds(String message, int fallbackSeconds) {
+        if (message == null || message.trim().isEmpty()) return fallbackSeconds;
+        java.util.regex.Matcher matcher = java.util.regex.Pattern.compile("(\\d+)\\s*giây").matcher(message);
+        if (matcher.find()) {
+            try {
+                int parsed = Integer.parseInt(matcher.group(1));
+                if (parsed > 0 && parsed <= OTP_RESEND_COOLDOWN_SECONDS) {
+                    return parsed;
+                }
+            } catch (NumberFormatException ignored) {}
+        }
+        return fallbackSeconds;
     }
 }

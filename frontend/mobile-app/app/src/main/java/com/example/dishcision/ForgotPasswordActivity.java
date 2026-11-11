@@ -16,8 +16,11 @@ import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 
 import com.example.dishcision.network.ApiClient;
+import com.example.dishcision.network.AuthHelper;
 import com.example.dishcision.network.AuthResponse;
 import com.example.dishcision.network.ForgotPasswordRequest;
+
+import org.json.JSONObject;
 
 import retrofit2.Call;
 import retrofit2.Callback;
@@ -92,26 +95,45 @@ public class ForgotPasswordActivity extends AppCompatActivity {
         ApiClient.getApiService().forgotPassword(request).enqueue(new Callback<AuthResponse>() {
             @Override
             public void onResponse(Call<AuthResponse> call, Response<AuthResponse> response) {
+                if (isFinishing() || isDestroyed()) return;
                 if (btnSendCode != null) btnSendCode.setEnabled(true);
                 if (response.isSuccessful()) {
                     Toast.makeText(ForgotPasswordActivity.this, "Đã gửi mã OTP nếu email tồn tại trên hệ thống", Toast.LENGTH_SHORT).show();
-                    navigateToOtp(email);
+                    int retrySec = (response.body() != null && response.body().getData() != null
+                            && response.body().getData().retryAfterSeconds > 0)
+                            ? response.body().getData().retryAfterSeconds
+                            : AuthHelper.OTP_RESEND_COOLDOWN_SECONDS;
+                    navigateToOtp(email, retrySec);
                 } else {
-                    Toast.makeText(ForgotPasswordActivity.this, "Không thể gửi yêu cầu (mã " + response.code() + ")", Toast.LENGTH_LONG).show();
+                    String errMsg = parseErrorMessage(response, "Không thể gửi yêu cầu (mã " + response.code() + ")");
+                    Toast.makeText(ForgotPasswordActivity.this, errMsg, Toast.LENGTH_LONG).show();
                 }
             }
 
             @Override
             public void onFailure(Call<AuthResponse> call, Throwable t) {
+                if (isFinishing() || isDestroyed()) return;
                 if (btnSendCode != null) btnSendCode.setEnabled(true);
                 Toast.makeText(ForgotPasswordActivity.this, "Lỗi kết nối máy chủ: " + t.getMessage(), Toast.LENGTH_LONG).show();
             }
         });
     }
 
-    private void navigateToOtp(String email) {
+    private String parseErrorMessage(Response<?> response, String fallback) {
+        try {
+            if (response.errorBody() != null) {
+                String raw = response.errorBody().string();
+                String msg = new JSONObject(raw).optString("message", "").trim();
+                if (!msg.isEmpty()) return msg;
+            }
+        } catch (Exception ignored) {}
+        return fallback;
+    }
+
+    private void navigateToOtp(String email, int retryAfterSeconds) {
         Intent intent = new Intent(ForgotPasswordActivity.this, VerifyOtpActivity.class);
         intent.putExtra(VerifyOtpActivity.EXTRA_EMAIL, email);
+        intent.putExtra(VerifyOtpActivity.EXTRA_RETRY_AFTER_SECONDS, retryAfterSeconds);
         startActivity(intent);
     }
 

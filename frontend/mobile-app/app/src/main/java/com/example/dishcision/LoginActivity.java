@@ -219,7 +219,10 @@ public class LoginActivity extends AppCompatActivity {
                                 ? data.emailMasked
                                 : (data.email != null && !data.email.isEmpty() ? data.email : email);
                         Toast.makeText(LoginActivity.this, "Đã gửi mã xác thực 2FA về email!", Toast.LENGTH_SHORT).show();
-                        openTwoFactorVerification(data.tempToken, emailDisplay);
+                        int retrySec = data.retryAfterSeconds > 0
+                                ? data.retryAfterSeconds
+                                : AuthHelper.OTP_RESEND_COOLDOWN_SECONDS;
+                        openTwoFactorVerification(data.tempToken, emailDisplay, retrySec);
                         return;
                     }
                     if (TokenManager.isValidJwtToken(response.body().getToken())) {
@@ -293,11 +296,12 @@ public class LoginActivity extends AppCompatActivity {
         tvTerms.setMovementMethod(LinkMovementMethod.getInstance());
     }
 
-    private void openTwoFactorVerification(String tempToken, String emailDisplay) {
+    private void openTwoFactorVerification(String tempToken, String emailDisplay, int retryAfterSeconds) {
         Intent intent = new Intent(LoginActivity.this, VerifyOtpActivity.class);
         intent.putExtra(VerifyOtpActivity.EXTRA_MODE, VerifyOtpActivity.MODE_2FA_LOGIN);
         intent.putExtra(VerifyOtpActivity.EXTRA_TEMP_TOKEN, tempToken);
         intent.putExtra(VerifyOtpActivity.EXTRA_EMAIL, emailDisplay);
+        intent.putExtra(VerifyOtpActivity.EXTRA_RETRY_AFTER_SECONDS, retryAfterSeconds);
         startActivity(intent);
     }
 
