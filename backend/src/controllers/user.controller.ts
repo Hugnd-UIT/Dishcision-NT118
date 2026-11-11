@@ -10,8 +10,29 @@ const USER_PUBLIC_SELECT = {
   _count: { select: { followers: true, following: true, posts: true } },
 };
 
+// Explicit whitelist for the owner's own profile: never select passwordHash / refreshToken.
+const USER_PRIVATE_SELECT = {
+  ...USER_PUBLIC_SELECT,
+  email: true, gender: true, dateOfBirth: true, accountStatus: true, createdAt: true,
+  preferences: { include: { preference: true } },
+};
+
+/** Resolves the caller's id from a real, verifiable access token (ignores the demo fallback in the
+ *  auth middleware). Sends 401 and returns null when there is none. */
+function requireTokenUserId(req: AuthRequest, res: Response): number | null {
+  const header = req.headers.authorization;
+  const token = header?.startsWith('Bearer ') ? header.split(' ')[1] : '';
+  try {
+    return verifyAccessToken(token).userId;
+  } catch {
+    errorResponse(res, 'Invalid or expired token', 401);
+    return null;
+  }
+}
+
 export function formatUser(user: any) {
-  const { id, _count, preferences, ...rest } = user;
+  // passwordHash / refreshToken are dropped defensively in case a caller passes a full User row.
+  const { id, _count, preferences, passwordHash, refreshToken, ...rest } = user;
   const prefNames = preferences
     ? preferences.map((up: any) => (up.preference ? up.preference.name : up.name || up)).filter(Boolean)
     : [];
@@ -39,25 +60,13 @@ export function formatUserPrivate(user: any) {
 // ── GET /users/me ─────────────────────────
 
 export async function getMe(req: AuthRequest, res: Response): Promise<void> {
-  const userId = req.user?.userId || 11;
+  const userId = requireTokenUserId(req, res);
+  if (userId === null) return;
 
-  let user = await prisma.user.findUnique({
+  const user = await prisma.user.findUnique({
     where: { id: userId },
-    include: {
-      _count: { select: { followers: true, following: true, posts: true } },
-      preferences: { include: { preference: true } },
-    },
+    select: USER_PRIVATE_SELECT,
   });
-
-  if (!user) {
-    user = await prisma.user.findFirst({
-      where: { role: 'User' },
-      include: {
-        _count: { select: { followers: true, following: true, posts: true } },
-        preferences: { include: { preference: true } },
-      },
-    });
-  }
 
   if (!user) {
     errorResponse(res, 'User not found', 404);
@@ -70,9 +79,9 @@ export async function getMe(req: AuthRequest, res: Response): Promise<void> {
 // ── PUT /users/me ─────────────────────────
 
 export async function updateMe(req: AuthRequest, res: Response): Promise<void> {
-  const userId = req.user!.userId;
+  const userId = requireTokenUserId(req, res);
+  if (userId === null) return;
   const { username, fullName, bio, gender, dateOfBirth, avatarUrl, preferences } = req.body;
-  console.log('updateMe userId:', userId, 'preferences:', preferences);
 
   if (username) {
     const existing = await prisma.user.findFirst({
@@ -115,10 +124,7 @@ export async function updateMe(req: AuthRequest, res: Response): Promise<void> {
       dateOfBirth: dateOfBirth ? new Date(dateOfBirth) : undefined,
       avatarUrl,
     },
-    include: {
-      _count: { select: { followers: true, following: true } },
-      preferences: { include: { preference: true } },
-    },
+    select: USER_PRIVATE_SELECT,
   });
 
   await delCache(`user:${userId}`);
@@ -129,34 +135,67 @@ export async function updateMe(req: AuthRequest, res: Response): Promise<void> {
 
 export async function getUserById(req: AuthRequest, res: Response): Promise<void> {
   const userId = parseInt(req.params.userId);
+  // Non-numeric ids (e.g. "user_linhdan") used to reach Prisma as NaN and crash the request.
+  if (!/^\d+$/.test(req.params.userId) || userId <= 0) {
+    errorResponse(res, 'Invalid userId', 400);
+    return;
+  }
 
   const cacheKey = `user:${userId}`;
-  const cached = await getCache(cacheKey);
-  if (cached) { successResponse(res, cached); return; }
+  let formatted: any = await getCache(cacheKey);
+  if (!formatted) {
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: USER_PUBLIC_SELECT,
+    });
+    if (!user) { errorResponse(res, 'User not found', 404); return; }
+    formatted = formatUser(user);
+    await setCache(cacheKey, formatted, CACHE_TTL.USER_PROFILE);
+  }
 
-  const user = await prisma.user.findUnique({
-    where: { id: userId },
-    select: USER_PUBLIC_SELECT,
-  });
-  if (!user) { errorResponse(res, 'User not found', 404); return; }
+  // isFollowing is viewer-specific, so it is computed per request and never cached.
+  let isFollowing = false;
+  const header = req.headers.authorization;
+  if (header?.startsWith('Bearer ')) {
+    try {
+      const viewerId = verifyAccessToken(header.split(' ')[1]).userId;
+      if (viewerId !== userId) {
+        const follow = await prisma.follow.findUnique({
+          where: { followerId_followingId: { followerId: viewerId, followingId: userId } },
+        });
+        isFollowing = !!follow;
+      }
+    } catch { /* guest / invalid token: not following */ }
+  }
 
-  const formatted = formatUser(user);
-  await setCache(cacheKey, formatted, CACHE_TTL.USER_PROFILE);
-  successResponse(res, formatted);
+  successResponse(res, { ...formatted, isFollowing });
 }
 
 // ── GET /users/:userId/posts ──────────────
 
 export async function getUserPosts(req: AuthRequest, res: Response): Promise<void> {
   const isMe = req.params.userId === 'me' || !req.params.userId;
-  const userId = isMe ? (req.user?.userId || 11) : (parseInt(req.params.userId) || 11);
-  const page = parseInt(req.query.page as string) || 1;
-  const limit = parseInt(req.query.limit as string) || 10;
+  let userId: number;
+  if (isMe) {
+    const me = requireTokenUserId(req, res);
+    if (me === null) return;
+    userId = me;
+  } else {
+    userId = parseInt(req.params.userId);
+    if (!Number.isInteger(userId) || userId <= 0) {
+      errorResponse(res, 'Invalid userId', 400);
+      return;
+    }
+  }
+  const page = Math.max(parseInt(req.query.page as string) || 1, 1);
+  const limit = Math.min(Math.max(parseInt(req.query.limit as string) || 10, 1), 50);
   const skip = (page - 1) * limit;
 
-  let [posts, total] = await Promise.all([
+  // Only this user's own posts — an empty profile must stay empty.
+  const where = { authorId: userId, status: 'Active' as const };
+  const [posts, total] = await Promise.all([
     prisma.post.findMany({
-      where: { authorId: userId, status: 'Active' },
+      where,
       include: {
         author: { select: USER_PUBLIC_SELECT },
         images: true,
@@ -166,25 +205,8 @@ export async function getUserPosts(req: AuthRequest, res: Response): Promise<voi
       skip,
       take: limit,
     }),
-    prisma.post.count({ where: { authorId: userId, status: 'Active' } }),
+    prisma.post.count({ where }),
   ]);
-
-  if (posts.length === 0) {
-    [posts, total] = await Promise.all([
-      prisma.post.findMany({
-        where: { status: 'Active' },
-        include: {
-          author: { select: USER_PUBLIC_SELECT },
-          images: true,
-          _count: { select: { likes: true, comments: true, shares: true } },
-        },
-        orderBy: { createdAt: 'desc' },
-        skip,
-        take: limit,
-      }),
-      prisma.post.count({ where: { status: 'Active' } }),
-    ]);
-  }
 
   const formatted = await attachSavedFlags(posts.map(formatPost), req.user?.userId);
   paginatedResponse(res, formatted, { page, limit, total });

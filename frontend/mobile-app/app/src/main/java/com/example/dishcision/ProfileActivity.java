@@ -382,6 +382,15 @@ public class ProfileActivity extends AppCompatActivity {
                                 .apply();
                         renderTasteTags(user.preferences);
                     }
+                } else if (response.code() == 401) {
+                    // Expired/invalid session: don't keep showing the layout's mock profile.
+                    android.widget.Toast.makeText(ProfileActivity.this,
+                            "Phiên đăng nhập hết hạn, vui lòng đăng nhập lại", android.widget.Toast.LENGTH_LONG).show();
+                    com.example.dishcision.network.AuthHelper.clearLocalSession(ProfileActivity.this);
+                    Intent intent = new Intent(ProfileActivity.this, LoginActivity.class);
+                    intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+                    startActivity(intent);
+                    finish();
                 }
             }
 
