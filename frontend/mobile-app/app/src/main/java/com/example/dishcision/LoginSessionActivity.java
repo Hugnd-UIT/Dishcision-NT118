@@ -117,6 +117,8 @@ public class LoginSessionActivity extends AppCompatActivity {
             public void onResponse(@NonNull Call<SessionsResponse> call, @NonNull Response<SessionsResponse> response) {
                 if (response.isSuccessful() && response.body() != null) {
                     applySessionList(response.body().getData());
+                } else if (response.code() == 401) {
+                    AuthHelper.handleUnauthorized(LoginSessionActivity.this);
                 } else {
                     Toast.makeText(LoginSessionActivity.this, "Không thể tải danh sách phiên đăng nhập", Toast.LENGTH_SHORT).show();
                 }
@@ -158,6 +160,8 @@ public class LoginSessionActivity extends AppCompatActivity {
                 if (response.isSuccessful() && response.body() != null) {
                     applySessionList(response.body().getData());
                     Toast.makeText(LoginSessionActivity.this, "Đã đăng xuất phiên này thành công", Toast.LENGTH_SHORT).show();
+                } else if (response.code() == 401) {
+                    AuthHelper.handleUnauthorized(LoginSessionActivity.this);
                 } else {
                     Toast.makeText(LoginSessionActivity.this, "Không thể thu hồi phiên (mã " + response.code() + ")", Toast.LENGTH_SHORT).show();
                 }
@@ -193,6 +197,8 @@ public class LoginSessionActivity extends AppCompatActivity {
                 if (response.isSuccessful() && response.body() != null) {
                     applySessionList(response.body().getData());
                     Toast.makeText(LoginSessionActivity.this, "Đã đăng xuất tất cả các phiên khác", Toast.LENGTH_SHORT).show();
+                } else if (response.code() == 401) {
+                    AuthHelper.handleUnauthorized(LoginSessionActivity.this);
                 } else {
                     Toast.makeText(LoginSessionActivity.this, "Không thể đăng xuất các phiên khác", Toast.LENGTH_SHORT).show();
                 }

@@ -5,6 +5,7 @@ import { successResponse, paginatedResponse, errorResponse } from '../utils/resp
 import { parsePagination, parsePositiveInt } from '../utils/http';
 import { AuthRequest } from '../middlewares/auth.middleware';
 import { getExpiresIn } from '../utils/auth';
+import crypto from 'crypto';
 
 const USER_PUBLIC_SELECT = {
   id: true,
@@ -628,23 +629,42 @@ export async function getMyActivity(req: AuthRequest, res: Response): Promise<vo
 export async function deleteMe(req: AuthRequest, res: Response): Promise<void> {
   const userId = req.user!.userId;
   const token = req.headers.authorization?.slice(7).trim() || '';
+  const sessions = await prisma.userSession.findMany({
+    where: { userId },
+    select: { tokenHash: true },
+  });
 
   let mode: 'deleted' | 'deactivated' = 'deleted';
   try {
     await prisma.user.delete({ where: { id: userId } });
   } catch {
     mode = 'deactivated';
-    await prisma.user.update({
-      where: { id: userId },
-      data: { accountStatus: 'Suspended', refreshToken: null },
-    });
+    await prisma.$transaction([
+      prisma.user.update({
+        where: { id: userId },
+        data: { accountStatus: 'Suspended', refreshToken: null },
+      }),
+      prisma.userSession.deleteMany({ where: { userId } }),
+    ]);
   }
 
+  const ttl = getExpiresIn();
+  const blacklistOps: Promise<any>[] = [];
   if (token) {
-    await redis.set(`blacklist:${token}`, '1', 'EX', getExpiresIn());
+    const currentHash = crypto.createHash('sha256').update(token).digest('hex');
+    blacklistOps.push(
+      redis.set(`blacklist:${token}`, '1', 'EX', ttl),
+      redis.set(`blacklist_hash:${currentHash}`, '1', 'EX', ttl)
+    );
+  }
+  for (const s of sessions) {
+    if (s.tokenHash) {
+      blacklistOps.push(redis.set(`blacklist_hash:${s.tokenHash}`, '1', 'EX', ttl));
+    }
   }
   const keys = ['privacy', 'blocked', 'restricted', 'sessions', '2fa_enabled'].map((k) => `user:${userId}:${k}`);
-  await redis.del(...keys);
+  blacklistOps.push(redis.del(...keys));
+  await Promise.all(blacklistOps);
 
   successResponse(res, { mode }, mode === 'deleted' ? 'Tài khoản đã được xóa' : 'Tài khoản đã bị vô hiệu hóa');
 }

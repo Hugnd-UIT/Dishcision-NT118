@@ -2,6 +2,7 @@ package com.example.dishcision.network;
 
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.content.pm.ApplicationInfo;
 import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 
@@ -19,14 +20,26 @@ public class ApiClient {
 
     private static String baseUrl = DEFAULT_BASE_URL;
     private static Retrofit retrofit = null;
+    private static boolean isDebugBuild = false;
 
     public static void init(Context context) {
         if (context != null) {
+            captureAppFlags(context);
             SharedPreferences prefs = context.getSharedPreferences("DishcisionPrefs", Context.MODE_PRIVATE);
             String savedUrl = prefs.getString("custom_base_url", null);
             if (savedUrl != null && !savedUrl.trim().isEmpty()) {
                 setBaseUrl(savedUrl);
             }
+        }
+    }
+
+    private static void captureAppFlags(Context context) {
+        if (context == null) return;
+        ApplicationInfo info = context.getApplicationContext().getApplicationInfo();
+        boolean debuggable = info != null && (info.flags & ApplicationInfo.FLAG_DEBUGGABLE) != 0;
+        if (debuggable != isDebugBuild) {
+            isDebugBuild = debuggable;
+            retrofit = null;
         }
     }
 
@@ -84,14 +97,10 @@ public class ApiClient {
 
     public static String getAuthHeader(Context context) {
         if (context == null) return "";
+        captureAppFlags(context);
         TokenManager tokenManager = new TokenManager(context);
         if (tokenManager.isLoggedIn()) {
             return tokenManager.getFormattedToken();
-        }
-        SharedPreferences prefs = context.getSharedPreferences("DishcisionPrefs", Context.MODE_PRIVATE);
-        String token = prefs.getString("access_token", null);
-        if (TokenManager.isValidJwtToken(token)) {
-            return token.startsWith("Bearer ") ? token : "Bearer " + token;
         }
         return "";
     }
@@ -99,7 +108,9 @@ public class ApiClient {
     public static ApiService getApiService() {
         if (retrofit == null) {
             HttpLoggingInterceptor loggingInterceptor = new HttpLoggingInterceptor();
-            loggingInterceptor.setLevel(HttpLoggingInterceptor.Level.BODY);
+            loggingInterceptor.redactHeader("Authorization");
+            loggingInterceptor.redactHeader("Cookie");
+            loggingInterceptor.setLevel(isDebugBuild ? HttpLoggingInterceptor.Level.BASIC : HttpLoggingInterceptor.Level.NONE);
 
             OkHttpClient okHttpClient = new OkHttpClient.Builder()
                     .addInterceptor(loggingInterceptor)

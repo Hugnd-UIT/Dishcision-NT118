@@ -33,11 +33,19 @@ public final class CurrentUserBinder {
                 prefs.getString(KEY_EMAIL, null),
                 prefs.getString(KEY_AVATAR, null));
 
-        ApiClient.getApiService().getMyProfile(ApiClient.getAuthHeader(activity))
+        String authHeader = ApiClient.getAuthHeader(activity);
+        if (authHeader.isEmpty()) return;
+
+        ApiClient.getApiService().getMyProfile(authHeader)
                 .enqueue(new Callback<UserProfileResponse>() {
                     @Override
                     public void onResponse(Call<UserProfileResponse> call, Response<UserProfileResponse> response) {
-                        if (activity.isFinishing() || !response.isSuccessful() || response.body() == null
+                        if (activity.isFinishing() || activity.isDestroyed()) return;
+                        if (response.code() == 401) {
+                            AuthHelper.handleUnauthorized(activity);
+                            return;
+                        }
+                        if (!response.isSuccessful() || response.body() == null
                                 || response.body().getData() == null) {
                             return;
                         }

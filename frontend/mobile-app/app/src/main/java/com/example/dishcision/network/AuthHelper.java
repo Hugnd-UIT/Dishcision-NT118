@@ -3,6 +3,7 @@ package com.example.dishcision.network;
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
+import android.widget.Toast;
 import com.example.dishcision.LoginActivity;
 import com.google.android.gms.auth.api.signin.GoogleSignIn;
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions;
@@ -44,6 +45,7 @@ public class AuthHelper {
         android.content.SharedPreferences.Editor editor =
                 context.getSharedPreferences("DishcisionPrefs", Context.MODE_PRIVATE).edit();
         for (String key : USER_CACHE_KEYS) editor.remove(key);
+        editor.remove("access_token");
         if (userId > 0) editor.putInt("user_id", userId);
         if (email != null) editor.putString("user_email", email);
         if (fullName != null) editor.putString("user_name", fullName);
@@ -83,6 +85,7 @@ public class AuthHelper {
         android.content.SharedPreferences.Editor editor =
                 activity.getSharedPreferences("DishcisionPrefs", Context.MODE_PRIVATE).edit();
         for (String key : USER_CACHE_KEYS) editor.remove(key);
+        editor.remove("access_token");
         editor.apply();
 
         // Clear Google Sign-In session
@@ -90,5 +93,19 @@ public class AuthHelper {
             GoogleSignInOptions gso = new GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN).build();
             GoogleSignIn.getClient(activity, gso).signOut();
         } catch (Exception ignored) {}
+    }
+
+    /** Clears revoked/expired session data and returns user to LoginActivity once. */
+    public static void handleUnauthorized(Activity activity) {
+        if (activity == null || activity.isFinishing() || activity.isDestroyed()) return;
+        TokenManager tm = new TokenManager(activity);
+        boolean hadToken = tm.getToken() != null;
+        clearLocalSession(activity);
+        if (!hadToken) return;
+        Toast.makeText(activity, "Phiên đăng nhập đã hết hạn hoặc bị thu hồi. Vui lòng đăng nhập lại.", Toast.LENGTH_LONG).show();
+        Intent intent = new Intent(activity, LoginActivity.class);
+        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+        activity.startActivity(intent);
+        activity.finish();
     }
 }

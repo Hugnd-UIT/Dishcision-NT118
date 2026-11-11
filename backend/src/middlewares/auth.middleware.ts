@@ -1,4 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
+import crypto from 'crypto';
 import { prisma } from '../config/prisma';
 import { redis } from '../config/redis';
 import { verifyAccessToken } from '../utils/auth';
@@ -6,6 +7,10 @@ import { errorResponse } from '../utils/response';
 
 export interface AuthRequest extends Request {
   user?: { userId: number; role: string };
+}
+
+function hashToken(token: string): string {
+  return crypto.createHash('sha256').update(token).digest('hex');
 }
 
 function extractBearerToken(req: Request): string | null {
@@ -32,18 +37,35 @@ export async function authenticate(req: AuthRequest, res: Response, next: NextFu
   }
 
   try {
-    const blacklisted = await redis.get(`blacklist:${token}`);
-    if (blacklisted) {
+    const tokenHash = hashToken(token);
+    const [blacklistedToken, blacklistedHash] = await redis.mget(
+      `blacklist:${token}`,
+      `blacklist_hash:${tokenHash}`
+    );
+    if (blacklistedToken || blacklistedHash) {
       errorResponse(res, 'Token has been revoked', 401);
       return;
     }
 
     const user = await prisma.user.findUnique({
       where: { id: payload.userId },
-      select: { id: true, role: true, accountStatus: true },
+      select: {
+        id: true,
+        role: true,
+        accountStatus: true,
+        sessions: {
+          where: { tokenHash },
+          select: { id: true },
+          take: 1,
+        },
+      },
     });
     if (!user || user.accountStatus !== 'Active') {
       errorResponse(res, 'Account is inactive or not found', 401);
+      return;
+    }
+    if (!user.sessions || user.sessions.length === 0) {
+      errorResponse(res, 'Session has been revoked or expired', 401);
       return;
     }
 
@@ -72,13 +94,26 @@ export async function optionalAuth(req: AuthRequest, _res: Response, next: NextF
 
   try {
     const payload = verifyAccessToken(token);
-    const blacklisted = await redis.get(`blacklist:${token}`);
-    if (!blacklisted) {
+    const tokenHash = hashToken(token);
+    const [blacklistedToken, blacklistedHash] = await redis.mget(
+      `blacklist:${token}`,
+      `blacklist_hash:${tokenHash}`
+    );
+    if (!blacklistedToken && !blacklistedHash) {
       const user = await prisma.user.findUnique({
         where: { id: payload.userId },
-        select: { id: true, role: true, accountStatus: true },
+        select: {
+          id: true,
+          role: true,
+          accountStatus: true,
+          sessions: {
+            where: { tokenHash },
+            select: { id: true },
+            take: 1,
+          },
+        },
       });
-      if (user && user.accountStatus === 'Active') {
+      if (user && user.accountStatus === 'Active' && user.sessions && user.sessions.length > 0) {
         req.user = { userId: user.id, role: user.role };
       }
     }

@@ -62,6 +62,9 @@ export async function updateUserStatus(req: AuthRequest, res: Response): Promise
       refreshToken: status !== AccountStatus.Active ? null : undefined,
     },
   });
+  if (status !== AccountStatus.Active) {
+    await prisma.userSession.deleteMany({ where: { userId } });
+  }
 
   await prisma.auditLog.create({
     data: {
@@ -296,10 +299,13 @@ export async function processReport(req: AuthRequest, res: Response): Promise<vo
       },
     });
   } else if (action === 'BanUser' && report.reportedUserId) {
-    await prisma.user.update({
-      where: { id: report.reportedUserId },
-      data: { accountStatus: AccountStatus.Banned, refreshToken: null },
-    });
+    await prisma.$transaction([
+      prisma.user.update({
+        where: { id: report.reportedUserId },
+        data: { accountStatus: AccountStatus.Banned, refreshToken: null },
+      }),
+      prisma.userSession.deleteMany({ where: { userId: report.reportedUserId } }),
+    ]);
   }
 
   await prisma.report.update({

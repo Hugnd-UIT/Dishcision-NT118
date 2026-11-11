@@ -34,6 +34,13 @@ function hashToken(token: string): string {
   return crypto.createHash('sha256').update(token).digest('hex');
 }
 
+async function blacklistSessionHashes(hashes: Array<string | null | undefined>): Promise<void> {
+  const uniqueHashes = Array.from(new Set(hashes.filter((h): h is string => Boolean(h && h.trim()))));
+  if (uniqueHashes.length === 0) return;
+  const ttl = getExpiresIn();
+  await Promise.all(uniqueHashes.map((h) => redis.set(`blacklist_hash:${h}`, '1', 'EX', ttl)));
+}
+
 function extractDeviceName(req: Request): string {
   const explicit = (req.body as any)?.deviceName;
   if (explicit && typeof explicit === 'string' && explicit.trim()) {
@@ -475,9 +482,11 @@ export async function logout(req: AuthRequest, res: Response): Promise<void> {
   await prisma.user.update({ where: { id: userId }, data: { refreshToken: null } });
   const token = req.headers.authorization?.slice(7).trim();
   if (token) {
+    const tokenHash = hashToken(token);
     await Promise.all([
       redis.set(`blacklist:${token}`, '1', 'EX', getExpiresIn()),
-      prisma.userSession.deleteMany({ where: { userId, tokenHash: hashToken(token) } }),
+      blacklistSessionHashes([tokenHash]),
+      prisma.userSession.deleteMany({ where: { userId, tokenHash } }),
     ]);
   }
   successResponse(res, null, 'Logout successful');
@@ -572,9 +581,17 @@ export async function resetPassword(req: Request, res: Response): Promise<void> 
   }
 
   const passwordHash = await hashPassword(newPassword);
-  await prisma.$transaction([
-    prisma.user.update({ where: { id: token.userId }, data: { passwordHash, refreshToken: null } }),
-    prisma.passwordResetToken.updateMany({ where: { userId: token.userId, used: false }, data: { used: true } }),
+  const existingSessions = await prisma.userSession.findMany({
+    where: { userId: token.userId },
+    select: { tokenHash: true },
+  });
+  await Promise.all([
+    prisma.$transaction([
+      prisma.user.update({ where: { id: token.userId }, data: { passwordHash, refreshToken: null } }),
+      prisma.passwordResetToken.updateMany({ where: { userId: token.userId, used: false }, data: { used: true } }),
+      prisma.userSession.deleteMany({ where: { userId: token.userId } }),
+    ]),
+    blacklistSessionHashes(existingSessions.map((s) => s.tokenHash)),
   ]);
 
   successResponse(res, null, 'Password reset successful');
@@ -600,8 +617,26 @@ export async function changePassword(req: AuthRequest, res: Response): Promise<v
     return;
   }
 
+  const currentToken = req.headers.authorization?.slice(7).trim() || '';
+  const currentHash = currentToken ? hashToken(currentToken) : null;
+  const otherSessions = await prisma.userSession.findMany({
+    where: {
+      userId,
+      ...(currentHash ? { NOT: { tokenHash: currentHash } } : {}),
+    },
+    select: { id: true, tokenHash: true },
+  });
+
   const passwordHash = await hashPassword(newPassword);
-  await prisma.user.update({ where: { id: userId }, data: { passwordHash } });
+  await Promise.all([
+    prisma.user.update({ where: { id: userId }, data: { passwordHash } }),
+    otherSessions.length > 0
+      ? prisma.userSession.deleteMany({
+          where: { userId, id: { in: otherSessions.map((s) => s.id) } },
+        })
+      : Promise.resolve(),
+    blacklistSessionHashes(otherSessions.map((s) => s.tokenHash)),
+  ]);
 
   successResponse(res, null, 'Password changed successfully');
 }
@@ -819,15 +854,17 @@ export async function revokeSession(req: AuthRequest, res: Response): Promise<vo
   }
 
   const rows = await prisma.userSession.findMany({ where: { userId } });
-  const idsToDelete = rows
+  const sessionsToDelete = rows
     .filter((s) => !(currentHash && s.tokenHash === currentHash))
-    .filter((s) => toRevoke.size === 0 || toRevoke.has(s.id))
-    .map((s) => s.id);
+    .filter((s) => toRevoke.size === 0 || toRevoke.has(s.id));
 
-  if (idsToDelete.length > 0) {
-    await prisma.userSession.deleteMany({
-      where: { userId, id: { in: idsToDelete } },
-    });
+  if (sessionsToDelete.length > 0) {
+    await Promise.all([
+      prisma.userSession.deleteMany({
+        where: { userId, id: { in: sessionsToDelete.map((s) => s.id) } },
+      }),
+      blacklistSessionHashes(sessionsToDelete.map((s) => s.tokenHash)),
+    ]);
   }
 
   const remaining = await prisma.userSession.findMany({
