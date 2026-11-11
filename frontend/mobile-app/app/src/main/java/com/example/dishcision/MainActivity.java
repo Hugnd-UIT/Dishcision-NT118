@@ -13,6 +13,8 @@ import androidx.core.view.WindowInsetsCompat;
 
 import android.content.SharedPreferences;
 
+import com.example.dishcision.network.ApiClient;
+import com.example.dishcision.network.AuthHelper;
 import com.example.dishcision.network.TokenManager;
 
 public class MainActivity extends AppCompatActivity {
@@ -24,6 +26,7 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         EdgeToEdge.enable(this);
         setContentView(R.layout.activity_main);
+        ApiClient.init(this);
 
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main), (v, insets) -> {
             Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
@@ -32,11 +35,10 @@ public class MainActivity extends AppCompatActivity {
         });
 
         new Handler(Looper.getMainLooper()).postDelayed(() -> {
-            boolean isLoggedIn = checkUserLoggedIn();
-
-            if (isLoggedIn) {
+            if (checkUserLoggedIn()) {
                 navigateToHome();
             } else {
+                AuthHelper.clearLocalSession(this);
                 navigateToLogin();
             }
             finish();
@@ -49,8 +51,7 @@ public class MainActivity extends AppCompatActivity {
 
         SharedPreferences prefs = getSharedPreferences("DishcisionPrefs", MODE_PRIVATE);
         String token = prefs.getString("access_token", null);
-        String googleEmail = prefs.getString("user_email", null);
-        return (token != null && !token.trim().isEmpty()) || (googleEmail != null && !googleEmail.trim().isEmpty());
+        return TokenManager.isValidJwtToken(token);
     }
 
     private void navigateToHome() {

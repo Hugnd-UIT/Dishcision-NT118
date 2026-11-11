@@ -75,6 +75,12 @@ public class FeedPostsResponse {
         /** Whether the signed-in user has saved (bookmarked) this post. */
         @SerializedName("isSaved")
         public boolean isSaved;
+
+        @SerializedName("isLiked")
+        public boolean isLiked;
+
+        @SerializedName("status")
+        public String status;
     }
 
     public static class Author {
@@ -92,6 +98,9 @@ public class FeedPostsResponse {
 
         @SerializedName("bio")
         public String bio;
+
+        @SerializedName("role")
+        public String role;
     }
 
     public static class PostImage {

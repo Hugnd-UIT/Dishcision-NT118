@@ -15,12 +15,14 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.activity.EdgeToEdge;
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 
 import com.example.dishcision.network.ApiClient;
+import com.example.dishcision.network.AuthHelper;
 import com.example.dishcision.network.AuthResponse;
 import com.example.dishcision.network.FollowersListResponse;
 import com.example.dishcision.network.TokenManager;
@@ -28,6 +30,7 @@ import com.example.dishcision.network.UserProfileResponse;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 import retrofit2.Call;
 import retrofit2.Callback;
@@ -54,6 +57,7 @@ public class FollowersActivity extends AppCompatActivity {
     private TextView tvEmptyTitle;
     private TextView tvEmptySubtitle;
 
+    private String targetUserId = "me";
     private boolean isTabFollowers = true;
     private int followersCount = 0;
     private int followingCount = 0;
@@ -70,6 +74,15 @@ public class FollowersActivity extends AppCompatActivity {
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
             return insets;
         });
+
+        String extraUserId = getIntent().getStringExtra("USER_ID");
+        if (extraUserId == null || extraUserId.trim().isEmpty()) {
+            int intId = getIntent().getIntExtra("USER_ID", 0);
+            if (intId > 0) extraUserId = String.valueOf(intId);
+        }
+        if (extraUserId != null && !extraUserId.trim().isEmpty()) {
+            targetUserId = extraUserId.trim();
+        }
 
         initViews();
         loadHeaderData();
@@ -135,35 +148,39 @@ public class FollowersActivity extends AppCompatActivity {
             tvFollowingCountVal.setText(followingExtra);
         }
 
-        TokenManager tm = new TokenManager(this);
-        String token = tm.getToken();
-        if (token != null && !token.trim().isEmpty()) {
-            ApiClient.getApiService().getMyProfile("Bearer " + token).enqueue(new Callback<UserProfileResponse>() {
-                @Override
-                public void onResponse(Call<UserProfileResponse> call, Response<UserProfileResponse> response) {
-                    if (response.isSuccessful() && response.body() != null && response.body().getData() != null) {
-                        UserProfileResponse.UserData user = response.body().getData();
-                        if (tvFollowersHeaderName != null) {
-                            tvFollowersHeaderName.setText(user.fullName != null && !user.fullName.trim().isEmpty() ? user.fullName : user.username);
-                        }
-                        if (tvFollowersHeaderHandle != null) {
-                            tvFollowersHeaderHandle.setText("@" + (user.username != null ? user.username : "user"));
-                        }
-                        followersCount = user.followersCount;
-                        followingCount = user.followingCount;
-                        if (tvFollowersCountVal != null) {
-                            tvFollowersCountVal.setText(formatCount(followersCount));
-                        }
-                        if (tvFollowingCountVal != null) {
-                            tvFollowingCountVal.setText(formatCount(followingCount));
-                        }
+        String auth = ApiClient.getAuthHeader(this);
+        if (auth.isEmpty()) return;
+
+        Call<UserProfileResponse> profileCall = "me".equals(targetUserId)
+                ? ApiClient.getApiService().getMyProfile(auth)
+                : ApiClient.getApiService().getUserProfile(auth, targetUserId);
+
+        profileCall.enqueue(new Callback<UserProfileResponse>() {
+            @Override
+            public void onResponse(@NonNull Call<UserProfileResponse> call, @NonNull Response<UserProfileResponse> response) {
+                if (isFinishing() || isDestroyed()) return;
+                if (response.isSuccessful() && response.body() != null && response.body().getData() != null) {
+                    UserProfileResponse.UserData user = response.body().getData();
+                    if (tvFollowersHeaderName != null) {
+                        tvFollowersHeaderName.setText(user.fullName != null && !user.fullName.trim().isEmpty() ? user.fullName : user.username);
+                    }
+                    if (tvFollowersHeaderHandle != null && user.username != null && !user.username.isEmpty()) {
+                        tvFollowersHeaderHandle.setText("@" + user.username.replace("@", ""));
+                    }
+                    followersCount = user.followersCount;
+                    followingCount = user.followingCount;
+                    if (tvFollowersCountVal != null) {
+                        tvFollowersCountVal.setText(PostFeedHelper.formatCount(followersCount));
+                    }
+                    if (tvFollowingCountVal != null) {
+                        tvFollowingCountVal.setText(PostFeedHelper.formatCount(followingCount));
                     }
                 }
+            }
 
-                @Override
-                public void onFailure(Call<UserProfileResponse> call, Throwable t) {}
-            });
-        }
+            @Override
+            public void onFailure(@NonNull Call<UserProfileResponse> call, @NonNull Throwable t) {}
+        });
     }
 
     private void setupTabs() {
@@ -229,40 +246,40 @@ public class FollowersActivity extends AppCompatActivity {
         if (layoutEmptyState != null) layoutEmptyState.setVisibility(View.GONE);
         if (layoutUsersList != null) layoutUsersList.removeAllViews();
 
-        TokenManager tm = new TokenManager(this);
-        String token = tm.getToken();
-        if (token == null || token.trim().isEmpty()) {
+        String auth = ApiClient.getAuthHeader(this);
+        if (auth.isEmpty()) {
             if (progressBarFollowers != null) progressBarFollowers.setVisibility(View.GONE);
             currentUsers.clear();
             applyFilterAndRender();
             return;
         }
 
-        String auth = "Bearer " + token;
         Call<FollowersListResponse> call = isTabFollowers
-                ? ApiClient.getApiService().getFollowers(auth, "me")
-                : ApiClient.getApiService().getFollowing(auth, "me");
+                ? ApiClient.getApiService().getFollowers(auth, targetUserId)
+                : ApiClient.getApiService().getFollowing(auth, targetUserId);
 
         call.enqueue(new Callback<FollowersListResponse>() {
             @Override
-            public void onResponse(Call<FollowersListResponse> call, Response<FollowersListResponse> response) {
+            public void onResponse(@NonNull Call<FollowersListResponse> call, @NonNull Response<FollowersListResponse> response) {
+                if (isFinishing() || isDestroyed()) return;
                 if (progressBarFollowers != null) progressBarFollowers.setVisibility(View.GONE);
                 currentUsers.clear();
                 if (response.isSuccessful() && response.body() != null && response.body().data != null) {
                     currentUsers.addAll(response.body().data);
                     if (isTabFollowers) {
                         followersCount = currentUsers.size();
-                        if (tvFollowersCountVal != null) tvFollowersCountVal.setText(formatCount(followersCount));
+                        if (tvFollowersCountVal != null) tvFollowersCountVal.setText(PostFeedHelper.formatCount(followersCount));
                     } else {
                         followingCount = currentUsers.size();
-                        if (tvFollowingCountVal != null) tvFollowingCountVal.setText(formatCount(followingCount));
+                        if (tvFollowingCountVal != null) tvFollowingCountVal.setText(PostFeedHelper.formatCount(followingCount));
                     }
                 }
                 applyFilterAndRender();
             }
 
             @Override
-            public void onFailure(Call<FollowersListResponse> call, Throwable t) {
+            public void onFailure(@NonNull Call<FollowersListResponse> call, @NonNull Throwable t) {
+                if (isFinishing() || isDestroyed()) return;
                 if (progressBarFollowers != null) progressBarFollowers.setVisibility(View.GONE);
                 currentUsers.clear();
                 applyFilterAndRender();
@@ -290,14 +307,14 @@ public class FollowersActivity extends AppCompatActivity {
     private void applyFilterAndRender() {
         String query = "";
         if (edtSearchFollowers != null && edtSearchFollowers.getText() != null) {
-            query = edtSearchFollowers.getText().toString().trim().toLowerCase();
+            query = edtSearchFollowers.getText().toString().trim().toLowerCase(Locale.ROOT);
         }
 
         List<FollowersListResponse.FollowItem> filtered = new ArrayList<>();
         for (FollowersListResponse.FollowItem user : currentUsers) {
             if (query.isEmpty()
-                    || (user.fullName != null && user.fullName.toLowerCase().contains(query))
-                    || (user.username != null && user.username.toLowerCase().contains(query))) {
+                    || (user.fullName != null && user.fullName.toLowerCase(Locale.ROOT).contains(query))
+                    || (user.username != null && user.username.toLowerCase(Locale.ROOT).contains(query))) {
                 filtered.add(user);
             }
         }
@@ -315,7 +332,7 @@ public class FollowersActivity extends AppCompatActivity {
                 } else if (isTabFollowers) {
                     if (ivEmptyIcon != null) ivEmptyIcon.setImageResource(R.drawable.ic_person_outline);
                     if (tvEmptyTitle != null) tvEmptyTitle.setText("Chưa có người theo dõi nào");
-                    if (tvEmptySubtitle != null) tvEmptySubtitle.setText("Khi có người theo dõi bạn, họ sẽ xuất hiện tại đây.");
+                    if (tvEmptySubtitle != null) tvEmptySubtitle.setText("Danh sách người theo dõi hiện đang trống.");
                 } else {
                     if (ivEmptyIcon != null) ivEmptyIcon.setImageResource(R.drawable.ic_group_outline);
                     if (tvEmptyTitle != null) tvEmptyTitle.setText("Chưa theo dõi ai");
@@ -327,6 +344,7 @@ public class FollowersActivity extends AppCompatActivity {
 
         if (layoutEmptyState != null) layoutEmptyState.setVisibility(View.GONE);
 
+        int selfId = AuthHelper.getCurrentUserId(this);
         LayoutInflater inflater = LayoutInflater.from(this);
         for (FollowersListResponse.FollowItem user : filtered) {
             View itemView = inflater.inflate(R.layout.item_follower_user, layoutUsersList, false);
@@ -337,20 +355,34 @@ public class FollowersActivity extends AppCompatActivity {
             TextView btnAction = itemView.findViewById(R.id.btnFollowAction);
 
             String displayName = (user.fullName != null && !user.fullName.trim().isEmpty()) ? user.fullName : user.username;
-            if (tvName != null) tvName.setText(displayName != null ? displayName : "User");
-            if (tvHandle != null) tvHandle.setText("@" + (user.username != null ? user.username : "user"));
+            if (tvName != null) tvName.setText(displayName != null ? displayName : "Thành viên");
+            if (tvHandle != null) tvHandle.setText("@" + (user.username != null ? user.username.replace("@", "") : ""));
 
             if (tvAvatar != null) {
                 tvAvatar.setText(getInitials(displayName));
             }
 
-            updateButtonUi(btnAction, user.isFollowing);
+            boolean isSelf = selfId > 0 && user.userId == selfId;
+            if (btnAction != null) {
+                if (isSelf) {
+                    btnAction.setVisibility(View.GONE);
+                } else {
+                    btnAction.setVisibility(View.VISIBLE);
+                    updateButtonUi(btnAction, user.isFollowing);
+                    btnAction.setOnClickListener(v -> toggleFollow(user, btnAction));
+                }
+            }
 
-            btnAction.setOnClickListener(v -> toggleFollow(user, btnAction));
-
-            itemView.setOnClickListener(v ->
-                    Toast.makeText(this, "Xem trang cá nhân của " + displayName, Toast.LENGTH_SHORT).show()
-            );
+            itemView.setOnClickListener(v -> {
+                if (user.userId <= 0) return;
+                if (selfId > 0 && user.userId == selfId) {
+                    startActivity(new Intent(FollowersActivity.this, ProfileActivity.class));
+                } else {
+                    Intent intent = new Intent(FollowersActivity.this, UserProfileActivity.class);
+                    intent.putExtra("USER_ID", user.userId);
+                    startActivity(intent);
+                }
+            });
 
             layoutUsersList.addView(itemView);
         }
@@ -363,7 +395,8 @@ public class FollowersActivity extends AppCompatActivity {
             btnAction.setTextColor(0xFF141B2B);
             btnAction.setBackgroundResource(R.drawable.bg_button_light_small);
         } else {
-            btnAction.setText(isTabFollowers ? "Theo dõi lại" : "Theo dõi");
+            boolean viewingOwnFollowers = "me".equals(targetUserId) && isTabFollowers;
+            btnAction.setText(viewingOwnFollowers ? "Theo dõi lại" : "Theo dõi");
             btnAction.setTextColor(0xFFFF5A36);
             btnAction.setBackgroundResource(R.drawable.bg_button_light_small);
         }
@@ -371,10 +404,11 @@ public class FollowersActivity extends AppCompatActivity {
 
     private void toggleFollow(FollowersListResponse.FollowItem user, TextView btnAction) {
         TokenManager tm = new TokenManager(this);
-        String token = tm.getToken();
-        if (token == null || token.trim().isEmpty()) return;
-        String auth = "Bearer " + token;
+        if (!tm.isLoggedIn()) return;
+        String auth = ApiClient.getAuthHeader(this);
+        if (auth.isEmpty()) return;
 
+        btnAction.setEnabled(false);
         boolean targetFollowing = !user.isFollowing;
         Call<AuthResponse> call = targetFollowing
                 ? ApiClient.getApiService().followUser(auth, String.valueOf(user.userId))
@@ -382,28 +416,35 @@ public class FollowersActivity extends AppCompatActivity {
 
         call.enqueue(new Callback<AuthResponse>() {
             @Override
-            public void onResponse(Call<AuthResponse> call, Response<AuthResponse> response) {
-                if (response.isSuccessful()) {
+            public void onResponse(@NonNull Call<AuthResponse> call, @NonNull Response<AuthResponse> response) {
+                btnAction.setEnabled(true);
+                if (isFinishing() || isDestroyed()) return;
+                if (response.isSuccessful() || (targetFollowing && response.code() == 409)) {
+                    boolean changed = user.isFollowing != targetFollowing;
                     user.isFollowing = targetFollowing;
                     updateButtonUi(btnAction, user.isFollowing);
-                    if (targetFollowing) {
-                        followingCount++;
-                        Toast.makeText(FollowersActivity.this, "Đã theo dõi " + user.username, Toast.LENGTH_SHORT).show();
-                    } else {
-                        followingCount = Math.max(0, followingCount - 1);
-                        Toast.makeText(FollowersActivity.this, "Đã hủy theo dõi " + user.username, Toast.LENGTH_SHORT).show();
+                    if ("me".equals(targetUserId) && changed) {
+                        followingCount = Math.max(0, followingCount + (targetFollowing ? 1 : -1));
+                        if (tvFollowingCountVal != null) {
+                            tvFollowingCountVal.setText(PostFeedHelper.formatCount(followingCount));
+                        }
                     }
-                    if (tvFollowingCountVal != null) {
-                        tvFollowingCountVal.setText(formatCount(followingCount));
-                    }
+                    Toast.makeText(
+                            FollowersActivity.this,
+                            targetFollowing ? "Đã theo dõi " + user.username : "Đã hủy theo dõi " + user.username,
+                            Toast.LENGTH_SHORT
+                    ).show();
                 } else {
                     Toast.makeText(FollowersActivity.this, "Không thể cập nhật theo dõi", Toast.LENGTH_SHORT).show();
                 }
             }
 
             @Override
-            public void onFailure(Call<AuthResponse> call, Throwable t) {
-                Toast.makeText(FollowersActivity.this, "Lỗi kết nối", Toast.LENGTH_SHORT).show();
+            public void onFailure(@NonNull Call<AuthResponse> call, @NonNull Throwable t) {
+                btnAction.setEnabled(true);
+                if (!isFinishing() && !isDestroyed()) {
+                    Toast.makeText(FollowersActivity.this, "Lỗi kết nối", Toast.LENGTH_SHORT).show();
+                }
             }
         });
     }
@@ -412,15 +453,8 @@ public class FollowersActivity extends AppCompatActivity {
         if (name == null || name.trim().isEmpty()) return "U";
         String[] parts = name.trim().split("\\s+");
         if (parts.length >= 2) {
-            return ("" + parts[0].charAt(0) + parts[parts.length - 1].charAt(0)).toUpperCase();
+            return ("" + parts[0].charAt(0) + parts[parts.length - 1].charAt(0)).toUpperCase(Locale.ROOT);
         }
-        return name.substring(0, Math.min(2, name.length())).toUpperCase();
-    }
-
-    private String formatCount(int count) {
-        if (count >= 1000) {
-            return String.format(java.util.Locale.US, "%.1fk", count / 1000.0);
-        }
-        return String.valueOf(count);
+        return name.substring(0, Math.min(2, name.length())).toUpperCase(Locale.ROOT);
     }
 }

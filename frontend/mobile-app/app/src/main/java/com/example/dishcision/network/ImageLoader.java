@@ -43,9 +43,9 @@ public class ImageLoader {
             return;
         }
 
-        String finalUrl = imageUrl.trim();
-        if (finalUrl.startsWith("/uploads")) {
-            finalUrl = ApiClient.getServerRootUrl() + finalUrl;
+        String finalUrl = ApiClient.normalizeMediaUrl(imageUrl);
+        if (finalUrl.isEmpty()) {
+            return;
         }
 
         Bitmap cached = memoryCache.get(finalUrl + "_circle");
@@ -77,9 +77,9 @@ public class ImageLoader {
             return;
         }
 
-        String finalUrl = imageUrl.trim();
-        if (finalUrl.startsWith("/uploads")) {
-            finalUrl = ApiClient.getServerRootUrl() + finalUrl;
+        String finalUrl = ApiClient.normalizeMediaUrl(imageUrl);
+        if (finalUrl.isEmpty()) {
+            return;
         }
 
         Bitmap cached = memoryCache.get(finalUrl);

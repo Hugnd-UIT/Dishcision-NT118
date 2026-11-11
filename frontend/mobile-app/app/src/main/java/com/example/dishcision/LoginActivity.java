@@ -24,9 +24,10 @@ import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 
 import com.example.dishcision.network.ApiClient;
+import com.example.dishcision.network.AuthHelper;
 import com.example.dishcision.network.AuthResponse;
+import com.example.dishcision.network.GoogleAuthRequest;
 import com.example.dishcision.network.LoginRequest;
-import com.example.dishcision.network.RegisterRequest;
 import com.example.dishcision.network.TokenManager;
 import com.google.android.gms.auth.api.signin.GoogleSignIn;
 import com.google.android.gms.auth.api.signin.GoogleSignInAccount;
@@ -92,46 +93,33 @@ public class LoginActivity extends AppCompatActivity {
                                 String fullName = account.getDisplayName();
                                 String photoUrl = account.getPhotoUrl() != null ? account.getPhotoUrl().toString() : "";
 
-                                getSharedPreferences("DishcisionPrefs", MODE_PRIVATE).edit()
-                                        .putString("user_email", email)
-                                        .putString("user_name", fullName)
-                                        .putString("avatar_url", photoUrl)
-                                        .putBoolean("is_google_login", true)
-                                        .apply();
+                                if (btnGoogleLogin != null) btnGoogleLogin.setEnabled(false);
+                                Toast.makeText(this, "Đang xác thực tài khoản Google...", Toast.LENGTH_SHORT).show();
 
-                                TokenManager tm = new TokenManager(LoginActivity.this);
-                                // Authenticate with backend using email and default password "123456" to get real JWT
-                                ApiClient.getApiService().login(new LoginRequest(email, "123456")).enqueue(new Callback<AuthResponse>() {
+                                GoogleAuthRequest googleReq = new GoogleAuthRequest(email, fullName, photoUrl);
+                                ApiClient.getApiService().googleAuth(googleReq).enqueue(new Callback<AuthResponse>() {
                                     @Override
                                     public void onResponse(Call<AuthResponse> call, Response<AuthResponse> response) {
-                                        if (response.isSuccessful() && response.body() != null) {
-                                            tm.saveAuthData(response.body().getToken(), email, fullName);
+                                        if (btnGoogleLogin != null) btnGoogleLogin.setEnabled(true);
+                                        if (response.isSuccessful() && response.body() != null
+                                                && TokenManager.isValidJwtToken(response.body().getToken())) {
+                                            AuthHelper.saveSessionFromAuth(LoginActivity.this, response.body(), email, fullName, true);
+                                            Toast.makeText(LoginActivity.this, "Đăng nhập Google thành công: " + fullName, Toast.LENGTH_SHORT).show();
+                                            Intent intent = new Intent(LoginActivity.this, HomeActivity.class);
+                                            intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+                                            startActivity(intent);
+                                            finish();
                                         } else {
-                                            RegisterRequest reg = new RegisterRequest(
-                                                    fullName != null && !fullName.isEmpty() ? fullName : "User",
-                                                    email,
-                                                    "123456"
-                                            );
-                                            ApiClient.getApiService().register(reg).enqueue(new Callback<AuthResponse>() {
-                                                @Override
-                                                public void onResponse(Call<AuthResponse> c, Response<AuthResponse> r) {
-                                                    if (r.isSuccessful() && r.body() != null) {
-                                                        tm.saveAuthData(r.body().getToken(), email, fullName);
-                                                    }
-                                                }
-                                                @Override
-                                                public void onFailure(Call<AuthResponse> c, Throwable t) {}
-                                            });
+                                            Toast.makeText(LoginActivity.this, "Xác thực Google thất bại (mã " + response.code() + ")", Toast.LENGTH_LONG).show();
                                         }
                                     }
-                                    @Override
-                                    public void onFailure(Call<AuthResponse> call, Throwable t) {}
-                                });
 
-                                Toast.makeText(this, "Đăng nhập Google thành công: " + fullName, Toast.LENGTH_SHORT).show();
-                                Intent intent = new Intent(LoginActivity.this, HomeActivity.class);
-                                startActivity(intent);
-                                finish();
+                                    @Override
+                                    public void onFailure(Call<AuthResponse> call, Throwable t) {
+                                        if (btnGoogleLogin != null) btnGoogleLogin.setEnabled(true);
+                                        Toast.makeText(LoginActivity.this, "Lỗi kết nối máy chủ: " + t.getMessage(), Toast.LENGTH_LONG).show();
+                                    }
+                                });
                             }
                         } catch (ApiException e) {
                             Toast.makeText(this, "Đăng nhập Google thất bại (Mã: " + e.getStatusCode() + ")", Toast.LENGTH_SHORT).show();
@@ -216,23 +204,20 @@ public class LoginActivity extends AppCompatActivity {
             return;
         }
 
-        TokenManager tokenManager = new TokenManager(this);
+        if (btnLogin != null) btnLogin.setEnabled(false);
         LoginRequest request = new LoginRequest(email, password);
 
         ApiClient.getApiService().login(request).enqueue(new Callback<AuthResponse>() {
             @Override
             public void onResponse(Call<AuthResponse> call, Response<AuthResponse> response) {
-                if (response.isSuccessful() && response.body() != null) {
-                    AuthResponse authData = response.body();
-                    String token = authData.getToken();
-                    tokenManager.saveAuthData(token, email, "");
-
-                    getSharedPreferences("DishcisionPrefs", MODE_PRIVATE).edit()
-                            .putBoolean("is_google_login", false)
-                            .apply();
+                if (btnLogin != null) btnLogin.setEnabled(true);
+                if (response.isSuccessful() && response.body() != null
+                        && TokenManager.isValidJwtToken(response.body().getToken())) {
+                    AuthHelper.saveSessionFromAuth(LoginActivity.this, response.body(), email, "", false);
 
                     Toast.makeText(LoginActivity.this, "Đăng nhập thành công!", Toast.LENGTH_SHORT).show();
                     Intent intent = new Intent(LoginActivity.this, HomeActivity.class);
+                    intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
                     startActivity(intent);
                     finish();
                 } else {
@@ -250,7 +235,8 @@ public class LoginActivity extends AppCompatActivity {
 
             @Override
             public void onFailure(Call<AuthResponse> call, Throwable t) {
-                Toast.makeText(LoginActivity.this, "Lỗi kết nối Server API Docker: " + t.getMessage(), Toast.LENGTH_LONG).show();
+                if (btnLogin != null) btnLogin.setEnabled(true);
+                Toast.makeText(LoginActivity.this, "Lỗi kết nối Server API: " + t.getMessage(), Toast.LENGTH_LONG).show();
                 showServerConfigDialog();
             }
         });
@@ -299,7 +285,7 @@ public class LoginActivity extends AppCompatActivity {
         builder.setTitle("Cấu hình Server API Docker");
 
         final android.widget.EditText input = new android.widget.EditText(this);
-        input.setHint("VD: 192.168.1.36:3000");
+        input.setHint("VD: https://dishcision.duckdns.org");
         input.setText(ApiClient.getServerRootUrl().replace("http://", "").replace("https://", ""));
         input.setPadding(40, 30, 40, 30);
         builder.setView(input);
@@ -314,9 +300,9 @@ public class LoginActivity extends AppCompatActivity {
         });
 
         builder.setNegativeButton("Huỷ", (dialog, which) -> dialog.cancel());
-        builder.setNeutralButton("Mặc định (192.168.1.36)", (dialog, which) -> {
+        builder.setNeutralButton("Mặc định (dishcision.duckdns.org)", (dialog, which) -> {
             ApiClient.setBaseUrl(this, ApiClient.DEFAULT_BASE_URL);
-            Toast.makeText(this, "Đã khôi phục: 192.168.1.36:3000", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "Đã khôi phục máy chủ mặc định", Toast.LENGTH_SHORT).show();
             performLogin();
         });
 

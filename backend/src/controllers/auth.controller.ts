@@ -15,28 +15,80 @@ const USER_PUBLIC_SELECT = {
 };
 
 function formatUser(user: any) {
-  const { _count, ...rest } = user;
+  const { _count } = user;
   return {
-    userId: rest.id,
-    username: rest.username,
-    fullName: rest.fullName,
-    avatarUrl: rest.avatarUrl,
-    bio: rest.bio,
-    role: rest.role,
+    userId: user.id,
+    username: user.username,
+    fullName: user.fullName,
+    avatarUrl: user.avatarUrl,
+    bio: user.bio,
+    role: user.role,
+    isGoogleAccount: typeof user.passwordHash === 'string' ? user.passwordHash === '' : undefined,
     followersCount: _count?.followers ?? 0,
     followingCount: _count?.following ?? 0,
   };
 }
 
-function formatUserPrivate(user: any) {
-  return {
-    ...formatUser(user),
-    email: user.email,
-    gender: user.gender,
-    dateOfBirth: user.dateOfBirth,
-    accountStatus: user.accountStatus,
-    createdAt: user.createdAt,
-  };
+function hashToken(token: string): string {
+  return crypto.createHash('sha256').update(token).digest('hex');
+}
+
+function extractDeviceName(req: Request): string {
+  const explicit = (req.body as any)?.deviceName;
+  if (explicit && typeof explicit === 'string' && explicit.trim()) {
+    return explicit.trim().slice(0, 150);
+  }
+  const ua = (req.get('user-agent') || '').toLowerCase();
+  if (ua.includes('okhttp') || ua.includes('android')) {
+    return 'Điện thoại Android · Dishcision';
+  }
+  if (ua.includes('iphone') || ua.includes('ipad') || ua.includes('ios')) {
+    return 'iOS · Dishcision';
+  }
+  if (ua.includes('mozilla') || ua.includes('chrome') || ua.includes('safari') || ua.includes('edge')) {
+    return 'Trình duyệt Web · Dishcision';
+  }
+  return 'Thiết bị Dishcision';
+}
+
+function extractLocation(req: Request): string | null {
+  const explicit = (req.body as any)?.location;
+  if (explicit && typeof explicit === 'string' && explicit.trim()) {
+    return explicit.trim().slice(0, 150);
+  }
+  const rawIp = (req.ip || '').replace(/^::ffff:/, '').trim();
+  return rawIp ? `IP ${rawIp}` : null;
+}
+
+async function recordSession(userId: number, req: Request, token: string): Promise<void> {
+  await prisma.userSession.create({
+    data: {
+      userId,
+      deviceName: extractDeviceName(req),
+      location: extractLocation(req),
+      tokenHash: hashToken(token),
+    },
+  });
+}
+
+async function generateUniqueUsername(seedText: string): Promise<string> {
+  let base = seedText.toLowerCase().replace(/[^a-z0-9_]/g, '');
+  if (base.length < 3) {
+    base = `user_${base}`;
+  }
+  base = base.slice(0, 30);
+  let candidate = base;
+  let count = 0;
+  while (await prisma.user.findUnique({ where: { username: candidate } })) {
+    count++;
+    const suffix = Math.floor(1000 + Math.random() * 9000);
+    candidate = `${base.slice(0, 40)}_${suffix}`;
+    if (count > 20) {
+      candidate = `user_${crypto.randomBytes(4).toString('hex')}`;
+      break;
+    }
+  }
+  return candidate;
 }
 
 async function sendOtpEmail(email: string, otp: string): Promise<void> {
@@ -83,35 +135,24 @@ async function sendOtpEmail(email: string, otp: string): Promise<void> {
 
 export async function register(req: Request, res: Response): Promise<void> {
   const { username, email, password, fullName } = req.body;
+  const normalizedEmail = String(email).trim().toLowerCase();
 
   let finalUsername = username && typeof username === 'string' && username.trim().length >= 3 ? username.trim() : '';
 
   if (!finalUsername) {
-    let base = email.split('@')[0].toLowerCase().replace(/[^a-z0-9_]/g, '');
-    if (base.length < 3) {
-      base = `user_${base}`;
-    }
-    base = base.slice(0, 30);
-    finalUsername = base;
-    let candidate = finalUsername;
-    let count = 0;
-    while (await prisma.user.findUnique({ where: { username: candidate } })) {
-      count++;
-      const suffix = Math.floor(1000 + Math.random() * 9000);
-      candidate = `${base.slice(0, 40)}_${suffix}`;
-      if (count > 20) {
-        candidate = `user_${crypto.randomBytes(4).toString('hex')}`;
-        break;
-      }
-    }
-    finalUsername = candidate;
+    finalUsername = await generateUniqueUsername(normalizedEmail.split('@')[0] || 'user');
   }
 
   const existing = await prisma.user.findFirst({
-    where: { OR: [{ email }, { username: finalUsername }] },
+    where: {
+      OR: [
+        { email: { equals: normalizedEmail, mode: 'insensitive' } },
+        { username: finalUsername },
+      ],
+    },
   });
   if (existing) {
-    if (existing.email.toLowerCase() === email.toLowerCase()) {
+    if (existing.email.toLowerCase() === normalizedEmail) {
       errorResponse(res, 'Email already exists', 409);
     } else {
       errorResponse(res, 'Username already exists', 409);
@@ -121,13 +162,16 @@ export async function register(req: Request, res: Response): Promise<void> {
 
   const passwordHash = await hashPassword(password);
   const user = await prisma.user.create({
-    data: { username: finalUsername, email, passwordHash, fullName },
-    select: { ...USER_PUBLIC_SELECT, _count: { select: { followers: true, following: true } } },
+    data: { username: finalUsername, email: normalizedEmail, passwordHash, fullName: fullName.trim() },
+    select: { ...USER_PUBLIC_SELECT, email: true, passwordHash: true },
   });
 
   const accessToken = generateAccessToken({ userId: user.id, role: user.role });
   const refreshToken = generateRefreshToken({ userId: user.id });
-  await prisma.user.update({ where: { id: user.id }, data: { refreshToken } });
+  await Promise.all([
+    prisma.user.update({ where: { id: user.id }, data: { refreshToken } }),
+    recordSession(user.id, req, accessToken),
+  ]);
 
   res.status(201).json({
     success: true,
@@ -147,14 +191,19 @@ export async function register(req: Request, res: Response): Promise<void> {
 
 export async function login(req: Request, res: Response): Promise<void> {
   const { credential, username, email, password } = req.body;
-  const loginIdentifier = credential || username || email;
+  const loginIdentifier = String(credential || username || email || '').trim();
 
   const user = await prisma.user.findFirst({
-    where: { OR: [{ email: loginIdentifier }, { username: loginIdentifier }] },
+    where: {
+      OR: [
+        { email: { equals: loginIdentifier, mode: 'insensitive' } },
+        { username: loginIdentifier },
+      ],
+    },
     include: { _count: { select: { followers: true, following: true } } },
   });
 
-  if (!user || !(await comparePassword(password, user.passwordHash))) {
+  if (!user || !user.passwordHash || !(await comparePassword(password, user.passwordHash))) {
     errorResponse(res, 'Invalid credentials', 401);
     return;
   }
@@ -166,7 +215,10 @@ export async function login(req: Request, res: Response): Promise<void> {
 
   const accessToken = generateAccessToken({ userId: user.id, role: user.role });
   const refreshToken = generateRefreshToken({ userId: user.id });
-  await prisma.user.update({ where: { id: user.id }, data: { refreshToken } });
+  await Promise.all([
+    prisma.user.update({ where: { id: user.id }, data: { refreshToken } }),
+    recordSession(user.id, req, accessToken),
+  ]);
 
   res.status(200).json({
     success: true,
@@ -186,34 +238,37 @@ export async function login(req: Request, res: Response): Promise<void> {
 
 export async function googleAuth(req: Request, res: Response): Promise<void> {
   const { email, fullName, avatarUrl } = req.body;
-  if (!email) {
+  const normalizedEmail = String(email || '').trim().toLowerCase();
+  if (!normalizedEmail) {
     errorResponse(res, 'Email is required', 400);
     return;
   }
 
-  let user = await prisma.user.findUnique({
-    where: { email },
+  let user = await prisma.user.findFirst({
+    where: { email: { equals: normalizedEmail, mode: 'insensitive' } },
     include: { _count: { select: { followers: true, following: true } } },
   });
 
   if (!user) {
-    const baseUsername = email.split('@')[0].replace(/[^a-zA-Z0-9_]/g, '');
-    let username = baseUsername;
-    const existing = await prisma.user.findUnique({ where: { username } });
-    if (existing) {
-      username = `${baseUsername}_${Math.floor(1000 + Math.random() * 9000)}`;
-    }
+    const emailLocal = normalizedEmail.split('@')[0] || 'user';
+    const username = await generateUniqueUsername(emailLocal);
 
     user = await prisma.user.create({
       data: {
-        email,
+        email: normalizedEmail,
         username,
-        fullName: fullName || baseUsername,
+        fullName: (fullName && String(fullName).trim()) || emailLocal,
         avatarUrl: avatarUrl || null,
         passwordHash: '',
         role: 'User',
         accountStatus: 'Active',
       },
+      include: { _count: { select: { followers: true, following: true } } },
+    });
+  } else if (!user.avatarUrl && avatarUrl) {
+    user = await prisma.user.update({
+      where: { id: user.id },
+      data: { avatarUrl },
       include: { _count: { select: { followers: true, following: true } } },
     });
   }
@@ -225,7 +280,10 @@ export async function googleAuth(req: Request, res: Response): Promise<void> {
 
   const accessToken = generateAccessToken({ userId: user.id, role: user.role });
   const refreshToken = generateRefreshToken({ userId: user.id });
-  await prisma.user.update({ where: { id: user.id }, data: { refreshToken } });
+  await Promise.all([
+    prisma.user.update({ where: { id: user.id }, data: { refreshToken } }),
+    recordSession(user.id, req, accessToken),
+  ]);
 
   res.status(200).json({
     success: true,
@@ -246,9 +304,12 @@ export async function googleAuth(req: Request, res: Response): Promise<void> {
 export async function logout(req: AuthRequest, res: Response): Promise<void> {
   const userId = req.user!.userId;
   await prisma.user.update({ where: { id: userId }, data: { refreshToken: null } });
-  const token = req.headers.authorization?.split(' ')[1];
+  const token = req.headers.authorization?.slice(7).trim();
   if (token) {
-    await redis.set(`blacklist:${token}`, '1', 'EX', getExpiresIn());
+    await Promise.all([
+      redis.set(`blacklist:${token}`, '1', 'EX', getExpiresIn()),
+      prisma.userSession.deleteMany({ where: { userId, tokenHash: hashToken(token) } }),
+    ]);
   }
   successResponse(res, null, 'Logout successful');
 }
@@ -256,89 +317,85 @@ export async function logout(req: AuthRequest, res: Response): Promise<void> {
 // ── Forgot Password ───────────────────────
 
 export async function forgotPassword(req: Request, res: Response): Promise<void> {
-  const { email } = req.body;
-  const user = await prisma.user.findUnique({ where: { email } });
-
-  // Generate 6-digit numeric OTP code
-  const otp = Math.floor(100000 + Math.random() * 900000).toString();
-  const tokenHash = crypto.randomBytes(32).toString('hex');
-  const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
+  const normalizedEmail = String(req.body.email).trim().toLowerCase();
+  const user = await prisma.user.findFirst({
+    where: { email: { equals: normalizedEmail, mode: 'insensitive' } },
+  });
 
   if (user) {
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const tokenHash = crypto.randomBytes(32).toString('hex');
+    const expiresAt = new Date(Date.now() + 60 * 60 * 1000);
+
     await prisma.passwordResetToken.create({
       data: { userId: user.id, tokenHash, expiresAt },
     });
-    await redis.set(`otp:${email}`, otp, 'EX', 600);
-    await redis.set(`otp_token:${email}`, tokenHash, 'EX', 600);
+    await redis.set(`otp:${normalizedEmail}`, otp, 'EX', 600);
+    await redis.set(`otp_token:${normalizedEmail}`, tokenHash, 'EX', 600);
+
+    if (process.env.NODE_ENV !== 'production') {
+      console.log(`[DEV/OTP] Password reset OTP for ${normalizedEmail}: ${otp}`);
+    }
+    sendOtpEmail(normalizedEmail, otp).catch(console.error);
   }
 
-  console.log(`[DEV/OTP] Password reset OTP for ${email}: ${otp} (tokenHash: ${tokenHash})`);
-
-  // Asynchronously send email
-  sendOtpEmail(email, otp).catch(console.error);
-
-  successResponse(res, { email, otpSent: true, testOtp: otp }, 'If that email exists, an OTP code has been sent');
+  successResponse(res, { email: normalizedEmail, otpSent: true }, 'If that email exists, an OTP code has been sent');
 }
 
 // ── Verify OTP ────────────────────────────
 
 export async function verifyOtp(req: Request, res: Response): Promise<void> {
   const { email, otp } = req.body;
-  if (!email || !otp) {
+  const normalizedEmail = String(email || '').trim().toLowerCase();
+  const cleanOtp = String(otp || '').trim();
+  if (!normalizedEmail || !cleanOtp) {
     errorResponse(res, 'Email và mã OTP là bắt buộc', 400);
     return;
   }
 
-  const storedOtp = await redis.get(`otp:${email}`);
-  let tokenHash = await redis.get(`otp_token:${email}`);
-
-  // Accept valid generated OTP or demo OTP "123456"
-  if (otp === '123456' || (storedOtp && storedOtp === otp)) {
-    if (!tokenHash) {
-      const user = await prisma.user.findUnique({ where: { email } });
-      tokenHash = crypto.randomBytes(32).toString('hex');
-      if (user) {
-        await prisma.passwordResetToken.create({
-          data: {
-            userId: user.id,
-            tokenHash,
-            expiresAt: new Date(Date.now() + 60 * 60 * 1000),
-          },
-        });
-      }
-    }
-
-    successResponse(res, {
-      verified: true,
-      email,
-      tokenHash,
-    }, 'Xác thực mã OTP thành công');
+  const storedOtp = await redis.get(`otp:${normalizedEmail}`);
+  if (!storedOtp || storedOtp !== cleanOtp) {
+    errorResponse(res, 'Mã OTP không chính xác hoặc đã hết hạn', 400);
     return;
   }
 
-  errorResponse(res, 'Mã OTP không chính xác hoặc đã hết hạn', 400);
+  const user = await prisma.user.findFirst({
+    where: { email: { equals: normalizedEmail, mode: 'insensitive' } },
+  });
+  if (!user) {
+    errorResponse(res, 'Mã OTP không chính xác hoặc đã hết hạn', 400);
+    return;
+  }
+
+  let tokenHash = await redis.get(`otp_token:${normalizedEmail}`);
+  if (!tokenHash) {
+    tokenHash = crypto.randomBytes(32).toString('hex');
+    await prisma.passwordResetToken.create({
+      data: {
+        userId: user.id,
+        tokenHash,
+        expiresAt: new Date(Date.now() + 60 * 60 * 1000),
+      },
+    });
+  }
+
+  await redis.del(`otp:${normalizedEmail}`);
+
+  successResponse(res, {
+    verified: true,
+    email: normalizedEmail,
+    tokenHash,
+  }, 'Xác thực mã OTP thành công');
 }
 
 // ── Reset Password ────────────────────────
 
 export async function resetPassword(req: Request, res: Response): Promise<void> {
-  const { tokenHash, newPassword, email } = req.body;
+  const { tokenHash, newPassword } = req.body;
 
-  let token = tokenHash
-    ? await prisma.passwordResetToken.findFirst({
-        where: { tokenHash, used: false, expiresAt: { gt: new Date() } },
-      })
-    : null;
-
-  if (!token && email) {
-    const user = await prisma.user.findUnique({ where: { email } });
-    if (user) {
-      const passwordHash = await hashPassword(newPassword);
-      await prisma.user.update({ where: { id: user.id }, data: { passwordHash } });
-      successResponse(res, null, 'Password reset successful');
-      return;
-    }
-  }
+  const token = await prisma.passwordResetToken.findFirst({
+    where: { tokenHash, used: false, expiresAt: { gt: new Date() } },
+  });
 
   if (!token) {
     errorResponse(res, 'Invalid or expired token', 400);
@@ -346,8 +403,10 @@ export async function resetPassword(req: Request, res: Response): Promise<void> 
   }
 
   const passwordHash = await hashPassword(newPassword);
-  await prisma.user.update({ where: { id: token.userId }, data: { passwordHash } });
-  await prisma.passwordResetToken.update({ where: { id: token.id }, data: { used: true } });
+  await prisma.$transaction([
+    prisma.user.update({ where: { id: token.userId }, data: { passwordHash, refreshToken: null } }),
+    prisma.passwordResetToken.updateMany({ where: { userId: token.userId, used: false }, data: { used: true } }),
+  ]);
 
   successResponse(res, null, 'Password reset successful');
 }
@@ -356,7 +415,7 @@ export async function resetPassword(req: Request, res: Response): Promise<void> 
 
 export async function changePassword(req: AuthRequest, res: Response): Promise<void> {
   const { currentPassword, newPassword } = req.body;
-  const userId = req.user?.userId || 1;
+  const userId = req.user!.userId;
 
   const user = await prisma.user.findUnique({ where: { id: userId } });
   if (!user) {
@@ -381,7 +440,7 @@ export async function changePassword(req: AuthRequest, res: Response): Promise<v
 // ── 2FA & Security Preferences ───────────
 
 export async function get2FAStatus(req: AuthRequest, res: Response): Promise<void> {
-  const userId = req.user?.userId || 1;
+  const userId = req.user!.userId;
   const statusStr = await redis.get(`user:${userId}:2fa_enabled`);
   const isTwoFactorEnabled = statusStr === 'true';
 
@@ -395,8 +454,29 @@ export async function get2FAStatus(req: AuthRequest, res: Response): Promise<voi
   });
 }
 
+export async function get2FASetup(req: AuthRequest, res: Response): Promise<void> {
+  const userId = req.user!.userId;
+  const user = await prisma.user.findUnique({ where: { id: userId }, select: { email: true } });
+  let secret = await redis.get(`user:${userId}:2fa_secret`);
+  if (!secret) {
+    const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
+    const bytes = crypto.randomBytes(16);
+    secret = Array.from(bytes, (b) => alphabet[b % alphabet.length]).join('');
+    await redis.set(`user:${userId}:2fa_secret`, secret, 'EX', 86400);
+  }
+  const formattedKey = secret.match(/.{1,4}/g)?.join(' ') || secret;
+  const label = encodeURIComponent(`Dishcision:${user?.email || userId}`);
+  const otpauthUrl = `otpauth://totp/${label}?secret=${secret}&issuer=Dishcision`;
+
+  res.status(200).json({
+    success: true,
+    data: { secret, formattedKey, otpauthUrl },
+    message: 'Lấy mã thiết lập 2FA thành công',
+  });
+}
+
 export async function verify2FA(req: AuthRequest, res: Response): Promise<void> {
-  const userId = req.user?.userId || 1;
+  const userId = req.user!.userId;
   const { code } = req.body;
 
   if (!code || String(code).trim().length < 4) {
@@ -417,7 +497,7 @@ export async function verify2FA(req: AuthRequest, res: Response): Promise<void> 
 }
 
 export async function disable2FA(req: AuthRequest, res: Response): Promise<void> {
-  const userId = req.user?.userId || 1;
+  const userId = req.user!.userId;
   await redis.set(`user:${userId}:2fa_enabled`, 'false');
 
   res.status(200).json({
@@ -432,86 +512,86 @@ export async function disable2FA(req: AuthRequest, res: Response): Promise<void>
 
 // ── Active Sessions ───────────────────────
 
-const DEFAULT_SESSIONS = [
-  {
-    id: 'session-1',
-    deviceName: 'Điện thoại · Dishcision',
-    subtitle: 'Phiên đang xem trong thiết kế',
-    isCurrent: true,
-    statusText: 'Thiết bị này',
-    location: 'Thiết bị này',
-  },
-  {
-    id: 'session-2',
-    deviceName: 'Máy tính · Trình duyệt',
-    subtitle: 'TP.HCM · 15/10/2026',
-    isCurrent: false,
-    statusText: '',
-    location: 'TP.HCM · 15/10/2026',
-  },
-  {
-    id: 'session-3',
-    deviceName: 'Máy tính bảng · Ứng dụng',
-    subtitle: 'Hà Nội · 12/10/2026',
-    isCurrent: false,
-    statusText: '',
-    location: 'Hà Nội · 12/10/2026',
-  },
-];
+function formatSessions(rows: any[], currentHash: string | null) {
+  return rows.map((s) => {
+    const isCurrent = Boolean(currentHash && s.tokenHash === currentHash);
+    const formattedDate = s.lastActive.toLocaleDateString('vi-VN');
+    return {
+      id: s.id,
+      deviceName: s.deviceName,
+      subtitle: isCurrent
+        ? 'Phiên đang hoạt động'
+        : `${s.location ? `${s.location} · ` : ''}${formattedDate}`,
+      isCurrent,
+      statusText: isCurrent ? 'Thiết bị này' : '',
+      location: s.location || '',
+      lastActive: s.lastActive,
+    };
+  });
+}
 
 export async function getSessions(req: AuthRequest, res: Response): Promise<void> {
-  const userId = req.user?.userId || 1;
-  const raw = await redis.get(`user:${userId}:sessions`);
+  const userId = req.user!.userId;
+  const currentToken = req.headers.authorization?.slice(7).trim() || '';
+  const currentHash = currentToken ? hashToken(currentToken) : null;
 
-  let sessions = DEFAULT_SESSIONS;
-  if (raw) {
-    try {
-      sessions = JSON.parse(raw);
-    } catch {
-      sessions = DEFAULT_SESSIONS;
-    }
-  } else {
-    await redis.set(`user:${userId}:sessions`, JSON.stringify(DEFAULT_SESSIONS));
+  let rows = await prisma.userSession.findMany({
+    where: { userId },
+    orderBy: { lastActive: 'desc' },
+  });
+
+  if (currentHash && !rows.some((s) => s.tokenHash === currentHash)) {
+    await recordSession(userId, req, currentToken);
+    rows = await prisma.userSession.findMany({
+      where: { userId },
+      orderBy: { lastActive: 'desc' },
+    });
+  } else if (currentHash) {
+    await prisma.userSession.updateMany({
+      where: { userId, tokenHash: currentHash },
+      data: { lastActive: new Date() },
+    });
   }
 
   res.status(200).json({
     success: true,
-    data: sessions,
+    data: formatSessions(rows, currentHash),
     message: 'Lấy danh sách phiên thành công',
   });
 }
 
 export async function revokeSession(req: AuthRequest, res: Response): Promise<void> {
-  const userId = req.user?.userId || 1;
+  const userId = req.user!.userId;
   const { sessionId, sessionIds } = req.body;
-
-  const raw = await redis.get(`user:${userId}:sessions`);
-  let sessions = DEFAULT_SESSIONS;
-  if (raw) {
-    try {
-      sessions = JSON.parse(raw);
-    } catch {
-      sessions = DEFAULT_SESSIONS;
-    }
-  }
+  const currentToken = req.headers.authorization?.slice(7).trim() || '';
+  const currentHash = currentToken ? hashToken(currentToken) : null;
 
   const toRevoke = new Set<string>();
-  if (sessionId) toRevoke.add(sessionId);
+  if (sessionId) toRevoke.add(String(sessionId));
   if (Array.isArray(sessionIds)) {
-    sessionIds.forEach((id: string) => toRevoke.add(id));
+    sessionIds.forEach((id: string) => toRevoke.add(String(id)));
   }
 
-  if (toRevoke.size === 0) {
-    sessions = sessions.filter((s) => s.isCurrent);
-  } else {
-    sessions = sessions.filter((s) => s.isCurrent || !toRevoke.has(s.id));
+  const rows = await prisma.userSession.findMany({ where: { userId } });
+  const idsToDelete = rows
+    .filter((s) => !(currentHash && s.tokenHash === currentHash))
+    .filter((s) => toRevoke.size === 0 || toRevoke.has(s.id))
+    .map((s) => s.id);
+
+  if (idsToDelete.length > 0) {
+    await prisma.userSession.deleteMany({
+      where: { userId, id: { in: idsToDelete } },
+    });
   }
 
-  await redis.set(`user:${userId}:sessions`, JSON.stringify(sessions));
+  const remaining = await prisma.userSession.findMany({
+    where: { userId },
+    orderBy: { lastActive: 'desc' },
+  });
 
   res.status(200).json({
     success: true,
-    data: sessions,
+    data: formatSessions(remaining, currentHash),
     message: 'Đã đăng xuất phiên đăng nhập thành công',
   });
 }

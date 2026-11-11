@@ -1,8 +1,10 @@
 import { Response } from 'express';
 import { prisma } from '../config/prisma';
+import { delCache } from '../config/redis';
 import { successResponse, paginatedResponse, errorResponse } from '../utils/response';
+import { parsePagination, parsePositiveInt } from '../utils/http';
 import { AuthRequest } from '../middlewares/auth.middleware';
-import { formatUser, formatUserPrivate } from './user.controller';
+import { formatUser, attachPostFlags } from './user.controller';
 
 const AUTHOR_SELECT = {
   id: true, username: true, fullName: true, avatarUrl: true,
@@ -34,9 +36,25 @@ function formatMessage(msg: any) {
 
 export async function followUser(req: AuthRequest, res: Response): Promise<void> {
   const followerId = req.user!.userId;
-  const followingId = parseInt(req.params.userId);
+  const followingId = parsePositiveInt(req.params.userId);
+  if (!followingId) {
+    errorResponse(res, 'Invalid user ID', 400);
+    return;
+  }
 
-  if (followerId === followingId) { errorResponse(res, 'Cannot follow yourself', 400); return; }
+  if (followerId === followingId) {
+    errorResponse(res, 'Cannot follow yourself', 400);
+    return;
+  }
+
+  const targetUser = await prisma.user.findUnique({
+    where: { id: followingId, accountStatus: 'Active' },
+    select: { id: true },
+  });
+  if (!targetUser) {
+    errorResponse(res, 'User not found', 404);
+    return;
+  }
 
   try {
     await prisma.follow.create({ data: { followerId, followingId } });
@@ -45,6 +63,7 @@ export async function followUser(req: AuthRequest, res: Response): Promise<void>
     await prisma.notification.create({
       data: { userId: followingId, type: 'Follow', message: `${follower?.username} started following you` },
     });
+    await Promise.all([delCache(`user:${followingId}`), delCache(`user:${followerId}`)]);
 
     successResponse(res, null, 'Follow successful');
   } catch {
@@ -56,18 +75,26 @@ export async function followUser(req: AuthRequest, res: Response): Promise<void>
 
 export async function unfollowUser(req: AuthRequest, res: Response): Promise<void> {
   const followerId = req.user!.userId;
-  const followingId = parseInt(req.params.userId);
+  const followingId = parsePositiveInt(req.params.userId);
+  if (!followingId) {
+    errorResponse(res, 'Invalid user ID', 400);
+    return;
+  }
 
   await prisma.follow.deleteMany({ where: { followerId, followingId } });
+  await Promise.all([delCache(`user:${followingId}`), delCache(`user:${followerId}`)]);
   successResponse(res, null, 'Unfollow successful');
 }
 
 // ── GET /users/:userId/followers ──────────
 
 export async function getFollowers(req: AuthRequest, res: Response): Promise<void> {
-  let targetId = req.params.userId === 'me' ? req.user?.userId : parseInt(req.params.userId);
-  if (!targetId || isNaN(targetId)) targetId = req.user?.userId || 1;
-  const currentUserId = req.user?.userId;
+  const targetId = req.params.userId === 'me' ? req.user!.userId : parsePositiveInt(req.params.userId);
+  if (!targetId) {
+    errorResponse(res, 'Invalid user ID', 400);
+    return;
+  }
+  const currentUserId = req.user!.userId;
 
   const follows = await prisma.follow.findMany({
     where: { followingId: targetId },
@@ -86,12 +113,10 @@ export async function getFollowers(req: AuthRequest, res: Response): Promise<voi
     orderBy: { createdAt: 'desc' },
   });
 
-  const myFollows = currentUserId
-    ? await prisma.follow.findMany({
-        where: { followerId: currentUserId },
-        select: { followingId: true },
-      })
-    : [];
+  const myFollows = await prisma.follow.findMany({
+    where: { followerId: currentUserId },
+    select: { followingId: true },
+  });
   const myFollowingSet = new Set(myFollows.map((f) => f.followingId));
 
   const data = follows.map((f) => ({
@@ -109,9 +134,12 @@ export async function getFollowers(req: AuthRequest, res: Response): Promise<voi
 // ── GET /users/:userId/following ──────────
 
 export async function getFollowing(req: AuthRequest, res: Response): Promise<void> {
-  let targetId = req.params.userId === 'me' ? req.user?.userId : parseInt(req.params.userId);
-  if (!targetId || isNaN(targetId)) targetId = req.user?.userId || 1;
-  const currentUserId = req.user?.userId;
+  const targetId = req.params.userId === 'me' ? req.user!.userId : parsePositiveInt(req.params.userId);
+  if (!targetId) {
+    errorResponse(res, 'Invalid user ID', 400);
+    return;
+  }
+  const currentUserId = req.user!.userId;
 
   const follows = await prisma.follow.findMany({
     where: { followerId: targetId },
@@ -130,12 +158,10 @@ export async function getFollowing(req: AuthRequest, res: Response): Promise<voi
     orderBy: { createdAt: 'desc' },
   });
 
-  const myFollows = currentUserId
-    ? await prisma.follow.findMany({
-        where: { followerId: currentUserId },
-        select: { followingId: true },
-      })
-    : [];
+  const myFollows = await prisma.follow.findMany({
+    where: { followerId: currentUserId },
+    select: { followingId: true },
+  });
   const myFollowingSet = new Set(myFollows.map((f) => f.followingId));
 
   const data = follows.map((f) => ({
@@ -154,27 +180,31 @@ export async function getFollowing(req: AuthRequest, res: Response): Promise<voi
 
 export async function savePost(req: AuthRequest, res: Response): Promise<void> {
   const userId = req.user!.userId;
-  const postId = parseInt(req.params.postId);
-
-  try {
-    const post = await prisma.post.findFirst({ where: { id: postId, status: 'Active' }, select: { id: true } });
-    if (!post) {
-      errorResponse(res, 'Post not found', 404);
-      return;
-    }
-    const existing = await prisma.savedPost.findFirst({ where: { userId, postId } });
-    if (!existing) await prisma.savedPost.create({ data: { userId, postId } });
-    successResponse(res, { postId, isSaved: true }, 'Saved successfully');
-  } catch {
-    errorResponse(res, 'Could not save post', 500);
+  const postId = parsePositiveInt(req.params.postId);
+  if (!postId) {
+    errorResponse(res, 'Invalid post ID', 400);
+    return;
   }
+
+  const post = await prisma.post.findFirst({ where: { id: postId, status: 'Active' }, select: { id: true } });
+  if (!post) {
+    errorResponse(res, 'Post not found', 404);
+    return;
+  }
+  const existing = await prisma.savedPost.findFirst({ where: { userId, postId } });
+  if (!existing) await prisma.savedPost.create({ data: { userId, postId } });
+  successResponse(res, { postId, isSaved: true }, 'Saved successfully');
 }
 
 // ── DELETE /posts/:postId/save ────────────
 
 export async function unsavePost(req: AuthRequest, res: Response): Promise<void> {
   const userId = req.user!.userId;
-  const postId = parseInt(req.params.postId);
+  const postId = parsePositiveInt(req.params.postId);
+  if (!postId) {
+    errorResponse(res, 'Invalid post ID', 400);
+    return;
+  }
 
   await prisma.savedPost.deleteMany({ where: { userId, postId } });
   successResponse(res, null, 'Removed from bookmarks');
@@ -183,14 +213,12 @@ export async function unsavePost(req: AuthRequest, res: Response): Promise<void>
 // ── GET /users/me/saved-posts ─────────────
 
 export async function getSavedPosts(req: AuthRequest, res: Response): Promise<void> {
-  const userId = req.user?.userId || 11;
-  const page = parseInt(req.query.page as string) || 1;
-  const limit = parseInt(req.query.limit as string) || 10;
-  const skip = (page - 1) * limit;
+  const userId = req.user!.userId;
+  const { page, limit, skip } = parsePagination(req.query, 10, 100);
 
   const [saved, total] = await Promise.all([
     prisma.savedPost.findMany({
-      where: { userId },
+      where: { userId, post: { status: 'Active' } },
       include: {
         post: {
           include: {
@@ -201,12 +229,17 @@ export async function getSavedPosts(req: AuthRequest, res: Response): Promise<vo
         },
       },
       orderBy: { createdAt: 'desc' },
-      skip, take: limit,
+      skip,
+      take: limit,
     }),
-    prisma.savedPost.count({ where: { userId } }),
+    prisma.savedPost.count({ where: { userId, post: { status: 'Active' } } }),
   ]);
 
-  paginatedResponse(res, saved.map((s) => ({ ...formatPost(s.post), isSaved: true })), { page, limit, total });
+  const formatted = await attachPostFlags(
+    saved.map((s) => formatPost(s.post)),
+    userId
+  );
+  paginatedResponse(res, formatted, { page, limit, total });
 }
 
 // ── GET /chats ────────────────────────────
@@ -214,7 +247,6 @@ export async function getSavedPosts(req: AuthRequest, res: Response): Promise<vo
 export async function getChats(req: AuthRequest, res: Response): Promise<void> {
   const userId = req.user!.userId;
 
-  // Get unique conversations
   const messages = await prisma.message.findMany({
     where: { OR: [{ senderId: userId }, { recipientId: userId }] },
     orderBy: { createdAt: 'desc' },
@@ -224,7 +256,6 @@ export async function getChats(req: AuthRequest, res: Response): Promise<void> {
     },
   });
 
-  // Deduplicate by conversation partner
   const seen = new Set<number>();
   const conversations: any[] = [];
 
@@ -252,24 +283,26 @@ export async function getChats(req: AuthRequest, res: Response): Promise<void> {
 
 export async function getMessages(req: AuthRequest, res: Response): Promise<void> {
   const userId = req.user!.userId;
-  const recipientId = parseInt(req.params.recipientId);
-  const page = parseInt(req.query.page as string) || 1;
-  const limit = parseInt(req.query.limit as string) || 20;
-  const skip = (page - 1) * limit;
+  const recipientId = parsePositiveInt(req.params.recipientId);
+  if (!recipientId) {
+    errorResponse(res, 'Invalid recipient ID', 400);
+    return;
+  }
+  const { page, limit, skip } = parsePagination(req.query, 20, 100);
 
   const [messages, total] = await Promise.all([
     prisma.message.findMany({
       where: { OR: [{ senderId: userId, recipientId }, { senderId: recipientId, recipientId: userId }] },
       include: { sender: { select: AUTHOR_SELECT } },
       orderBy: { createdAt: 'desc' },
-      skip, take: limit,
+      skip,
+      take: limit,
     }),
     prisma.message.count({
       where: { OR: [{ senderId: userId, recipientId }, { senderId: recipientId, recipientId: userId }] },
     }),
   ]);
 
-  // Mark incoming as read
   await prisma.message.updateMany({
     where: { senderId: recipientId, recipientId: userId, isRead: false },
     data: { isRead: true },
@@ -282,10 +315,23 @@ export async function getMessages(req: AuthRequest, res: Response): Promise<void
 
 export async function sendMessage(req: AuthRequest, res: Response): Promise<void> {
   const userId = req.user!.userId;
-  const recipientId = parseInt(req.params.recipientId);
+  const recipientId = parsePositiveInt(req.params.recipientId);
+  if (!recipientId) {
+    errorResponse(res, 'Invalid recipient ID', 400);
+    return;
+  }
   const { content, mediaUrl } = req.body;
 
-  if (!content && !mediaUrl) { errorResponse(res, 'Message content or media is required', 400); return; }
+  if (!content && !mediaUrl) {
+    errorResponse(res, 'Message content or media is required', 400);
+    return;
+  }
+
+  const recipient = await prisma.user.findUnique({ where: { id: recipientId, accountStatus: 'Active' }, select: { id: true } });
+  if (!recipient) {
+    errorResponse(res, 'Recipient not found', 404);
+    return;
+  }
 
   const message = await prisma.message.create({
     data: { senderId: userId, recipientId, content, mediaUrl },

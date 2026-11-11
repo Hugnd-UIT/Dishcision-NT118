@@ -2,21 +2,34 @@ import { Request, Response } from 'express';
 import { prisma } from '../config/prisma';
 import { getCache, setCache, delCache, delCacheByPattern, CACHE_TTL } from '../config/redis';
 import { successResponse, paginatedResponse, errorResponse } from '../utils/response';
+import { parsePagination, parsePositiveInt } from '../utils/http';
 import { AuthRequest } from '../middlewares/auth.middleware';
-import { formatUser, attachSavedFlags } from './user.controller';
+import { formatUser, attachPostFlags } from './user.controller';
+import { handleUploadedFile } from './upload.controller';
 
 export const POST_INCLUDE = {
   author: {
     select: {
-      id: true, username: true, fullName: true, avatarUrl: true,
-      bio: true, role: true, _count: { select: { followers: true, following: true } },
+      id: true,
+      username: true,
+      fullName: true,
+      avatarUrl: true,
+      bio: true,
+      role: true,
+      _count: {
+        select: {
+          followers: true,
+          following: true,
+          posts: { where: { status: 'Active' as const } },
+        },
+      },
     },
   },
   images: true,
   _count: { select: { likes: true, comments: true, shares: true } },
 };
 
-export function formatPost(post: any, userId?: number) {
+export function formatPost(post: any) {
   const { id, _count, author, ...rest } = post;
   return {
     postId: id,
@@ -31,10 +44,8 @@ export function formatPost(post: any, userId?: number) {
 // ── GET /posts ────────────────────────────
 
 export async function getNewsfeed(req: AuthRequest, res: Response): Promise<void> {
-  const page = parseInt(req.query.page as string) || 1;
-  const limit = parseInt(req.query.limit as string) || 10;
+  const { page, limit, skip } = parsePagination(req.query, 10, 100);
   const sort = (req.query.sort as string) || 'latest';
-  const skip = (page - 1) * limit;
 
   const orderBy: any =
     sort === 'trending'
@@ -43,8 +54,15 @@ export async function getNewsfeed(req: AuthRequest, res: Response): Promise<void
 
   const where: any = { status: 'Active' };
 
-  // Following feed: only posts from users the current user follows
-  if (sort === 'following' && req.user) {
+  if (req.query.hasVoucher === 'true') {
+    where.voucherCode = { not: null };
+  }
+
+  if (sort === 'following') {
+    if (!req.user) {
+      paginatedResponse(res, [], { page, limit, total: 0 });
+      return;
+    }
     const follows = await prisma.follow.findMany({
       where: { followerId: req.user.userId },
       select: { followingId: true },
@@ -57,7 +75,7 @@ export async function getNewsfeed(req: AuthRequest, res: Response): Promise<void
     prisma.post.count({ where }),
   ]);
 
-  const formatted = await attachSavedFlags(posts.map((p) => formatPost(p)), req.user?.userId);
+  const formatted = await attachPostFlags(posts.map(formatPost), req.user?.userId);
   paginatedResponse(res, formatted, { page, limit, total });
 }
 
@@ -71,8 +89,8 @@ export async function createPost(req: AuthRequest, res: Response): Promise<void>
     data: {
       authorId: userId,
       content,
-      locationUrl,
-      voucherCode,
+      locationUrl: locationUrl || null,
+      voucherCode: voucherCode || null,
       hashtags: hashtags || [],
       images: images
         ? { create: images.map((img: any) => ({ imageUrl: img.imageUrl, displayOrder: img.displayOrder ?? 0 })) }
@@ -81,49 +99,63 @@ export async function createPost(req: AuthRequest, res: Response): Promise<void>
     include: POST_INCLUDE,
   });
 
-  await delCacheByPattern('newsfeed:*');
-  successResponse(res, formatPost(post), 'Post created', 201);
+  await Promise.all([delCacheByPattern('newsfeed:*'), delCache(`user:${userId}`)]);
+  successResponse(res, { ...formatPost(post), isSaved: false, isLiked: false }, 'Post created', 201);
 }
 
 // ── GET /posts/:postId ────────────────────
 
-export async function getPostById(req: Request, res: Response): Promise<void> {
-  const postId = parseInt(req.params.postId);
-  if (isNaN(postId)) {
+export async function getPostById(req: AuthRequest, res: Response): Promise<void> {
+  const postId = parsePositiveInt(req.params.postId);
+  if (!postId) {
     errorResponse(res, 'Invalid post ID', 400);
     return;
   }
 
   const cacheKey = `post:${postId}`;
-  const cached = await getCache(cacheKey);
-  if (cached) { successResponse(res, cached); return; }
+  let basePost = await getCache<ReturnType<typeof formatPost>>(cacheKey);
 
-  const post = await prisma.post.findFirst({
-    where: { id: postId, status: 'Active' },
-    include: POST_INCLUDE,
-  });
-  if (!post) { errorResponse(res, 'Post not found', 404); return; }
+  if (!basePost) {
+    const post = await prisma.post.findFirst({
+      where: { id: postId, status: 'Active' },
+      include: POST_INCLUDE,
+    });
+    if (!post) {
+      errorResponse(res, 'Post not found', 404);
+      return;
+    }
+    basePost = formatPost(post);
+    await setCache(cacheKey, basePost, CACHE_TTL.POST_DETAIL);
+  }
 
-  const formatted = formatPost(post);
-  await setCache(cacheKey, formatted, CACHE_TTL.POST_DETAIL);
-  successResponse(res, formatted);
+  const [enriched] = await attachPostFlags([basePost], req.user?.userId);
+  successResponse(res, enriched);
 }
 
 // ── PUT /posts/:postId ────────────────────
 
 export async function updatePost(req: AuthRequest, res: Response): Promise<void> {
   const userId = req.user!.userId;
-  const postId = parseInt(req.params.postId);
-  const { content, images, locationUrl, voucherCode, hashtags } = req.body;
+  const postId = parsePositiveInt(req.params.postId);
+  if (!postId) {
+    errorResponse(res, 'Invalid post ID', 400);
+    return;
+  }
+  const { content, images, locationUrl, voucherCode, hashtags, status } = req.body;
 
-  const post = await prisma.post.findFirst({ where: { id: postId, status: 'Active' } });
-  if (!post) { errorResponse(res, 'Post not found', 404); return; }
+  const post = await prisma.post.findFirst({
+    where: { id: postId, status: { in: ['Active', 'Hidden'] } },
+  });
+  if (!post) {
+    errorResponse(res, 'Post not found', 404);
+    return;
+  }
   if (post.authorId !== userId && req.user!.role !== 'Admin') {
-    errorResponse(res, 'Not authorized to edit this post', 403); return;
+    errorResponse(res, 'Not authorized to edit this post', 403);
+    return;
   }
 
-  // Replace images
-  if (images) {
+  if (Array.isArray(images)) {
     await prisma.postImage.deleteMany({ where: { postId } });
   }
 
@@ -131,34 +163,52 @@ export async function updatePost(req: AuthRequest, res: Response): Promise<void>
     where: { id: postId },
     data: {
       content,
-      locationUrl,
-      voucherCode,
-      hashtags: hashtags || undefined,
-      images: images
+      locationUrl: locationUrl === '' ? null : locationUrl,
+      voucherCode: voucherCode === '' ? null : voucherCode,
+      hashtags: hashtags ?? undefined,
+      status: status ?? undefined,
+      images: Array.isArray(images)
         ? { create: images.map((img: any) => ({ imageUrl: img.imageUrl, displayOrder: img.displayOrder ?? 0 })) }
         : undefined,
     },
     include: POST_INCLUDE,
   });
 
-  await delCache(`post:${postId}`);
-  successResponse(res, formatPost(updated), 'Post updated');
+  await Promise.all([
+    delCache(`post:${postId}`),
+    delCache(`user:${post.authorId}`),
+    delCacheByPattern('newsfeed:*'),
+  ]);
+  const [enriched] = await attachPostFlags([formatPost(updated)], userId);
+  successResponse(res, enriched, 'Post updated');
 }
 
 // ── DELETE /posts/:postId ─────────────────
 
 export async function deletePost(req: AuthRequest, res: Response): Promise<void> {
   const userId = req.user!.userId;
-  const postId = parseInt(req.params.postId);
+  const postId = parsePositiveInt(req.params.postId);
+  if (!postId) {
+    errorResponse(res, 'Invalid post ID', 400);
+    return;
+  }
 
   const post = await prisma.post.findFirst({ where: { id: postId } });
-  if (!post) { errorResponse(res, 'Post not found', 404); return; }
+  if (!post) {
+    errorResponse(res, 'Post not found', 404);
+    return;
+  }
   if (post.authorId !== userId && req.user!.role !== 'Admin') {
-    errorResponse(res, 'Not authorized', 403); return;
+    errorResponse(res, 'Not authorized', 403);
+    return;
   }
 
   await prisma.post.update({ where: { id: postId }, data: { status: 'Deleted' } });
-  await delCache(`post:${postId}`);
+  await Promise.all([
+    delCache(`post:${postId}`),
+    delCache(`user:${post.authorId}`),
+    delCacheByPattern('newsfeed:*'),
+  ]);
   successResponse(res, null, 'Post deleted');
 }
 
@@ -166,13 +216,21 @@ export async function deletePost(req: AuthRequest, res: Response): Promise<void>
 
 export async function likePost(req: AuthRequest, res: Response): Promise<void> {
   const userId = req.user!.userId;
-  const postId = parseInt(req.params.postId);
+  const postId = parsePositiveInt(req.params.postId);
+  if (!postId) {
+    errorResponse(res, 'Invalid post ID', 400);
+    return;
+  }
+
+  const post = await prisma.post.findFirst({ where: { id: postId, status: 'Active' } });
+  if (!post) {
+    errorResponse(res, 'Post not found', 404);
+    return;
+  }
 
   try {
     await prisma.postLike.create({ data: { userId, postId } });
-    // Create notification for post author
-    const post = await prisma.post.findUnique({ where: { id: postId } });
-    if (post && post.authorId !== userId) {
+    if (post.authorId !== userId) {
       const liker = await prisma.user.findUnique({ where: { id: userId }, select: { username: true } });
       await prisma.notification.create({
         data: { userId: post.authorId, type: 'Like', message: `${liker?.username} liked your post`, relatedPostId: postId },
@@ -188,7 +246,12 @@ export async function likePost(req: AuthRequest, res: Response): Promise<void> {
 
 export async function unlikePost(req: AuthRequest, res: Response): Promise<void> {
   const userId = req.user!.userId;
-  const postId = parseInt(req.params.postId);
+  const postId = parsePositiveInt(req.params.postId);
+  if (!postId) {
+    errorResponse(res, 'Invalid post ID', 400);
+    return;
+  }
+
   await prisma.postLike.deleteMany({ where: { userId, postId } });
   successResponse(res, null, 'Unliked successfully');
 }
@@ -196,16 +259,19 @@ export async function unlikePost(req: AuthRequest, res: Response): Promise<void>
 // ── GET /posts/:postId/likes ──────────────
 
 export async function getPostLikes(req: Request, res: Response): Promise<void> {
-  const postId = parseInt(req.params.postId);
-  const page = parseInt(req.query.page as string) || 1;
-  const limit = parseInt(req.query.limit as string) || 20;
-  const skip = (page - 1) * limit;
+  const postId = parsePositiveInt(req.params.postId);
+  if (!postId) {
+    errorResponse(res, 'Invalid post ID', 400);
+    return;
+  }
+  const { page, limit, skip } = parsePagination(req.query, 20, 100);
 
   const [likes, total] = await Promise.all([
     prisma.postLike.findMany({
       where: { postId },
       include: { user: { select: { id: true, username: true, fullName: true, avatarUrl: true, bio: true, role: true, _count: { select: { followers: true, following: true } } } } },
-      skip, take: limit,
+      skip,
+      take: limit,
     }),
     prisma.postLike.count({ where: { postId } }),
   ]);
@@ -217,29 +283,33 @@ export async function getPostLikes(req: Request, res: Response): Promise<void> {
 
 export async function sharePost(req: AuthRequest, res: Response): Promise<void> {
   const userId = req.user!.userId;
-  const postId = parseInt(req.params.postId);
-
-  try {
-    await prisma.postShare.create({ data: { userId, postId } });
-    successResponse(res, null, 'Shared successfully');
-  } catch {
-    errorResponse(res, 'Already shared', 409);
+  const postId = parsePositiveInt(req.params.postId);
+  if (!postId) {
+    errorResponse(res, 'Invalid post ID', 400);
+    return;
   }
-}
 
-import { handleUploadedFile } from './upload.controller';
+  const post = await prisma.post.findFirst({ where: { id: postId, status: 'Active' }, select: { id: true } });
+  if (!post) {
+    errorResponse(res, 'Post not found', 404);
+    return;
+  }
+
+  await prisma.postShare.upsert({
+    where: { userId_postId: { userId, postId } },
+    update: {},
+    create: { userId, postId },
+  });
+  successResponse(res, { postId, shared: true }, 'Shared successfully');
+}
 
 // ── POST /posts/upload-media ──────────────
 
 export async function uploadMedia(req: AuthRequest, res: Response): Promise<void> {
-  try {
-    if (req.file) {
-      const data = handleUploadedFile(req, req.file);
-      successResponse(res, data, 'Tải lên thành công');
-      return;
-    }
-    successResponse(res, { url: `/uploads/images/img-${Date.now()}.jpg` }, 'Upload successful (mock)');
-  } catch (error: any) {
-    errorResponse(res, error.message || 'Lỗi khi tải lên', 500);
+  if (!req.file) {
+    errorResponse(res, 'Vui lòng chọn tệp ảnh hoặc video để tải lên (key field: "file")', 400);
+    return;
   }
+  const data = handleUploadedFile(req, req.file);
+  successResponse(res, data, 'Tải lên thành công');
 }

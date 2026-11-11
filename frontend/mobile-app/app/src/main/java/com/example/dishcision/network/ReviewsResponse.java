@@ -62,6 +62,9 @@ public class ReviewsResponse {
 
         @SerializedName("author")
         public FeedPostsResponse.Author author;
+
+        @SerializedName("images")
+        public List<FeedPostsResponse.PostImage> images;
     }
 }
 

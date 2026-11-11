@@ -2,48 +2,68 @@ package com.example.dishcision;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.text.TextUtils;
 import android.view.View;
 import android.view.inputmethod.EditorInfo;
 import android.widget.EditText;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.activity.EdgeToEdge;
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 
-import com.google.android.material.bottomsheet.BottomSheetDialog;
+import com.example.dishcision.network.ApiClient;
+import com.example.dishcision.network.ImageLoader;
+import com.example.dishcision.network.SendChatMessageRequest;
+import com.example.dishcision.network.SendChatMessageResponse;
+import com.example.dishcision.network.StoriesResponse;
+import com.example.dishcision.network.StoryModel;
+import com.example.dishcision.network.TokenManager;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
 
 public class StoryActivity extends AppCompatActivity {
 
+    public static final String EXTRA_USER_ID = "extra_user_id";
     public static final String EXTRA_STORE_NAME = "extra_store_name";
+    public static final String EXTRA_STORY_ID = "extra_story_id";
 
     private ImageView btnCloseStory;
+    private ImageView imgStoryPhoto;
+    private ImageView imgStoryAvatar;
+    private LinearLayout layoutStoryAuthorInfo;
+    private View containerStoryAvatar;
     private TextView tvStoryStoreName;
+    private TextView tvStoryMeta;
     private TextView tvStoryTitle;
+    private TextView tvStorySubtitle;
+    private View layoutReplyInput;
     private EditText edtReply;
-    private ImageView btnStoryLike;
+    private ImageView btnSendReply;
     private ImageView btnStoryShare;
-
     private View btnPrevStory;
     private View btnNextStory;
+    private LinearLayout progressSegments;
 
-    private View segment1;
-    private View segment2;
-    private View segment3;
-
-    private boolean isStoryLiked = false;
+    private final List<StoryModel> stories = new ArrayList<>();
+    private final List<View> segmentViews = new ArrayList<>();
     private int currentStoryIndex = 0;
-    private String storeName = "Phở Thìn";
-
-    private final String[][] STORY_DATA = {
-            {"Một bát phở nóng, một chút bình yên.", "Nước dùng ninh xương đậm đà 24h."},
-            {"Món mới tuần này: Phở Bò Tái Lăn Trứng Chèn", "Thơm nức mùi tỏi phi giòn tan."},
-            {"Ưu đãi độc quyền giảm 20% hôm nay", "Nhập mã DISHCISION20 khi đến quán."}
-    };
+    private int filterUserId = -1;
+    private String filterStoreName = null;
+    private int targetStoryId = -1;
+    private int currentLoggedInUserId = -1;
+    private boolean isSendingReply = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -57,53 +77,140 @@ public class StoryActivity extends AppCompatActivity {
             return insets;
         });
 
+        ApiClient.init(this);
+        TokenManager tm = new TokenManager(this);
+        currentLoggedInUserId = tm.getUserId();
+
+        filterUserId = getIntent().getIntExtra(EXTRA_USER_ID, -1);
+        filterStoreName = getIntent().getStringExtra(EXTRA_STORE_NAME);
+        targetStoryId = getIntent().getIntExtra(EXTRA_STORY_ID, -1);
+
         initViews();
-        setupData();
         setupListeners();
+        loadStories();
     }
 
     private void initViews() {
         btnCloseStory = findViewById(R.id.btnCloseStory);
+        imgStoryPhoto = findViewById(R.id.imgStoryPhoto);
+        imgStoryAvatar = findViewById(R.id.imgStoryAvatar);
+        containerStoryAvatar = findViewById(R.id.containerStoryAvatar);
+        layoutStoryAuthorInfo = findViewById(R.id.layoutStoryAuthorInfo);
         tvStoryStoreName = findViewById(R.id.tvStoryStoreName);
+        tvStoryMeta = findViewById(R.id.tvStoryMeta);
         tvStoryTitle = findViewById(R.id.tvStoryTitle);
+        tvStorySubtitle = findViewById(R.id.tvStorySubtitle);
+        layoutReplyInput = findViewById(R.id.layoutReplyInput);
         edtReply = findViewById(R.id.edtReply);
-
-        btnStoryLike = findViewById(R.id.btnStoryLike);
+        btnSendReply = findViewById(R.id.btnSendReply);
         btnStoryShare = findViewById(R.id.btnStoryShare);
-
         btnPrevStory = findViewById(R.id.btnPrevStory);
         btnNextStory = findViewById(R.id.btnNextStory);
-
-        segment1 = findViewById(R.id.segment1);
-        segment2 = findViewById(R.id.segment2);
-        segment3 = findViewById(R.id.segment3);
+        progressSegments = findViewById(R.id.progressSegments);
     }
 
-    private void setupData() {
-        String name = getIntent().getStringExtra(EXTRA_STORE_NAME);
-        if (name != null && !name.isEmpty()) {
-            storeName = name;
-        }
-        if (tvStoryStoreName != null) tvStoryStoreName.setText(storeName);
-        if (tvStoryTitle != null) tvStoryTitle.setText(storeName);
-        if (edtReply != null) edtReply.setHint("Trả lời " + storeName + "...");
+    private void loadStories() {
+        Integer userIdParam = filterUserId > 0 ? filterUserId : null;
+        String storeNameParam = !TextUtils.isEmpty(filterStoreName) ? filterStoreName.trim() : null;
 
-        updateStoryView();
+        ApiClient.getApiService().getStories(userIdParam, storeNameParam).enqueue(new Callback<StoriesResponse>() {
+            @Override
+            public void onResponse(@NonNull Call<StoriesResponse> call, @NonNull Response<StoriesResponse> response) {
+                if (!response.isSuccessful() || response.body() == null || response.body().data == null || response.body().data.isEmpty()) {
+                    Toast.makeText(StoryActivity.this, "Chưa có story nào để hiển thị", Toast.LENGTH_SHORT).show();
+                    finish();
+                    return;
+                }
+
+                stories.clear();
+                stories.addAll(response.body().data);
+                currentStoryIndex = 0;
+                if (targetStoryId > 0) {
+                    for (int i = 0; i < stories.size(); i++) {
+                        if (stories.get(i).id == targetStoryId) {
+                            currentStoryIndex = i;
+                            break;
+                        }
+                    }
+                }
+
+                buildProgressSegments();
+                updateStoryView();
+            }
+
+            @Override
+            public void onFailure(@NonNull Call<StoriesResponse> call, @NonNull Throwable t) {
+                Toast.makeText(StoryActivity.this, "Không thể tải story: " + t.getMessage(), Toast.LENGTH_SHORT).show();
+                finish();
+            }
+        });
+    }
+
+    private void buildProgressSegments() {
+        if (progressSegments == null) return;
+        progressSegments.removeAllViews();
+        segmentViews.clear();
+
+        int count = stories.size();
+        int marginPx = (int) (4 * getResources().getDisplayMetrics().density);
+        for (int i = 0; i < count; i++) {
+            View seg = new View(this);
+            LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.MATCH_PARENT, 1f);
+            if (i > 0) params.setMarginStart(marginPx);
+            seg.setLayoutParams(params);
+            seg.setBackgroundColor(0x66FFFFFF);
+            progressSegments.addView(seg);
+            segmentViews.add(seg);
+        }
     }
 
     private void updateStoryView() {
+        if (stories.isEmpty()) return;
         if (currentStoryIndex < 0) currentStoryIndex = 0;
-        if (currentStoryIndex >= STORY_DATA.length) currentStoryIndex = STORY_DATA.length - 1;
+        if (currentStoryIndex >= stories.size()) currentStoryIndex = stories.size() - 1;
 
-        TextView tvSubtitle = findViewById(R.id.tvStorySubtitle);
-        if (tvSubtitle != null) {
-            tvSubtitle.setText(STORY_DATA[currentStoryIndex][0]);
+        StoryModel story = stories.get(currentStoryIndex);
+        String displayName = !TextUtils.isEmpty(story.userFullName)
+                ? story.userFullName
+                : (!TextUtils.isEmpty(story.username) ? story.username : "Dishcision");
+
+        if (tvStoryStoreName != null) tvStoryStoreName.setText(displayName);
+        if (tvStoryTitle != null) tvStoryTitle.setText(displayName);
+        if (tvStoryMeta != null) {
+            tvStoryMeta.setText(!TextUtils.isEmpty(story.username) ? "@" + story.username : "");
+        }
+        if (tvStorySubtitle != null) {
+            tvStorySubtitle.setText(story.caption != null ? story.caption : "");
         }
 
-        // Update progress bar segment highlights
-        if (segment1 != null) segment1.setBackgroundColor(currentStoryIndex >= 0 ? 0xFFFFFFFF : 0x66FFFFFF);
-        if (segment2 != null) segment2.setBackgroundColor(currentStoryIndex >= 1 ? 0xFFFFFFFF : 0x66FFFFFF);
-        if (segment3 != null) segment3.setBackgroundColor(currentStoryIndex >= 2 ? 0xFFFFFFFF : 0x66FFFFFF);
+        if (imgStoryPhoto != null) {
+            imgStoryPhoto.setImageDrawable(null);
+            if (!TextUtils.isEmpty(story.mediaUrl)) {
+                ImageLoader.loadImage(imgStoryPhoto, story.mediaUrl);
+            }
+        }
+
+        if (imgStoryAvatar != null) {
+            imgStoryAvatar.setImageResource(R.drawable.ic_profile);
+            if (!TextUtils.isEmpty(story.userAvatar)) {
+                ImageLoader.loadAvatar(imgStoryAvatar, story.userAvatar);
+            }
+        }
+
+        boolean isOwnStory = currentLoggedInUserId > 0 && story.userId == currentLoggedInUserId;
+        if (layoutReplyInput != null) {
+            layoutReplyInput.setVisibility(isOwnStory ? View.GONE : View.VISIBLE);
+        }
+        if (btnSendReply != null) {
+            btnSendReply.setVisibility(isOwnStory ? View.GONE : View.VISIBLE);
+        }
+        if (edtReply != null && !isOwnStory) {
+            edtReply.setHint("Nhắn tin cho " + displayName + "...");
+        }
+
+        for (int i = 0; i < segmentViews.size(); i++) {
+            segmentViews.get(i).setBackgroundColor(currentStoryIndex >= i ? 0xFFFFFFFF : 0x66FFFFFF);
+        }
     }
 
     private void setupListeners() {
@@ -111,57 +218,58 @@ public class StoryActivity extends AppCompatActivity {
             btnCloseStory.setOnClickListener(v -> finish());
         }
 
-        // Left tap zone -> Prev story
+        View.OnClickListener openAuthorProfile = v -> {
+            if (stories.isEmpty()) return;
+            StoryModel story = stories.get(currentStoryIndex);
+            if (story.userId > 0) {
+                Intent intent = new Intent(this, UserProfileActivity.class);
+                intent.putExtra("USER_ID", String.valueOf(story.userId));
+                intent.putExtra("USER_NAME", story.userFullName);
+                startActivity(intent);
+            }
+        };
+        if (containerStoryAvatar != null) containerStoryAvatar.setOnClickListener(openAuthorProfile);
+        if (layoutStoryAuthorInfo != null) layoutStoryAuthorInfo.setOnClickListener(openAuthorProfile);
+
         if (btnPrevStory != null) {
             btnPrevStory.setOnClickListener(v -> {
+                if (stories.isEmpty()) return;
                 if (currentStoryIndex > 0) {
                     currentStoryIndex--;
                     updateStoryView();
                 } else {
-                    Toast.makeText(this, "Đã ở Story đầu tiên", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(this, "Đã ở story đầu tiên", Toast.LENGTH_SHORT).show();
                 }
             });
         }
 
-        // Right tap zone -> Next story
         if (btnNextStory != null) {
             btnNextStory.setOnClickListener(v -> {
-                if (currentStoryIndex < STORY_DATA.length - 1) {
+                if (stories.isEmpty()) {
+                    finish();
+                    return;
+                }
+                if (currentStoryIndex < stories.size() - 1) {
                     currentStoryIndex++;
                     updateStoryView();
                 } else {
-                    finish(); // Finish story viewing when reaching end
+                    finish();
                 }
             });
         }
 
-        // Heart like button
-        if (btnStoryLike != null) {
-            btnStoryLike.setOnClickListener(v -> {
-                isStoryLiked = !isStoryLiked;
-                if (isStoryLiked) {
-                    btnStoryLike.setImageResource(R.drawable.ic_heart_filled_red);
-                    Toast.makeText(this, "Đã thích Story của " + storeName, Toast.LENGTH_SHORT).show();
-                } else {
-                    btnStoryLike.setImageResource(R.drawable.ic_heart);
-                }
-            });
-        }
-
-        // Share button
         if (btnStoryShare != null) {
-            btnStoryShare.setOnClickListener(v -> openShareBottomSheet());
+            btnStoryShare.setOnClickListener(v -> shareCurrentStory());
         }
 
-        // Reply comment field
+        if (btnSendReply != null) {
+            btnSendReply.setOnClickListener(v -> sendStoryReply());
+        }
+
         if (edtReply != null) {
             edtReply.setOnEditorActionListener((v, actionId, event) -> {
                 if (actionId == EditorInfo.IME_ACTION_SEND || actionId == EditorInfo.IME_ACTION_DONE) {
-                    String replyText = edtReply.getText().toString().trim();
-                    if (!replyText.isEmpty()) {
-                        Toast.makeText(this, "Đã gửi phản hồi tới " + storeName + ": " + replyText, Toast.LENGTH_SHORT).show();
-                        edtReply.setText("");
-                    }
+                    sendStoryReply();
                     return true;
                 }
                 return false;
@@ -169,33 +277,65 @@ public class StoryActivity extends AppCompatActivity {
         }
     }
 
-    private void openShareBottomSheet() {
-        BottomSheetDialog bottomSheetDialog = new BottomSheetDialog(this);
-        View dialogView = getLayoutInflater().inflate(R.layout.layout_dialog_share_post, null);
-        bottomSheetDialog.setContentView(dialogView);
+    private void sendStoryReply() {
+        if (stories.isEmpty() || edtReply == null || isSendingReply) return;
+        String replyText = edtReply.getText().toString().trim();
+        if (replyText.isEmpty()) return;
 
-        View btnCloseShare = dialogView.findViewById(R.id.btnCloseShare);
-        View btnSendDishcision = dialogView.findViewById(R.id.btnSendDishcision);
-        View btnCopyLink = dialogView.findViewById(R.id.btnCopyLink);
-
-        if (btnCloseShare != null) {
-            btnCloseShare.setOnClickListener(v -> bottomSheetDialog.dismiss());
+        String authHeader = ApiClient.getAuthHeader(this);
+        if (authHeader.isEmpty()) {
+            Toast.makeText(this, "Vui lòng đăng nhập để nhắn tin phản hồi", Toast.LENGTH_SHORT).show();
+            return;
         }
 
-        if (btnSendDishcision != null) {
-            btnSendDishcision.setOnClickListener(v -> {
-                Toast.makeText(this, "Đã chia sẻ Story!", Toast.LENGTH_SHORT).show();
-                bottomSheetDialog.dismiss();
-            });
+        StoryModel story = stories.get(currentStoryIndex);
+        if (story.userId <= 0 || (currentLoggedInUserId > 0 && story.userId == currentLoggedInUserId)) {
+            return;
         }
 
-        if (btnCopyLink != null) {
-            btnCopyLink.setOnClickListener(v -> {
-                Toast.makeText(this, "Đã sao chép liên kết Story!", Toast.LENGTH_SHORT).show();
-                bottomSheetDialog.dismiss();
-            });
+        isSendingReply = true;
+        String payloadText = !TextUtils.isEmpty(story.caption)
+                ? "Phản hồi story (\"" + story.caption + "\"): " + replyText
+                : "Phản hồi story: " + replyText;
+
+        ApiClient.getApiService().sendChatMessage(authHeader, story.userId, new SendChatMessageRequest(payloadText, null))
+                .enqueue(new Callback<SendChatMessageResponse>() {
+                    @Override
+                    public void onResponse(@NonNull Call<SendChatMessageResponse> call, @NonNull Response<SendChatMessageResponse> response) {
+                        isSendingReply = false;
+                        if (response.isSuccessful()) {
+                            edtReply.setText("");
+                            Toast.makeText(StoryActivity.this, "Đã gửi phản hồi qua tin nhắn", Toast.LENGTH_SHORT).show();
+                        } else {
+                            Toast.makeText(StoryActivity.this, "Không thể gửi phản hồi (mã " + response.code() + ")", Toast.LENGTH_SHORT).show();
+                        }
+                    }
+
+                    @Override
+                    public void onFailure(@NonNull Call<SendChatMessageResponse> call, @NonNull Throwable t) {
+                        isSendingReply = false;
+                        Toast.makeText(StoryActivity.this, "Lỗi kết nối: " + t.getMessage(), Toast.LENGTH_SHORT).show();
+                    }
+                });
+    }
+
+    private void shareCurrentStory() {
+        if (stories.isEmpty()) return;
+        StoryModel story = stories.get(currentStoryIndex);
+        String authorName = !TextUtils.isEmpty(story.userFullName) ? story.userFullName : story.username;
+        StringBuilder shareText = new StringBuilder();
+        shareText.append("Xem story của ").append(authorName).append(" trên Dishcision");
+        if (!TextUtils.isEmpty(story.caption)) {
+            shareText.append(": ").append(story.caption);
+        }
+        String mediaLink = ApiClient.normalizeMediaUrl(story.mediaUrl);
+        if (!TextUtils.isEmpty(mediaLink)) {
+            shareText.append("\n").append(mediaLink);
         }
 
-        bottomSheetDialog.show();
+        Intent sendIntent = new Intent(Intent.ACTION_SEND);
+        sendIntent.setType("text/plain");
+        sendIntent.putExtra(Intent.EXTRA_TEXT, shareText.toString());
+        startActivity(Intent.createChooser(sendIntent, "Chia sẻ story"));
     }
 }

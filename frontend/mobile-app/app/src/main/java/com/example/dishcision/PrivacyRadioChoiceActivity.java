@@ -297,12 +297,18 @@ public class PrivacyRadioChoiceActivity extends AppCompatActivity {
         ApiClient.getApiService().updatePrivacySettings(ApiClient.getAuthHeader(this), currentPrivacy).enqueue(new Callback<PrivacySettingsResponse>() {
             @Override
             public void onResponse(@NonNull Call<PrivacySettingsResponse> call, @NonNull Response<PrivacySettingsResponse> response) {
-                Toast.makeText(PrivacyRadioChoiceActivity.this, "Đã lưu thay đổi", Toast.LENGTH_SHORT).show();
+                if (response.isSuccessful()) {
+                    Toast.makeText(PrivacyRadioChoiceActivity.this, "Đã lưu thay đổi", Toast.LENGTH_SHORT).show();
+                } else {
+                    Toast.makeText(PrivacyRadioChoiceActivity.this, "Không thể lưu thay đổi lúc này", Toast.LENGTH_SHORT).show();
+                    fetchCurrentSettingFromBackend();
+                }
             }
 
             @Override
             public void onFailure(@NonNull Call<PrivacySettingsResponse> call, @NonNull Throwable t) {
-                Toast.makeText(PrivacyRadioChoiceActivity.this, "Đã lưu tùy chọn", Toast.LENGTH_SHORT).show();
+                Toast.makeText(PrivacyRadioChoiceActivity.this, "Lỗi kết nối mạng, chưa thể lưu thay đổi", Toast.LENGTH_SHORT).show();
+                fetchCurrentSettingFromBackend();
             }
         });
     }

@@ -87,33 +87,6 @@
                 android:text="Cài đặt quyền riêng tư"
                 android:textColor="#FFFFFF" />
 
-            <!-- Legal Draft Disclaimer Banner -->
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="16dp"
-                android:background="@drawable/bg_chip_selected_orange"
-                android:orientation="vertical"
-                android:padding="14dp">
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Bản nháp minh họa - Cần rà soát pháp lý"
-                    android:textColor="#FF5A36"
-                    android:textSize="13sp"
-                    android:textStyle="bold" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="4dp"
-                    android:lineSpacingExtra="2dp"
-                    android:text="Đây không phải văn bản pháp lý có hiệu lực. Bản mẫu này cần được rà soát và xác nhận trước khi công bố."
-                    android:textColor="#5B403A"
-                    android:textSize="12sp" />
-            </LinearLayout>
-
             <!-- Card Items 11 - 20 -->
             <LinearLayout
                 android:layout_width="match_parent"
@@ -137,7 +110,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="4dp"
                     android:lineSpacingExtra="3dp"
-                    android:text="Chính sách minh họa này phác thảo các vấn đề về quyền riêng tư cho một ứng dụng khám phá ẩm thực và cộng đồng. Đây không phải mô tả về hoạt động xử lý dữ liệu của Dishcision đã được xác minh.\n\nTrước khi công bố, đơn vị vận hành dịch vụ phải xác nhận những thông tin được thu thập, mục đích sử dụng, bên nhận thông tin và cách người dùng gửi yêu cầu về quyền riêng tư. Chính sách chính thức cần xác định đơn vị vận hành và ngày có hiệu lực."
+                    android:text="Chính sách này mô tả các vấn đề về quyền riêng tư cho ứng dụng khám phá ẩm thực và cộng đồng Dishcision.\n\nThông tin về dữ liệu được thu thập, mục đích sử dụng, bên nhận thông tin và cách người dùng gửi yêu cầu về quyền riêng tư được cập nhật theo phiên bản dịch vụ đang hoạt động."
                     android:textColor="#505568"
                     android:textSize="13sp" />
 
@@ -353,12 +326,11 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="4dp"
                     android:lineSpacingExtra="3dp"
-                    android:text="Chính sách được phê duyệt phải cung cấp một cách thức đã xác minh để liên hệ đơn vị vận hành dịch vụ về quyền riêng tư. Chưa có thông tin về danh tính doanh nghiệp, địa chỉ hoặc đầu mối liên hệ về quyền riêng tư được cung cấp cho bản nháp này.\n\nTrước khi công bố, hãy xác nhận danh mục dữ liệu, các quyền truy cập, nhà cung cấp, quy tắc lưu giữ, quy trình tiếp nhận yêu cầu và các yêu cầu liên quan tại từng khu vực. Bản minh họa này không khẳng định việc tuân thủ pháp luật."
+                    android:text="Mọi thắc mắc về quyền riêng tư vui lòng liên hệ qua Trung tâm hỗ trợ trong ứng dụng Dishcision để được giải đáp theo quy định bảo vệ dữ liệu hiện hành."
                     android:textColor="#505568"
                     android:textSize="13sp" />
             </LinearLayout>
 
-            <!-- Disclaimer Footer -->
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -366,7 +338,7 @@
                 android:layout_marginBottom="24dp"
                 android:gravity="center"
                 android:lineSpacingExtra="3dp"
-                android:text="Chỉ là bản nháp. Điều khoản chính thức, hoạt động bảo vệ quyền riêng tư và thông tin hỗ trợ phải được phê duyệt trước khi ra mắt."
+                android:text="Dishcision Vietnam · Chính sách quyền riêng tư"
                 android:textColor="#8E7570"
                 android:textSize="12sp" />
         </LinearLayout>

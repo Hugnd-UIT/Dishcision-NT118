@@ -110,7 +110,7 @@
                         android:id="@+id/tvAuthorName"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Người dùng"
+                        android:text=""
                         android:textColor="@color/text_dark"
                         android:textSize="15sp"
                         android:textStyle="bold" />
@@ -119,7 +119,7 @@
                         android:id="@+id/tvAuthorHandle"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="&#64;foodie"
+                        android:text=""
                         android:textColor="@color/text_gray"
                         android:textSize="12sp" />
                 </LinearLayout>

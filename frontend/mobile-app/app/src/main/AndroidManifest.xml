@@ -357,6 +357,11 @@
             android:exported="false"
             android:windowSoftInputMode="adjustResize" />
 
+        <activity
+            android:name=".FullscreenImageActivity"
+            android:exported="false"
+            android:theme="@style/Theme.Dishcision.FullscreenViewer" />
+
     </application>
 
 </manifest>

@@ -101,7 +101,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="2dp"
                     android:layout_marginBottom="10dp"
-                    android:text="4 khẩu vị từ hồ sơ của bạn"
+                    android:text="0 khẩu vị từ hồ sơ của bạn"
                     android:textColor="#8E7570"
                     android:textSize="12sp" />
 
@@ -115,14 +115,14 @@
                         android:id="@+id/chipSpicy"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:background="@drawable/bg_chip_selected_orange"
+                        android:background="@drawable/bg_chip_preference"
                         android:clickable="true"
                         android:focusable="true"
                         android:foreground="?attr/selectableItemBackground"
                         android:paddingHorizontal="14dp"
                         android:paddingVertical="6dp"
-                        android:text="✔ Chua cay"
-                        android:textColor="#FF5A36"
+                        android:text="+ Chua cay"
+                        android:textColor="#141B2B"
                         android:textSize="13sp"
                         android:textStyle="bold" />
 
@@ -131,14 +131,14 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginStart="8dp"
-                        android:background="@drawable/bg_chip_selected_orange"
+                        android:background="@drawable/bg_chip_preference"
                         android:clickable="true"
                         android:focusable="true"
                         android:foreground="?attr/selectableItemBackground"
                         android:paddingHorizontal="14dp"
                         android:paddingVertical="6dp"
-                        android:text="✔ Đậm đà"
-                        android:textColor="#FF5A36"
+                        android:text="+ Đậm đà"
+                        android:textColor="#141B2B"
                         android:textSize="13sp"
                         android:textStyle="bold" />
 
@@ -147,14 +147,14 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginStart="8dp"
-                        android:background="@drawable/bg_chip_selected_orange"
+                        android:background="@drawable/bg_chip_preference"
                         android:clickable="true"
                         android:focusable="true"
                         android:foreground="?attr/selectableItemBackground"
                         android:paddingHorizontal="14dp"
                         android:paddingVertical="6dp"
-                        android:text="✔ Món nước"
-                        android:textColor="#FF5A36"
+                        android:text="+ Món nước"
+                        android:textColor="#141B2B"
                         android:textSize="13sp"
                         android:textStyle="bold" />
                 </LinearLayout>
@@ -170,17 +170,30 @@
                         android:id="@+id/chipSourdough"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:background="@drawable/bg_chip_selected_orange"
+                        android:background="@drawable/bg_chip_preference"
                         android:clickable="true"
                         android:focusable="true"
                         android:foreground="?attr/selectableItemBackground"
                         android:paddingHorizontal="14dp"
                         android:paddingVertical="6dp"
-                        android:text="✔ Bánh mì sourdough"
-                        android:textColor="#FF5A36"
+                        android:text="+ Bánh mì sourdough"
+                        android:textColor="#141B2B"
                         android:textSize="13sp"
                         android:textStyle="bold" />
                 </LinearLayout>
+
+                <HorizontalScrollView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:scrollbars="none">
+
+                    <LinearLayout
+                        android:id="@+id/layoutCustomTastes"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal" />
+                </HorizontalScrollView>
 
                 <TextView
                     android:id="@+id/btnAddTastePreference"

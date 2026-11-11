@@ -54,6 +54,9 @@ public class UserProfileResponse {
         @SerializedName("bio")
         public String bio;
 
+        @SerializedName("role")
+        public String role;
+
         @SerializedName("avatarUrl")
         public String avatarUrl;
 
@@ -68,6 +71,12 @@ public class UserProfileResponse {
 
         @SerializedName("followingCount")
         public int followingCount;
+
+        @SerializedName("isGoogleAccount")
+        public boolean isGoogleAccount;
+
+        @SerializedName("isFollowing")
+        public boolean isFollowing;
     }
 }
 

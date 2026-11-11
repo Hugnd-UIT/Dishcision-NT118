@@ -61,8 +61,9 @@ public class CreatePostActivity extends AppCompatActivity {
     private EditText edtVoucherCode;
     private EditText edtHashtags;
 
-    private final List<String> uploadedImageUrls = new ArrayList<>();
-    private final List<Uri> localImageUris = new ArrayList<>();
+    private final Uri[] slotUris = new Uri[2];
+    private final String[] slotUrls = new String[2];
+    private final boolean[] slotUploading = new boolean[2];
     private ActivityResultLauncher<String> imagePickerLauncher;
     private boolean isPublishing = false;
 
@@ -113,10 +114,50 @@ public class CreatePostActivity extends AppCompatActivity {
                 new ActivityResultContracts.GetContent(),
                 uri -> {
                     if (uri != null) {
-                        uploadImageUri(uri);
+                        int slot = findFirstEmptySlot();
+                        if (slot == -1) {
+                            Toast.makeText(this, "Tối đa 2 hình ảnh cho mỗi bài viết!", Toast.LENGTH_SHORT).show();
+                            return;
+                        }
+                        uploadImageUri(uri, slot);
                     }
                 }
         );
+    }
+
+    private int findFirstEmptySlot() {
+        for (int i = 0; i < 2; i++) {
+            if (slotUris[i] == null && slotUrls[i] == null) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    private int getActiveSlotCount() {
+        int count = 0;
+        for (int i = 0; i < 2; i++) {
+            if (slotUris[i] != null || slotUrls[i] != null) {
+                count++;
+            }
+        }
+        return count;
+    }
+
+    private void removeSlot(int index) {
+        if (index == 0) {
+            slotUris[0] = slotUris[1];
+            slotUrls[0] = slotUrls[1];
+            slotUploading[0] = slotUploading[1];
+            slotUris[1] = null;
+            slotUrls[1] = null;
+            slotUploading[1] = false;
+        } else if (index == 1) {
+            slotUris[1] = null;
+            slotUrls[1] = null;
+            slotUploading[1] = false;
+        }
+        updateImagePreviewUI();
     }
 
     private void setupListeners() {
@@ -130,8 +171,7 @@ public class CreatePostActivity extends AppCompatActivity {
 
         if (btnAddImage != null) {
             btnAddImage.setOnClickListener(v -> {
-                int count = Math.max(localImageUris.size(), uploadedImageUrls.size());
-                if (count >= 2) {
+                if (getActiveSlotCount() >= 2) {
                     Toast.makeText(this, "Tối đa 2 hình ảnh cho mỗi bài viết!", Toast.LENGTH_SHORT).show();
                     return;
                 }
@@ -140,27 +180,11 @@ public class CreatePostActivity extends AppCompatActivity {
         }
 
         if (btnRemoveImg1 != null) {
-            btnRemoveImg1.setOnClickListener(v -> {
-                if (!localImageUris.isEmpty()) {
-                    localImageUris.remove(0);
-                }
-                if (!uploadedImageUrls.isEmpty()) {
-                    uploadedImageUrls.remove(0);
-                }
-                updateImagePreviewUI();
-            });
+            btnRemoveImg1.setOnClickListener(v -> removeSlot(0));
         }
 
         if (btnRemoveImg2 != null) {
-            btnRemoveImg2.setOnClickListener(v -> {
-                if (localImageUris.size() > 1) {
-                    localImageUris.remove(1);
-                }
-                if (uploadedImageUrls.size() > 1) {
-                    uploadedImageUrls.remove(1);
-                }
-                updateImagePreviewUI();
-            });
+            btnRemoveImg2.setOnClickListener(v -> removeSlot(1));
         }
     }
 
@@ -174,6 +198,8 @@ public class CreatePostActivity extends AppCompatActivity {
         }
 
         String authHeader = ApiClient.getAuthHeader(this);
+        if (authHeader.isEmpty()) return;
+
         ApiClient.getApiService().getMyProfile(authHeader).enqueue(new Callback<UserProfileResponse>() {
             @Override
             public void onResponse(Call<UserProfileResponse> call, Response<UserProfileResponse> response) {
@@ -196,13 +222,26 @@ public class CreatePostActivity extends AppCompatActivity {
         });
     }
 
-    private void uploadImageUri(Uri uri) {
+    private void uploadImageUri(Uri uri, int slot) {
+        String authHeader = ApiClient.getAuthHeader(this);
+        if (authHeader.isEmpty()) {
+            Toast.makeText(this, "Vui lòng đăng nhập lại trước khi tải ảnh!", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
         try {
-            localImageUris.add(uri);
+            slotUris[slot] = uri;
+            slotUrls[slot] = null;
+            slotUploading[slot] = true;
             updateImagePreviewUI();
 
             InputStream inputStream = getContentResolver().openInputStream(uri);
-            if (inputStream == null) return;
+            if (inputStream == null) {
+                slotUris[slot] = null;
+                slotUploading[slot] = false;
+                updateImagePreviewUI();
+                return;
+            }
 
             File tempFile = File.createTempFile("upload_post_", ".jpg", getCacheDir());
             FileOutputStream outputStream = new FileOutputStream(tempFile);
@@ -225,64 +264,88 @@ public class CreatePostActivity extends AppCompatActivity {
 
             Toast.makeText(this, "Đang tải ảnh lên...", Toast.LENGTH_SHORT).show();
 
-            String authHeader = ApiClient.getAuthHeader(this);
+            final Uri capturedUri = uri;
             ApiClient.getApiService().uploadMedia(authHeader, filePart).enqueue(new Callback<UploadResponse>() {
                 @Override
                 public void onResponse(Call<UploadResponse> call, Response<UploadResponse> response) {
+                    int targetSlot = -1;
+                    for (int i = 0; i < 2; i++) {
+                        if (capturedUri.equals(slotUris[i])) {
+                            targetSlot = i;
+                            break;
+                        }
+                    }
+                    if (targetSlot == -1) return;
+
+                    slotUploading[targetSlot] = false;
                     if (response.isSuccessful() && response.body() != null && response.body().data != null) {
                         String rawUrl = (response.body().data.url != null && !response.body().data.url.isEmpty())
                                 ? response.body().data.url
                                 : response.body().data.fullUrl;
-
-                        if (rawUrl != null && !rawUrl.isEmpty()) {
-                            if (!rawUrl.startsWith("http://") && !rawUrl.startsWith("https://")) {
-                                if (!rawUrl.startsWith("/")) {
-                                    rawUrl = "/" + rawUrl;
-                                }
-                                rawUrl = ApiClient.getServerRootUrl() + rawUrl;
-                            }
-                            uploadedImageUrls.add(rawUrl);
+                        String normalized = ApiClient.normalizeMediaUrl(rawUrl);
+                        if (!normalized.isEmpty()) {
+                            slotUrls[targetSlot] = normalized;
                             updateImagePreviewUI();
                             Toast.makeText(CreatePostActivity.this, "Tải ảnh lên thành công!", Toast.LENGTH_SHORT).show();
+                            return;
                         }
-                    } else {
-                        Toast.makeText(CreatePostActivity.this, "Tải ảnh lên thất bại!", Toast.LENGTH_SHORT).show();
                     }
+                    slotUris[targetSlot] = null;
+                    slotUrls[targetSlot] = null;
+                    updateImagePreviewUI();
+                    Toast.makeText(CreatePostActivity.this, "Tải ảnh lên thất bại!", Toast.LENGTH_SHORT).show();
                 }
 
                 @Override
                 public void onFailure(Call<UploadResponse> call, Throwable t) {
+                    int targetSlot = -1;
+                    for (int i = 0; i < 2; i++) {
+                        if (capturedUri.equals(slotUris[i])) {
+                            targetSlot = i;
+                            break;
+                        }
+                    }
+                    if (targetSlot != -1) {
+                        slotUploading[targetSlot] = false;
+                        slotUris[targetSlot] = null;
+                        slotUrls[targetSlot] = null;
+                        updateImagePreviewUI();
+                    }
                     Toast.makeText(CreatePostActivity.this, "Lỗi kết nối khi tải ảnh: " + t.getMessage(), Toast.LENGTH_SHORT).show();
                 }
             });
 
         } catch (Exception e) {
+            slotUploading[slot] = false;
+            slotUris[slot] = null;
+            slotUrls[slot] = null;
+            updateImagePreviewUI();
             Toast.makeText(this, "Không thể đọc hình ảnh: " + e.getMessage(), Toast.LENGTH_SHORT).show();
         }
     }
 
     private void updateImagePreviewUI() {
-        int count = Math.max(localImageUris.size(), uploadedImageUrls.size());
+        int count = getActiveSlotCount();
         if (tvImageCount != null) {
             tvImageCount.setText("Hình ảnh (" + count + "/2)");
         }
 
-        if (localImageUris.size() > 0) {
+        if (slotUris[0] != null) {
             if (containerImg1 != null) containerImg1.setVisibility(View.VISIBLE);
-            if (imgPreview1 != null) imgPreview1.setImageURI(localImageUris.get(0));
-        } else if (uploadedImageUrls.size() > 0) {
+            if (imgPreview1 != null) imgPreview1.setImageURI(slotUris[0]);
+        } else if (slotUrls[0] != null) {
             if (containerImg1 != null) containerImg1.setVisibility(View.VISIBLE);
-            if (imgPreview1 != null) ImageLoader.loadImage(imgPreview1, uploadedImageUrls.get(0));
+            if (imgPreview1 != null) ImageLoader.loadImage(imgPreview1, slotUrls[0]);
         } else {
             if (containerImg1 != null) containerImg1.setVisibility(View.GONE);
         }
 
-        if (localImageUris.size() > 1) {
+        if (slotUris[1] != null) {
             if (containerImg2 != null) containerImg2.setVisibility(View.VISIBLE);
-            if (imgPreview2 != null) imgPreview2.setImageURI(localImageUris.get(1));
-        } else if (uploadedImageUrls.size() > 1) {
+            if (imgPreview2 != null) imgPreview2.setImageURI(slotUris[1]);
+        } else if (slotUrls[1] != null) {
             if (containerImg2 != null) containerImg2.setVisibility(View.VISIBLE);
-            if (imgPreview2 != null) ImageLoader.loadImage(imgPreview2, uploadedImageUrls.get(1));
+            if (imgPreview2 != null) ImageLoader.loadImage(imgPreview2, slotUrls[1]);
         } else {
             if (containerImg2 != null) containerImg2.setVisibility(View.GONE);
         }
@@ -295,6 +358,17 @@ public class CreatePostActivity extends AppCompatActivity {
     private void performPublishPost() {
         if (isPublishing) return;
 
+        String authHeader = ApiClient.getAuthHeader(this);
+        if (authHeader.isEmpty()) {
+            Toast.makeText(this, "Vui lòng đăng nhập lại để đăng bài viết!", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        if (slotUploading[0] || slotUploading[1]) {
+            Toast.makeText(this, "Ảnh đang tải lên, vui lòng đợi xong rồi hãy đăng!", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
         String content = edtPostContent != null ? edtPostContent.getText().toString().trim() : "";
         if (content.isEmpty()) {
             Toast.makeText(this, "Vui lòng nhập nội dung bài viết!", Toast.LENGTH_SHORT).show();
@@ -303,13 +377,9 @@ public class CreatePostActivity extends AppCompatActivity {
         }
 
         String locationInput = edtLocationUrl != null ? edtLocationUrl.getText().toString().trim() : "";
-        String locationUrl = null;
-        if (!locationInput.isEmpty()) {
-            if (locationInput.startsWith("http://") || locationInput.startsWith("https://")) {
-                locationUrl = locationInput;
-            } else {
-                locationUrl = "https://maps.google.com/?q=" + Uri.encode(locationInput);
-            }
+        String locationUrl = PostFeedHelper.normalizeLocationUrl(locationInput);
+        if (locationUrl != null && locationUrl.isEmpty()) {
+            locationUrl = null;
         }
 
         String voucherInput = edtVoucherCode != null ? edtVoucherCode.getText().toString().trim() : "";
@@ -329,25 +399,29 @@ public class CreatePostActivity extends AppCompatActivity {
             if (hashtags.isEmpty()) hashtags = null;
         }
 
-        List<CreatePostRequest.PostImageRequest> imageRequests = null;
-        if (!uploadedImageUrls.isEmpty()) {
-            imageRequests = new ArrayList<>();
-            for (int i = 0; i < uploadedImageUrls.size(); i++) {
-                imageRequests.add(new CreatePostRequest.PostImageRequest(uploadedImageUrls.get(i), i));
+        List<CreatePostRequest.PostImageRequest> imageRequests = new ArrayList<>();
+        int displayOrder = 0;
+        for (int i = 0; i < 2; i++) {
+            if (slotUrls[i] != null && !slotUrls[i].isEmpty()) {
+                imageRequests.add(new CreatePostRequest.PostImageRequest(slotUrls[i], displayOrder++));
             }
+        }
+        if (imageRequests.isEmpty()) {
+            imageRequests = null;
         }
 
         CreatePostRequest request = new CreatePostRequest(content, locationUrl, voucherCode, hashtags, imageRequests);
 
         isPublishing = true;
+        if (btnPublish != null) btnPublish.setEnabled(false);
         if (tvBtnPublishText != null) tvBtnPublishText.setText("Đang đăng...");
 
-        String authHeader = ApiClient.getAuthHeader(this);
         ApiClient.getApiService().createPost(authHeader, request).enqueue(new Callback<CreatePostResponse>() {
             @Override
             public void onResponse(Call<CreatePostResponse> call, Response<CreatePostResponse> response) {
                 isPublishing = false;
-                if (tvBtnPublishText != null) tvBtnPublishText.setText("Đang đăng");
+                if (btnPublish != null) btnPublish.setEnabled(true);
+                if (tvBtnPublishText != null) tvBtnPublishText.setText("Đăng");
 
                 if (response.isSuccessful() && response.body() != null && response.body().isSuccess()) {
                     Toast.makeText(CreatePostActivity.this, "Đăng bài viết thành công!", Toast.LENGTH_SHORT).show();
@@ -362,6 +436,7 @@ public class CreatePostActivity extends AppCompatActivity {
             @Override
             public void onFailure(Call<CreatePostResponse> call, Throwable t) {
                 isPublishing = false;
+                if (btnPublish != null) btnPublish.setEnabled(true);
                 if (tvBtnPublishText != null) tvBtnPublishText.setText("Đăng");
                 Toast.makeText(CreatePostActivity.this, "Lỗi kết nối khi đăng bài: " + t.getMessage(), Toast.LENGTH_LONG).show();
             }

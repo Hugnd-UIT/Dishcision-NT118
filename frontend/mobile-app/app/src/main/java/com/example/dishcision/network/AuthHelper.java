@@ -15,9 +15,43 @@ public class AuthHelper {
 
     /** Per-account values cached in DishcisionPrefs; device-level settings (notifications…) are kept. */
     private static final String[] USER_CACHE_KEYS = {
-            "user_name", "user_username", "user_email", "avatar_url",
-            "is_google_login", "user_taste_preferences"
+            "user_id", "user_name", "user_username", "user_email", "avatar_url",
+            "user_city", "is_google_login", "user_taste_preferences"
     };
+
+    public static int getCurrentUserId(Context context) {
+        if (context == null) return 0;
+        int cachedId = context.getSharedPreferences("DishcisionPrefs", Context.MODE_PRIVATE).getInt("user_id", 0);
+        if (cachedId > 0) return cachedId;
+        return new TokenManager(context).getUserId();
+    }
+
+    public static void saveSessionFromAuth(Context context, AuthResponse authResponse,
+                                           String fallbackEmail, String fallbackName, boolean defaultGoogle) {
+        if (context == null || authResponse == null) return;
+        String token = authResponse.getToken();
+        UserProfileResponse.UserData user = authResponse.getData() != null ? authResponse.getData().user : null;
+
+        int userId = user != null && user.userId > 0 ? user.userId : TokenManager.parseUserIdFromJwt(token);
+        String email = user != null && user.email != null && !user.email.isEmpty() ? user.email : fallbackEmail;
+        String fullName = user != null && user.fullName != null && !user.fullName.isEmpty() ? user.fullName : fallbackName;
+        String username = user != null && user.username != null ? user.username : "";
+        String avatarUrl = user != null && user.avatarUrl != null ? user.avatarUrl : "";
+        boolean isGoogle = user != null ? user.isGoogleAccount : defaultGoogle;
+
+        new TokenManager(context).saveAuthData(token, userId, email, fullName);
+
+        android.content.SharedPreferences.Editor editor =
+                context.getSharedPreferences("DishcisionPrefs", Context.MODE_PRIVATE).edit();
+        for (String key : USER_CACHE_KEYS) editor.remove(key);
+        if (userId > 0) editor.putInt("user_id", userId);
+        if (email != null) editor.putString("user_email", email);
+        if (fullName != null) editor.putString("user_name", fullName);
+        if (!username.isEmpty()) editor.putString("user_username", username);
+        if (!avatarUrl.isEmpty()) editor.putString("avatar_url", avatarUrl);
+        editor.putBoolean("is_google_login", isGoogle);
+        editor.apply();
+    }
 
     public static void logout(Activity activity) {
         if (activity == null) return;

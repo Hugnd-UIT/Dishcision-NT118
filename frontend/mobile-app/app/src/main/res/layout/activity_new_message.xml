@@ -60,7 +60,6 @@
             android:orientation="vertical"
             android:padding="16dp">
 
-            <!-- Headline Section -->
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
@@ -77,13 +76,15 @@
                 android:textColor="#6B7280"
                 android:textSize="13sp" />
 
-            <!-- Selected Recipient Chip Row ("Đến:") -->
+            <!-- Selected Recipient Row -->
             <LinearLayout
+                android:id="@+id/layoutSelectedRecipientRow"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="14dp"
                 android:gravity="center_vertical"
-                android:orientation="horizontal">
+                android:orientation="horizontal"
+                android:visibility="gone">
 
                 <TextView
                     android:layout_width="wrap_content"
@@ -95,18 +96,21 @@
                     android:textStyle="bold" />
 
                 <LinearLayout
-                    android:id="@+id/chipRecipientMaya"
+                    android:id="@+id/chipSelectedRecipient"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:background="@drawable/bg_chip_selected_orange"
+                    android:clickable="true"
+                    android:focusable="true"
                     android:gravity="center_vertical"
                     android:paddingHorizontal="12dp"
                     android:paddingVertical="6dp">
 
                     <TextView
+                        android:id="@+id/tvSelectedRecipientName"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Maya Lin"
+                        android:text=""
                         android:textColor="#141B2B"
                         android:textSize="13sp"
                         android:textStyle="bold" />
@@ -172,7 +176,7 @@
                     android:id="@+id/tvSelectedCount"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Đã chọn 1"
+                    android:text="Chưa chọn"
                     android:textColor="#8E7570"
                     android:textSize="12sp" />
             </LinearLayout>
@@ -236,290 +240,33 @@
                 </LinearLayout>
             </HorizontalScrollView>
 
+            <ProgressBar
+                android:id="@+id/progressContacts"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_horizontal"
+                android:layout_marginTop="24dp"
+                android:indeterminateTint="#FF5A36"
+                android:visibility="gone" />
+
+            <TextView
+                android:id="@+id/tvEmptyContacts"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="24dp"
+                android:gravity="center"
+                android:text="Không tìm thấy người dùng hoặc quán ăn phù hợp."
+                android:textColor="#6B7280"
+                android:textSize="14sp"
+                android:visibility="gone" />
+
             <!-- Contacts Selection List -->
             <LinearLayout
+                android:id="@+id/layoutContactsContainer"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="14dp"
-                android:orientation="vertical">
-
-                <!-- Item 1: Maya Lin (Selected) -->
-                <LinearLayout
-                    android:id="@+id/itemMayaLin"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:background="@drawable/bg_card_selected_peach"
-                    android:clickable="true"
-                    android:focusable="true"
-                    android:foreground="?attr/selectableItemBackground"
-                    android:gravity="center_vertical"
-                    android:orientation="horizontal"
-                    android:padding="12dp">
-
-                    <FrameLayout
-                        android:layout_width="48dp"
-                        android:layout_height="48dp">
-
-                        <ImageView
-                            android:layout_width="48dp"
-                            android:layout_height="48dp"
-                            android:contentDescription="Avatar 1"
-                            android:src="@drawable/bg_avatar_circle" />
-
-                        <View
-                            android:layout_width="12dp"
-                            android:layout_height="12dp"
-                            android:layout_gravity="bottom|end"
-                            android:background="@drawable/bg_online_indicator" />
-                    </FrameLayout>
-
-                    <LinearLayout
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_marginStart="12dp"
-                        android:layout_weight="1"
-                        android:orientation="vertical">
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="Maya Lin"
-                            android:textColor="#141B2B"
-                            android:textSize="15sp"
-                            android:textStyle="bold" />
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="2dp"
-                            android:text="Bạn bè · Đang hoạt động"
-                            android:textColor="#6B7280"
-                            android:textSize="12sp" />
-                    </LinearLayout>
-
-                    <ImageView
-                        android:id="@+id/checkMaya"
-                        android:layout_width="24dp"
-                        android:layout_height="24dp"
-                        android:contentDescription="Checked"
-                        android:src="@drawable/ic_check_circle_filled" />
-                </LinearLayout>
-
-                <!-- Item 2: Bếp Nhà Lục Nam -->
-                <LinearLayout
-                    android:id="@+id/itemLucNam"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="6dp"
-                    android:clickable="true"
-                    android:focusable="true"
-                    android:foreground="?attr/selectableItemBackground"
-                    android:gravity="center_vertical"
-                    android:orientation="horizontal"
-                    android:padding="12dp">
-
-                    <FrameLayout
-                        android:layout_width="48dp"
-                        android:layout_height="48dp">
-
-                        <ImageView
-                            android:layout_width="48dp"
-                            android:layout_height="48dp"
-                            android:contentDescription="Avatar 2"
-                            android:src="@drawable/bg_avatar_circle" />
-
-                        <View
-                            android:layout_width="12dp"
-                            android:layout_height="12dp"
-                            android:layout_gravity="bottom|end"
-                            android:background="@drawable/bg_online_indicator" />
-                    </FrameLayout>
-
-                    <LinearLayout
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_marginStart="12dp"
-                        android:layout_weight="1"
-                        android:orientation="vertical">
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="Bếp Nhà Lục Nam"
-                            android:textColor="#141B2B"
-                            android:textSize="15sp"
-                            android:textStyle="bold" />
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="2dp"
-                            android:text="Quán ăn · Đang hoạt động"
-                            android:textColor="#6B7280"
-                            android:textSize="12sp" />
-                    </LinearLayout>
-
-                    <ImageView
-                        android:id="@+id/checkLucNam"
-                        android:layout_width="24dp"
-                        android:layout_height="24dp"
-                        android:contentDescription="Unchecked"
-                        android:src="@drawable/ic_check_circle_outline" />
-                </LinearLayout>
-
-                <!-- Item 3: Julian Cole -->
-                <LinearLayout
-                    android:id="@+id/itemJulian"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="6dp"
-                    android:clickable="true"
-                    android:focusable="true"
-                    android:foreground="?attr/selectableItemBackground"
-                    android:gravity="center_vertical"
-                    android:orientation="horizontal"
-                    android:padding="12dp">
-
-                    <ImageView
-                        android:layout_width="48dp"
-                        android:layout_height="48dp"
-                        android:contentDescription="Avatar 3"
-                        android:src="@drawable/bg_avatar_circle" />
-
-                    <LinearLayout
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_marginStart="12dp"
-                        android:layout_weight="1"
-                        android:orientation="vertical">
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="Julian Cole"
-                            android:textColor="#141B2B"
-                            android:textSize="15sp"
-                            android:textStyle="bold" />
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="2dp"
-                            android:text="Bạn bè trên Dishcision"
-                            android:textColor="#6B7280"
-                            android:textSize="12sp" />
-                    </LinearLayout>
-
-                    <ImageView
-                        android:id="@+id/checkJulian"
-                        android:layout_width="24dp"
-                        android:layout_height="24dp"
-                        android:contentDescription="Unchecked"
-                        android:src="@drawable/ic_check_circle_outline" />
-                </LinearLayout>
-
-                <!-- Item 4: Phở Bò Gia Truyền 1986 -->
-                <LinearLayout
-                    android:id="@+id/itemPhoBo"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="6dp"
-                    android:clickable="true"
-                    android:focusable="true"
-                    android:foreground="?attr/selectableItemBackground"
-                    android:gravity="center_vertical"
-                    android:orientation="horizontal"
-                    android:padding="12dp">
-
-                    <ImageView
-                        android:layout_width="48dp"
-                        android:layout_height="48dp"
-                        android:contentDescription="Avatar 4"
-                        android:src="@drawable/bg_avatar_circle" />
-
-                    <LinearLayout
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_marginStart="12dp"
-                        android:layout_weight="1"
-                        android:orientation="vertical">
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="Phở Bò Gia Truyền 1986"
-                            android:textColor="#141B2B"
-                            android:textSize="15sp"
-                            android:textStyle="bold" />
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="2dp"
-                            android:text="Quán ăn · Bạn đang theo dõi"
-                            android:textColor="#6B7280"
-                            android:textSize="12sp" />
-                    </LinearLayout>
-
-                    <ImageView
-                        android:id="@+id/checkPhoBo"
-                        android:layout_width="24dp"
-                        android:layout_height="24dp"
-                        android:contentDescription="Unchecked"
-                        android:src="@drawable/ic_check_circle_outline" />
-                </LinearLayout>
-
-                <!-- Item 5: Tiệm Trà & Bánh Mùa Thu -->
-                <LinearLayout
-                    android:id="@+id/itemTiemTra"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="6dp"
-                    android:clickable="true"
-                    android:focusable="true"
-                    android:foreground="?attr/selectableItemBackground"
-                    android:gravity="center_vertical"
-                    android:orientation="horizontal"
-                    android:padding="12dp">
-
-                    <ImageView
-                        android:layout_width="48dp"
-                        android:layout_height="48dp"
-                        android:contentDescription="Avatar 5"
-                        android:src="@drawable/bg_avatar_circle" />
-
-                    <LinearLayout
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_marginStart="12dp"
-                        android:layout_weight="1"
-                        android:orientation="vertical">
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="Tiệm Trà &amp; Bánh Mùa Thu"
-                            android:textColor="#141B2B"
-                            android:textSize="15sp"
-                            android:textStyle="bold" />
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="2dp"
-                            android:text="Quán ăn · Bạn đang theo dõi"
-                            android:textColor="#6B7280"
-                            android:textSize="12sp" />
-                    </LinearLayout>
-
-                    <ImageView
-                        android:id="@+id/checkTiemTra"
-                        android:layout_width="24dp"
-                        android:layout_height="24dp"
-                        android:contentDescription="Unchecked"
-                        android:src="@drawable/ic_check_circle_outline" />
-                </LinearLayout>
-            </LinearLayout>
+                android:orientation="vertical" />
         </LinearLayout>
     </ScrollView>
 

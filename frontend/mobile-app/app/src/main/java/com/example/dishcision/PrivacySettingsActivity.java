@@ -14,6 +14,7 @@ import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 
+import com.example.dishcision.network.AccountsListResponse;
 import com.example.dishcision.network.ApiClient;
 import com.example.dishcision.network.PrivacySettingsModel;
 import com.example.dishcision.network.PrivacySettingsResponse;
@@ -156,7 +157,10 @@ public class PrivacySettingsActivity extends AppCompatActivity {
     }
 
     private void fetchPrivacySettingsFromBackend() {
-        ApiClient.getApiService().getPrivacySettings(ApiClient.getAuthHeader(this)).enqueue(new Callback<PrivacySettingsResponse>() {
+        String authHeader = ApiClient.getAuthHeader(this);
+        if (authHeader.isEmpty()) return;
+
+        ApiClient.getApiService().getPrivacySettings(authHeader).enqueue(new Callback<PrivacySettingsResponse>() {
             @Override
             public void onResponse(@NonNull Call<PrivacySettingsResponse> call, @NonNull Response<PrivacySettingsResponse> response) {
                 if (response.isSuccessful() && response.body() != null && response.body().getData() != null) {
@@ -169,6 +173,32 @@ public class PrivacySettingsActivity extends AppCompatActivity {
             public void onFailure(@NonNull Call<PrivacySettingsResponse> call, @NonNull Throwable t) {
                 updateUIFromModel();
             }
+        });
+
+        ApiClient.getApiService().getBlockedAccounts(authHeader).enqueue(new Callback<AccountsListResponse>() {
+            @Override
+            public void onResponse(@NonNull Call<AccountsListResponse> call, @NonNull Response<AccountsListResponse> response) {
+                if (response.isSuccessful() && response.body() != null && tvBlockedValue != null) {
+                    int count = response.body().getData() != null ? response.body().getData().size() : 0;
+                    tvBlockedValue.setText(count + " tài khoản");
+                }
+            }
+
+            @Override
+            public void onFailure(@NonNull Call<AccountsListResponse> call, @NonNull Throwable t) {}
+        });
+
+        ApiClient.getApiService().getRestrictedAccounts(authHeader).enqueue(new Callback<AccountsListResponse>() {
+            @Override
+            public void onResponse(@NonNull Call<AccountsListResponse> call, @NonNull Response<AccountsListResponse> response) {
+                if (response.isSuccessful() && response.body() != null && tvRestrictedValue != null) {
+                    int count = response.body().getData() != null ? response.body().getData().size() : 0;
+                    tvRestrictedValue.setText(count + " tài khoản");
+                }
+            }
+
+            @Override
+            public void onFailure(@NonNull Call<AccountsListResponse> call, @NonNull Throwable t) {}
         });
     }
 

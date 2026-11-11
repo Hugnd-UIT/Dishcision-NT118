@@ -8,16 +8,14 @@
     android:background="#121212"
     tools:context=".StoryActivity">
 
-    <!-- Fullscreen Food Photo Background -->
     <ImageView
         android:id="@+id/imgStoryPhoto"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
+        android:background="#1E1E1E"
         android:contentDescription="@string/app_name"
-        android:scaleType="centerCrop"
-        android:src="@drawable/logo" />
+        android:scaleType="centerCrop" />
 
-    <!-- Left & Right Touch Overlay Areas for Story Navigation -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
@@ -42,7 +40,6 @@
             android:focusable="true" />
     </LinearLayout>
 
-    <!-- Top & Bottom Gradient Overlay for legibility -->
     <View
         android:layout_width="match_parent"
         android:layout_height="140dp"
@@ -56,7 +53,6 @@
         android:layout_alignParentBottom="true"
         android:background="@drawable/bg_gradient_overlay" />
 
-    <!-- Top Progress Bar Segments -->
     <LinearLayout
         android:id="@+id/progressSegments"
         android:layout_width="match_parent"
@@ -64,33 +60,8 @@
         android:layout_alignParentTop="true"
         android:layout_marginHorizontal="12dp"
         android:layout_marginTop="16dp"
-        android:orientation="horizontal">
+        android:orientation="horizontal" />
 
-        <View
-            android:id="@+id/segment1"
-            android:layout_width="0dp"
-            android:layout_height="match_parent"
-            android:layout_weight="1"
-            android:background="@color/white" />
-
-        <View
-            android:id="@+id/segment2"
-            android:layout_width="0dp"
-            android:layout_height="match_parent"
-            android:layout_marginStart="4dp"
-            android:layout_weight="1"
-            android:background="#66FFFFFF" />
-
-        <View
-            android:id="@+id/segment3"
-            android:layout_width="0dp"
-            android:layout_height="match_parent"
-            android:layout_marginStart="4dp"
-            android:layout_weight="1"
-            android:background="#66FFFFFF" />
-    </LinearLayout>
-
-    <!-- Top Store Header -->
     <RelativeLayout
         android:id="@+id/layoutStoryHeader"
         android:layout_width="match_parent"
@@ -104,22 +75,24 @@
             android:layout_width="40dp"
             android:layout_height="40dp"
             android:layout_alignParentStart="true"
-            android:background="@drawable/bg_logo_circle"
-            android:padding="6dp">
+            android:background="@drawable/bg_avatar_circle">
 
             <ImageView
+                android:id="@+id/imgStoryAvatar"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:contentDescription="@string/app_name"
-                android:scaleType="fitCenter"
-                android:src="@drawable/logo" />
+                android:scaleType="centerCrop"
+                android:src="@drawable/ic_profile" />
         </RelativeLayout>
 
         <LinearLayout
+            android:id="@+id/layoutStoryAuthorInfo"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_centerVertical="true"
             android:layout_marginStart="10dp"
+            android:layout_toStartOf="@id/btnCloseStory"
             android:layout_toEndOf="@id/containerStoryAvatar"
             android:orientation="vertical">
 
@@ -127,15 +100,20 @@
                 android:id="@+id/tvStoryStoreName"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Phở Thìn"
+                android:ellipsize="end"
+                android:maxLines="1"
+                android:text=""
                 android:textColor="@color/white"
                 android:textSize="15sp"
                 android:textStyle="bold" />
 
             <TextView
+                android:id="@+id/tvStoryMeta"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Đang theo dõi"
+                android:ellipsize="end"
+                android:maxLines="1"
+                android:text=""
                 android:textColor="#CCCCCC"
                 android:textSize="12sp" />
         </LinearLayout>
@@ -153,7 +131,6 @@
             app:tint="@color/white" />
     </RelativeLayout>
 
-    <!-- Bottom Content Overlay -->
     <LinearLayout
         android:id="@+id/layoutStoryBottom"
         android:layout_width="match_parent"
@@ -178,7 +155,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginStart="6dp"
-                android:text="HÔM NAY ĂN GÌ?"
+                android:text="DISHCISION STORY"
                 android:textColor="@color/white"
                 android:textSize="12sp"
                 android:textStyle="bold" />
@@ -189,9 +166,9 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="4dp"
-            android:text="Phở Thìn"
+            android:text=""
             android:textColor="@color/white"
-            android:textSize="32sp"
+            android:textSize="28sp"
             android:textStyle="bold" />
 
         <TextView
@@ -199,12 +176,11 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="6dp"
-            android:text="Một bát phở nóng, một chút bình yên."
+            android:text=""
             android:textColor="@color/white"
             android:textSize="15sp" />
     </LinearLayout>
 
-    <!-- Reply & Actions Bar at Bottom -->
     <LinearLayout
         android:id="@+id/layoutReplyBar"
         android:layout_width="match_parent"
@@ -216,6 +192,7 @@
         android:paddingBottom="24dp">
 
         <RelativeLayout
+            android:id="@+id/layoutReplyInput"
             android:layout_width="0dp"
             android:layout_height="46dp"
             android:layout_weight="1"
@@ -227,7 +204,8 @@
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:background="@null"
-                android:hint="Trả lời Phở Thìn..."
+                android:hint="Nhắn tin phản hồi..."
+                android:imeOptions="actionSend"
                 android:inputType="text"
                 android:textColor="#3E2723"
                 android:textColorHint="#9E8A83"
@@ -235,14 +213,15 @@
         </RelativeLayout>
 
         <ImageView
-            android:id="@+id/btnStoryLike"
+            android:id="@+id/btnSendReply"
             android:layout_width="26dp"
             android:layout_height="26dp"
             android:layout_marginStart="12dp"
             android:clickable="true"
             android:contentDescription="@string/app_name"
             android:focusable="true"
-            android:src="@drawable/ic_heart" />
+            android:src="@drawable/ic_send"
+            app:tint="@color/white" />
 
         <ImageView
             android:id="@+id/btnStoryShare"

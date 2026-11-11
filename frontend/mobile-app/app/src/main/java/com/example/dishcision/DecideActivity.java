@@ -16,6 +16,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.activity.EdgeToEdge;
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.ContextCompat;
 import androidx.core.graphics.Insets;
@@ -23,12 +24,13 @@ import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 
 import com.example.dishcision.network.ApiClient;
+import com.example.dishcision.network.DishModel;
+import com.example.dishcision.network.DishesResponse;
 import com.example.dishcision.network.FoodDecideRequest;
 import com.example.dishcision.network.FoodDecideResponse;
 import com.google.android.material.bottomsheet.BottomSheetDialog;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
 
@@ -38,31 +40,20 @@ import retrofit2.Response;
 
 public class DecideActivity extends AppCompatActivity {
 
-    private static final String[] MASTER_DISH_POOL = {
-            "Phở Bò Tái Lăn", "Cơm Tấm Sườn Bì", "Bún Bò Huế", "Bánh Mì Pate", "Pizza Hải Sản",
-            "Bún Chả Hà Nội", "Lẩu Nấm Hải Sản", "Nem Rán Giòn Rụm", "Gà Nướng Mật Ong", "Bún Riêu Cua",
-            "Mì Quảng Tôm Thịt", "Bánh Xèo Giòn Tan", "Hủ Tiếu Nam Vang", "Cháo Sườn Quẩy", "Bò Bít Tết", "Sushi Thập Cẩm"
-    };
-
-    // Header & Bottom nav
-    private View btnHeaderTitle;
     private ImageView btnNotification;
     private LinearLayout navHome;
     private LinearLayout navCreate;
     private LinearLayout navMessages;
     private LinearLayout navProfile;
 
-    // Wheel Views
     private WheelView wheelView;
     private RelativeLayout btnSpinCenter;
 
-    // Controls
     private TextView btnDecreaseItem;
     private TextView btnIncreaseItem;
     private TextView tvItemCountDisplay;
     private TextView tvDishCountBadge;
 
-    // Preset Chips & AI Button
     private View btnAiSuggest;
     private TextView chip3Items;
     private TextView chip5Items;
@@ -71,13 +62,12 @@ public class DecideActivity extends AppCompatActivity {
     private TextView chip12Items;
     private TextView chip15Items;
 
-    // Edit Dish List Box
     private EditText edtDishList;
     private TextView btnClearDishList;
     private RelativeLayout btnUpdateWheel;
     private TextView tvBtnUpdateWheel;
 
-    // Active dishes
+    private final List<String> backendDishPool = new ArrayList<>();
     private final List<String> currentDishes = new ArrayList<>();
     private final Random random = new Random();
 
@@ -93,13 +83,14 @@ public class DecideActivity extends AppCompatActivity {
             return insets;
         });
 
+        ApiClient.init(this);
         initViews();
-        setupDefaultDishes();
         setupListeners();
+        updateUI();
+        fetchDishesFromBackend();
     }
 
     private void initViews() {
-        btnHeaderTitle = findViewById(R.id.topHeader);
         btnNotification = findViewById(R.id.btnNotification);
         navHome = findViewById(R.id.navHome);
         navCreate = findViewById(R.id.navCreate);
@@ -128,22 +119,39 @@ public class DecideActivity extends AppCompatActivity {
         tvBtnUpdateWheel = findViewById(R.id.tvBtnUpdateWheel);
     }
 
-    private void setupDefaultDishes() {
-        currentDishes.clear();
-        currentDishes.addAll(Arrays.asList(
-                "Phở Bò Tái Lăn",
-                "Cơm Tấm Sườn Bì",
-                "Bún Bò Huế",
-                "Bánh Mì Pate",
-                "Pizza Hải Sản"
-        ));
-        updateUI();
+    private void fetchDishesFromBackend() {
+        ApiClient.getApiService().getDishes(null, null, null, 20).enqueue(new Callback<DishesResponse>() {
+            @Override
+            public void onResponse(@NonNull Call<DishesResponse> call, @NonNull Response<DishesResponse> response) {
+                if (isFinishing() || isDestroyed()) return;
+                if (response.isSuccessful() && response.body() != null && response.body().data != null) {
+                    backendDishPool.clear();
+                    for (DishModel dish : response.body().data) {
+                        if (dish != null && dish.name != null && !dish.name.trim().isEmpty()) {
+                            String clean = dish.name.trim();
+                            if (!backendDishPool.contains(clean)) {
+                                backendDishPool.add(clean);
+                            }
+                        }
+                    }
+                    if (currentDishes.isEmpty() && !backendDishPool.isEmpty()) {
+                        int initCount = Math.min(5, backendDishPool.size());
+                        for (int i = 0; i < initCount; i++) {
+                            currentDishes.add(backendDishPool.get(i));
+                        }
+                        updateUI();
+                    }
+                }
+            }
+
+            @Override
+            public void onFailure(@NonNull Call<DishesResponse> call, @NonNull Throwable t) {}
+        });
     }
 
     private void updateUI() {
         int count = currentDishes.size();
 
-        // Update multiline edit text
         if (edtDishList != null) {
             StringBuilder sb = new StringBuilder();
             for (int i = 0; i < currentDishes.size(); i++) {
@@ -154,7 +162,6 @@ public class DecideActivity extends AppCompatActivity {
             edtDishList.setSelection(edtDishList.getText().length());
         }
 
-        // Update count displays
         if (tvItemCountDisplay != null) {
             tvItemCountDisplay.setText(count + " món");
         }
@@ -162,7 +169,6 @@ public class DecideActivity extends AppCompatActivity {
             tvDishCountBadge.setText(count + " món đã nhập");
         }
 
-        // Immediately update WheelView with all dishes
         if (wheelView != null) {
             wheelView.setItems(currentDishes);
             wheelView.setRotation(0f);
@@ -198,21 +204,23 @@ public class DecideActivity extends AppCompatActivity {
             Toast.makeText(this, "Bạn đã đạt giới hạn vòng quay", Toast.LENGTH_SHORT).show();
             return;
         }
+        if (backendDishPool.isEmpty()) {
+            Toast.makeText(this, "Chưa tải được món từ hệ thống, bạn có thể nhập trực tiếp hoặc dùng AI gợi ý", Toast.LENGTH_SHORT).show();
+            return;
+        }
         currentDishes.clear();
-        for (int i = 0; i < count && i < MASTER_DISH_POOL.length; i++) {
-            currentDishes.add(MASTER_DISH_POOL[i]);
+        for (int i = 0; i < count && i < backendDishPool.size(); i++) {
+            currentDishes.add(backendDishPool.get(i));
         }
         updateUI();
-        Toast.makeText(this, "Đã cập nhật vòng quay với " + count + " món ăn!", Toast.LENGTH_SHORT).show();
+        Toast.makeText(this, "Đã cập nhật vòng quay với " + currentDishes.size() + " món ăn!", Toast.LENGTH_SHORT).show();
     }
 
     private void setupListeners() {
-        // AI Suggest Button Click
         if (btnAiSuggest != null) {
             btnAiSuggest.setOnClickListener(v -> showAiSuggestDialog());
         }
 
-        // Preset Chips Click
         if (chip3Items != null) chip3Items.setOnClickListener(v -> setDishPresetCount(3));
         if (chip5Items != null) chip5Items.setOnClickListener(v -> setDishPresetCount(5));
         if (chip8Items != null) chip8Items.setOnClickListener(v -> setDishPresetCount(8));
@@ -220,7 +228,6 @@ public class DecideActivity extends AppCompatActivity {
         if (chip12Items != null) chip12Items.setOnClickListener(v -> setDishPresetCount(12));
         if (chip15Items != null) chip15Items.setOnClickListener(v -> setDishPresetCount(15));
 
-        // Minus (-) Button
         if (btnDecreaseItem != null) {
             btnDecreaseItem.setOnClickListener(v -> {
                 if (currentDishes.size() > 2) {
@@ -233,50 +240,48 @@ public class DecideActivity extends AppCompatActivity {
             });
         }
 
-        // Plus (+) Button (Max 15 items limit)
         if (btnIncreaseItem != null) {
             btnIncreaseItem.setOnClickListener(v -> {
-                if (currentDishes.size() < 15) {
-                    for (String candidate : MASTER_DISH_POOL) {
-                        if (!currentDishes.contains(candidate)) {
-                            currentDishes.add(candidate);
-                            break;
-                        }
-                    }
-                    updateUI();
-                    Toast.makeText(this, "Hiện có " + currentDishes.size() + " món trên vòng quay", Toast.LENGTH_SHORT).show();
-                } else {
+                if (currentDishes.size() >= 15) {
                     Toast.makeText(this, "Bạn đã đạt giới hạn vòng quay", Toast.LENGTH_SHORT).show();
+                    return;
                 }
+                String added = null;
+                for (String candidate : backendDishPool) {
+                    if (!currentDishes.contains(candidate)) {
+                        added = candidate;
+                        break;
+                    }
+                }
+                if (added == null) {
+                    Toast.makeText(this, "Đã thêm hết món từ hệ thống, bạn có thể nhập thêm ở danh sách bên dưới", Toast.LENGTH_SHORT).show();
+                    return;
+                }
+                currentDishes.add(added);
+                updateUI();
+                Toast.makeText(this, "Hiện có " + currentDishes.size() + " món trên vòng quay", Toast.LENGTH_SHORT).show();
             });
         }
 
-        // Clear Dish List Button
         if (btnClearDishList != null) {
             btnClearDishList.setOnClickListener(v -> {
+                currentDishes.clear();
+                updateUI();
                 if (edtDishList != null) {
-                    edtDishList.setText("");
                     edtDishList.requestFocus();
                 }
                 Toast.makeText(this, "Đã xóa tất cả danh sách món ăn!", Toast.LENGTH_SHORT).show();
             });
         }
 
-        // Update Wheel Button (Applies custom typed dishes to the wheel)
         View.OnClickListener updateListener = v -> applyTypedDishes();
-        if (btnUpdateWheel != null) {
-            btnUpdateWheel.setOnClickListener(updateListener);
-        }
-        if (tvBtnUpdateWheel != null) {
-            tvBtnUpdateWheel.setOnClickListener(updateListener);
-        }
+        if (btnUpdateWheel != null) btnUpdateWheel.setOnClickListener(updateListener);
+        if (tvBtnUpdateWheel != null) tvBtnUpdateWheel.setOnClickListener(updateListener);
 
-        // Center Spin Button (Trực tiếp quay ngẫu nhiên từ danh sách hiện tại)
         if (btnSpinCenter != null) {
             btnSpinCenter.setOnClickListener(v -> performSpinWheel());
         }
 
-        // Navigation listeners
         if (btnNotification != null) {
             btnNotification.setOnClickListener(v -> startActivity(new Intent(this, NotificationsActivity.class)));
         }
@@ -321,6 +326,8 @@ public class DecideActivity extends AppCompatActivity {
         if (btnCloseAiDialog != null) btnCloseAiDialog.setOnClickListener(v -> dialog.dismiss());
 
         final List<String> aiSuggestedDishes = new ArrayList<>();
+        TextView[] dishViews = {tvAiDish1, tvAiDish2, tvAiDish3};
+        TextView[] reasonViews = {tvAiReason1, tvAiReason2, tvAiReason3};
 
         if (btnCallGemini != null) {
             btnCallGemini.setOnClickListener(v -> {
@@ -336,61 +343,64 @@ public class DecideActivity extends AppCompatActivity {
                 FoodDecideRequest request = new FoodDecideRequest(promptText, "Bình dân", 1, promptText);
                 ApiClient.getApiService().foodDecide(request).enqueue(new Callback<FoodDecideResponse>() {
                     @Override
-                    public void onResponse(Call<FoodDecideResponse> call, Response<FoodDecideResponse> response) {
+                    public void onResponse(@NonNull Call<FoodDecideResponse> call, @NonNull Response<FoodDecideResponse> response) {
                         btnCallGemini.setEnabled(true);
                         if (pbAiLoading != null) pbAiLoading.setVisibility(View.GONE);
                         if (tvBtnCallGemini != null) tvBtnCallGemini.setText("Nhận món ăn");
 
+                        if (isFinishing() || isDestroyed()) return;
+
                         aiSuggestedDishes.clear();
+                        for (int i = 0; i < 3; i++) {
+                            if (dishViews[i] != null) dishViews[i].setVisibility(View.GONE);
+                            if (reasonViews[i] != null) reasonViews[i].setVisibility(View.GONE);
+                        }
+
                         if (response.isSuccessful() && response.body() != null && response.body().getData() != null) {
                             List<FoodDecideResponse.Suggestion> list = response.body().getData().suggestions;
-                            if (list != null && !list.isEmpty()) {
+                            if (list != null) {
+                                int shown = 0;
                                 for (FoodDecideResponse.Suggestion s : list) {
-                                    if (s.dishName != null && !s.dishName.isEmpty()) {
-                                        aiSuggestedDishes.add(s.dishName);
+                                    if (s != null && s.dishName != null && !s.dishName.trim().isEmpty()) {
+                                        String cleanName = s.dishName.trim();
+                                        aiSuggestedDishes.add(cleanName);
+                                        if (shown < 3) {
+                                            if (dishViews[shown] != null) {
+                                                dishViews[shown].setText((shown + 1) + ". " + cleanName);
+                                                dishViews[shown].setVisibility(View.VISIBLE);
+                                            }
+                                            if (reasonViews[shown] != null) {
+                                                String reason = s.reason != null ? s.reason.trim() : "";
+                                                if (!reason.isEmpty()) {
+                                                    reasonViews[shown].setText(reason);
+                                                    reasonViews[shown].setVisibility(View.VISIBLE);
+                                                }
+                                            }
+                                            shown++;
+                                        }
                                     }
-                                }
-                                if (list.size() > 0 && tvAiDish1 != null) {
-                                    tvAiDish1.setText("1. " + list.get(0).dishName);
-                                    if (tvAiReason1 != null) tvAiReason1.setText(list.get(0).reason);
-                                }
-                                if (list.size() > 1 && tvAiDish2 != null) {
-                                    tvAiDish2.setText("2. " + list.get(1).dishName);
-                                    if (tvAiReason2 != null) tvAiReason2.setText(list.get(1).reason);
-                                }
-                                if (list.size() > 2 && tvAiDish3 != null) {
-                                    tvAiDish3.setText("3. " + list.get(2).dishName);
-                                    if (tvAiReason3 != null) tvAiReason3.setText(list.get(2).reason);
                                 }
                             }
                         }
 
                         if (aiSuggestedDishes.isEmpty()) {
-                            // Fallback default suggestions
-                            aiSuggestedDishes.add("Phở Bò Tái Lăn");
-                            aiSuggestedDishes.add("Bún Bò Huế");
-                            aiSuggestedDishes.add("Bánh Mì Pate");
-                            if (tvAiDish1 != null) tvAiDish1.setText("1. Phở Bò Tái Lăn");
-                            if (tvAiDish2 != null) tvAiDish2.setText("2. Bún Bò Huế");
-                            if (tvAiDish3 != null) tvAiDish3.setText("3. Bánh Mì Pate");
+                            if (containerAiResults != null) containerAiResults.setVisibility(View.GONE);
+                            Toast.makeText(DecideActivity.this, "AI chưa trả về gợi ý phù hợp. Vui lòng thử mô tả khác!", Toast.LENGTH_SHORT).show();
+                        } else {
+                            if (containerAiResults != null) containerAiResults.setVisibility(View.VISIBLE);
+                            Toast.makeText(DecideActivity.this, "Đã gợi ý " + aiSuggestedDishes.size() + " món ngon!", Toast.LENGTH_SHORT).show();
                         }
-
-                        if (containerAiResults != null) containerAiResults.setVisibility(View.VISIBLE);
-                        Toast.makeText(DecideActivity.this, "Đã gợi ý xong 3 món ngon!", Toast.LENGTH_SHORT).show();
                     }
 
                     @Override
-                    public void onFailure(Call<FoodDecideResponse> call, Throwable t) {
+                    public void onFailure(@NonNull Call<FoodDecideResponse> call, @NonNull Throwable t) {
                         btnCallGemini.setEnabled(true);
                         if (pbAiLoading != null) pbAiLoading.setVisibility(View.GONE);
                         if (tvBtnCallGemini != null) tvBtnCallGemini.setText("Nhận món ăn");
-
-                        aiSuggestedDishes.clear();
-                        aiSuggestedDishes.add("Phở Bò Tái Lăn");
-                        aiSuggestedDishes.add("Bún Bò Huế");
-                        aiSuggestedDishes.add("Cơm Tấm Sườn Bì");
-                        if (containerAiResults != null) containerAiResults.setVisibility(View.VISIBLE);
-                        Toast.makeText(DecideActivity.this, "Đã gợi ý món ngon cho bạn!", Toast.LENGTH_SHORT).show();
+                        if (!isFinishing() && !isDestroyed()) {
+                            if (containerAiResults != null) containerAiResults.setVisibility(View.GONE);
+                            Toast.makeText(DecideActivity.this, "Không thể kết nối dịch vụ gợi ý AI.", Toast.LENGTH_SHORT).show();
+                        }
                     }
                 });
             });
@@ -403,9 +413,9 @@ public class DecideActivity extends AppCompatActivity {
                     currentDishes.addAll(aiSuggestedDishes);
                     updateUI();
                     dialog.dismiss();
-                    Toast.makeText(DecideActivity.this, "Đã đưa " + aiSuggestedDishes.size() + " món từ AI Gemini vào vòng quay!", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(DecideActivity.this, "Đã đưa " + aiSuggestedDishes.size() + " món vào vòng quay!", Toast.LENGTH_SHORT).show();
                 } else {
-                    Toast.makeText(DecideActivity.this, "Chưa có món nào được gợi ý!", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(DecideActivity.this, "Cần ít nhất 2 món được gợi ý để quay!", Toast.LENGTH_SHORT).show();
                 }
             });
         }
@@ -421,23 +431,17 @@ public class DecideActivity extends AppCompatActivity {
             String[] lines = rawText.split("\\r?\\n");
             for (String line : lines) {
                 String trimmed = line.trim();
-                if (!trimmed.isEmpty()) {
-                    list.add(trimmed);
-                }
+                if (!trimmed.isEmpty()) list.add(trimmed);
             }
         } else if (rawText.contains(",")) {
             String[] parts = rawText.split(",");
             for (String part : parts) {
                 String trimmed = part.trim();
-                if (!trimmed.isEmpty()) {
-                    list.add(trimmed);
-                }
+                if (!trimmed.isEmpty()) list.add(trimmed);
             }
         } else {
             String trimmed = rawText.trim();
-            if (!trimmed.isEmpty()) {
-                list.add(trimmed);
-            }
+            if (!trimmed.isEmpty()) list.add(trimmed);
         }
         return list;
     }
@@ -464,7 +468,6 @@ public class DecideActivity extends AppCompatActivity {
         if (tvItemCountDisplay != null) tvItemCountDisplay.setText(count + " món");
         if (tvDishCountBadge != null) tvDishCountBadge.setText(count + " món đã nhập");
 
-        // Immediately update WheelView with all custom dishes!
         if (wheelView != null) {
             wheelView.setItems(currentDishes);
             wheelView.setRotation(0f);
@@ -472,7 +475,6 @@ public class DecideActivity extends AppCompatActivity {
 
         updateChipStyles(count);
 
-        // Hide keyboard
         try {
             InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
             if (imm != null && getCurrentFocus() != null) {
@@ -484,7 +486,6 @@ public class DecideActivity extends AppCompatActivity {
     }
 
     private void performSpinWheel() {
-        // 1. Tự động đồng bộ các món mới nếu người dùng vừa gõ vào ô nhập mà quên bấm "Cập nhật"
         if (edtDishList != null) {
             List<String> typedList = parseDishesFromText(edtDishList.getText().toString());
             if (typedList.size() >= 2 && !typedList.equals(currentDishes)) {
@@ -494,9 +495,7 @@ public class DecideActivity extends AppCompatActivity {
                 }
                 currentDishes.clear();
                 currentDishes.addAll(typedList);
-                if (wheelView != null) {
-                    wheelView.setItems(currentDishes);
-                }
+                if (wheelView != null) wheelView.setItems(currentDishes);
                 int count = currentDishes.size();
                 if (tvItemCountDisplay != null) tvItemCountDisplay.setText(count + " món");
                 if (tvDishCountBadge != null) tvDishCountBadge.setText(count + " món đã nhập");
@@ -511,28 +510,21 @@ public class DecideActivity extends AppCompatActivity {
 
         btnSpinCenter.setEnabled(false);
 
-        // 2. CHỌN MÓN CHIẾN THẮNG HOÀN TOÀN NGẪU NHIÊN 100%
         int count = currentDishes.size();
         int winningIndex = random.nextInt(count);
         final String winningDish = currentDishes.get(winningIndex);
 
-        // 3. Tính toán góc quay chính xác để ô trúng thưởng dừng đúng ngay dưới kim chỉ ở đỉnh (12h - 270 độ)
         float sweepAngle = 360f / count;
         float midAngle = winningIndex * sweepAngle + (sweepAngle / 2f);
         float targetOffset = (270f - midAngle + 360f) % 360f;
-
-        // Thêm độ lệch tự nhiên ngẫu nhiên trong khoảng +/- 25% độ rộng nan quạt
         float jitter = (random.nextFloat() * 2f - 1f) * (sweepAngle * 0.25f);
         float finalTargetAngleMod = (targetOffset + jitter + 360f) % 360f;
 
         float currentRot = wheelView != null ? wheelView.getRotation() : 0f;
         float currentMod = (currentRot % 360f + 360f) % 360f;
         float delta = finalTargetAngleMod - currentMod;
-        if (delta < 0) {
-            delta += 360f;
-        }
+        if (delta < 0) delta += 360f;
 
-        // Quay từ 5 đến 6 vòng trước khi dừng
         int fullSpins = 5 + random.nextInt(2);
         float targetRotation = currentRot + (fullSpins * 360f) + delta;
 
@@ -543,7 +535,6 @@ public class DecideActivity extends AppCompatActivity {
                     .setInterpolator(new DecelerateInterpolator(1.8f))
                     .withEndAction(() -> {
                         btnSpinCenter.setEnabled(true);
-                        // Giữ 450ms để người dùng thấy rõ kim đang chỉ đúng món trúng rồi mới chuyển màn hình
                         wheelView.postDelayed(() -> navigateToResult(winningDish), 450);
                     })
                     .start();

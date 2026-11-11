@@ -47,7 +47,6 @@
             app:tint="#5B403A" />
     </LinearLayout>
 
-    <!-- Scrollable Content -->
     <ScrollView
         android:layout_width="match_parent"
         android:layout_height="0dp"
@@ -73,6 +72,7 @@
                     android:layout_width="42dp"
                     android:layout_height="42dp"
                     android:contentDescription="Avatar"
+                    android:scaleType="centerCrop"
                     android:src="@drawable/bg_avatar_circle" />
 
                 <LinearLayout
@@ -85,15 +85,16 @@
                         android:id="@+id/tvContactName"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Maya Lin"
+                        android:text=""
                         android:textColor="#141B2B"
                         android:textSize="16sp"
                         android:textStyle="bold" />
 
                     <TextView
+                        android:id="@+id/tvContactSub"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Cuộc trò chuyện với Maya Lin"
+                        android:text="Tùy chỉnh giao diện cuộc trò chuyện"
                         android:textColor="#6B7280"
                         android:textSize="13sp" />
                 </LinearLayout>
@@ -140,7 +141,7 @@
                         android:layout_height="wrap_content"
                         android:maxWidth="240dp"
                         android:lineSpacingExtra="2dp"
-                        android:text="Tối nay nhóm mình tính đi ăn tiếp, bạn có gợi ý quán lẩu nào gần Quận 1 không?"
+                        android:text="Hôm nay chúng ta ăn gì nhỉ?"
                         android:textColor="#141B2B"
                         android:textSize="13sp" />
                 </LinearLayout>
@@ -179,7 +180,7 @@
                 android:layout_marginTop="12dp"
                 android:orientation="horizontal">
 
-                <!-- Theme 1: Orange (Active) -->
+                <!-- Theme 1: Orange -->
                 <LinearLayout
                     android:id="@+id/cardThemeOrange"
                     android:layout_width="0dp"
@@ -193,19 +194,10 @@
                     android:orientation="vertical"
                     android:padding="12dp">
 
-                    <FrameLayout
+                    <View
                         android:layout_width="40dp"
                         android:layout_height="40dp"
-                        android:background="@drawable/bg_unread_badge">
-
-                        <ImageView
-                            android:layout_width="16dp"
-                            android:layout_height="16dp"
-                            android:layout_gravity="center"
-                            android:contentDescription="Check"
-                            android:src="@drawable/ic_verified"
-                            app:tint="#FFFFFF" />
-                    </FrameLayout>
+                        android:background="@drawable/bg_unread_badge" />
 
                     <TextView
                         android:layout_width="wrap_content"
@@ -217,6 +209,7 @@
                         android:textStyle="bold" />
 
                     <TextView
+                        android:id="@+id/tvStatusOrange"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="2dp"
@@ -255,6 +248,7 @@
                         android:textStyle="bold" />
 
                     <TextView
+                        android:id="@+id/tvStatusGreen"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="2dp"
@@ -263,7 +257,7 @@
                         android:textSize="11sp" />
                 </LinearLayout>
 
-                <!-- Theme 3: Taro Purple -->
+                <!-- Theme 3: Purple -->
                 <LinearLayout
                     android:id="@+id/cardThemePurple"
                     android:layout_width="0dp"
@@ -293,6 +287,7 @@
                         android:textStyle="bold" />
 
                     <TextView
+                        android:id="@+id/tvStatusPurple"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="2dp"
@@ -307,7 +302,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="20dp"
-                android:text="Biểu tượng cảm xúc mặc định"
+                android:text="Biểu tượng cảm xúc nhanh"
                 android:textColor="#141B2B"
                 android:textSize="18sp"
                 android:textStyle="bold" />
@@ -385,7 +380,7 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="🖤"
+                        android:text="❤️"
                         android:textSize="20sp" />
                 </LinearLayout>
 
@@ -413,7 +408,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="10dp"
-                android:text="Đang chọn 🍜 · Các biểu tượng khác chưa áp dụng."
+                android:text="Đang chọn 🍜"
                 android:textColor="#6B7280"
                 android:textSize="12sp" />
 
@@ -423,7 +418,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="50dp"
                 android:layout_marginTop="20dp"
-                android:background="@drawable/bg_button_light_blue"
+                android:background="@drawable/bg_button_orange"
                 android:clickable="true"
                 android:focusable="true"
                 android:foreground="?attr/selectableItemBackground"
@@ -432,20 +427,19 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Giữ lựa chọn hiện tại"
-                    android:textColor="#141B2B"
+                    android:text="Áp dụng chủ đề"
+                    android:textColor="#FFFFFF"
                     android:textSize="15sp"
                     android:textStyle="bold" />
             </LinearLayout>
 
-            <!-- Disclaimer Footer -->
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="10dp"
                 android:layout_marginBottom="20dp"
                 android:lineSpacingExtra="3dp"
-                android:text="Bản xem trước không thay đổi chủ đề hay biểu tượng trong cuộc trò chuyện gốc."
+                android:text="Chủ đề và biểu tượng cảm xúc sẽ được áp dụng ngay cho cuộc trò chuyện này."
                 android:textColor="#8E7570"
                 android:textSize="12sp" />
         </LinearLayout>

@@ -43,11 +43,20 @@ public final class CurrentUserBinder {
                         }
                         UserProfileResponse.UserData user = response.body().getData();
                         SharedPreferences.Editor editor = prefs.edit();
+                        if (user.userId > 0) editor.putInt("user_id", user.userId);
                         if (notEmpty(user.fullName)) editor.putString(KEY_NAME, user.fullName);
                         if (notEmpty(user.username)) editor.putString(KEY_USERNAME, user.username);
                         if (notEmpty(user.email)) editor.putString(KEY_EMAIL, user.email);
-                        if (notEmpty(user.avatarUrl)) editor.putString(KEY_AVATAR, user.avatarUrl);
+                        if (notEmpty(user.avatarUrl)) {
+                            editor.putString(KEY_AVATAR, user.avatarUrl);
+                        } else {
+                            editor.remove(KEY_AVATAR);
+                        }
+                        editor.putBoolean("is_google_login", user.isGoogleAccount);
                         editor.apply();
+                        if (user.userId > 0) {
+                            new TokenManager(activity).saveAuthData(null, user.userId, user.email, user.fullName);
+                        }
                         render(avatar, name, handle, user.fullName, user.username, user.email, user.avatarUrl);
                     }
 

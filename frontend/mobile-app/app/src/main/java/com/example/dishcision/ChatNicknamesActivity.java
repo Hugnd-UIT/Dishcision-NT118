@@ -1,5 +1,6 @@
 package com.example.dishcision;
 
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.widget.EditText;
 import android.widget.ImageView;
@@ -13,9 +14,13 @@ import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 
+import com.example.dishcision.network.ImageLoader;
+
 public class ChatNicknamesActivity extends AppCompatActivity {
 
     private ImageView btnBack;
+    private ImageView imgPartnerAvatar;
+    private ImageView imgSelfAvatar;
     private TextView tvName1;
     private TextView tvNickname1;
     private TextView btnAddNickname1;
@@ -29,7 +34,10 @@ public class ChatNicknamesActivity extends AppCompatActivity {
     private LinearLayout btnConfirmNickname;
     private LinearLayout btnCancelNickname;
 
-    private String targetUserForNickname = "Maya Lin";
+    private int targetUserId = 0;
+    private String partnerName = "";
+    private String selfName = "Bạn";
+    private boolean editingPartner = true;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -43,12 +51,25 @@ public class ChatNicknamesActivity extends AppCompatActivity {
             return insets;
         });
 
+        targetUserId = getIntent().getIntExtra("USER_ID", 0);
+        String extraName = getIntent().getStringExtra("CHAT_NAME");
+        partnerName = extraName != null && !extraName.trim().isEmpty() ? extraName.trim() : "Đối phương";
+
+        SharedPreferences prefs = getSharedPreferences("DishcisionPrefs", MODE_PRIVATE);
+        String savedSelfName = prefs.getString("user_name", "");
+        if (savedSelfName != null && !savedSelfName.trim().isEmpty()) {
+            selfName = savedSelfName.trim();
+        }
+
         initViews();
+        bindData();
         setupListeners();
     }
 
     private void initViews() {
         btnBack = findViewById(R.id.btnBack);
+        imgPartnerAvatar = findViewById(R.id.imgPartnerAvatar);
+        imgSelfAvatar = findViewById(R.id.imgSelfAvatar);
         tvName1 = findViewById(R.id.tvName1);
         tvNickname1 = findViewById(R.id.tvNickname1);
         btnAddNickname1 = findViewById(R.id.btnAddNickname1);
@@ -63,81 +84,100 @@ public class ChatNicknamesActivity extends AppCompatActivity {
         btnConfirmNickname = findViewById(R.id.btnConfirmNickname);
         btnCancelNickname = findViewById(R.id.btnCancelNickname);
 
-        String chatName = getIntent().getStringExtra("CHAT_NAME");
-        if (chatName != null && !chatName.isEmpty() && tvName1 != null) {
-            tvName1.setText(chatName);
-            targetUserForNickname = chatName;
-            if (tvFormTitle != null) {
-                tvFormTitle.setText("Thêm biệt danh cho " + chatName);
-            }
+        String avatarUrl = getIntent().getStringExtra("AVATAR_URL");
+        if (imgPartnerAvatar != null && avatarUrl != null && !avatarUrl.trim().isEmpty()) {
+            ImageLoader.loadAvatar(imgPartnerAvatar, avatarUrl);
+        }
+        String selfAvatarUrl = getSharedPreferences("DishcisionPrefs", MODE_PRIVATE).getString("avatar_url", "");
+        if (imgSelfAvatar != null && selfAvatarUrl != null && !selfAvatarUrl.trim().isEmpty()) {
+            ImageLoader.loadAvatar(imgSelfAvatar, selfAvatarUrl);
+        }
+    }
+
+    private void bindData() {
+        if (tvName1 != null) tvName1.setText(partnerName);
+        if (tvName2 != null) tvName2.setText(selfName);
+
+        String partnerNick = ChatPrefsHelper.getPartnerNickname(this, targetUserId);
+        String selfNick = ChatPrefsHelper.getSelfNickname(this, targetUserId);
+
+        if (tvNickname1 != null) {
+            tvNickname1.setText(partnerNick.isEmpty() ? "Chưa đặt biệt danh" : "Biệt danh: " + partnerNick);
+        }
+        if (btnAddNickname1 != null) {
+            btnAddNickname1.setText(partnerNick.isEmpty() ? "Thêm" : "Chỉnh sửa");
+        }
+        if (tvNickname2 != null) {
+            tvNickname2.setText(selfNick.isEmpty() ? "Chưa đặt biệt danh" : "Biệt danh: " + selfNick);
+        }
+        if (btnAddNickname2 != null) {
+            btnAddNickname2.setText(selfNick.isEmpty() ? "Thêm" : "Chỉnh sửa");
+        }
+
+        selectEditingTarget(editingPartner);
+    }
+
+    private void selectEditingTarget(boolean forPartner) {
+        editingPartner = forPartner;
+        String targetLabel = forPartner ? partnerName : selfName;
+        String currentVal = forPartner
+                ? ChatPrefsHelper.getPartnerNickname(this, targetUserId)
+                : ChatPrefsHelper.getSelfNickname(this, targetUserId);
+
+        if (tvFormTitle != null) {
+            tvFormTitle.setText("Đặt biệt danh cho " + targetLabel);
+        }
+        if (edtNicknameInput != null) {
+            edtNicknameInput.setText(currentVal);
+        }
+        if (tvFormSubtext != null) {
+            tvFormSubtext.setText(currentVal.isEmpty()
+                    ? "Chưa có biệt danh cho " + targetLabel + "."
+                    : "Biệt danh hiện tại: “" + currentVal + "”");
         }
     }
 
     private void setupListeners() {
-        if (btnBack != null) {
-            btnBack.setOnClickListener(v -> finish());
-        }
+        if (btnBack != null) btnBack.setOnClickListener(v -> finish());
 
         if (btnAddNickname1 != null) {
             btnAddNickname1.setOnClickListener(v -> {
-                String name = tvName1 != null ? tvName1.getText().toString() : "Maya Lin";
-                targetUserForNickname = name;
-                if (tvFormTitle != null) {
-                    tvFormTitle.setText("Thêm biệt danh cho " + name);
-                }
-                if (edtNicknameInput != null) {
-                    edtNicknameInput.setText("");
-                    edtNicknameInput.requestFocus();
-                }
+                selectEditingTarget(true);
+                if (edtNicknameInput != null) edtNicknameInput.requestFocus();
             });
         }
 
         if (btnAddNickname2 != null) {
             btnAddNickname2.setOnClickListener(v -> {
-                targetUserForNickname = "Bạn";
-                if (tvFormTitle != null) {
-                    tvFormTitle.setText("Thêm biệt danh cho Bạn");
-                }
-                if (edtNicknameInput != null) {
-                    edtNicknameInput.setText("");
-                    edtNicknameInput.requestFocus();
-                }
+                selectEditingTarget(false);
+                if (edtNicknameInput != null) edtNicknameInput.requestFocus();
             });
         }
 
         if (btnCancelNickname != null) {
             btnCancelNickname.setOnClickListener(v -> {
-                if (edtNicknameInput != null) {
-                    edtNicknameInput.setText("");
+                if (editingPartner) {
+                    ChatPrefsHelper.setPartnerNickname(this, targetUserId, "");
+                } else {
+                    ChatPrefsHelper.setSelfNickname(this, targetUserId, "");
                 }
+                bindData();
+                Toast.makeText(this, "Đã xóa biệt danh", Toast.LENGTH_SHORT).show();
             });
         }
 
         if (btnConfirmNickname != null) {
             btnConfirmNickname.setOnClickListener(v -> {
                 String input = edtNicknameInput != null ? edtNicknameInput.getText().toString().trim() : "";
-                if (input.isEmpty()) {
-                    Toast.makeText(this, "Vui lòng nhập biệt danh!", Toast.LENGTH_SHORT).show();
-                    return;
-                }
-
-                if ("Bạn".equals(targetUserForNickname)) {
-                    if (tvNickname2 != null) tvNickname2.setText("Biệt danh: " + input);
-                    if (btnAddNickname2 != null) btnAddNickname2.setText("Chỉnh sửa");
+                if (editingPartner) {
+                    ChatPrefsHelper.setPartnerNickname(this, targetUserId, input);
                 } else {
-                    if (tvNickname1 != null) tvNickname1.setText("Biệt danh: " + input);
-                    if (btnAddNickname1 != null) btnAddNickname1.setText("Chỉnh sửa");
+                    ChatPrefsHelper.setSelfNickname(this, targetUserId, input);
                 }
-
-                if (tvFormSubtext != null) {
-                    tvFormSubtext.setText("Đã áp dụng biệt danh: “" + input + "” cho " + targetUserForNickname);
-                }
-
-                if (edtNicknameInput != null) {
-                    edtNicknameInput.setText("");
-                }
-
-                Toast.makeText(this, "Đã đặt biệt danh: " + input, Toast.LENGTH_SHORT).show();
+                bindData();
+                Toast.makeText(this,
+                        input.isEmpty() ? "Đã xóa biệt danh" : "Đã đặt biệt danh: " + input,
+                        Toast.LENGTH_SHORT).show();
             });
         }
     }

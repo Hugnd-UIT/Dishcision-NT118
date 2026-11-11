@@ -9,39 +9,44 @@ import {
   resetPassword,
   changePassword,
   get2FAStatus,
+  get2FASetup,
   verify2FA,
   disable2FA,
   getSessions,
   revokeSession,
 } from '../controllers/auth.controller';
-import { authenticate, optionalAuth } from '../middlewares/auth.middleware';
+import { authenticate } from '../middlewares/auth.middleware';
+import { asyncHandler } from '../utils/http';
 import {
   validate,
   registerSchema,
   loginSchema,
+  googleAuthSchema,
   forgotPasswordSchema,
+  verifyOtpSchema,
   resetPasswordSchema,
   changePasswordSchema,
 } from '../middlewares/validate.middleware';
 
 const router = Router();
 
-router.post('/register', validate(registerSchema), register);
-router.post('/login', validate(loginSchema), login);
-router.post('/google', googleAuth);
-router.post('/logout', optionalAuth, logout);
-router.post('/forgot-password', validate(forgotPasswordSchema), forgotPassword);
-router.post('/verify-otp', verifyOtp);
-router.post('/reset-password', validate(resetPasswordSchema), resetPassword);
-router.post('/change-password', optionalAuth, validate(changePasswordSchema), changePassword);
+router.post('/register', validate(registerSchema), asyncHandler(register));
+router.post('/login', validate(loginSchema), asyncHandler(login));
+router.post('/google', validate(googleAuthSchema), asyncHandler(googleAuth));
+router.post('/logout', authenticate, asyncHandler(logout));
+router.post('/forgot-password', validate(forgotPasswordSchema), asyncHandler(forgotPassword));
+router.post('/verify-otp', validate(verifyOtpSchema), asyncHandler(verifyOtp));
+router.post('/reset-password', validate(resetPasswordSchema), asyncHandler(resetPassword));
+router.post('/change-password', authenticate, validate(changePasswordSchema), asyncHandler(changePassword));
 
 // 2FA Security
-router.get('/2fa/status', optionalAuth, get2FAStatus);
-router.post('/2fa/verify', optionalAuth, verify2FA);
-router.post('/2fa/disable', optionalAuth, disable2FA);
+router.get('/2fa/status', authenticate, asyncHandler(get2FAStatus));
+router.get('/2fa/setup', authenticate, asyncHandler(get2FASetup));
+router.post('/2fa/verify', authenticate, asyncHandler(verify2FA));
+router.post('/2fa/disable', authenticate, asyncHandler(disable2FA));
 
 // Active Sessions
-router.get('/sessions', optionalAuth, getSessions);
-router.post('/sessions/revoke', optionalAuth, revokeSession);
+router.get('/sessions', authenticate, asyncHandler(getSessions));
+router.post('/sessions/revoke', authenticate, asyncHandler(revokeSession));
 
 export default router;

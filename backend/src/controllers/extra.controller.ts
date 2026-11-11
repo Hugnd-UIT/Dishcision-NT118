@@ -1,372 +1,550 @@
 import { Response } from 'express';
 import { prisma } from '../config/prisma';
-import { redis } from '../config/redis';
 import { successResponse, errorResponse } from '../utils/response';
 import { AuthRequest } from '../middlewares/auth.middleware';
+import { parsePositiveInt } from '../utils/http';
 
 // ─────────────────────────────────────────
-// 1. STORIES (StoryActivity, CreateStoryActivity)
+// 1. STORIES
 // ─────────────────────────────────────────
 
-const DEFAULT_STORIES = [
-  {
-    id: 1,
-    userId: 2,
-    username: 'phothin',
-    userFullName: 'Phở Thìn Lò Đúc',
-    userAvatar: 'https://images.unsplash.com/photo-1582878826629-29b7ad1cdc43?w=400',
-    mediaUrl: 'https://images.unsplash.com/photo-1582878826629-29b7ad1cdc43?w=800',
-    caption: 'Bát phở tái lăn buổi sáng nóng hổi thơm nức lòng thực khách!',
-    createdAt: new Date().toISOString(),
-  },
-  {
-    id: 2,
-    userId: 3,
-    username: 'banhmi25',
-    userFullName: 'Bánh Mì 25 Hàng Cá',
-    userAvatar: 'https://images.unsplash.com/photo-1626082927389-6cd097cdc6ec?w=400',
-    mediaUrl: 'https://images.unsplash.com/photo-1626082927389-6cd097cdc6ec?w=800',
-    caption: 'Bánh mì pate giòn rụm vừa ra lò mẻ mới! 🥖',
-    createdAt: new Date().toISOString(),
-  },
-  {
-    id: 3,
-    userId: 5,
-    username: 'tranthib',
-    userFullName: 'Trần Thị B',
-    userAvatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=400',
-    mediaUrl: 'https://images.unsplash.com/photo-1554118811-1e0d58224f24?w=800',
-    caption: 'Chill cuối tuần cùng bạn bè tại quán cafe quen ☕',
-    createdAt: new Date().toISOString(),
-  },
-];
+function formatStory(s: any) {
+  return {
+    id: s.id,
+    userId: s.userId,
+    username: s.user?.username || '',
+    userFullName: s.user?.fullName || '',
+    userAvatar: s.user?.avatarUrl || null,
+    mediaUrl: s.mediaUrl,
+    caption: s.caption || '',
+    createdAt: s.createdAt,
+  };
+}
 
-export async function getStories(_req: AuthRequest, res: Response): Promise<void> {
-  const raw = await redis.get('app:stories');
-  let stories = DEFAULT_STORIES;
-  if (raw) {
-    try {
-      stories = JSON.parse(raw);
-    } catch {
-      stories = DEFAULT_STORIES;
-    }
-  } else {
-    await redis.set('app:stories', JSON.stringify(DEFAULT_STORIES), 'EX', 86400);
+export async function getStories(req: AuthRequest, res: Response): Promise<void> {
+  const userIdFilter = req.query.userId ? parsePositiveInt(req.query.userId as string) : null;
+  const storeName = typeof req.query.storeName === 'string' ? req.query.storeName.trim() : '';
+
+  const where: any = {};
+  if (userIdFilter) {
+    where.userId = userIdFilter;
+  } else if (storeName) {
+    where.user = { fullName: { contains: storeName, mode: 'insensitive' } };
   }
-  successResponse(res, stories, 'Lấy danh sách stories thành công');
+
+  const stories = await prisma.story.findMany({
+    where,
+    include: {
+      user: { select: { id: true, username: true, fullName: true, avatarUrl: true } },
+    },
+    orderBy: { createdAt: 'desc' },
+    take: 50,
+  });
+
+  successResponse(res, stories.map(formatStory), 'Lấy danh sách stories thành công');
 }
 
 export async function createStory(req: AuthRequest, res: Response): Promise<void> {
-  const userId = req.user?.userId || 1;
-  const user = await prisma.user.findUnique({ where: { id: userId } });
+  const userId = req.user!.userId;
   const { mediaUrl, caption } = req.body;
 
-  if (!mediaUrl) {
+  if (!mediaUrl || typeof mediaUrl !== 'string' || !mediaUrl.trim()) {
     errorResponse(res, 'Media URL là bắt buộc', 400);
     return;
   }
 
-  const raw = await redis.get('app:stories');
-  let stories = DEFAULT_STORIES;
-  if (raw) {
-    try { stories = JSON.parse(raw); } catch { stories = DEFAULT_STORIES; }
-  }
-
-  const newStory = {
-    id: Date.now(),
-    userId,
-    username: user?.username || 'user',
-    userFullName: user?.fullName || 'Người dùng Dishcision',
-    userAvatar: user?.avatarUrl || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=400',
-    mediaUrl,
-    caption: caption || '',
-    createdAt: new Date().toISOString(),
-  };
-
-  stories.unshift(newStory);
-  await redis.set('app:stories', JSON.stringify(stories), 'EX', 86400);
-
-  successResponse(res, newStory, 'Đăng story thành công', 201);
-}
-
-// ─────────────────────────────────────────
-// 2. DISHES & STORES (DishDetailActivity, StoreDetailActivity)
-// ─────────────────────────────────────────
-
-const SAMPLE_DISHES = [
-  {
-    id: 1,
-    name: 'Phở bò tái lăn gia truyền',
-    price: 65000,
-    formattedPrice: '65.000 VND',
-    description: 'Thịt bò tươi ngon xào lăn xém cạnh trên lửa lớn với tỏi hành thơm phức, nước dùng ninh xương ống đậm đà béo ngậy.',
-    imageUrl: 'https://images.unsplash.com/photo-1582878826629-29b7ad1cdc43?w=800',
-    category: 'Phở & Bún',
-    rating: 4.8,
-    reviewsCount: 128,
-    storeId: 2,
-    storeName: 'Phở Thìn Lò Đúc',
-    storeAddress: '13 Lò Đúc, Hai Bà Trưng, Hà Nội',
-  },
-  {
-    id: 2,
-    name: 'Bánh mì pate xá xíu đặc biệt',
-    price: 35000,
-    formattedPrice: '35.000 VND',
-    description: 'Vỏ bánh mì nướng giòn rụm, pate gan béo ngậy tự làm, thịt xá xíu đậm vị cùng sốt bơ trứng đặc trưng phố cổ.',
-    imageUrl: 'https://images.unsplash.com/photo-1626082927389-6cd097cdc6ec?w=800',
-    category: 'Bánh mì & Xôi',
-    rating: 4.9,
-    reviewsCount: 310,
-    storeId: 3,
-    storeName: 'Bánh Mì 25',
-    storeAddress: '25 Hàng Cá, Hoàn Kiếm, Hà Nội',
-  },
-  {
-    id: 3,
-    name: 'Bún chả đặc biệt Obama',
-    price: 60000,
-    formattedPrice: '60.000 VND',
-    description: 'Chả viên và chả miếng nướng than hoa thơm lừng vị mỡ hành, nem cua bể giòn tan ăn kèm nước chấm chua ngọt đu đủ xanh.',
-    imageUrl: 'https://images.unsplash.com/photo-1559847844-5315695dadae?w=800',
-    category: 'Phở & Bún',
-    rating: 4.7,
-    reviewsCount: 245,
-    storeId: 4,
-    storeName: 'Bún Chả Hương Liên',
-    storeAddress: '24 Lê Văn Hưu, Hai Bà Trưng, Hà Nội',
-  },
-  {
-    id: 4,
-    name: 'Bún ốc sườn chua cay',
-    price: 55000,
-    formattedPrice: '55.000 VND',
-    description: 'Ốc nhồi giòn sần sật, sườn sụn ninh mềm, nước dùng vị giấm bỗng chua thanh cay nồng kích thích vị giác.',
-    imageUrl: 'https://images.unsplash.com/photo-1541832676-9b763b0239ab?w=800',
-    category: 'Phở & Bún',
-    rating: 4.6,
-    reviewsCount: 89,
-    storeId: 2,
-    storeName: 'Phở Thìn Lò Đúc',
-    storeAddress: '13 Lò Đúc, Hai Bà Trưng, Hà Nội',
-  },
-];
-
-export async function getDishDetail(req: AuthRequest, res: Response): Promise<void> {
-  const dishId = parseInt(req.params.id) || 1;
-  const dish = SAMPLE_DISHES.find(d => d.id === dishId) || SAMPLE_DISHES[0];
-  successResponse(res, dish, 'Lấy chi tiết món ăn thành công');
-}
-
-export async function getDishes(req: AuthRequest, res: Response): Promise<void> {
-  const storeId = req.query.storeId ? parseInt(req.query.storeId as string) : null;
-  const dishes = storeId ? SAMPLE_DISHES.filter(d => d.storeId === storeId) : SAMPLE_DISHES;
-  successResponse(res, dishes, 'Lấy danh sách món ăn thành công');
-}
-
-export async function getStoreDetail(req: AuthRequest, res: Response): Promise<void> {
-  const storeId = parseInt(req.params.id) || 2;
-  const restaurantUser = await prisma.user.findFirst({
-    where: { id: storeId },
+  const newStory = await prisma.story.create({
+    data: {
+      userId,
+      mediaUrl: mediaUrl.trim(),
+      caption: typeof caption === 'string' ? caption.trim() : '',
+    },
     include: {
-      posts: { include: { images: true } },
-      _count: { select: { followers: true, reviews: true } },
+      user: { select: { id: true, username: true, fullName: true, avatarUrl: true } },
     },
   });
 
-  const dishes = SAMPLE_DISHES.filter(d => d.storeId === storeId);
+  successResponse(res, formatStory(newStory), 'Đăng story thành công', 201);
+}
+
+// ─────────────────────────────────────────
+// 2. DISHES & STORES
+// ─────────────────────────────────────────
+
+function formatDish(d: any) {
+  return {
+    id: d.id,
+    name: d.name,
+    price: d.price,
+    formattedPrice: d.formattedPrice,
+    description: d.description,
+    imageUrl: d.imageUrl,
+    category: d.category,
+    rating: d.rating,
+    reviewsCount: d.reviewsCount,
+    storeId: d.storeUserId,
+    storeName: d.storeUser?.fullName || '',
+    storeAddress: d.storeUser?.storeProfile?.address || '',
+  };
+}
+
+export async function getDishDetail(req: AuthRequest, res: Response): Promise<void> {
+  const dishId = parsePositiveInt(req.params.id);
+  if (!dishId) {
+    errorResponse(res, 'ID món ăn không hợp lệ', 400);
+    return;
+  }
+
+  const dish = await prisma.dish.findUnique({
+    where: { id: dishId },
+    include: {
+      storeUser: {
+        select: {
+          id: true,
+          fullName: true,
+          avatarUrl: true,
+          storeProfile: true,
+        },
+      },
+    },
+  });
+
+  if (!dish) {
+    errorResponse(res, 'Không tìm thấy món ăn', 404);
+    return;
+  }
+
+  const reviews = await prisma.review.findMany({
+    where: { restaurantName: { contains: dish.storeUser.fullName, mode: 'insensitive' } },
+    include: {
+      author: { select: { id: true, username: true, fullName: true, avatarUrl: true } },
+    },
+    orderBy: { createdAt: 'desc' },
+    take: 5,
+  });
+
+  successResponse(
+    res,
+    {
+      ...formatDish(dish),
+      storeRating: dish.storeUser.storeProfile?.rating ?? dish.rating,
+      storeOpenHours: dish.storeUser.storeProfile?.openHours || '',
+      storeReviewsCount: reviews.length,
+      reviews: reviews.map((r) => ({
+        reviewId: r.id,
+        rating: r.rating,
+        content: r.content,
+        authorName: r.author.fullName,
+        createdAt: r.createdAt,
+      })),
+    },
+    'Lấy chi tiết món ăn thành công',
+  );
+}
+
+export async function getDishes(req: AuthRequest, res: Response): Promise<void> {
+  const storeId = req.query.storeId ? parsePositiveInt(req.query.storeId as string) : null;
+  const category = typeof req.query.category === 'string' ? req.query.category.trim() : '';
+  const keyword = typeof req.query.keyword === 'string' ? req.query.keyword.trim() : '';
+  const limit = req.query.limit ? Math.min(Math.max(parseInt(req.query.limit as string, 10) || 50, 1), 100) : 50;
+
+  const where: any = {};
+  if (storeId) where.storeUserId = storeId;
+  if (category) where.category = { contains: category, mode: 'insensitive' };
+  if (keyword) {
+    where.OR = [
+      { name: { contains: keyword, mode: 'insensitive' } },
+      { category: { contains: keyword, mode: 'insensitive' } },
+      { description: { contains: keyword, mode: 'insensitive' } },
+      { storeUser: { fullName: { contains: keyword, mode: 'insensitive' } } },
+    ];
+  }
+
+  const dishes = await prisma.dish.findMany({
+    where,
+    include: {
+      storeUser: {
+        select: {
+          id: true,
+          fullName: true,
+          storeProfile: { select: { address: true } },
+        },
+      },
+    },
+    orderBy: [{ reviewsCount: 'desc' }, { id: 'asc' }],
+    take: limit,
+  });
+
+  successResponse(res, dishes.map(formatDish), 'Lấy danh sách món ăn thành công');
+}
+
+export async function getStoreDetail(req: AuthRequest, res: Response): Promise<void> {
+  const storeId = parsePositiveInt(req.params.id);
+  if (!storeId) {
+    errorResponse(res, 'ID quán ăn không hợp lệ', 400);
+    return;
+  }
+
+  const restaurantUser = await prisma.user.findFirst({
+    where: { id: storeId, accountStatus: 'Active' },
+    include: {
+      storeProfile: true,
+      dishes: { orderBy: { id: 'asc' } },
+      posts: {
+        where: { status: 'Active' },
+        include: { images: true },
+        orderBy: { createdAt: 'desc' },
+      },
+      _count: { select: { followers: true } },
+    },
+  });
+
+  if (!restaurantUser) {
+    errorResponse(res, 'Không tìm thấy quán ăn', 404);
+    return;
+  }
+
+  let isFollowing = false;
+  if (req.user?.userId && req.user.userId !== storeId) {
+    const follow = await prisma.follow.findUnique({
+      where: {
+        followerId_followingId: {
+          followerId: req.user.userId,
+          followingId: storeId,
+        },
+      },
+      select: { followerId: true },
+    });
+    isFollowing = Boolean(follow);
+  }
+
+  const reviews = await prisma.review.findMany({
+    where: { restaurantName: { contains: restaurantUser.fullName, mode: 'insensitive' } },
+    include: {
+      author: { select: { id: true, username: true, fullName: true, avatarUrl: true } },
+      images: true,
+    },
+    orderBy: { createdAt: 'desc' },
+  });
+
+  const avgReviewRating =
+    reviews.length > 0
+      ? Math.round((reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length) * 10) / 10
+      : 0;
+
+  const menu = restaurantUser.dishes.map((d) => ({
+    id: d.id,
+    name: d.name,
+    price: d.formattedPrice,
+    priceInt: d.price,
+    desc: d.description,
+    description: d.description,
+    imageUrl: d.imageUrl,
+    category: d.category,
+    rating: d.rating,
+  }));
+
   const storeInfo = {
-    id: storeId,
-    name: restaurantUser?.fullName || 'Nhà hàng ẩm thực Dishcision',
-    username: restaurantUser?.username || 'nhahang',
-    bio: restaurantUser?.bio || 'Chuyên phục vụ các món ăn truyền thống đậm đà bản sắc Việt 🍜',
-    avatarUrl: restaurantUser?.avatarUrl || 'https://images.unsplash.com/photo-1582878826629-29b7ad1cdc43?w=400',
-    address: 'Hà Nội, Việt Nam',
-    rating: 4.8,
-    followersCount: restaurantUser?._count?.followers || 150,
-    reviewsCount: restaurantUser?._count?.reviews || 45,
-    menu: dishes.length > 0 ? dishes : SAMPLE_DISHES,
-    posts: restaurantUser?.posts || [],
+    id: restaurantUser.id,
+    name: restaurantUser.fullName,
+    username: restaurantUser.username,
+    bio: restaurantUser.bio || '',
+    avatarUrl: restaurantUser.avatarUrl,
+    coverUrl: restaurantUser.storeProfile?.coverUrl || restaurantUser.avatarUrl,
+    address: restaurantUser.storeProfile?.address || '',
+    openHours: restaurantUser.storeProfile?.openHours || '',
+    isOpen: restaurantUser.storeProfile?.isOpen ?? true,
+    rating: restaurantUser.storeProfile?.rating ?? avgReviewRating,
+    highlightDish: restaurantUser.storeProfile?.highlightDish || restaurantUser.dishes[0]?.name || '',
+    dishPrice: restaurantUser.storeProfile?.dishPrice || restaurantUser.dishes[0]?.formattedPrice || '',
+    dishDescription: restaurantUser.storeProfile?.dishDescription || restaurantUser.dishes[0]?.description || '',
+    isFollowing,
+    followersCount: restaurantUser._count.followers,
+    reviewsCount: reviews.length,
+    reviews: reviews.map((r) => ({
+      reviewId: r.id,
+      rating: r.rating,
+      content: r.content,
+      tags: r.tags,
+      createdAt: r.createdAt,
+      author: r.author,
+      images: r.images,
+    })),
+    menu,
+    posts: restaurantUser.posts,
   };
 
   successResponse(res, storeInfo, 'Lấy thông tin nhà hàng thành công');
 }
 
-export async function getFollowingRestaurants(req: AuthRequest, res: Response): Promise<void> {
-  const restaurantUsers = await prisma.user.findMany({
-    where: { role: 'RestaurantAccount' },
-    include: {
-      posts: { include: { images: true } },
-      _count: { select: { followers: true, reviews: true } },
-    },
-  });
-
-  const defaultRestaurants = [
-    {
-      id: 1,
-      name: 'Quán Phở Bò Gia Truyền 1986',
-      avatarUrl: 'https://images.unsplash.com/photo-1582878826629-29b7ad1cdc43?w=400',
-      coverUrl: 'https://images.unsplash.com/photo-1582878826629-29b7ad1cdc43?w=800',
-      address: '49 Bát Đàn, Cửa Đông, Hoàn Kiếm, Hà Nội',
-      openHours: '06:00 – 22:00',
-      isOpen: true,
-      rating: 4.8,
-      reviewsCount: 240,
-      isFollowing: true,
-      highlightDish: 'Phở Tái Lăn Đặc Biệt',
-      dishPrice: '65.000đ',
-      dishDescription: 'Nước dùng đậm đà, thịt bò mềm thơm bốc khói nghi ngút',
-      menu: [
-        { id: 101, name: 'Phở Tái Lăn', price: '65.000đ', desc: 'Thịt bò xào lăn thơm phức' },
-        { id: 102, name: 'Phở Tái Nạm', price: '60.000đ', desc: 'Thịt nạm giòn thơm ngọt nước' },
-        { id: 103, name: 'Quẩy giòn', price: '10.000đ', desc: 'Quẩy vàng rụm ăn kèm phở' },
-      ],
-    },
-    {
-      id: 2,
-      name: 'Cơm Tấm Ba Nghiền',
-      avatarUrl: 'https://images.unsplash.com/photo-1541832676-9b763b0239ab?w=400',
-      coverUrl: 'https://images.unsplash.com/photo-1541832676-9b763b0239ab?w=800',
-      address: '84 Đặng Văn Ngữ, P.10, Phú Nhuận, TP.HCM',
-      openHours: '07:00 – 21:00',
-      isOpen: true,
-      rating: 4.9,
-      reviewsCount: 412,
-      isFollowing: true,
-      highlightDish: 'Cơm Tấm Sườn Bì Chả Đặc Biệt',
-      dishPrice: '75.000đ',
-      dishDescription: 'Sườn nướng than hoa mềm mọng, bì chả gia truyền',
-      menu: [
-        { id: 201, name: 'Cơm Tấm Sườn Bì Chả', price: '75.000đ', desc: 'Sườn cọng to nướng mật ong' },
-        { id: 202, name: 'Cơm Tấm Sườn Ốp La', price: '65.000đ', desc: 'Trứng ốp la lòng đào' },
-      ],
-    },
-    {
-      id: 3,
-      name: 'Trà Sữa TocoToco - Cầu Giấy',
-      avatarUrl: 'https://images.unsplash.com/photo-1558857563-b37cf5a9dff3?w=400',
-      coverUrl: 'https://images.unsplash.com/photo-1558857563-b37cf5a9dff3?w=800',
-      address: '156 Cầu Giấy, Quan Hoa, Cầu Giấy, Hà Nội',
-      openHours: '08:30 – 22:30',
-      isOpen: true,
-      rating: 4.7,
-      reviewsCount: 189,
-      isFollowing: true,
-      highlightDish: 'Trà Sữa Ba Anh Em (Size L)',
-      dishPrice: '42.000đ',
-      dishDescription: 'Topping trân châu sợi dai giòn, thạch sương sáo mát lạnh',
-      menu: [
-        { id: 301, name: 'Trà Sữa Ba Anh Em', price: '42.000đ', desc: 'Best seller mọi thời đại' },
-        { id: 302, name: 'Trà Sữa Trân Châu Hoàng Gia', price: '38.000đ', desc: 'Vị trà đậm đà' },
-      ],
-    },
-  ];
-
-  if (restaurantUsers.length > 0) {
-    restaurantUsers.forEach((ru, idx) => {
-      if (idx < defaultRestaurants.length) {
-        defaultRestaurants[idx].id = ru.id;
-        defaultRestaurants[idx].avatarUrl = ru.avatarUrl || defaultRestaurants[idx].avatarUrl;
-        defaultRestaurants[idx].reviewsCount = ru._count.reviews || defaultRestaurants[idx].reviewsCount;
-      }
-    });
+async function buildRestaurantsPayload(userId: number | undefined, keyword: string, onlyFollowing: boolean) {
+  const where: any = { role: 'RestaurantAccount', accountStatus: 'Active' };
+  if (keyword) {
+    where.OR = [
+      { fullName: { contains: keyword, mode: 'insensitive' } },
+      { bio: { contains: keyword, mode: 'insensitive' } },
+      { storeProfile: { address: { contains: keyword, mode: 'insensitive' } } },
+    ];
   }
 
-  const stories = [
-    { id: 1, storeName: 'Bếp Lục Nam', title: 'Món mới hôm nay', avatarUrl: 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=400' },
-    { id: 2, storeName: 'Phở Thìn', title: 'Hương vị xưa', avatarUrl: 'https://images.unsplash.com/photo-1582878826629-29b7ad1cdc43?w=400' },
-    { id: 3, storeName: 'Trà Mùa Thu', title: 'Trà sữa ấm áp', avatarUrl: 'https://images.unsplash.com/photo-1558857563-b37cf5a9dff3?w=400' },
-    { id: 4, storeName: 'Pizza Lò Củi', title: 'Bánh tươi ra lò', avatarUrl: 'https://images.unsplash.com/photo-1513104890138-7c749659a591?w=400' },
-  ];
+  let followingIds = new Set<number>();
+  if (userId) {
+    const follows = await prisma.follow.findMany({
+      where: { followerId: userId },
+      select: { followingId: true },
+    });
+    followingIds = new Set(follows.map((f) => f.followingId));
+  }
 
-  successResponse(res, {
-    newDishesSummary: '3 quán có món mới hôm nay',
-    totalFollowing: defaultRestaurants.length,
-    openStoresCount: defaultRestaurants.filter(r => r.isOpen).length,
+  if (onlyFollowing) {
+    if (!userId || followingIds.size === 0) {
+      return {
+        newDishesSummary: '0 quán đang theo dõi',
+        totalFollowing: 0,
+        openStoresCount: 0,
+        stories: [],
+        restaurants: [],
+      };
+    }
+    where.id = { in: Array.from(followingIds) };
+  }
+
+  const restaurantUsers = await prisma.user.findMany({
+    where,
+    include: {
+      storeProfile: true,
+      dishes: { orderBy: { id: 'asc' } },
+      _count: { select: { followers: true } },
+    },
+    orderBy: { id: 'asc' },
+  });
+
+  const storeIds = restaurantUsers.map((r) => r.id);
+
+  const [reviews, storeStories] = await Promise.all([
+    prisma.review.findMany({
+      select: { restaurantName: true },
+    }),
+    storeIds.length > 0
+      ? prisma.story.findMany({
+          where: { userId: { in: storeIds } },
+          include: { user: { select: { id: true, fullName: true, avatarUrl: true } } },
+          orderBy: { createdAt: 'desc' },
+          take: 20,
+        })
+      : Promise.resolve([]),
+  ]);
+
+  const restaurants = restaurantUsers.map((ru) => {
+    const nameLower = ru.fullName.toLowerCase();
+    const matchedReviewsCount = reviews.filter((rev) =>
+      rev.restaurantName.toLowerCase().includes(nameLower) ||
+      nameLower.includes(rev.restaurantName.toLowerCase()),
+    ).length;
+
+    const firstDish = ru.dishes[0];
+    return {
+      id: ru.id,
+      name: ru.fullName,
+      username: ru.username,
+      avatarUrl: ru.avatarUrl,
+      coverUrl: ru.storeProfile?.coverUrl || ru.avatarUrl,
+      address: ru.storeProfile?.address || '',
+      openHours: ru.storeProfile?.openHours || '',
+      isOpen: ru.storeProfile?.isOpen ?? true,
+      rating: ru.storeProfile?.rating ?? 0,
+      reviewsCount: matchedReviewsCount,
+      followersCount: ru._count.followers,
+      isFollowing: followingIds.has(ru.id),
+      highlightDish: ru.storeProfile?.highlightDish || firstDish?.name || '',
+      dishPrice: ru.storeProfile?.dishPrice || firstDish?.formattedPrice || '',
+      dishDescription: ru.storeProfile?.dishDescription || firstDish?.description || '',
+      menu: ru.dishes.map((d) => ({
+        id: d.id,
+        name: d.name,
+        price: d.formattedPrice,
+        desc: d.description,
+      })),
+    };
+  });
+
+  const stories = storeStories.map((st) => ({
+    id: st.id,
+    userId: st.userId,
+    storeName: st.user.fullName,
+    title: st.caption || st.user.fullName,
+    avatarUrl: st.user.avatarUrl || st.mediaUrl,
+    mediaUrl: st.mediaUrl,
+  }));
+
+  const openCount = restaurants.filter((r) => r.isOpen).length;
+  const storesWithNewDishes = restaurants.filter((r) => r.menu.length > 0).length;
+  const totalFollowing = restaurants.filter((r) => r.isFollowing).length;
+
+  return {
+    newDishesSummary: `${storesWithNewDishes} quán có món mới hôm nay`,
+    totalFollowing,
+    openStoresCount: openCount,
     stories,
-    restaurants: defaultRestaurants,
-  }, 'Lấy danh sách quán theo dõi thành công');
+    restaurants,
+  };
+}
+
+export async function getStores(req: AuthRequest, res: Response): Promise<void> {
+  const keyword = typeof req.query.keyword === 'string' ? req.query.keyword.trim() : '';
+  const payload = await buildRestaurantsPayload(req.user?.userId, keyword, false);
+  successResponse(res, payload, 'Lấy danh sách quán ăn thành công');
+}
+
+export async function getFollowingRestaurants(req: AuthRequest, res: Response): Promise<void> {
+  const keyword = typeof req.query.keyword === 'string' ? req.query.keyword.trim() : '';
+  const payload = await buildRestaurantsPayload(req.user?.userId, keyword, true);
+  successResponse(res, payload, 'Lấy danh sách quán theo dõi thành công');
 }
 
 // ─────────────────────────────────────────
-// 3. DELIVERY ADDRESSES (DeliveryAddressesActivity, AddAddressActivity)
+// 3. DELIVERY ADDRESSES
 // ─────────────────────────────────────────
 
-const DEFAULT_ADDRESSES = [
-  {
-    id: 1,
-    recipientName: 'Nguyễn Văn A',
-    phoneNumber: '0987654321',
-    detailAddress: 'Số 12 ngõ 45 phố Chùa Bộc, Đống Đa, Hà Nội',
-    isDefault: true,
-  },
-  {
-    id: 2,
-    recipientName: 'Nguyễn Văn A (Cơ quan)',
-    phoneNumber: '0987654321',
-    detailAddress: 'Tầng 5 Tòa nhà Keangnam Landmark 72, Nam Từ Liêm, Hà Nội',
-    isDefault: false,
-  },
-];
-
 export async function getAddresses(req: AuthRequest, res: Response): Promise<void> {
-  const userId = req.user?.userId || 1;
-  const raw = await redis.get(`user:${userId}:addresses`);
-  let addresses = DEFAULT_ADDRESSES;
-  if (raw) {
-    try { addresses = JSON.parse(raw); } catch { addresses = DEFAULT_ADDRESSES; }
-  } else {
-    await redis.set(`user:${userId}:addresses`, JSON.stringify(DEFAULT_ADDRESSES), 'EX', 86400 * 7);
-  }
+  const userId = req.user!.userId;
+  const addresses = await prisma.deliveryAddress.findMany({
+    where: { userId },
+    orderBy: [{ isDefault: 'desc' }, { createdAt: 'asc' }],
+  });
   successResponse(res, addresses, 'Lấy danh sách địa chỉ thành công');
 }
 
 export async function addAddress(req: AuthRequest, res: Response): Promise<void> {
-  const userId = req.user?.userId || 1;
-  const { recipientName, phoneNumber, detailAddress, isDefault } = req.body;
+  const userId = req.user!.userId;
+  const { label, recipientName, phoneNumber, detailAddress, notes, isDefault } = req.body;
 
   if (!recipientName || !phoneNumber || !detailAddress) {
     errorResponse(res, 'Vui lòng nhập đầy đủ họ tên, số điện thoại và địa chỉ chi tiết', 400);
     return;
   }
 
-  const raw = await redis.get(`user:${userId}:addresses`);
-  let addresses = DEFAULT_ADDRESSES;
-  if (raw) {
-    try { addresses = JSON.parse(raw); } catch { addresses = DEFAULT_ADDRESSES; }
-  }
+  const existingCount = await prisma.deliveryAddress.count({ where: { userId } });
+  const makeDefault = Boolean(isDefault) || existingCount === 0;
 
-  if (isDefault) {
-    addresses.forEach(a => { a.isDefault = false; });
-  }
-
-  const newAddress = {
-    id: Date.now(),
-    recipientName,
-    phoneNumber,
-    detailAddress,
-    isDefault: isDefault ?? (addresses.length === 0),
-  };
-
-  addresses.push(newAddress);
-  await redis.set(`user:${userId}:addresses`, JSON.stringify(addresses), 'EX', 86400 * 7);
+  const newAddress = await prisma.$transaction(async (tx) => {
+    if (makeDefault) {
+      await tx.deliveryAddress.updateMany({
+        where: { userId, isDefault: true },
+        data: { isDefault: false },
+      });
+    }
+    return tx.deliveryAddress.create({
+      data: {
+        userId,
+        label: (label && String(label).trim()) || 'Nhà riêng',
+        recipientName: String(recipientName).trim(),
+        phoneNumber: String(phoneNumber).trim(),
+        detailAddress: String(detailAddress).trim(),
+        notes: notes ? String(notes).trim() : null,
+        isDefault: makeDefault,
+      },
+    });
+  });
 
   successResponse(res, newAddress, 'Thêm địa chỉ giao hàng thành công', 201);
 }
 
-export async function deleteAddress(req: AuthRequest, res: Response): Promise<void> {
-  const userId = req.user?.userId || 1;
-  const addressId = parseInt(req.params.id);
-
-  const raw = await redis.get(`user:${userId}:addresses`);
-  let addresses = DEFAULT_ADDRESSES;
-  if (raw) {
-    try { addresses = JSON.parse(raw); } catch { addresses = DEFAULT_ADDRESSES; }
+export async function updateAddress(req: AuthRequest, res: Response): Promise<void> {
+  const userId = req.user!.userId;
+  const addressId = parsePositiveInt(req.params.id);
+  if (!addressId) {
+    errorResponse(res, 'ID địa chỉ không hợp lệ', 400);
+    return;
   }
 
-  addresses = addresses.filter(a => a.id !== addressId);
-  await redis.set(`user:${userId}:addresses`, JSON.stringify(addresses), 'EX', 86400 * 7);
+  const existing = await prisma.deliveryAddress.findFirst({ where: { id: addressId, userId } });
+  if (!existing) {
+    errorResponse(res, 'Không tìm thấy địa chỉ', 404);
+    return;
+  }
+
+  const { label, recipientName, phoneNumber, detailAddress, notes, isDefault } = req.body;
+
+  const updated = await prisma.$transaction(async (tx) => {
+    if (isDefault === true) {
+      await tx.deliveryAddress.updateMany({
+        where: { userId, isDefault: true },
+        data: { isDefault: false },
+      });
+    }
+    return tx.deliveryAddress.update({
+      where: { id: addressId },
+      data: {
+        label: label !== undefined ? String(label).trim() : undefined,
+        recipientName: recipientName !== undefined ? String(recipientName).trim() : undefined,
+        phoneNumber: phoneNumber !== undefined ? String(phoneNumber).trim() : undefined,
+        detailAddress: detailAddress !== undefined ? String(detailAddress).trim() : undefined,
+        notes: notes !== undefined ? (notes ? String(notes).trim() : null) : undefined,
+        isDefault: typeof isDefault === 'boolean' ? isDefault : undefined,
+      },
+    });
+  });
+
+  successResponse(res, updated, 'Cập nhật địa chỉ thành công');
+}
+
+export async function setDefaultAddress(req: AuthRequest, res: Response): Promise<void> {
+  const userId = req.user!.userId;
+  const addressId = parsePositiveInt(req.params.id);
+  if (!addressId) {
+    errorResponse(res, 'ID địa chỉ không hợp lệ', 400);
+    return;
+  }
+
+  const existing = await prisma.deliveryAddress.findFirst({ where: { id: addressId, userId } });
+  if (!existing) {
+    errorResponse(res, 'Không tìm thấy địa chỉ', 404);
+    return;
+  }
+
+  const updated = await prisma.$transaction(async (tx) => {
+    await tx.deliveryAddress.updateMany({
+      where: { userId, isDefault: true },
+      data: { isDefault: false },
+    });
+    return tx.deliveryAddress.update({
+      where: { id: addressId },
+      data: { isDefault: true },
+    });
+  });
+
+  successResponse(res, updated, 'Đã đặt làm địa chỉ mặc định');
+}
+
+export async function deleteAddress(req: AuthRequest, res: Response): Promise<void> {
+  const userId = req.user!.userId;
+  const addressId = parsePositiveInt(req.params.id);
+  if (!addressId) {
+    errorResponse(res, 'Invalid address ID', 400);
+    return;
+  }
+
+  const existing = await prisma.deliveryAddress.findFirst({ where: { id: addressId, userId } });
+  if (!existing) {
+    errorResponse(res, 'Không tìm thấy địa chỉ', 404);
+    return;
+  }
+
+  await prisma.deliveryAddress.delete({ where: { id: addressId } });
+
+  if (existing.isDefault) {
+    const next = await prisma.deliveryAddress.findFirst({
+      where: { userId },
+      orderBy: { createdAt: 'asc' },
+    });
+    if (next) {
+      await prisma.deliveryAddress.update({
+        where: { id: next.id },
+        data: { isDefault: true },
+      });
+    }
+  }
 
   successResponse(res, null, 'Xóa địa chỉ thành công');
 }
-

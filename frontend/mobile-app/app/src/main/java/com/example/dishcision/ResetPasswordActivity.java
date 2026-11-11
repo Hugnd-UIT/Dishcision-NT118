@@ -39,7 +39,7 @@ public class ResetPasswordActivity extends AppCompatActivity {
 
     private boolean isNewPasswordVisible = false;
     private boolean isConfirmNewPasswordVisible = false;
-    private String userEmail = "m•••@example.com";
+    private String userEmail = "";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -53,6 +53,7 @@ public class ResetPasswordActivity extends AppCompatActivity {
             return insets;
         });
 
+        ApiClient.init(this);
         initViews();
         setupData();
         setupListeners();
@@ -85,7 +86,11 @@ public class ResetPasswordActivity extends AppCompatActivity {
             }
         }
         if (tvResetSubtitle != null) {
-            tvResetSubtitle.setText("Tạo mật khẩu mới cho tài khoản dùng email " + userEmail + ".");
+            if (!userEmail.isEmpty()) {
+                tvResetSubtitle.setText("Tạo mật khẩu mới cho tài khoản dùng email " + userEmail + ".");
+            } else {
+                tvResetSubtitle.setText("Tạo mật khẩu mới cho tài khoản của bạn.");
+            }
         }
     }
 
@@ -128,33 +133,50 @@ public class ResetPasswordActivity extends AppCompatActivity {
     private void performResetPassword() {
         String token = edtTokenHash != null ? edtTokenHash.getText().toString().trim() : "";
         String newPassword = getEnteredNewPassword();
-        if (newPassword.isEmpty()) {
-            newPassword = "Password@123";
+        String confirmPassword = edtConfirmNewPassword != null ? edtConfirmNewPassword.getText().toString() : "";
+
+        if (token.isEmpty()) {
+            Toast.makeText(this, "Phiên đặt lại mật khẩu không hợp lệ", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        if (newPassword.length() < 8) {
+            Toast.makeText(this, "Mật khẩu mới phải từ 8 ký tự trở lên", Toast.LENGTH_SHORT).show();
+            if (edtNewPassword != null) edtNewPassword.requestFocus();
+            return;
+        }
+        if (!newPassword.equals(confirmPassword)) {
+            Toast.makeText(this, "Mật khẩu xác nhận không trùng khớp", Toast.LENGTH_SHORT).show();
+            if (edtConfirmNewPassword != null) edtConfirmNewPassword.requestFocus();
+            return;
         }
 
+        if (btnResetPassword != null) btnResetPassword.setEnabled(false);
         ResetPasswordRequest request = new ResetPasswordRequest(token, newPassword);
         ApiClient.getApiService().resetPassword(request).enqueue(new Callback<AuthResponse>() {
             @Override
             public void onResponse(Call<AuthResponse> call, Response<AuthResponse> response) {
+                if (btnResetPassword != null) btnResetPassword.setEnabled(true);
                 if (response.isSuccessful()) {
-                    Toast.makeText(ResetPasswordActivity.this, "Đặt lại mật khẩu thành công trên Backend!", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(ResetPasswordActivity.this, "Đặt lại mật khẩu thành công!", Toast.LENGTH_SHORT).show();
+                    navigateToSuccess();
                 } else {
-                    Toast.makeText(ResetPasswordActivity.this, "Đã cập nhật mật khẩu mới!", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(ResetPasswordActivity.this, "Không thể đặt lại mật khẩu hoặc liên kết đã hết hạn", Toast.LENGTH_LONG).show();
                 }
-                navigateToSuccess();
             }
 
             @Override
             public void onFailure(Call<AuthResponse> call, Throwable t) {
-                Toast.makeText(ResetPasswordActivity.this, "Đã cập nhật mật khẩu mới!", Toast.LENGTH_SHORT).show();
-                navigateToSuccess();
+                if (btnResetPassword != null) btnResetPassword.setEnabled(true);
+                Toast.makeText(ResetPasswordActivity.this, "Lỗi kết nối máy chủ: " + t.getMessage(), Toast.LENGTH_LONG).show();
             }
         });
     }
 
     private void navigateToSuccess() {
         Intent intent = new Intent(ResetPasswordActivity.this, ResetPasswordSuccessActivity.class);
-        intent.putExtra(ResetPasswordSuccessActivity.EXTRA_EMAIL, userEmail);
+        if (userEmail != null && !userEmail.isEmpty()) {
+            intent.putExtra(ResetPasswordSuccessActivity.EXTRA_EMAIL, userEmail);
+        }
         startActivity(intent);
         finish();
     }

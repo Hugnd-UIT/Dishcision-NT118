@@ -7,7 +7,6 @@
     android:background="#F7F8F9"
     tools:context=".EditPostActivity">
 
-    <!-- Top Header Bar -->
     <RelativeLayout
         android:id="@+id/topHeader"
         android:layout_width="match_parent"
@@ -54,7 +53,6 @@
         </RelativeLayout>
     </RelativeLayout>
 
-    <!-- Scrollable Content -->
     <ScrollView
         android:layout_width="match_parent"
         android:layout_height="match_parent"
@@ -69,7 +67,6 @@
             android:paddingTop="12dp"
             android:paddingBottom="24dp">
 
-            <!-- User Info Header -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -80,13 +77,14 @@
                     android:layout_width="42dp"
                     android:layout_height="42dp"
                     android:background="@drawable/bg_logo_circle"
-                    android:padding="6dp">
+                    android:padding="2dp">
 
                     <ImageView
+                        android:id="@+id/imgAuthorAvatar"
                         android:layout_width="match_parent"
                         android:layout_height="match_parent"
                         android:contentDescription="@string/app_name"
-                        android:scaleType="fitCenter"
+                        android:scaleType="centerCrop"
                         android:src="@drawable/logo" />
                 </RelativeLayout>
 
@@ -97,26 +95,27 @@
                     android:orientation="vertical">
 
                     <TextView
+                        android:id="@+id/tvAuthorName"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Maya Chen"
+                        android:text=""
                         android:textColor="@color/text_dark"
                         android:textSize="15sp"
                         android:textStyle="bold" />
 
                     <TextView
+                        android:id="@+id/tvAuthorHandle"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="&#64;mayafoodie"
+                        android:text=""
                         android:textColor="@color/text_gray"
                         android:textSize="12sp" />
                 </LinearLayout>
             </LinearLayout>
 
-            <!-- Editable Text Box -->
             <RelativeLayout
                 android:layout_width="match_parent"
-                android:layout_height="120dp"
+                android:layout_height="140dp"
                 android:layout_marginTop="12dp"
                 android:background="@drawable/bg_card"
                 android:padding="12dp">
@@ -127,83 +126,78 @@
                     android:layout_height="match_parent"
                     android:background="@null"
                     android:gravity="top"
+                    android:hint="Nhập nội dung bài viết..."
                     android:inputType="textMultiLine"
                     android:lineSpacingExtra="3dp"
-                    android:text="Một tối thật ngon tại Pizza 4P's Bến Thành 🍕 Đế bánh thơm, phô mai béo nhẹ và salad tươi mát. Một lựa chọn đáng thử cho buổi hẹn cùng bạn bè!&#10;&#10;#Pizza #AnGiSaiGon"
                     android:textColor="#3E2723"
-                    android:textSize="13sp" />
+                    android:textColorHint="#9E8A83"
+                    android:textSize="14sp" />
             </RelativeLayout>
 
-            <!-- Attached Images Preview -->
-            <RelativeLayout
+            <LinearLayout
+                android:id="@+id/sectionAttachedImages"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="14dp">
+                android:layout_marginTop="14dp"
+                android:orientation="vertical"
+                android:visibility="gone">
 
                 <TextView
+                    android:id="@+id/tvAttachedImagesLabel"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_alignParentStart="true"
-                    android:text="Ảnh đính kèm • 2"
+                    android:text="Ảnh đính kèm"
                     android:textColor="@color/text_dark"
                     android:textSize="13sp"
                     android:textStyle="bold" />
 
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_alignParentEnd="true"
-                    android:clickable="true"
-                    android:focusable="true"
-                    android:text="Chỉnh sửa"
-                    android:textColor="@color/primary"
-                    android:textSize="12sp"
-                    android:textStyle="bold" />
-            </RelativeLayout>
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="100dp"
+                    android:layout_marginTop="8dp"
+                    android:orientation="horizontal">
 
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="100dp"
-                android:layout_marginTop="8dp"
-                android:orientation="horizontal">
-
-                <RelativeLayout
-                    android:layout_width="0dp"
-                    android:layout_height="match_parent"
-                    android:layout_marginEnd="4dp"
-                    android:layout_weight="1"
-                    android:background="#E8ECF4">
-
-                    <ImageView
-                        android:layout_width="match_parent"
+                    <RelativeLayout
+                        android:id="@+id/containerEditImg1"
+                        android:layout_width="0dp"
                         android:layout_height="match_parent"
-                        android:contentDescription="@string/app_name"
-                        android:scaleType="centerCrop"
-                        android:src="@drawable/logo" />
-                </RelativeLayout>
+                        android:layout_marginEnd="4dp"
+                        android:layout_weight="1"
+                        android:background="#E8ECF4"
+                        android:visibility="gone">
 
-                <RelativeLayout
-                    android:layout_width="0dp"
-                    android:layout_height="match_parent"
-                    android:layout_marginStart="4dp"
-                    android:layout_weight="1"
-                    android:background="#E8ECF4">
+                        <ImageView
+                            android:id="@+id/imgEditPreview1"
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:contentDescription="@string/app_name"
+                            android:scaleType="centerCrop" />
+                    </RelativeLayout>
 
-                    <ImageView
-                        android:layout_width="match_parent"
+                    <RelativeLayout
+                        android:id="@+id/containerEditImg2"
+                        android:layout_width="0dp"
                         android:layout_height="match_parent"
-                        android:contentDescription="@string/app_name"
-                        android:scaleType="centerCrop"
-                        android:src="@drawable/logo" />
-                </RelativeLayout>
+                        android:layout_marginStart="4dp"
+                        android:layout_weight="1"
+                        android:background="#E8ECF4"
+                        android:visibility="gone">
+
+                        <ImageView
+                            android:id="@+id/imgEditPreview2"
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:contentDescription="@string/app_name"
+                            android:scaleType="centerCrop" />
+                    </RelativeLayout>
+                </LinearLayout>
             </LinearLayout>
 
-            <!-- Privacy Selector -->
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="16dp"
-                android:text="Ai có thể xem bài viết?"
+                android:text="Trạng thái hiển thị"
                 android:textColor="@color/text_dark"
                 android:textSize="13sp"
                 android:textStyle="bold" />
@@ -215,101 +209,81 @@
                 android:orientation="horizontal">
 
                 <TextView
+                    android:id="@+id/btnStatusActive"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
                     android:background="@drawable/bg_badge_expert"
+                    android:clickable="true"
+                    android:focusable="true"
                     android:gravity="center"
-                    android:paddingVertical="8dp"
+                    android:paddingVertical="10dp"
                     android:text="Công khai"
                     android:textColor="@color/primary"
                     android:textSize="13sp"
                     android:textStyle="bold" />
 
                 <TextView
+                    android:id="@+id/btnStatusHidden"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_marginStart="8dp"
                     android:layout_weight="1"
                     android:background="@drawable/bg_chip_inactive"
-                    android:gravity="center"
-                    android:paddingVertical="8dp"
-                    android:text="Bạn bè"
-                    android:textColor="@color/text_dark"
-                    android:textSize="13sp" />
-
-                <TextView
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="8dp"
-                    android:layout_weight="1"
-                    android:background="@drawable/bg_chip_inactive"
-                    android:gravity="center"
-                    android:paddingVertical="8dp"
-                    android:text="Chỉ mình tôi"
-                    android:textColor="@color/text_dark"
-                    android:textSize="13sp" />
-            </LinearLayout>
-
-            <!-- Location Attached Box -->
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="16dp"
-                android:background="@drawable/bg_card"
-                android:gravity="center_vertical"
-                android:orientation="horizontal"
-                android:padding="12dp">
-
-                <RelativeLayout
-                    android:layout_width="32dp"
-                    android:layout_height="32dp"
-                    android:background="@drawable/bg_logo_circle">
-
-                    <ImageView
-                        android:layout_width="18dp"
-                        android:layout_height="18dp"
-                        android:layout_centerInParent="true"
-                        android:contentDescription="@string/app_name"
-                        android:src="@drawable/ic_location" />
-                </RelativeLayout>
-
-                <LinearLayout
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="10dp"
-                    android:layout_weight="1"
-                    android:orientation="vertical">
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Pizza 4P's Bến Thành"
-                        android:textColor="@color/text_dark"
-                        android:textSize="13sp"
-                        android:textStyle="bold" />
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Địa điểm đính kèm bài viết"
-                        android:textColor="@color/text_gray"
-                        android:textSize="11sp" />
-                </LinearLayout>
-
-                <TextView
-                    android:id="@+id/btnChangeLocation"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
                     android:clickable="true"
                     android:focusable="true"
-                    android:text="Đổi"
-                    android:textColor="@color/primary"
-                    android:textSize="13sp"
-                    android:textStyle="bold" />
+                    android:gravity="center"
+                    android:paddingVertical="10dp"
+                    android:text="Lưu trữ (Ẩn)"
+                    android:textColor="@color/text_dark"
+                    android:textSize="13sp" />
             </LinearLayout>
 
-            <!-- Primary & Secondary Buttons -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:text="Thông tin bổ sung"
+                android:textColor="@color/text_dark"
+                android:textSize="13sp"
+                android:textStyle="bold" />
+
+            <EditText
+                android:id="@+id/edtLocationUrl"
+                android:layout_width="match_parent"
+                android:layout_height="44dp"
+                android:layout_marginTop="8dp"
+                android:background="@drawable/bg_card"
+                android:hint="Tên địa điểm hoặc URL Google Maps"
+                android:paddingHorizontal="12dp"
+                android:textColor="@color/text_dark"
+                android:textColorHint="@color/text_gray"
+                android:textSize="13sp" />
+
+            <EditText
+                android:id="@+id/edtVoucherCode"
+                android:layout_width="match_parent"
+                android:layout_height="44dp"
+                android:layout_marginTop="8dp"
+                android:background="@drawable/bg_card"
+                android:hint="Mã giảm giá / Voucher (nếu có)"
+                android:paddingHorizontal="12dp"
+                android:textColor="@color/text_dark"
+                android:textColorHint="@color/text_gray"
+                android:textSize="13sp" />
+
+            <EditText
+                android:id="@+id/edtHashtags"
+                android:layout_width="match_parent"
+                android:layout_height="44dp"
+                android:layout_marginTop="8dp"
+                android:background="@drawable/bg_card"
+                android:hint="Hashtags (phân cách bởi dấu phẩy hoặc khoảng trắng)"
+                android:paddingHorizontal="12dp"
+                android:textColor="@color/text_dark"
+                android:textColorHint="@color/text_gray"
+                android:textSize="13sp" />
+
             <RelativeLayout
                 android:id="@+id/btnSaveChange"
                 android:layout_width="match_parent"
@@ -320,6 +294,7 @@
                 android:focusable="true">
 
                 <TextView
+                    android:id="@+id/tvBtnSaveText"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_centerInParent="true"

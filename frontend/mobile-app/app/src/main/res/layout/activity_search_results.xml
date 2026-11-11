@@ -8,7 +8,6 @@
     android:background="#F7F8F9"
     tools:context=".SearchResultsActivity">
 
-    <!-- Top Header Bar -->
     <RelativeLayout
         android:id="@+id/topHeader"
         android:layout_width="match_parent"
@@ -55,7 +54,6 @@
         </RelativeLayout>
     </RelativeLayout>
 
-    <!-- Search Input Box -->
     <RelativeLayout
         android:id="@+id/layoutSearchInput"
         android:layout_width="match_parent"
@@ -72,7 +70,9 @@
             android:layout_height="18dp"
             android:layout_alignParentStart="true"
             android:layout_centerVertical="true"
+            android:clickable="true"
             android:contentDescription="@string/search_hint"
+            android:focusable="true"
             android:src="@drawable/ic_search"
             app:tint="#8C6D63" />
 
@@ -85,9 +85,12 @@
             android:layout_toStartOf="@id/btnClearSearch"
             android:layout_toEndOf="@id/imgSearchIcon"
             android:background="@null"
+            android:hint="Tìm món ăn, quán ngon, người dùng..."
+            android:imeOptions="actionSearch"
             android:inputType="text"
-            android:text="Bún bò"
+            android:maxLines="1"
             android:textColor="#3E2723"
+            android:textColorHint="#9E8A83"
             android:textSize="13sp" />
 
         <ImageView
@@ -103,7 +106,6 @@
             app:tint="#8C6D63" />
     </RelativeLayout>
 
-    <!-- 4 Tabs Bar: Món, Quán, Người dùng, Bài viết -->
     <LinearLayout
         android:id="@+id/layoutTabs"
         android:layout_width="match_parent"
@@ -119,6 +121,8 @@
             android:layout_height="match_parent"
             android:layout_weight="1"
             android:background="@drawable/bg_chip_inactive"
+            android:clickable="true"
+            android:focusable="true"
             android:gravity="center"
             android:text="Món"
             android:textColor="@color/primary"
@@ -131,6 +135,8 @@
             android:layout_height="match_parent"
             android:layout_marginStart="8dp"
             android:layout_weight="1"
+            android:clickable="true"
+            android:focusable="true"
             android:gravity="center"
             android:text="Quán"
             android:textColor="@color/text_gray"
@@ -142,6 +148,8 @@
             android:layout_height="match_parent"
             android:layout_marginStart="8dp"
             android:layout_weight="1"
+            android:clickable="true"
+            android:focusable="true"
             android:gravity="center"
             android:text="Người dùng"
             android:textColor="@color/text_gray"
@@ -153,13 +161,14 @@
             android:layout_height="match_parent"
             android:layout_marginStart="8dp"
             android:layout_weight="1"
+            android:clickable="true"
+            android:focusable="true"
             android:gravity="center"
             android:text="Bài viết"
             android:textColor="@color/text_gray"
             android:textSize="13sp" />
     </LinearLayout>
 
-    <!-- Scrollable Content Area -->
     <ScrollView
         android:layout_width="match_parent"
         android:layout_height="match_parent"
@@ -174,17 +183,21 @@
             android:paddingTop="16dp"
             android:paddingBottom="24dp">
 
-            <!-- Filter Header -->
             <RelativeLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content">
 
                 <TextView
+                    android:id="@+id/tvResultHeader"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_alignParentStart="true"
                     android:layout_centerVertical="true"
-                    android:text="Món ăn cho &quot;Bún bò&quot;"
+                    android:layout_toStartOf="@id/btnOpenFilter"
+                    android:layout_marginEnd="12dp"
+                    android:ellipsize="end"
+                    android:maxLines="1"
+                    android:text="Tất cả món ăn"
                     android:textColor="@color/text_dark"
                     android:textSize="14sp"
                     android:textStyle="bold" />
@@ -208,6 +221,7 @@
                         app:tint="#3E2723" />
 
                     <TextView
+                        android:id="@+id/tvFilterLabel"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginStart="4dp"
@@ -218,235 +232,32 @@
                 </LinearLayout>
             </RelativeLayout>
 
-            <!-- Best Result Card -->
-            <LinearLayout
+            <ProgressBar
+                android:id="@+id/pbSearchLoading"
+                android:layout_width="32dp"
+                android:layout_height="32dp"
+                android:layout_gravity="center_horizontal"
+                android:layout_marginTop="24dp"
+                android:indeterminateTint="@color/primary"
+                android:visibility="gone" />
+
+            <TextView
+                android:id="@+id/tvEmptyResults"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="12dp"
-                android:background="@drawable/bg_card"
-                android:orientation="vertical">
-
-                <RelativeLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="200dp">
-
-                    <ImageView
-                        android:layout_width="match_parent"
-                        android:layout_height="match_parent"
-                        android:contentDescription="@string/app_name"
-                        android:scaleType="centerCrop"
-                        android:src="@drawable/logo" />
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_alignParentStart="true"
-                        android:layout_alignParentTop="true"
-                        android:layout_margin="12dp"
-                        android:background="@drawable/bg_badge_expert"
-                        android:paddingHorizontal="10dp"
-                        android:paddingVertical="5dp"
-                        android:text="Khớp nhất"
-                        android:textColor="@color/primary"
-                        android:textSize="12sp"
-                        android:textStyle="bold" />
-                </RelativeLayout>
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:padding="14dp">
-
-                    <TextView
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:text="Bún bò Huế - Tô đặc biệt"
-                        android:textColor="@color/text_dark"
-                        android:textSize="17sp"
-                        android:textStyle="bold" />
-
-                    <TextView
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="4dp"
-                        android:text="★ 4.9 (1.2k) • 96% đồng thuận"
-                        android:textColor="@color/text_gray"
-                        android:textSize="13sp" />
-
-                    <RelativeLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="10dp">
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_alignParentStart="true"
-                            android:layout_centerVertical="true"
-                            android:text="55.000đ"
-                            android:textColor="@color/primary"
-                            android:textSize="17sp"
-                            android:textStyle="bold" />
-
-                        <LinearLayout
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_alignParentEnd="true"
-                            android:layout_centerVertical="true"
-                            android:clickable="true"
-                            android:focusable="true"
-                            android:gravity="center_vertical"
-                            android:orientation="horizontal">
-
-                            <TextView
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="Xem món"
-                                android:textColor="@color/primary"
-                                android:textSize="13sp"
-                                android:textStyle="bold" />
-
-                            <ImageView
-                                android:layout_width="14dp"
-                                android:layout_height="14dp"
-                                android:layout_marginStart="4dp"
-                                android:contentDescription="@string/app_name"
-                                android:src="@drawable/ic_navigate_link" />
-                        </LinearLayout>
-                    </RelativeLayout>
-                </LinearLayout>
-            </LinearLayout>
-
-            <!-- Section: Khám phá thêm -->
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="20dp"
-                android:text="Khám phá thêm"
-                android:textColor="@color/text_dark"
-                android:textSize="16sp"
-                android:textStyle="bold" />
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="2dp"
-                android:text="Các món bên dưới là kết quả minh họa."
+                android:layout_marginTop="36dp"
+                android:gravity="center"
+                android:text="Không tìm thấy kết quả phù hợp."
                 android:textColor="@color/text_gray"
-                android:textSize="12sp" />
+                android:textSize="14sp"
+                android:visibility="gone" />
 
-            <!-- Additional Result 1 -->
             <LinearLayout
+                android:id="@+id/layoutResultsContainer"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="12dp"
-                android:background="@drawable/bg_card"
-                android:orientation="horizontal"
-                android:padding="12dp">
-
-                <RelativeLayout
-                    android:layout_width="80dp"
-                    android:layout_height="80dp"
-                    android:background="#E8ECF4">
-
-                    <ImageView
-                        android:layout_width="match_parent"
-                        android:layout_height="match_parent"
-                        android:contentDescription="@string/app_name"
-                        android:scaleType="centerCrop"
-                        android:src="@drawable/logo" />
-                </RelativeLayout>
-
-                <LinearLayout
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="12dp"
-                    android:layout_weight="1"
-                    android:orientation="vertical">
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Bún bò tái nạm"
-                        android:textColor="@color/text_dark"
-                        android:textSize="15sp"
-                        android:textStyle="bold" />
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="2dp"
-                        android:text="Bò tái, nạm mềm, rau thơm ăn kèm"
-                        android:textColor="@color/text_gray"
-                        android:textSize="12sp" />
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="6dp"
-                        android:text="Xem món ➔"
-                        android:textColor="@color/primary"
-                        android:textSize="12sp"
-                        android:textStyle="bold" />
-                </LinearLayout>
-            </LinearLayout>
-
-            <!-- Additional Result 2 -->
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="12dp"
-                android:background="@drawable/bg_card"
-                android:orientation="horizontal"
-                android:padding="12dp">
-
-                <RelativeLayout
-                    android:layout_width="80dp"
-                    android:layout_height="80dp"
-                    android:background="#E8ECF4">
-
-                    <ImageView
-                        android:layout_width="match_parent"
-                        android:layout_height="match_parent"
-                        android:contentDescription="@string/app_name"
-                        android:scaleType="centerCrop"
-                        android:src="@drawable/logo" />
-                </RelativeLayout>
-
-                <LinearLayout
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="12dp"
-                    android:layout_weight="1"
-                    android:orientation="vertical">
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Bún bò chay nấm"
-                        android:textColor="@color/text_dark"
-                        android:textSize="15sp"
-                        android:textStyle="bold" />
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="2dp"
-                        android:text="Nấm, đậu hũ và nước dùng rau củ"
-                        android:textColor="@color/text_gray"
-                        android:textSize="12sp" />
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="6dp"
-                        android:text="Xem món ➔"
-                        android:textColor="@color/primary"
-                        android:textSize="12sp"
-                        android:textStyle="bold" />
-                </LinearLayout>
-            </LinearLayout>
+                android:orientation="vertical" />
 
         </LinearLayout>
     </ScrollView>

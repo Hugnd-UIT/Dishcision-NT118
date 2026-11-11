@@ -115,6 +115,17 @@ model User {
   reports           Report[]            @relation("Reporter")
   reportedByReports Report[]            @relation("ReportedUser")
   auditLogs         AuditLog[]          @relation("AdminLogs")
+  stories           Story[]
+  storeProfile      StoreProfile?
+  dishes            Dish[]
+  deliveryAddresses DeliveryAddress[]
+  supportTickets    SupportTicket[]
+  blockedUsers      BlockedAccount[]    @relation("UserBlocker")
+  blockedByUsers    BlockedAccount[]    @relation("UserBlocked")
+  restrictedUsers   RestrictedAccount[] @relation("UserRestricter")
+  restrictedByUsers RestrictedAccount[] @relation("UserRestricted")
+  sessions          UserSession[]
+  privacySetting    UserPrivacy?
 
   @@map("users")
 }
@@ -397,4 +408,145 @@ model PasswordResetToken {
   createdAt DateTime @default(now())
 
   @@map("password_reset_tokens")
+}
+
+model Story {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  mediaUrl  String   @db.VarChar(500)
+  caption   String?  @db.VarChar(500)
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("stories")
+}
+
+model StoreProfile {
+  id              Int      @id @default(autoincrement())
+  userId          Int      @unique
+  coverUrl        String?  @db.VarChar(500)
+  address         String   @db.VarChar(255)
+  openHours       String   @default("07:00 – 22:00") @db.VarChar(100)
+  isOpen          Boolean  @default(true)
+  rating          Float    @default(4.8)
+  highlightDish   String?  @db.VarChar(255)
+  dishPrice       String?  @db.VarChar(50)
+  dishDescription String?  @db.VarChar(500)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("store_profiles")
+}
+
+model Dish {
+  id             Int      @id @default(autoincrement())
+  storeUserId    Int
+  name           String   @db.VarChar(255)
+  price          Int
+  formattedPrice String   @db.VarChar(50)
+  description    String   @db.Text
+  imageUrl       String   @db.VarChar(500)
+  category       String   @db.VarChar(100)
+  rating         Float    @default(4.5)
+  reviewsCount   Int      @default(0)
+  createdAt      DateTime @default(now())
+
+  storeUser User @relation(fields: [storeUserId], references: [id], onDelete: Cascade)
+
+  @@map("dishes")
+}
+
+model DeliveryAddress {
+  id            Int      @id @default(autoincrement())
+  userId        Int
+  label         String   @default("Nhà riêng") @db.VarChar(50)
+  recipientName String   @db.VarChar(100)
+  phoneNumber   String   @db.VarChar(20)
+  detailAddress String   @db.VarChar(500)
+  notes         String?  @db.VarChar(255)
+  isDefault     Boolean  @default(false)
+  createdAt     DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("delivery_addresses")
+}
+
+model SupportTicket {
+  id           Int      @id @default(autoincrement())
+  userId       Int
+  type         String   @default("Support") @db.VarChar(20)
+  subject      String   @db.VarChar(150)
+  title        String   @db.VarChar(255)
+  description  String   @db.Text
+  contactEmail String?  @db.VarChar(255)
+  status       String   @default("Đã tiếp nhận") @db.VarChar(50)
+  attachments  Json?
+  timeline     Json?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("support_tickets")
+}
+
+model BlockedAccount {
+  id            Int      @id @default(autoincrement())
+  userId        Int
+  blockedUserId Int
+  createdAt     DateTime @default(now())
+
+  user        User @relation("UserBlocker", fields: [userId], references: [id], onDelete: Cascade)
+  blockedUser User @relation("UserBlocked", fields: [blockedUserId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, blockedUserId])
+  @@map("blocked_accounts")
+}
+
+model RestrictedAccount {
+  id               Int      @id @default(autoincrement())
+  userId           Int
+  restrictedUserId Int
+  createdAt        DateTime @default(now())
+
+  user           User @relation("UserRestricter", fields: [userId], references: [id], onDelete: Cascade)
+  restrictedUser User @relation("UserRestricted", fields: [restrictedUserId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, restrictedUserId])
+  @@map("restricted_accounts")
+}
+
+model UserSession {
+  id         String   @id @default(uuid())
+  userId     Int
+  deviceName String   @db.VarChar(150)
+  location   String?  @db.VarChar(150)
+  tokenHash  String?  @db.VarChar(255)
+  lastActive DateTime @default(now())
+  createdAt  DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("user_sessions")
+}
+
+model UserPrivacy {
+  userId         Int      @id
+  newPosts       String   @default("friends") @db.VarChar(50)
+  profileInfo    String   @default("only_me") @db.VarChar(50)
+  followingList  String   @default("friends") @db.VarChar(50)
+  findEmail      String   @default("no_one") @db.VarChar(50)
+  friendRequests String   @default("friends_of_friends") @db.VarChar(50)
+  messages       String   @default("friends") @db.VarChar(50)
+  comments       String   @default("friends") @db.VarChar(50)
+  updatedAt      DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_privacy")
 }

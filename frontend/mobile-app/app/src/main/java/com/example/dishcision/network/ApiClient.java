@@ -68,19 +68,32 @@ public class ApiClient {
         return baseUrl != null ? baseUrl : "";
     }
 
+    public static String normalizeMediaUrl(String rawUrl) {
+        if (rawUrl == null) return "";
+        String trimmed = rawUrl.trim();
+        if (trimmed.isEmpty()) return "";
+        if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) {
+            return trimmed;
+        }
+        String root = getServerRootUrl();
+        if (trimmed.startsWith("/")) {
+            return root + trimmed;
+        }
+        return root + "/" + trimmed;
+    }
+
     public static String getAuthHeader(Context context) {
-        if (context == null) return "Bearer demo_token";
+        if (context == null) return "";
         TokenManager tokenManager = new TokenManager(context);
-        String formatted = tokenManager.getFormattedToken();
-        if (formatted != null && !formatted.isEmpty()) {
-            return formatted;
+        if (tokenManager.isLoggedIn()) {
+            return tokenManager.getFormattedToken();
         }
         SharedPreferences prefs = context.getSharedPreferences("DishcisionPrefs", Context.MODE_PRIVATE);
         String token = prefs.getString("access_token", null);
-        if (token != null && !token.isEmpty()) {
-            return "Bearer " + token;
+        if (TokenManager.isValidJwtToken(token)) {
+            return token.startsWith("Bearer ") ? token : "Bearer " + token;
         }
-        return "Bearer demo_token";
+        return "";
     }
 
     public static ApiService getApiService() {

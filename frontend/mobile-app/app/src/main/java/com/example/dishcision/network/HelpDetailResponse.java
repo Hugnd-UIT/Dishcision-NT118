@@ -51,9 +51,12 @@ public class HelpDetailResponse {
         private String name;
         @SerializedName("subtitle")
         private String subtitle;
+        @SerializedName("url")
+        private String url;
 
         public String getName() { return name; }
         public String getSubtitle() { return subtitle; }
+        public String getUrl() { return url; }
     }
 
     public static class TimelineItem {

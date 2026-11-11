@@ -18,7 +18,8 @@ import androidx.core.view.WindowInsetsCompat;
 import com.example.dishcision.network.ApiClient;
 import com.example.dishcision.network.AuthResponse;
 import com.example.dishcision.network.ChangePasswordRequest;
-import com.example.dishcision.network.TokenManager;
+
+import org.json.JSONObject;
 
 import retrofit2.Call;
 import retrofit2.Callback;
@@ -59,6 +60,7 @@ public class ChangePasswordActivity extends AppCompatActivity {
             return insets;
         });
 
+        ApiClient.init(this);
         initViews();
         setupListeners();
     }
@@ -119,8 +121,8 @@ public class ChangePasswordActivity extends AppCompatActivity {
                     return;
                 }
 
-                if (newPass.isEmpty()) {
-                    Toast.makeText(this, "Vui lòng nhập mật khẩu mới!", Toast.LENGTH_SHORT).show();
+                if (newPass.isEmpty() || newPass.length() < 8) {
+                    Toast.makeText(this, "Mật khẩu mới phải từ 8 ký tự trở lên!", Toast.LENGTH_SHORT).show();
                     return;
                 }
 
@@ -129,13 +131,18 @@ public class ChangePasswordActivity extends AppCompatActivity {
                     return;
                 }
 
-                TokenManager tokenManager = new TokenManager(ChangePasswordActivity.this);
-                String authToken = tokenManager.getFormattedToken();
+                String authToken = ApiClient.getAuthHeader(ChangePasswordActivity.this);
+                if (authToken.isEmpty()) {
+                    Toast.makeText(this, "Phiên đăng nhập đã hết hạn, vui lòng đăng nhập lại!", Toast.LENGTH_SHORT).show();
+                    return;
+                }
 
+                btnUpdatePassword.setEnabled(false);
                 ChangePasswordRequest request = new ChangePasswordRequest(currentPass, newPass);
                 ApiClient.getApiService().changePassword(authToken, request).enqueue(new Callback<AuthResponse>() {
                     @Override
                     public void onResponse(Call<AuthResponse> call, Response<AuthResponse> response) {
+                        btnUpdatePassword.setEnabled(true);
                         if (response.isSuccessful()) {
                             Toast.makeText(ChangePasswordActivity.this, "Đã cập nhật mật khẩu thành công!", Toast.LENGTH_SHORT).show();
                             finish();
@@ -143,7 +150,10 @@ public class ChangePasswordActivity extends AppCompatActivity {
                             String errorMsg = "Mật khẩu hiện tại không đúng!";
                             if (response.errorBody() != null) {
                                 try {
-                                    errorMsg = response.errorBody().string();
+                                    JSONObject json = new JSONObject(response.errorBody().string());
+                                    if (json.has("message")) {
+                                        errorMsg = json.getString("message");
+                                    }
                                 } catch (Exception ignored) {}
                             }
                             Toast.makeText(ChangePasswordActivity.this, "Đổi mật khẩu thất bại: " + errorMsg, Toast.LENGTH_LONG).show();
@@ -152,6 +162,7 @@ public class ChangePasswordActivity extends AppCompatActivity {
 
                     @Override
                     public void onFailure(Call<AuthResponse> call, Throwable t) {
+                        btnUpdatePassword.setEnabled(true);
                         Toast.makeText(ChangePasswordActivity.this, "Lỗi kết nối Server API: " + t.getMessage(), Toast.LENGTH_LONG).show();
                     }
                 });

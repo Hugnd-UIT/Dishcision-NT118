@@ -62,5 +62,8 @@ public class AuthResponse {
 
         @SerializedName("refreshToken")
         public String refreshToken;
+
+        @SerializedName("user")
+        public UserProfileResponse.UserData user;
     }
 }

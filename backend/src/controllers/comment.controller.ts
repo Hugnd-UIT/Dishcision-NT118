@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { prisma } from '../config/prisma';
 import { successResponse, paginatedResponse, errorResponse } from '../utils/response';
+import { parsePagination, parsePositiveInt } from '../utils/http';
 import { AuthRequest } from '../middlewares/auth.middleware';
 import { formatUser } from './user.controller';
 
@@ -18,10 +19,18 @@ function formatComment(comment: any): any {
 // ── GET /posts/:postId/comments ───────────
 
 export async function getComments(req: Request, res: Response): Promise<void> {
-  const postId = parseInt(req.params.postId);
-  const page = parseInt(req.query.page as string) || 1;
-  const limit = parseInt(req.query.limit as string) || 10;
-  const skip = (page - 1) * limit;
+  const postId = parsePositiveInt(req.params.postId);
+  if (!postId) {
+    errorResponse(res, 'Invalid post ID', 400);
+    return;
+  }
+  const { page, limit, skip } = parsePagination(req.query, 10, 100);
+
+  const post = await prisma.post.findFirst({ where: { id: postId, status: 'Active' }, select: { id: true } });
+  if (!post) {
+    errorResponse(res, 'Post not found', 404);
+    return;
+  }
 
   const AUTHOR_SELECT = {
     id: true, username: true, fullName: true, avatarUrl: true,
@@ -39,6 +48,7 @@ export async function getComments(req: Request, res: Response): Promise<void> {
             author: { select: AUTHOR_SELECT },
             _count: { select: { likes: true } },
           },
+          orderBy: { createdAt: 'asc' },
         },
       },
       orderBy: { createdAt: 'asc' },
@@ -55,8 +65,29 @@ export async function getComments(req: Request, res: Response): Promise<void> {
 
 export async function createComment(req: AuthRequest, res: Response): Promise<void> {
   const userId = req.user!.userId;
-  const postId = parseInt(req.params.postId);
+  const postId = parsePositiveInt(req.params.postId);
+  if (!postId) {
+    errorResponse(res, 'Invalid post ID', 400);
+    return;
+  }
   const { content, parentCommentId } = req.body;
+
+  const post = await prisma.post.findFirst({ where: { id: postId, status: 'Active' } });
+  if (!post) {
+    errorResponse(res, 'Post not found', 404);
+    return;
+  }
+
+  if (parentCommentId) {
+    const parent = await prisma.comment.findFirst({
+      where: { id: parentCommentId, postId },
+      select: { id: true },
+    });
+    if (!parent) {
+      errorResponse(res, 'Parent comment not found on this post', 400);
+      return;
+    }
+  }
 
   const AUTHOR_SELECT = {
     id: true, username: true, fullName: true, avatarUrl: true,
@@ -71,9 +102,7 @@ export async function createComment(req: AuthRequest, res: Response): Promise<vo
     },
   });
 
-  // Notify post author
-  const post = await prisma.post.findUnique({ where: { id: postId } });
-  if (post && post.authorId !== userId) {
+  if (post.authorId !== userId) {
     const commenter = await prisma.user.findUnique({ where: { id: userId }, select: { username: true } });
     await prisma.notification.create({
       data: {
@@ -92,7 +121,11 @@ export async function createComment(req: AuthRequest, res: Response): Promise<vo
 
 export async function deleteComment(req: AuthRequest, res: Response): Promise<void> {
   const userId = req.user!.userId;
-  const commentId = parseInt(req.params.commentId);
+  const commentId = parsePositiveInt(req.params.commentId);
+  if (!commentId) {
+    errorResponse(res, 'Invalid comment ID', 400);
+    return;
+  }
 
   const comment = await prisma.comment.findUnique({ where: { id: commentId } });
   if (!comment) { errorResponse(res, 'Comment not found', 404); return; }

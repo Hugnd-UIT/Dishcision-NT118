@@ -24,7 +24,9 @@ import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 
 import com.example.dishcision.network.ApiClient;
+import com.example.dishcision.network.AuthHelper;
 import com.example.dishcision.network.AuthResponse;
+import com.example.dishcision.network.GoogleAuthRequest;
 import com.example.dishcision.network.RegisterRequest;
 import com.example.dishcision.network.TokenManager;
 import com.google.android.gms.auth.api.signin.GoogleSignIn;
@@ -67,6 +69,7 @@ public class RegisterActivity extends AppCompatActivity {
             return insets;
         });
 
+        ApiClient.init(this);
         initViews();
         setupGoogleSignIn();
         setupListeners();
@@ -93,20 +96,33 @@ public class RegisterActivity extends AppCompatActivity {
                                 String fullName = account.getDisplayName();
                                 String photoUrl = account.getPhotoUrl() != null ? account.getPhotoUrl().toString() : "";
 
-                                // Save locally
-                                getSharedPreferences("DishcisionPrefs", MODE_PRIVATE).edit()
-                                        .putString("user_email", email)
-                                        .putString("user_name", fullName)
-                                        .putString("avatar_url", photoUrl)
-                                        .putBoolean("is_google_login", true)
-                                        .apply();
+                                if (btnGoogleRegister != null) btnGoogleRegister.setEnabled(false);
+                                Toast.makeText(this, "Đang đăng ký bằng Google...", Toast.LENGTH_SHORT).show();
 
-                                new TokenManager(RegisterActivity.this).saveAuthData("google_token_" + System.currentTimeMillis(), email, fullName);
+                                GoogleAuthRequest googleReq = new GoogleAuthRequest(email, fullName, photoUrl);
+                                ApiClient.getApiService().googleAuth(googleReq).enqueue(new Callback<AuthResponse>() {
+                                    @Override
+                                    public void onResponse(Call<AuthResponse> call, Response<AuthResponse> response) {
+                                        if (btnGoogleRegister != null) btnGoogleRegister.setEnabled(true);
+                                        if (response.isSuccessful() && response.body() != null
+                                                && TokenManager.isValidJwtToken(response.body().getToken())) {
+                                            AuthHelper.saveSessionFromAuth(RegisterActivity.this, response.body(), email, fullName, true);
+                                            Toast.makeText(RegisterActivity.this, "Đăng ký thành công với Google: " + fullName, Toast.LENGTH_SHORT).show();
+                                            Intent intent = new Intent(RegisterActivity.this, HomeActivity.class);
+                                            intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+                                            startActivity(intent);
+                                            finish();
+                                        } else {
+                                            Toast.makeText(RegisterActivity.this, "Đăng ký Google thất bại (mã " + response.code() + ")", Toast.LENGTH_LONG).show();
+                                        }
+                                    }
 
-                                Toast.makeText(this, "Đăng ký thành công với Google: " + fullName, Toast.LENGTH_SHORT).show();
-                                Intent intent = new Intent(RegisterActivity.this, HomeActivity.class);
-                                startActivity(intent);
-                                finish();
+                                    @Override
+                                    public void onFailure(Call<AuthResponse> call, Throwable t) {
+                                        if (btnGoogleRegister != null) btnGoogleRegister.setEnabled(true);
+                                        Toast.makeText(RegisterActivity.this, "Lỗi kết nối máy chủ: " + t.getMessage(), Toast.LENGTH_LONG).show();
+                                    }
+                                });
                             }
                         } catch (ApiException e) {
                             Toast.makeText(this, "Đăng ký Google thất bại (Mã: " + e.getStatusCode() + ")", Toast.LENGTH_SHORT).show();
@@ -204,7 +220,6 @@ public class RegisterActivity extends AppCompatActivity {
         Toast.makeText(this, "⏳ Đang xử lý đăng ký tài khoản...", Toast.LENGTH_SHORT).show();
         if (btnRegister != null) btnRegister.setEnabled(false);
 
-        TokenManager tokenManager = new TokenManager(this);
         RegisterRequest request = new RegisterRequest(fullName, email, password);
 
         ApiClient.getApiService().register(request).enqueue(new Callback<AuthResponse>() {
@@ -212,16 +227,13 @@ public class RegisterActivity extends AppCompatActivity {
             public void onResponse(Call<AuthResponse> call, Response<AuthResponse> response) {
                 if (btnRegister != null) btnRegister.setEnabled(true);
 
-                if (response.isSuccessful() && response.body() != null) {
-                    AuthResponse authData = response.body();
-                    String token = authData.getToken();
-                    tokenManager.saveAuthData(token, email, fullName);
-                    getSharedPreferences("DishcisionPrefs", MODE_PRIVATE).edit()
-                            .putBoolean("is_google_login", false)
-                            .apply();
+                if (response.isSuccessful() && response.body() != null
+                        && TokenManager.isValidJwtToken(response.body().getToken())) {
+                    AuthHelper.saveSessionFromAuth(RegisterActivity.this, response.body(), email, fullName, false);
 
-                    Toast.makeText(RegisterActivity.this, "🎉 Đăng ký tài khoản thành công!", Toast.LENGTH_SHORT).show();
-                    Intent intent = new Intent(RegisterActivity.this, LoginActivity.class);
+                    Toast.makeText(RegisterActivity.this, "Đăng ký tài khoản thành công!", Toast.LENGTH_SHORT).show();
+                    Intent intent = new Intent(RegisterActivity.this, HomeActivity.class);
+                    intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
                     startActivity(intent);
                     finish();
                 } else {

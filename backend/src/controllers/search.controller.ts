@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import { prisma } from '../config/prisma';
 import { getCache, setCache, CACHE_TTL } from '../config/redis';
 import { successResponse, paginatedResponse } from '../utils/response';
+import { parsePagination } from '../utils/http';
 import { formatUser } from './user.controller';
 
 const AUTHOR_SELECT = {
@@ -24,16 +25,15 @@ function formatPost(post: any) {
 // ── GET /search/food ──────────────────────
 
 export async function searchFood(req: Request, res: Response): Promise<void> {
-  const { keyword, category, priceMin, priceMax, location, page = '1', limit = '10' } = req.query;
-  const p = parseInt(page as string);
-  const l = parseInt(limit as string);
-  const skip = (p - 1) * l;
+  const { keyword, location } = req.query;
+  const { page: p, limit: l, skip } = parsePagination(req.query, 10, 100);
 
   const where: any = { status: 'Active' };
   if (keyword) {
+    const kw = String(keyword).trim();
     where.OR = [
-      { content: { contains: keyword as string, mode: 'insensitive' } },
-      { hashtags: { has: keyword as string } },
+      { content: { contains: kw, mode: 'insensitive' } },
+      { hashtags: { has: kw } },
     ];
   }
   if (location) where.locationUrl = { contains: location as string, mode: 'insensitive' };
@@ -54,16 +54,15 @@ export async function searchFood(req: Request, res: Response): Promise<void> {
 // ── GET /search/accounts ──────────────────
 
 export async function searchAccounts(req: Request, res: Response): Promise<void> {
-  const { keyword, page = '1', limit = '10' } = req.query;
-  const p = parseInt(page as string);
-  const l = parseInt(limit as string);
-  const skip = (p - 1) * l;
+  const { keyword } = req.query;
+  const { page: p, limit: l, skip } = parsePagination(req.query, 10, 100);
 
   const where: any = {};
   if (keyword) {
+    const kw = String(keyword).trim();
     where.OR = [
-      { username: { contains: keyword as string, mode: 'insensitive' } },
-      { fullName: { contains: keyword as string, mode: 'insensitive' } },
+      { username: { contains: kw, mode: 'insensitive' } },
+      { fullName: { contains: kw, mode: 'insensitive' } },
     ];
   }
 
@@ -79,6 +78,103 @@ export async function searchAccounts(req: Request, res: Response): Promise<void>
   paginatedResponse(res, users.map(formatUser), { page: p, limit: l, total });
 }
 
+// ── GET /search/dishes ────────────────────
+
+export async function searchDishes(req: Request, res: Response): Promise<void> {
+  const keyword = typeof req.query.keyword === 'string' ? req.query.keyword.trim() : '';
+  const { page: p, limit: l, skip } = parsePagination(req.query, 20, 100);
+
+  const where: any = {};
+  if (keyword) {
+    where.OR = [
+      { name: { contains: keyword, mode: 'insensitive' } },
+      { category: { contains: keyword, mode: 'insensitive' } },
+      { description: { contains: keyword, mode: 'insensitive' } },
+      { storeUser: { fullName: { contains: keyword, mode: 'insensitive' } } },
+    ];
+  }
+
+  const [dishes, total] = await Promise.all([
+    prisma.dish.findMany({
+      where,
+      include: {
+        storeUser: {
+          select: { id: true, fullName: true, storeProfile: { select: { address: true } } },
+        },
+      },
+      orderBy: [{ rating: 'desc' }, { reviewsCount: 'desc' }],
+      skip,
+      take: l,
+    }),
+    prisma.dish.count({ where }),
+  ]);
+
+  const formatted = dishes.map((d) => ({
+    id: d.id,
+    name: d.name,
+    price: d.price,
+    formattedPrice: d.formattedPrice,
+    description: d.description,
+    imageUrl: d.imageUrl,
+    category: d.category,
+    rating: d.rating,
+    reviewsCount: d.reviewsCount,
+    storeId: d.storeUserId,
+    storeName: d.storeUser.fullName,
+    storeAddress: d.storeUser.storeProfile?.address || '',
+  }));
+
+  paginatedResponse(res, formatted, { page: p, limit: l, total });
+}
+
+// ── GET /search/stores ────────────────────
+
+export async function searchStores(req: Request, res: Response): Promise<void> {
+  const keyword = typeof req.query.keyword === 'string' ? req.query.keyword.trim() : '';
+  const { page: p, limit: l, skip } = parsePagination(req.query, 20, 100);
+
+  const where: any = { role: 'RestaurantAccount', accountStatus: 'Active' };
+  if (keyword) {
+    where.OR = [
+      { fullName: { contains: keyword, mode: 'insensitive' } },
+      { bio: { contains: keyword, mode: 'insensitive' } },
+      { storeProfile: { address: { contains: keyword, mode: 'insensitive' } } },
+      { dishes: { some: { name: { contains: keyword, mode: 'insensitive' } } } },
+    ];
+  }
+
+  const [stores, total] = await Promise.all([
+    prisma.user.findMany({
+      where,
+      include: {
+        storeProfile: true,
+        dishes: { take: 3, orderBy: { rating: 'desc' } },
+        _count: { select: { followers: true } },
+      },
+      skip,
+      take: l,
+    }),
+    prisma.user.count({ where }),
+  ]);
+
+  const formatted = stores.map((s) => ({
+    id: s.id,
+    name: s.fullName,
+    username: s.username,
+    avatarUrl: s.avatarUrl,
+    bio: s.bio || '',
+    address: s.storeProfile?.address || '',
+    openHours: s.storeProfile?.openHours || '',
+    isOpen: s.storeProfile?.isOpen ?? true,
+    rating: s.storeProfile?.rating ?? 0,
+    highlightDish: s.storeProfile?.highlightDish || s.dishes[0]?.name || '',
+    dishPrice: s.storeProfile?.dishPrice || s.dishes[0]?.formattedPrice || '',
+    followersCount: s._count.followers,
+  }));
+
+  paginatedResponse(res, formatted, { page: p, limit: l, total });
+}
+
 // ── GET /search/trending ──────────────────
 
 export async function getTrending(_req: Request, res: Response): Promise<void> {
@@ -86,11 +182,17 @@ export async function getTrending(_req: Request, res: Response): Promise<void> {
   const cached = await getCache(cacheKey);
   if (cached) { successResponse(res, cached); return; }
 
-  // Get most used hashtags from recent posts
-  const posts = await prisma.post.findMany({
-    where: { status: 'Active', createdAt: { gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) } },
-    select: { hashtags: true },
-  });
+  const [posts, topDishes] = await Promise.all([
+    prisma.post.findMany({
+      where: { status: 'Active', createdAt: { gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) } },
+      select: { hashtags: true },
+    }),
+    prisma.dish.findMany({
+      orderBy: [{ reviewsCount: 'desc' }, { rating: 'desc' }],
+      take: 8,
+      select: { id: true, name: true, category: true, reviewsCount: true },
+    }),
+  ]);
 
   const tagCount: Record<string, number> = {};
   posts.forEach((p) => {
@@ -104,7 +206,7 @@ export async function getTrending(_req: Request, res: Response): Promise<void> {
     .slice(0, 10)
     .map(([tag, postCount]) => ({ tag, postCount }));
 
-  const trendingDishes = ['Banh mi', 'Bun dau mam tom', 'Com tam', 'Pho bo', 'Bun cha'];
+  const trendingDishes = topDishes.map((d) => d.name);
 
   const result = { trendingHashtags, trendingDishes };
   await setCache(cacheKey, result, CACHE_TTL.TRENDING);

@@ -24,8 +24,10 @@ import extraRoutes from './routes/extra.routes';
 
 import {
   getBlockedAccounts,
+  blockAccount,
   unblockAccount,
   getRestrictedAccounts,
+  restrictAccount,
   unrestrictAccount,
   getPrivacySettings,
   updatePrivacySettings,
@@ -34,16 +36,19 @@ import {
   getSessions,
   revokeSession,
   get2FAStatus,
+  get2FASetup,
   disable2FA,
   verify2FA,
 } from './controllers/auth.controller';
 import { createReport } from './controllers/report.controller';
 import { getTicketDetail, createTicket } from './controllers/help.controller';
-import { optionalAuth } from './middlewares/auth.middleware';
+import { authenticate } from './middlewares/auth.middleware';
+import { asyncHandler } from './utils/http';
 import { errorHandler } from './middlewares/error.middleware';
 import { notFound } from './middlewares/not-found.middleware';
 
 const app = express();
+app.set('trust proxy', 1);
 
 // ── Security & Performance ───────────────
 app.use(helmet({
@@ -102,31 +107,39 @@ app.use(`${API_PREFIX}`, extraRoutes);
 
 // ── Mobile App Compatibility Aliases ─────
 // (Cho phép mobile-app gọi các đường dẫn ngắn mà không bị 404)
-app.get(`${API_PREFIX}/accounts/blocked`, optionalAuth, getBlockedAccounts);
-app.post(`${API_PREFIX}/accounts/unblock`, optionalAuth, unblockAccount);
-app.get(`${API_PREFIX}/accounts/restricted`, optionalAuth, getRestrictedAccounts);
-app.post(`${API_PREFIX}/accounts/unrestrict`, optionalAuth, unrestrictAccount);
+app.get(`${API_PREFIX}/accounts/blocked`, authenticate, asyncHandler(getBlockedAccounts));
+app.post(`${API_PREFIX}/accounts/block`, authenticate, asyncHandler(blockAccount));
+app.post(`${API_PREFIX}/accounts/unblock`, authenticate, asyncHandler(unblockAccount));
+app.get(`${API_PREFIX}/accounts/restricted`, authenticate, asyncHandler(getRestrictedAccounts));
+app.post(`${API_PREFIX}/accounts/restrict`, authenticate, asyncHandler(restrictAccount));
+app.post(`${API_PREFIX}/accounts/unrestrict`, authenticate, asyncHandler(unrestrictAccount));
 
-app.get(`${API_PREFIX}/privacy`, optionalAuth, getPrivacySettings);
-app.post(`${API_PREFIX}/privacy/update`, optionalAuth, updatePrivacySettings);
+app.get(`${API_PREFIX}/privacy`, authenticate, asyncHandler(getPrivacySettings));
+app.post(`${API_PREFIX}/privacy/update`, authenticate, asyncHandler(updatePrivacySettings));
 
-app.get(`${API_PREFIX}/sessions`, optionalAuth, getSessions);
-app.post(`${API_PREFIX}/sessions/revoke`, optionalAuth, revokeSession);
+app.get(`${API_PREFIX}/sessions`, authenticate, asyncHandler(getSessions));
+app.post(`${API_PREFIX}/sessions/revoke`, authenticate, asyncHandler(revokeSession));
 
-app.get(`${API_PREFIX}/2fa/status`, optionalAuth, get2FAStatus);
-app.post(`${API_PREFIX}/2fa/verify`, optionalAuth, verify2FA);
-app.post(`${API_PREFIX}/2fa/disable`, optionalAuth, disable2FA);
+app.get(`${API_PREFIX}/2fa/status`, authenticate, asyncHandler(get2FAStatus));
+app.get(`${API_PREFIX}/2fa/setup`, authenticate, asyncHandler(get2FASetup));
+app.post(`${API_PREFIX}/2fa/verify`, authenticate, asyncHandler(verify2FA));
+app.post(`${API_PREFIX}/2fa/disable`, authenticate, asyncHandler(disable2FA));
 
-app.post(`${API_PREFIX}/report`, optionalAuth, (req, res) => {
+app.post(`${API_PREFIX}/report`, authenticate, asyncHandler(async (req, res) => {
   if (!req.body.reason) req.body.reason = 'Other';
-  createReport(req, res);
-});
+  await createReport(req, res);
+}));
 
-app.get(`${API_PREFIX}/help/ticket`, optionalAuth, (req, res) => {
-  req.params.ticketId = (req.query.ticketId as string) || '1';
-  getTicketDetail(req, res);
-});
-app.post(`${API_PREFIX}/help/ticket`, optionalAuth, createTicket);
+app.get(`${API_PREFIX}/help/ticket`, authenticate, asyncHandler(async (req, res) => {
+  const ticketId = req.query.ticketId as string;
+  if (!ticketId) {
+    res.status(400).json({ success: false, message: 'ticketId is required' });
+    return;
+  }
+  req.params.ticketId = ticketId;
+  await getTicketDetail(req, res);
+}));
+app.post(`${API_PREFIX}/help/ticket`, authenticate, asyncHandler(createTicket));
 
 // ── Error Handling ────────────────────────
 app.use(notFound);

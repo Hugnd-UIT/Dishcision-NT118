@@ -88,7 +88,7 @@
             android:orientation="vertical"
             android:padding="16dp">
 
-            <!-- User Avatar & Security Status -->
+            <!-- User Avatar & Name -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -96,38 +96,30 @@
                 android:orientation="vertical"
                 android:paddingVertical="8dp">
 
-                <FrameLayout
+                <ImageView
+                    android:id="@+id/imgDetailAvatar"
                     android:layout_width="80dp"
-                    android:layout_height="80dp">
-
-                    <ImageView
-                        android:layout_width="80dp"
-                        android:layout_height="80dp"
-                        android:contentDescription="Avatar"
-                        android:src="@drawable/bg_avatar_circle" />
-
-                    <View
-                        android:layout_width="16dp"
-                        android:layout_height="16dp"
-                        android:layout_gravity="bottom|end"
-                        android:background="@drawable/bg_online_indicator" />
-                </FrameLayout>
+                    android:layout_height="80dp"
+                    android:contentDescription="Avatar"
+                    android:scaleType="centerCrop"
+                    android:src="@drawable/bg_avatar_circle" />
 
                 <TextView
                     android:id="@+id/tvContactName"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="12dp"
-                    android:text="Maya Lin"
+                    android:text=""
                     android:textColor="#141B2B"
                     android:textSize="20sp"
                     android:textStyle="bold" />
 
                 <TextView
+                    android:id="@+id/tvContactSubtitle"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="4dp"
-                    android:text="🔒 Được mã hóa đầu cuối"
+                    android:text="Cuộc trò chuyện trực tiếp trên Dishcision"
                     android:textColor="#00A86B"
                     android:textSize="12sp"
                     android:textStyle="bold" />
@@ -141,7 +133,6 @@
                 android:gravity="center"
                 android:orientation="horizontal">
 
-                <!-- Action 1: Trang cá nhân -->
                 <LinearLayout
                     android:id="@+id/btnViewProfile"
                     android:layout_width="0dp"
@@ -171,7 +162,6 @@
                         android:textSize="12sp" />
                 </LinearLayout>
 
-                <!-- Action 2: Tắt thông báo -->
                 <LinearLayout
                     android:id="@+id/btnMuteNotifications"
                     android:layout_width="0dp"
@@ -184,6 +174,7 @@
                     android:orientation="vertical">
 
                     <ImageView
+                        android:id="@+id/imgMuteIcon"
                         android:layout_width="44dp"
                         android:layout_height="44dp"
                         android:background="@drawable/bg_button_light_blue"
@@ -193,6 +184,7 @@
                         app:tint="#141B2B" />
 
                     <TextView
+                        android:id="@+id/tvMuteLabel"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="6dp"
@@ -201,7 +193,6 @@
                         android:textSize="12sp" />
                 </LinearLayout>
 
-                <!-- Action 3: Tìm kiếm -->
                 <LinearLayout
                     android:id="@+id/btnSearchChat"
                     android:layout_width="0dp"
@@ -279,12 +270,13 @@
                         android:textSize="15sp"
                         android:textStyle="bold" />
 
-                    <ImageView
-                        android:layout_width="16dp"
-                        android:layout_height="16dp"
-                        android:contentDescription="Arrow"
-                        android:src="@drawable/ic_arrow_right"
-                        app:tint="#6B7280" />
+                    <TextView
+                        android:id="@+id/tvPinnedCountDetail"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="0  ›"
+                        android:textColor="#8E7570"
+                        android:textSize="13sp" />
                 </LinearLayout>
             </LinearLayout>
 
@@ -306,7 +298,6 @@
                 android:orientation="vertical"
                 android:paddingHorizontal="16dp">
 
-                <!-- Theme -->
                 <LinearLayout
                     android:id="@+id/btnChangeTheme"
                     android:layout_width="match_parent"
@@ -342,6 +333,7 @@
                             android:textStyle="bold" />
 
                         <TextView
+                            android:id="@+id/tvThemeSummary"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:layout_marginTop="2dp"
@@ -351,6 +343,7 @@
                     </LinearLayout>
 
                     <View
+                        android:id="@+id/viewThemeSwatch"
                         android:layout_width="20dp"
                         android:layout_height="20dp"
                         android:background="@drawable/bg_unread_badge" />
@@ -361,7 +354,6 @@
                     android:layout_height="1dp"
                     android:background="#E9EBF4" />
 
-                <!-- Quick Emoji -->
                 <LinearLayout
                     android:id="@+id/btnChangeEmoji"
                     android:layout_width="match_parent"
@@ -400,12 +392,13 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:layout_marginTop="2dp"
-                            android:text="Thả tim món ăn mặc định"
+                            android:text="Biểu tượng nhanh trong khung nhập"
                             android:textColor="#8E7570"
                             android:textSize="12sp" />
                     </LinearLayout>
 
                     <TextView
+                        android:id="@+id/tvEmojiSummary"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="🍜"
@@ -417,7 +410,6 @@
                     android:layout_height="1dp"
                     android:background="#E9EBF4" />
 
-                <!-- Nickname -->
                 <LinearLayout
                     android:id="@+id/btnEditNickname"
                     android:layout_width="match_parent"
@@ -474,7 +466,6 @@
                 android:orientation="vertical"
                 android:paddingHorizontal="16dp">
 
-                <!-- Media -->
                 <LinearLayout
                     android:id="@+id/btnSharedMedia"
                     android:layout_width="match_parent"
@@ -505,9 +496,10 @@
                         android:textStyle="bold" />
 
                     <TextView
+                        android:id="@+id/tvSharedMediaCount"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="18  ›"
+                        android:text="0  ›"
                         android:textColor="#8E7570"
                         android:textSize="13sp" />
                 </LinearLayout>
@@ -517,7 +509,6 @@
                     android:layout_height="1dp"
                     android:background="#E9EBF4" />
 
-                <!-- Documents -->
                 <LinearLayout
                     android:id="@+id/btnSharedFiles"
                     android:layout_width="match_parent"
@@ -560,7 +551,6 @@
                     android:layout_height="1dp"
                     android:background="#E9EBF4" />
 
-                <!-- Links -->
                 <LinearLayout
                     android:id="@+id/btnSharedLinks"
                     android:layout_width="match_parent"
@@ -590,12 +580,13 @@
                         android:textSize="15sp"
                         android:textStyle="bold" />
 
-                    <ImageView
-                        android:layout_width="16dp"
-                        android:layout_height="16dp"
-                        android:contentDescription="Arrow"
-                        android:src="@drawable/ic_arrow_right"
-                        app:tint="#6B7280" />
+                    <TextView
+                        android:id="@+id/tvSharedLinksCount"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="0  ›"
+                        android:textColor="#8E7570"
+                        android:textSize="13sp" />
                 </LinearLayout>
             </LinearLayout>
         </LinearLayout>

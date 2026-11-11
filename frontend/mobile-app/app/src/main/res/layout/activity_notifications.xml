@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/main_notifications"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="#FFFFFF"
     android:orientation="vertical">
 
-    <!-- Top Bar Header -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="56dp"
@@ -49,7 +49,6 @@
             app:tint="#141B2B" />
     </LinearLayout>
 
-    <!-- Scrollable Notifications Content -->
     <ScrollView
         android:layout_width="match_parent"
         android:layout_height="0dp"
@@ -62,7 +61,6 @@
             android:layout_height="wrap_content"
             android:orientation="vertical">
 
-            <!-- Headline Row & Mark as Read -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -93,7 +91,6 @@
                     android:textSize="13sp" />
             </LinearLayout>
 
-            <!-- Filter Chips Row -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -129,6 +126,7 @@
                     android:paddingVertical="8dp">
 
                     <TextView
+                        android:id="@+id/tvChipUnreadLabel"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="Chưa đọc"
@@ -136,230 +134,39 @@
                         android:textSize="13sp" />
 
                     <TextView
+                        android:id="@+id/tvUnreadCount"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginStart="6dp"
                         android:background="@drawable/bg_unread_badge"
                         android:paddingHorizontal="6dp"
                         android:paddingVertical="2dp"
-                        android:text="1"
+                        android:text="0"
                         android:textColor="#FFFFFF"
                         android:textSize="11sp"
-                        android:textStyle="bold" />
+                        android:textStyle="bold"
+                        android:visibility="gone" />
                 </LinearLayout>
             </LinearLayout>
 
-            <!-- Notifications List -->
             <LinearLayout
+                android:id="@+id/layoutNotificationsContainer"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="14dp"
-                android:orientation="vertical">
+                android:orientation="vertical" />
 
-                <!-- Item 1: Lan Anh (Unread) -->
-                <LinearLayout
-                    android:id="@+id/itemNotify1"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:background="@drawable/bg_input_field_light"
-                    android:clickable="true"
-                    android:focusable="true"
-                    android:foreground="?attr/selectableItemBackground"
-                    android:gravity="center_vertical"
-                    android:orientation="horizontal"
-                    android:paddingHorizontal="16dp"
-                    android:paddingVertical="14dp">
-
-                    <FrameLayout
-                        android:layout_width="48dp"
-                        android:layout_height="48dp">
-
-                        <ImageView
-                            android:layout_width="48dp"
-                            android:layout_height="48dp"
-                            android:contentDescription="Avatar 1"
-                            android:src="@drawable/bg_avatar_circle" />
-
-                        <ImageView
-                            android:layout_width="18dp"
-                            android:layout_height="18dp"
-                            android:layout_gravity="bottom|end"
-                            android:background="@drawable/bg_badge_utensils_red"
-                            android:contentDescription="Heart"
-                            android:padding="3dp"
-                            android:src="@drawable/ic_heart_outline"
-                            app:tint="#FFFFFF" />
-                    </FrameLayout>
-
-                    <LinearLayout
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_marginStart="12dp"
-                        android:layout_weight="1"
-                        android:orientation="vertical">
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:lineSpacingExtra="2dp"
-                            android:text="Lan Anh đã thích bài đánh giá quán chay thanh đạm của bạn"
-                            android:textColor="#141B2B"
-                            android:textSize="14sp" />
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="4dp"
-                            android:text="🕒 10 phút trước"
-                            android:textColor="#8E7570"
-                            android:textSize="12sp" />
-                    </LinearLayout>
-
-                    <View
-                        android:id="@+id/dotUnread1"
-                        android:layout_width="10dp"
-                        android:layout_height="10dp"
-                        android:layout_marginStart="8dp"
-                        android:background="@drawable/bg_unread_badge" />
-                </LinearLayout>
-
-                <View
-                    android:layout_width="match_parent"
-                    android:layout_height="1dp"
-                    android:background="#E9EBF4" />
-
-                <!-- Item 2: Minh Tuấn (Read) -->
-                <LinearLayout
-                    android:id="@+id/itemNotify2"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:background="#FFFFFF"
-                    android:clickable="true"
-                    android:focusable="true"
-                    android:foreground="?attr/selectableItemBackground"
-                    android:gravity="center_vertical"
-                    android:orientation="horizontal"
-                    android:paddingHorizontal="16dp"
-                    android:paddingVertical="14dp">
-
-                    <FrameLayout
-                        android:layout_width="48dp"
-                        android:layout_height="48dp">
-
-                        <ImageView
-                            android:layout_width="48dp"
-                            android:layout_height="48dp"
-                            android:contentDescription="Avatar 2"
-                            android:src="@drawable/bg_avatar_circle" />
-
-                        <ImageView
-                            android:layout_width="18dp"
-                            android:layout_height="18dp"
-                            android:layout_gravity="bottom|end"
-                            android:background="@drawable/bg_badge_verified_green"
-                            android:contentDescription="Comment"
-                            android:padding="3dp"
-                            android:src="@drawable/ic_comment"
-                            app:tint="#FFFFFF" />
-                    </FrameLayout>
-
-                    <LinearLayout
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_marginStart="12dp"
-                        android:layout_weight="1"
-                        android:orientation="vertical">
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:lineSpacingExtra="2dp"
-                            android:text="Minh Tuấn đã bình luận: “Nhìn ngon quá cho mình xin địa chỉ quán với!”"
-                            android:textColor="#141B2B"
-                            android:textSize="14sp" />
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="4dp"
-                            android:text="🕒 2 giờ trước"
-                            android:textColor="#8E7570"
-                            android:textSize="12sp" />
-                    </LinearLayout>
-                </LinearLayout>
-
-                <View
-                    android:layout_width="match_parent"
-                    android:layout_height="1dp"
-                    android:background="#E9EBF4" />
-
-                <!-- Item 3: Bếp Nhà Lục Nam (Read) -->
-                <LinearLayout
-                    android:id="@+id/itemNotify3"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:background="#FFFFFF"
-                    android:clickable="true"
-                    android:focusable="true"
-                    android:foreground="?attr/selectableItemBackground"
-                    android:gravity="center_vertical"
-                    android:orientation="horizontal"
-                    android:paddingHorizontal="16dp"
-                    android:paddingVertical="14dp">
-
-                    <FrameLayout
-                        android:layout_width="48dp"
-                        android:layout_height="48dp">
-
-                        <ImageView
-                            android:layout_width="48dp"
-                            android:layout_height="48dp"
-                            android:contentDescription="Avatar 3"
-                            android:src="@drawable/bg_avatar_circle" />
-
-                        <ImageView
-                            android:layout_width="18dp"
-                            android:layout_height="18dp"
-                            android:layout_gravity="bottom|end"
-                            android:background="@drawable/bg_tag_chip_pink"
-                            android:contentDescription="Utensils"
-                            android:padding="3dp"
-                            android:src="@drawable/ic_utensils"
-                            app:tint="#5B403A" />
-                    </FrameLayout>
-
-                    <LinearLayout
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_marginStart="12dp"
-                        android:layout_weight="1"
-                        android:orientation="vertical">
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:lineSpacingExtra="2dp"
-                            android:text="Bếp Nhà Lục Nam vừa cập nhật món mới trong thực đơn đặc biệt trưa nay"
-                            android:textColor="#141B2B"
-                            android:textSize="14sp" />
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="4dp"
-                            android:text="🕒 2 ngày trước"
-                            android:textColor="#8E7570"
-                            android:textSize="12sp" />
-                    </LinearLayout>
-
-                    <ImageView
-                        android:layout_width="16dp"
-                        android:layout_height="16dp"
-                        android:contentDescription="Arrow"
-                        android:src="@drawable/ic_arrow_right"
-                        app:tint="#6B7280" />
-                </LinearLayout>
-            </LinearLayout>
+            <TextView
+                android:id="@+id/tvEmptyNotifications"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="32dp"
+                android:gravity="center"
+                android:padding="24dp"
+                android:text="Chưa có thông báo nào"
+                android:textColor="#8E7570"
+                android:textSize="14sp"
+                android:visibility="gone" />
         </LinearLayout>
     </ScrollView>
 </LinearLayout>

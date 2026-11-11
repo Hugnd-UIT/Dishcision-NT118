@@ -99,8 +99,6 @@ public class WheelView extends View {
         super.onDraw(canvas);
 
         int count = items.size();
-        if (count == 0) return;
-
         float width = getWidth();
         float height = getHeight();
         float diameter = Math.min(width, height);
@@ -110,6 +108,14 @@ public class WheelView extends View {
         float rHub = dpToPx(33f);
 
         wheelRect.set(cx - radius, cy - radius, cx + radius, cy + radius);
+
+        if (count == 0) {
+            slicePaint.setColor(Color.parseColor("#EFECE8"));
+            canvas.drawCircle(cx, cy, radius, slicePaint);
+            canvas.drawCircle(cx, cy, radius, borderPaint);
+            canvas.drawCircle(cx, cy, rHub, hubPaint);
+            return;
+        }
 
         float sweepAngle = 360f / count;
 

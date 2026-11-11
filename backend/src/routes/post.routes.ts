@@ -15,33 +15,35 @@ import { getComments, createComment } from '../controllers/comment.controller';
 import { savePost, unsavePost, getSavedPosts } from '../controllers/social.controller';
 import { authenticate, optionalAuth } from '../middlewares/auth.middleware';
 import { mediaUpload } from '../middlewares/upload.middleware';
+import { asyncHandler } from '../utils/http';
 import {
   validate,
   createPostSchema,
+  updatePostSchema,
   createCommentSchema,
 } from '../middlewares/validate.middleware';
 
 const router = Router();
 
-router.get('/', optionalAuth, getNewsfeed);
-router.get('/saved', optionalAuth, getSavedPosts);
-router.post('/', authenticate, validate(createPostSchema), createPost);
-router.post('/upload-media', optionalAuth, mediaUpload.single('file'), uploadMedia);
+router.get('/', optionalAuth, asyncHandler(getNewsfeed));
+router.get('/saved', authenticate, asyncHandler(getSavedPosts));
+router.post('/', authenticate, validate(createPostSchema), asyncHandler(createPost));
+router.post('/upload-media', authenticate, mediaUpload.single('file'), asyncHandler(uploadMedia));
 
-router.get('/:postId', optionalAuth, getPostById);
-router.put('/:postId', authenticate, updatePost);
-router.delete('/:postId', authenticate, deletePost);
+router.get('/:postId', optionalAuth, asyncHandler(getPostById));
+router.put('/:postId', authenticate, validate(updatePostSchema), asyncHandler(updatePost));
+router.delete('/:postId', authenticate, asyncHandler(deletePost));
 
-router.get('/:postId/likes', getPostLikes);
-router.post('/:postId/likes', authenticate, likePost);
-router.delete('/:postId/likes', authenticate, unlikePost);
+router.get('/:postId/likes', asyncHandler(getPostLikes));
+router.post('/:postId/likes', authenticate, asyncHandler(likePost));
+router.delete('/:postId/likes', authenticate, asyncHandler(unlikePost));
 
-router.post('/:postId/shares', authenticate, sharePost);
+router.post('/:postId/shares', authenticate, asyncHandler(sharePost));
 
-router.get('/:postId/comments', getComments);
-router.post('/:postId/comments', authenticate, validate(createCommentSchema), createComment);
+router.get('/:postId/comments', asyncHandler(getComments));
+router.post('/:postId/comments', authenticate, validate(createCommentSchema), asyncHandler(createComment));
 
-router.post('/:postId/save', authenticate, savePost);
-router.delete('/:postId/save', authenticate, unsavePost);
+router.post('/:postId/save', authenticate, asyncHandler(savePost));
+router.delete('/:postId/save', authenticate, asyncHandler(unsavePost));
 
 export default router;

@@ -59,6 +59,9 @@ public class FollowingRestaurantsResponse {
         @SerializedName("id")
         public int id;
 
+        @SerializedName("userId")
+        public int userId;
+
         @SerializedName("storeName")
         public String storeName;
 
@@ -67,6 +70,9 @@ public class FollowingRestaurantsResponse {
 
         @SerializedName("avatarUrl")
         public String avatarUrl;
+
+        @SerializedName("mediaUrl")
+        public String mediaUrl;
     }
 
     public static class StoreItem {
@@ -75,6 +81,9 @@ public class FollowingRestaurantsResponse {
 
         @SerializedName("name")
         public String name;
+
+        @SerializedName("username")
+        public String username;
 
         @SerializedName("avatarUrl")
         public String avatarUrl;
@@ -96,6 +105,9 @@ public class FollowingRestaurantsResponse {
 
         @SerializedName("reviewsCount")
         public int reviewsCount;
+
+        @SerializedName("followersCount")
+        public int followersCount;
 
         @SerializedName("isFollowing")
         public boolean isFollowing;

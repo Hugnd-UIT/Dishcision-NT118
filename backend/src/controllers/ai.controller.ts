@@ -1,16 +1,8 @@
 import { Response } from 'express';
 import { prisma } from '../config/prisma';
 import { successResponse, errorResponse } from '../utils/response';
+import { parsePositiveInt } from '../utils/http';
 import { AuthRequest } from '../middlewares/auth.middleware';
-
-// Default suggestions based on Vietnamese food culture (fallback)
-const DEFAULT_SUGGESTIONS = [
-  { dishName: 'Bún bò Huế', reason: 'Vị cay nồng ấm bụng, đậm đà kích thích vị giác giải tỏa mệt mỏi', estimatedPrice: '55,000 - 80,000 VND' },
-  { dishName: 'Phở bò tái lăn', reason: 'Nước dùng ninh xương béo ngậy, thịt bò xào lăn thơm phức tỏi hành', estimatedPrice: '50,000 - 75,000 VND' },
-  { dishName: 'Bánh mì pate giòn rụm', reason: 'Nhanh gọn, tiện lợi và tiết kiệm ngân sách', estimatedPrice: '25,000 - 45,000 VND' },
-  { dishName: 'Cơm tấm sườn bì chả', reason: 'Chắc bụng, thơm ngậy vị sườn nướng mật ong và mỡ hành', estimatedPrice: '45,000 - 65,000 VND' },
-  { dishName: 'Lẩu nấm thanh đạm', reason: 'Thanh mát, giàu dinh dưỡng, rất thích hợp tụ họp bạn bè', estimatedPrice: '120,000 - 180,000 VND' },
-];
 
 async function callGeminiAI(prompt: string): Promise<any[] | null> {
   const apiKey = process.env.AI_KEY;
@@ -54,8 +46,8 @@ async function callGeminiAI(prompt: string): Promise<any[] | null> {
 // ── POST /ai/food-decide ──────────────────
 
 export async function foodDecide(req: AuthRequest, res: Response): Promise<void> {
-  const userId = req.user?.userId || 1;
-  const { mood, budget, companions, craving, preferenceIds } = req.body;
+  const userId = req.user?.userId;
+  const { mood, budget, companions, craving } = req.body;
 
   let modelUsed = 'gemini-2.5-flash';
   let suggestions: any[] | null = null;
@@ -80,31 +72,58 @@ YÊU CẦU: Trả về DUY NHẤT một mảng JSON gồm 3 object (không thêm
   if (aiResult && aiResult.length > 0) {
     suggestions = aiResult.slice(0, 3).map((item, idx) => ({
       rank: idx + 1,
-      dishName: item.dishName || 'Món ăn gợi ý',
-      reason: item.reason || 'Món ngon thích hợp cho hôm nay',
-      estimatedPrice: item.estimatedPrice || '40,000 - 60,000 VND',
+      dishName: item.dishName || '',
+      reason: item.reason || '',
+      estimatedPrice: item.estimatedPrice || '',
     }));
   } else {
-    // Fallback to random default suggestions
-    modelUsed = 'local-rule-based';
-    const shuffled = [...DEFAULT_SUGGESTIONS].sort(() => Math.random() - 0.5);
-    suggestions = shuffled.slice(0, 3).map((s, i) => ({ rank: i + 1, ...s }));
+    modelUsed = 'database-matcher';
+    const maxBudget = budget ? parseInt(String(budget).replace(/[^\d]/g, ''), 10) : 0;
+    let dbDishes = await prisma.dish.findMany({
+      include: { storeUser: { select: { fullName: true } } },
+    });
+    if (dbDishes.length === 0) {
+      errorResponse(res, 'Dịch vụ gợi ý món ăn tạm thời chưa có dữ liệu', 503);
+      return;
+    }
+    if (craving) {
+      const q = String(craving).toLowerCase();
+      const matched = dbDishes.filter(
+        (d) => d.name.toLowerCase().includes(q) || d.category.toLowerCase().includes(q) || d.description.toLowerCase().includes(q),
+      );
+      if (matched.length > 0) dbDishes = matched;
+    }
+    if (maxBudget > 0) {
+      const affordable = dbDishes.filter((d) => d.price <= maxBudget);
+      if (affordable.length > 0) dbDishes = affordable;
+    }
+    const shuffled = [...dbDishes].sort(() => Math.random() - 0.5).slice(0, 3);
+    suggestions = shuffled.map((d, i) => ({
+      rank: i + 1,
+      dishName: d.name,
+      reason: `${d.description} (${d.storeUser.fullName})`,
+      estimatedPrice: d.formattedPrice,
+    }));
   }
 
-  const aiRequest = await prisma.aIRequest.create({
-    data: {
-      userId,
-      mood: mood || 'Tự động gợi ý',
-      budget: String(budget || 'Bình dân'),
-      companions: companions ? Number(companions) : 1,
-      craving: craving || null,
-      resultJson: suggestions,
-      modelUsed,
-    },
-  });
+  let requestId: number | null = null;
+  if (userId) {
+    const aiRequest = await prisma.aIRequest.create({
+      data: {
+        userId,
+        mood: mood || 'Tự động gợi ý',
+        budget: String(budget || 'Bình dân'),
+        companions: companions ? Number(companions) : 1,
+        craving: craving || null,
+        resultJson: suggestions,
+        modelUsed,
+      },
+    });
+    requestId = aiRequest.id;
+  }
 
   successResponse(res, {
-    requestId: aiRequest.id,
+    requestId,
     suggestions,
     modelUsed,
   });
@@ -113,8 +132,12 @@ YÊU CẦU: Trả về DUY NHẤT một mảng JSON gồm 3 object (không thêm
 // ── POST /ai/requests/:requestId/feedback ─
 
 export async function submitFeedback(req: AuthRequest, res: Response): Promise<void> {
-  const userId = req.user?.userId || 1;
-  const requestId = parseInt(req.params.requestId);
+  const userId = req.user!.userId;
+  const requestId = parsePositiveInt(req.params.requestId);
+  if (!requestId) {
+    errorResponse(res, 'Invalid AI request ID', 400);
+    return;
+  }
   const { rating, comment } = req.body;
 
   const aiRequest = await prisma.aIRequest.findFirst({ where: { id: requestId, userId } });

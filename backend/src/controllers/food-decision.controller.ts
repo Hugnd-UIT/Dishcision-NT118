@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import { prisma } from '../config/prisma';
 import { getCache, setCache, CACHE_TTL } from '../config/redis';
-import { successResponse } from '../utils/response';
+import { successResponse, errorResponse } from '../utils/response';
 
 // ── GET /food-decision/categories ─────────
 
@@ -26,53 +26,68 @@ export async function getCategories(_req: Request, res: Response): Promise<void>
 
 // ── POST /food-decision/random-wheel ──────
 
-const FALLBACK_DISHES = [
-  'Bún bò Huế', 'Phở bò tái lăn', 'Bánh mì pate', 'Bún chả',
-  'Cơm tấm sườn bì chả', 'Bún đậu mắm tôm', 'Bánh xèo', 'Phở cuốn ngũ xã',
-];
-
 export async function spinRandomWheel(req: Request, res: Response): Promise<void> {
-  const { budget, preferenceIds } = req.body || {};
+  const { budget, category } = req.body || {};
+  const maxBudget = budget ? parseInt(String(budget).replace(/[^\d]/g, ''), 10) : 0;
 
-  // Fetch reviews and categories from database to recommend real seeded spots
-  const [reviews, categories] = await Promise.all([
-    prisma.review.findMany({
-      select: { restaurantName: true, locationUrl: true, rating: true },
-      take: 20,
-    }),
-    prisma.foodCategory.findMany({ select: { name: true } }),
-  ]);
+  let dishes = await prisma.dish.findMany({
+    where: category ? { category: { contains: String(category), mode: 'insensitive' } } : undefined,
+    include: {
+      storeUser: {
+        select: { id: true, fullName: true, storeProfile: true },
+      },
+    },
+  });
 
-  let dish = FALLBACK_DISHES[Math.floor(Math.random() * FALLBACK_DISHES.length)];
-  if (categories.length > 0) {
-    dish = categories[Math.floor(Math.random() * categories.length)].name;
+  if (maxBudget > 0) {
+    const affordable = dishes.filter((d) => d.price <= maxBudget);
+    if (affordable.length > 0) dishes = affordable;
   }
 
-  let restaurantName = 'Phở Thìn Lò Đúc';
-  let address = '13 Lò Đúc, Hai Bà Trưng, Hà Nội';
-  let rating = 4.8;
-  let mapsUrl = `https://maps.google.com/?q=${encodeURIComponent(restaurantName)}`;
+  if (dishes.length > 0) {
+    const selected = dishes[Math.floor(Math.random() * dishes.length)];
+    const storeName = selected.storeUser.fullName;
+    const address = selected.storeUser.storeProfile?.address || storeName;
+    const rating = selected.storeUser.storeProfile?.rating ?? selected.rating;
 
-  if (reviews.length > 0) {
-    const selected = reviews[Math.floor(Math.random() * reviews.length)];
-    restaurantName = selected.restaurantName;
-    rating = selected.rating;
-    mapsUrl = selected.locationUrl || `https://maps.google.com/?q=${encodeURIComponent(restaurantName)}`;
-    address = restaurantName;
+    successResponse(res, {
+      dishId: selected.id,
+      dishName: selected.name,
+      imageUrl: selected.imageUrl,
+      category: selected.category,
+      storeId: selected.storeUserId,
+      restaurant: {
+        id: selected.storeUserId,
+        name: storeName,
+        address,
+        mapsUrl: `https://maps.google.com/?q=${encodeURIComponent(address)}`,
+        estimatedPrice: selected.price,
+        formattedPrice: selected.formattedPrice,
+        rating,
+      },
+    });
+    return;
   }
 
-  const estimatedPrice = budget
-    ? Math.floor(Math.random() * (parseInt(budget) * 0.8)) + 30000
-    : 55000;
+  const reviews = await prisma.review.findMany({
+    select: { restaurantName: true, locationUrl: true, rating: true },
+    take: 20,
+  });
 
+  if (reviews.length === 0) {
+    errorResponse(res, 'Chưa có dữ liệu món ăn trên hệ thống', 404);
+    return;
+  }
+
+  const selected = reviews[Math.floor(Math.random() * reviews.length)];
   successResponse(res, {
-    dishName: dish,
+    dishName: selected.restaurantName,
     restaurant: {
-      name: restaurantName,
-      address,
-      mapsUrl,
-      estimatedPrice,
-      rating,
+      name: selected.restaurantName,
+      address: selected.restaurantName,
+      mapsUrl: selected.locationUrl || `https://maps.google.com/?q=${encodeURIComponent(selected.restaurantName)}`,
+      estimatedPrice: maxBudget > 0 ? maxBudget : 0,
+      rating: selected.rating,
     },
   });
 }

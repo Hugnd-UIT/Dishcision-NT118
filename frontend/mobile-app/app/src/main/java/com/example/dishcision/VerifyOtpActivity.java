@@ -28,13 +28,14 @@ public class VerifyOtpActivity extends AppCompatActivity {
     public static final String EXTRA_EMAIL = "extra_email";
 
     private ImageView btnBack;
+    private android.view.View layoutTargetEmailBox;
     private TextView tvTargetEmail;
     private EditText edtOtpCode;
     private RelativeLayout btnVerifyOtp;
     private TextView tvResendCode;
     private TextView tvChangeEmail;
 
-    private String userEmail = "m•••@example.com";
+    private String userEmail = "";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -48,6 +49,7 @@ public class VerifyOtpActivity extends AppCompatActivity {
             return insets;
         });
 
+        ApiClient.init(this);
         initViews();
         setupData();
         setupListeners();
@@ -55,6 +57,7 @@ public class VerifyOtpActivity extends AppCompatActivity {
 
     private void initViews() {
         btnBack = findViewById(R.id.btnBack);
+        layoutTargetEmailBox = findViewById(R.id.layoutTargetEmailBox);
         tvTargetEmail = findViewById(R.id.tvTargetEmail);
         edtOtpCode = findViewById(R.id.edtOtpCode);
         btnVerifyOtp = findViewById(R.id.btnVerifyOtp);
@@ -65,12 +68,21 @@ public class VerifyOtpActivity extends AppCompatActivity {
     private void setupData() {
         if (getIntent() != null && getIntent().hasExtra(EXTRA_EMAIL)) {
             String passedEmail = getIntent().getStringExtra(EXTRA_EMAIL);
-            if (passedEmail != null && !passedEmail.isEmpty()) {
-                userEmail = passedEmail;
+            if (passedEmail != null && !passedEmail.trim().isEmpty()) {
+                userEmail = passedEmail.trim();
             }
         }
-        if (tvTargetEmail != null) {
-            tvTargetEmail.setText(userEmail);
+        if (userEmail.isEmpty()) {
+            if (layoutTargetEmailBox != null) {
+                layoutTargetEmailBox.setVisibility(android.view.View.GONE);
+            }
+        } else {
+            if (layoutTargetEmailBox != null) {
+                layoutTargetEmailBox.setVisibility(android.view.View.VISIBLE);
+            }
+            if (tvTargetEmail != null) {
+                tvTargetEmail.setText(userEmail);
+            }
         }
     }
 
@@ -81,30 +93,38 @@ public class VerifyOtpActivity extends AppCompatActivity {
 
         if (btnVerifyOtp != null) {
             btnVerifyOtp.setOnClickListener(v -> {
+                if (userEmail.isEmpty()) {
+                    Toast.makeText(this, "Thiếu thông tin email khôi phục", Toast.LENGTH_SHORT).show();
+                    return;
+                }
                 String code = edtOtpCode != null ? edtOtpCode.getText().toString().trim() : "";
-                if (code.isEmpty()) {
-                    code = "123456";
+                if (!code.matches("\\d{6}")) {
+                    Toast.makeText(this, "Vui lòng nhập mã OTP gồm 6 chữ số", Toast.LENGTH_SHORT).show();
+                    if (edtOtpCode != null) edtOtpCode.requestFocus();
+                    return;
                 }
 
-                final String finalCode = code;
+                btnVerifyOtp.setEnabled(false);
                 VerifyOtpRequest request = new VerifyOtpRequest(userEmail, code);
                 ApiClient.getApiService().verifyOtp(request).enqueue(new Callback<AuthResponse>() {
                     @Override
                     public void onResponse(Call<AuthResponse> call, Response<AuthResponse> response) {
-                        String tokenHash = finalCode;
-                        if (response.isSuccessful() && response.body() != null && response.body().getData() != null) {
-                            tokenHash = response.body().getData().tokenHash;
+                        btnVerifyOtp.setEnabled(true);
+                        if (response.isSuccessful() && response.body() != null
+                                && response.body().getData() != null
+                                && response.body().getData().tokenHash != null
+                                && !response.body().getData().tokenHash.isEmpty()) {
                             Toast.makeText(VerifyOtpActivity.this, "Xác thực mã OTP thành công!", Toast.LENGTH_SHORT).show();
+                            navigateToResetPassword(response.body().getData().tokenHash);
                         } else {
-                            Toast.makeText(VerifyOtpActivity.this, "Đã xác thực OTP (Chế độ Demo)", Toast.LENGTH_SHORT).show();
+                            Toast.makeText(VerifyOtpActivity.this, "Mã OTP không chính xác hoặc đã hết hạn", Toast.LENGTH_LONG).show();
                         }
-                        navigateToResetPassword(tokenHash);
                     }
 
                     @Override
                     public void onFailure(Call<AuthResponse> call, Throwable t) {
-                        Toast.makeText(VerifyOtpActivity.this, "Đã xác thực OTP (Chế độ Demo)", Toast.LENGTH_SHORT).show();
-                        navigateToResetPassword(finalCode);
+                        btnVerifyOtp.setEnabled(true);
+                        Toast.makeText(VerifyOtpActivity.this, "Lỗi kết nối máy chủ: " + t.getMessage(), Toast.LENGTH_LONG).show();
                     }
                 });
             });
@@ -112,16 +132,24 @@ public class VerifyOtpActivity extends AppCompatActivity {
 
         if (tvResendCode != null) {
             tvResendCode.setOnClickListener(v -> {
+                if (userEmail.isEmpty()) {
+                    Toast.makeText(this, "Thiếu thông tin email khôi phục", Toast.LENGTH_SHORT).show();
+                    return;
+                }
                 ForgotPasswordRequest req = new ForgotPasswordRequest(userEmail);
                 ApiClient.getApiService().forgotPassword(req).enqueue(new Callback<AuthResponse>() {
                     @Override
                     public void onResponse(Call<AuthResponse> call, Response<AuthResponse> response) {
-                        Toast.makeText(VerifyOtpActivity.this, "Đã gửi lại mã OTP tới email!", Toast.LENGTH_SHORT).show();
+                        if (response.isSuccessful()) {
+                            Toast.makeText(VerifyOtpActivity.this, "Đã gửi lại mã OTP tới email!", Toast.LENGTH_SHORT).show();
+                        } else {
+                            Toast.makeText(VerifyOtpActivity.this, "Không thể gửi lại mã (mã " + response.code() + ")", Toast.LENGTH_SHORT).show();
+                        }
                     }
 
                     @Override
                     public void onFailure(Call<AuthResponse> call, Throwable t) {
-                        Toast.makeText(VerifyOtpActivity.this, "Đã gửi lại mã khôi phục", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(VerifyOtpActivity.this, "Lỗi kết nối máy chủ", Toast.LENGTH_SHORT).show();
                     }
                 });
             });

@@ -106,6 +106,7 @@
                 android:background="#E8ECF4">
 
                 <ImageView
+                    android:id="@+id/imgDishPhoto"
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
                     android:contentDescription="@string/app_name"
@@ -121,40 +122,43 @@
                 android:orientation="vertical">
 
                 <TextView
+                    android:id="@+id/tvDishCategory"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="MÓN QUÁN GỢI Ý"
+                    android:text=""
                     android:textColor="@color/primary"
                     android:textSize="12sp"
                     android:textStyle="bold" />
 
                 <TextView
+                    android:id="@+id/tvDishName"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="2dp"
-                    android:text="Phở bò đặc biệt"
+                    android:text="Đang tải..."
                     android:textColor="@color/text_dark"
                     android:textSize="22sp"
                     android:textStyle="bold" />
 
                 <TextView
+                    android:id="@+id/tvDishPrice"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="4dp"
-                    android:text="75.000 đ"
+                    android:text=""
                     android:textColor="@color/primary"
                     android:textSize="20sp"
                     android:textStyle="bold" />
 
                 <TextView
+                    android:id="@+id/tvDishDesc"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="6dp"
-                    android:text="Tái, nạm, gầu, gân; nước dùng đậm đà."
+                    android:text=""
                     android:textColor="@color/text_gray"
                     android:textSize="14sp" />
 
-                <!-- Secondary Save Dish Button -->
                 <TextView
                     android:id="@+id/btnSaveDish"
                     android:layout_width="wrap_content"
@@ -165,7 +169,7 @@
                     android:focusable="true"
                     android:paddingHorizontal="20dp"
                     android:paddingVertical="10dp"
-                    android:text="🔖 Lưu món"
+                    android:text="🔍 Tìm bài viết về món"
                     android:textColor="@color/text_dark"
                     android:textSize="14sp"
                     android:textStyle="bold" />
@@ -189,27 +193,30 @@
                     android:textStyle="bold" />
 
                 <TextView
+                    android:id="@+id/tvServeStoreName"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="6dp"
-                    android:text="Quán Phở Bò Gia Truyền 1986"
+                    android:text=""
                     android:textColor="@color/text_dark"
                     android:textSize="15sp"
                     android:textStyle="bold" />
 
                 <TextView
+                    android:id="@+id/tvServeStoreAddress"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="2dp"
-                    android:text="📍 Ba Đình, Hà Nội"
+                    android:text=""
                     android:textColor="@color/text_gray"
                     android:textSize="13sp" />
 
                 <TextView
+                    android:id="@+id/tvServeStoreRating"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="2dp"
-                    android:text="★ 4.9 điểm quán • Hơn 420 đánh giá"
+                    android:text=""
                     android:textColor="@color/text_gray"
                     android:textSize="13sp" />
 
@@ -243,43 +250,23 @@
                     android:textSize="16sp"
                     android:textStyle="bold" />
 
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="4dp"
-                    android:text="Cảm nhận minh họa về món"
-                    android:textColor="@color/text_gray"
-                    android:textSize="12sp" />
-
-                <TextView
+                <LinearLayout
+                    android:id="@+id/layoutDishReviewsContainer"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="10dp"
-                    android:background="@drawable/bg_info_box"
-                    android:lineSpacingExtra="2dp"
-                    android:padding="12dp"
-                    android:text="&quot;Phần thịt đa dạng, thích nhất là gân dai nhẹ và nước dùng đậm vị.&quot;"
-                    android:textColor="@color/text_dark"
-                    android:textSize="13sp" />
+                    android:layout_marginTop="8dp"
+                    android:orientation="vertical" />
 
                 <TextView
+                    android:id="@+id/tvEmptyDishReviews"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="10dp"
-                    android:lineSpacingExtra="2dp"
-                    android:text="Điểm 4.9 ở trên thuộc về quán, không phải điểm riêng của món này."
+                    android:layout_marginTop="8dp"
+                    android:text="Chưa có đánh giá nào từ thực khách."
                     android:textColor="@color/text_gray"
-                    android:textSize="12sp" />
+                    android:textSize="13sp"
+                    android:visibility="gone" />
             </LinearLayout>
-
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="16dp"
-                android:gravity="center"
-                android:text="Thực đơn minh họa. Giá có thể thay đổi; vui lòng xác nhận với quán khi gọi món."
-                android:textColor="@color/text_gray"
-                android:textSize="12sp" />
 
         </LinearLayout>
     </ScrollView>

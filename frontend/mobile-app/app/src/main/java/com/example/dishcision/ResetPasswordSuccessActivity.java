@@ -44,10 +44,12 @@ public class ResetPasswordSuccessActivity extends AppCompatActivity {
     }
 
     private void setupData() {
-        if (getIntent() != null && getIntent().hasExtra(EXTRA_EMAIL)) {
-            String passedEmail = getIntent().getStringExtra(EXTRA_EMAIL);
-            if (passedEmail != null && !passedEmail.isEmpty() && tvAccountSummary != null) {
-                tvAccountSummary.setText("ℹ️ Tài khoản khôi phục: " + passedEmail);
+        if (tvAccountSummary != null) {
+            String passedEmail = getIntent() != null ? getIntent().getStringExtra(EXTRA_EMAIL) : null;
+            if (passedEmail != null && !passedEmail.trim().isEmpty()) {
+                tvAccountSummary.setText("ℹ️ Tài khoản khôi phục: " + passedEmail.trim());
+            } else {
+                tvAccountSummary.setText("ℹ️ Tài khoản đã được khôi phục thành công.");
             }
         }
     }

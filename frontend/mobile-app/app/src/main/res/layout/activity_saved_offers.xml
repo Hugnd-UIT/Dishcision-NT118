@@ -87,6 +87,7 @@
                     android:textStyle="bold" />
 
                 <TextView
+                    android:id="@+id/tvOffersCountBadge"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_alignParentEnd="true"
@@ -94,17 +95,17 @@
                     android:background="@drawable/bg_badge_expert"
                     android:paddingHorizontal="10dp"
                     android:paddingVertical="4dp"
-                    android:text="4 ưu đãi"
+                    android:text="0 ưu đãi"
                     android:textColor="@color/primary"
                     android:textSize="12sp"
                     android:textStyle="bold" />
 
                 <TextView
+                    android:id="@+id/tvProfileNameHandle"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_below="@id/tvBannerTitle"
                     android:layout_marginTop="2dp"
-                    android:id="@+id/tvProfileNameHandle"
                     android:text=""
                     android:textColor="@color/text_gray"
                     android:textSize="13sp" />
@@ -122,229 +123,73 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:lineSpacingExtra="2dp"
-                    android:text="ℹ️ 4 thẻ dưới đây là minh họa, không phải mã ưu đãi có hiệu lực. Hãy xem và xác nhận điều kiện với quán trước khi dùng."
+                    android:text="Chạm vào mã ưu đãi để sao chép và xác nhận điều kiện áp dụng trực tiếp với quán."
                     android:textColor="#555555"
                     android:textSize="12sp" />
             </LinearLayout>
 
-            <!-- Offer Card 1 -->
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="16dp"
-                android:background="@drawable/bg_card"
-                android:orientation="vertical"
-                android:padding="16dp">
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Lẩu &amp; món chay"
-                    android:textColor="@color/text_gray"
-                    android:textSize="12sp" />
-
-                <RelativeLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="2dp">
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_alignParentStart="true"
-                        android:text="Ưu đãi món lẩu"
-                        android:textColor="@color/text_dark"
-                        android:textSize="17sp"
-                        android:textStyle="bold" />
-
-                    <ImageView
-                        android:layout_width="20dp"
-                        android:layout_height="20dp"
-                        android:layout_alignParentEnd="true"
-                        android:contentDescription="@string/app_name"
-                        android:src="@drawable/ic_bookmark" />
-                </RelativeLayout>
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="2dp"
-                    android:text="Bếp Lục Nam"
-                    android:textColor="@color/text_gray"
-                    android:textSize="13sp" />
-
-                <RelativeLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="12dp">
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_alignParentStart="true"
-                        android:text="Thẻ minh họa"
-                        android:textColor="@color/text_gray"
-                        android:textSize="12sp" />
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_alignParentEnd="true"
-                        android:text="Xem điều kiện ➔"
-                        android:textColor="@color/primary"
-                        android:textSize="13sp"
-                        android:textStyle="bold" />
-                </RelativeLayout>
-            </LinearLayout>
-
-            <!-- Offer Card 2 -->
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="12dp"
-                android:background="@drawable/bg_card"
-                android:orientation="vertical"
-                android:padding="16dp">
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Phở &amp; món nước"
-                    android:textColor="@color/text_gray"
-                    android:textSize="12sp" />
-
-                <RelativeLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="2dp">
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_alignParentStart="true"
-                        android:text="Ưu đãi bữa sáng"
-                        android:textColor="@color/text_dark"
-                        android:textSize="17sp"
-                        android:textStyle="bold" />
-
-                    <ImageView
-                        android:layout_width="20dp"
-                        android:layout_height="20dp"
-                        android:layout_alignParentEnd="true"
-                        android:contentDescription="@string/app_name"
-                        android:src="@drawable/ic_bookmark" />
-                </RelativeLayout>
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="2dp"
-                    android:text="Quán Phở Bò Gia Truyền 1986"
-                    android:textColor="@color/text_gray"
-                    android:textSize="13sp" />
-
-                <RelativeLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="12dp">
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_alignParentStart="true"
-                        android:text="Thẻ minh họa"
-                        android:textColor="@color/text_gray"
-                        android:textSize="12sp" />
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_alignParentEnd="true"
-                        android:text="Xem điều kiện ➔"
-                        android:textColor="@color/primary"
-                        android:textSize="13sp"
-                        android:textStyle="bold" />
-                </RelativeLayout>
-            </LinearLayout>
-
-            <!-- Offer Card 3 -->
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="12dp"
-                android:background="@drawable/bg_card"
-                android:orientation="vertical"
-                android:padding="16dp">
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Trà &amp; cà phê"
-                    android:textColor="@color/text_gray"
-                    android:textSize="12sp" />
-
-                <RelativeLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="2dp">
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_alignParentStart="true"
-                        android:text="Ưu đãi đồ uống"
-                        android:textColor="@color/text_dark"
-                        android:textSize="17sp"
-                        android:textStyle="bold" />
-
-                    <ImageView
-                        android:layout_width="20dp"
-                        android:layout_height="20dp"
-                        android:layout_alignParentEnd="true"
-                        android:contentDescription="@string/app_name"
-                        android:src="@drawable/ic_bookmark" />
-                </RelativeLayout>
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="2dp"
-                    android:text="Trà Mùa Thu"
-                    android:textColor="@color/text_gray"
-                    android:textSize="13sp" />
-
-                <RelativeLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="12dp">
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_alignParentStart="true"
-                        android:text="Thẻ minh họa"
-                        android:textColor="@color/text_gray"
-                        android:textSize="12sp" />
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_alignParentEnd="true"
-                        android:text="Xem điều kiện ➔"
-                        android:textColor="@color/primary"
-                        android:textSize="13sp"
-                        android:textStyle="bold" />
-                </RelativeLayout>
-            </LinearLayout>
+            <ProgressBar
+                android:id="@+id/progressBarOffers"
+                android:layout_width="28dp"
+                android:layout_height="28dp"
+                android:layout_gravity="center_horizontal"
+                android:layout_marginVertical="16dp"
+                android:indeterminateTint="@color/primary"
+                android:visibility="gone" />
 
             <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:text="Ưu đãi bạn đã lưu"
+                android:textColor="@color/text_dark"
+                android:textSize="16sp"
+                android:textStyle="bold" />
+
+            <LinearLayout
+                android:id="@+id/containerSavedOffers"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="20dp"
+                android:orientation="vertical" />
+
+            <TextView
+                android:id="@+id/tvSavedOffersEmpty"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:background="@drawable/bg_card"
                 android:gravity="center"
-                android:text="Đã hiển thị đủ 4 ưu đãi đã lưu."
+                android:padding="16dp"
+                android:text="Bạn chưa lưu ưu đãi nào. Hãy lưu bài viết có mã ưu đãi để dùng nhanh tại đây."
                 android:textColor="@color/text_gray"
-                android:textSize="12sp" />
+                android:textSize="13sp"
+                android:visibility="gone" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="20dp"
+                android:text="Ưu đãi đang có trên Dishcision"
+                android:textColor="@color/text_dark"
+                android:textSize="16sp"
+                android:textStyle="bold" />
+
+            <LinearLayout
+                android:id="@+id/containerCommunityOffers"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical" />
+
+            <TextView
+                android:id="@+id/tvCommunityOffersEmpty"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:gravity="center"
+                android:text="Hiện chưa có bài viết ưu đãi mới nào."
+                android:textColor="@color/text_gray"
+                android:textSize="13sp"
+                android:visibility="gone" />
 
         </LinearLayout>
     </ScrollView>

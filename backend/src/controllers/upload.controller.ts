@@ -5,8 +5,10 @@ export function handleUploadedFile(req: Request, file: Express.Multer.File) {
   const isVideo = file.mimetype.startsWith('video/');
   const folder = isVideo ? 'videos' : 'images';
   const relativeUrl = `/uploads/${folder}/${file.filename}`;
-  const host = req.get('host') || 'localhost:3000';
-  const protocol = req.protocol || 'http';
+  const forwardedHost = req.get('x-forwarded-host')?.split(',')[0]?.trim();
+  const host = forwardedHost || req.get('host') || 'localhost:3000';
+  const forwardedProto = req.get('x-forwarded-proto')?.split(',')[0]?.trim();
+  const protocol = forwardedProto || req.protocol || 'http';
   const fullUrl = `${protocol}://${host}${relativeUrl}`;
 
   return {

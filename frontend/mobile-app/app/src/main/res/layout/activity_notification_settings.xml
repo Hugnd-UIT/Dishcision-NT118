@@ -260,7 +260,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="2dp"
                     android:layout_marginBottom="8dp"
-                    android:text="Các loại bên dưới chỉ áp dụng trong Dishcision. Giá trị chi tiết là minh họa."
+                    android:text="Các loại bên dưới chỉ áp dụng cho thông báo trong Dishcision."
                     android:textColor="#8E7570"
                     android:textSize="12sp" />
 

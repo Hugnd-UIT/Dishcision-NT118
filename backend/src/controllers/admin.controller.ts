@@ -4,7 +4,7 @@ import { successResponse, paginatedResponse, errorResponse } from '../utils/resp
 import { AuthRequest } from '../middlewares/auth.middleware';
 import { formatUserPrivate } from './user.controller';
 import { formatPost, POST_INCLUDE } from './post.controller';
-import { AccountStatus, Role, PostStatus, ReportStatus, ReportPriority, AuditTargetType } from '@prisma/client';
+import { AccountStatus, Role, PostStatus, ReportStatus, ReportPriority, AuditTargetType, Prisma } from '@prisma/client';
 
 // ── GET /admin/users ──────────────────────
 
@@ -413,8 +413,9 @@ export async function getAIStats(req: AuthRequest, res: Response): Promise<void>
     if (to) where.createdAt.lte = to;
   }
 
-  const [totalRequests, requestsWithFeedback, avgRatingResult] = await Promise.all([
+  const [totalRequests, failedRequests, requestsWithFeedback, avgRatingResult] = await Promise.all([
     prisma.aIRequest.count({ where }),
+    prisma.aIRequest.count({ where: { ...where, resultJson: { equals: Prisma.DbNull } } }),
     prisma.aIRequest.count({ where: { ...where, feedbackRating: { not: null } } }),
     prisma.aIRequest.aggregate({
       where: { ...where, feedbackRating: { not: null } },
@@ -442,15 +443,12 @@ export async function getAIStats(req: AuthRequest, res: Response): Promise<void>
 
   successResponse(res, {
     totalRequests,
-    errorRate: 0.023,
+    errorRate: totalRequests > 0 ? Math.round((failedRequests / totalRequests) * 1000) / 1000 : 0,
     avgRating: avgRatingResult._avg.feedbackRating
       ? Math.round(avgRatingResult._avg.feedbackRating * 10) / 10
-      : 4.2,
+      : 0,
     feedbackCount: requestsWithFeedback,
-    topMoodKeywords:
-      topMoodKeywords.length > 0
-        ? topMoodKeywords
-        : ['sad', 'craving spicy', 'eating alone'],
+    topMoodKeywords,
   });
 }
 

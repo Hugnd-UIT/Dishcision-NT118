@@ -21,6 +21,7 @@ RUN addgroup --system --gid 1001 nodejs && \
     adduser --system --uid 1001 appuser
 
 COPY --from=deps /app/node_modules* ./node_modules/
+COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
 COPY --from=builder /app/dist* ./dist/
 COPY --from=builder /app/prisma* ./prisma/
 COPY package*.json ./

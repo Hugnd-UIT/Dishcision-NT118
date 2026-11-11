@@ -142,7 +142,7 @@ public class EditProfileActivity extends AppCompatActivity {
         String extraAvatar = intent.getStringExtra("AVATAR_URL");
 
         SharedPreferences prefs = getSharedPreferences("DishcisionPrefs", MODE_PRIVATE);
-        initialCity = prefs.getString("user_city", "TP. Hồ Chí Minh");
+        initialCity = prefs.getString("user_city", "");
         if (edtCity != null) {
             edtCity.setText(initialCity);
         }
@@ -392,11 +392,13 @@ public class EditProfileActivity extends AppCompatActivity {
         String currentName = edtDisplayName != null ? edtDisplayName.getText().toString().trim() : "";
         String currentUsername = edtUsername != null ? edtUsername.getText().toString().trim().replace("@", "") : "";
         String currentBioText = edtBio != null ? edtBio.getText().toString().trim() : "";
+        String currentCity = edtCity != null ? edtCity.getText().toString().trim() : "";
         boolean avatarModified = !currentAvatarUrl.equals(initialAvatarUrl);
 
         return !currentName.equals(initialFullName)
                 || !currentUsername.equals(initialUsername)
                 || !currentBioText.equals(initialBio)
+                || !currentCity.equals(initialCity)
                 || avatarModified;
     }
 
@@ -454,7 +456,10 @@ public class EditProfileActivity extends AppCompatActivity {
                     }
 
                     if (response.isSuccessful() && response.body() != null && response.body().data != null) {
-                        currentAvatarUrl = response.body().data.url;
+                        String rawUrl = (response.body().data.url != null && !response.body().data.url.isEmpty())
+                                ? response.body().data.url
+                                : response.body().data.fullUrl;
+                        currentAvatarUrl = ApiClient.normalizeMediaUrl(rawUrl);
                         Toast.makeText(EditProfileActivity.this, "Tải ảnh đại diện lên thành công!", Toast.LENGTH_SHORT).show();
                     } else if (response.code() == 401) {
                         Toast.makeText(EditProfileActivity.this, "Phiên đăng nhập hết hạn, vui lòng đăng nhập lại!", Toast.LENGTH_LONG).show();
@@ -485,7 +490,12 @@ public class EditProfileActivity extends AppCompatActivity {
     private void validateAndSave() {
         if (isSaving) return;
 
-        if (!tokenManager.isLoggedIn() || (tokenManager.getToken() != null && tokenManager.getToken().startsWith("google_token_")) || "demo_token".equals(tokenManager.getToken())) {
+        if (isUploadingAvatar) {
+            Toast.makeText(this, "Ảnh đại diện đang tải lên, vui lòng đợi...", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        if (!tokenManager.isLoggedIn()) {
             new AlertDialog.Builder(this)
                     .setTitle("Cần đăng nhập")
                     .setMessage("Bạn chưa có phiên đăng nhập hợp lệ hoặc phiên đã hết hạn. Vui lòng đăng nhập tài khoản để lưu thông tin.")
@@ -534,10 +544,13 @@ public class EditProfileActivity extends AppCompatActivity {
             return;
         }
 
-        // Save city locally
+        SharedPreferences.Editor localPrefEditor = getSharedPreferences("DishcisionPrefs", MODE_PRIVATE).edit();
         if (!city.isEmpty()) {
-            getSharedPreferences("DishcisionPrefs", MODE_PRIVATE).edit().putString("user_city", city).apply();
+            localPrefEditor.putString("user_city", city);
+        } else {
+            localPrefEditor.remove("user_city");
         }
+        localPrefEditor.apply();
 
         isSaving = true;
         if (btnSave != null) {
@@ -568,6 +581,14 @@ public class EditProfileActivity extends AppCompatActivity {
                 }
 
                 if (response.isSuccessful()) {
+                    SharedPreferences.Editor editor = getSharedPreferences("DishcisionPrefs", MODE_PRIVATE).edit();
+                    editor.putString("user_name", name);
+                    editor.putString("user_username", username);
+                    if (!currentAvatarUrl.isEmpty()) {
+                        editor.putString("avatar_url", currentAvatarUrl);
+                    }
+                    editor.apply();
+                    tokenManager.saveAuthData(null, 0, null, name);
                     Toast.makeText(EditProfileActivity.this, "Đã lưu thay đổi hồ sơ thành công!", Toast.LENGTH_SHORT).show();
                     setResult(RESULT_OK);
                     finish();

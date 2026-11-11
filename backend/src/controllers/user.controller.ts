@@ -2,22 +2,38 @@ import { Response } from 'express';
 import { prisma } from '../config/prisma';
 import { redis, getCache, setCache, delCache, CACHE_TTL } from '../config/redis';
 import { successResponse, paginatedResponse, errorResponse } from '../utils/response';
+import { parsePagination, parsePositiveInt } from '../utils/http';
 import { AuthRequest } from '../middlewares/auth.middleware';
-import { getExpiresIn, verifyAccessToken } from '../utils/auth';
+import { getExpiresIn } from '../utils/auth';
 
 const USER_PUBLIC_SELECT = {
-  id: true, username: true, fullName: true, avatarUrl: true, bio: true, role: true,
-  _count: { select: { followers: true, following: true, posts: true } },
+  id: true,
+  username: true,
+  fullName: true,
+  avatarUrl: true,
+  bio: true,
+  role: true,
+  _count: {
+    select: {
+      followers: true,
+      following: true,
+      posts: { where: { status: 'Active' as const } },
+    },
+  },
 };
 
 export function formatUser(user: any) {
-  const { id, _count, preferences, ...rest } = user;
+  const { id, username, fullName, avatarUrl, bio, role, _count, preferences } = user;
   const prefNames = preferences
     ? preferences.map((up: any) => (up.preference ? up.preference.name : up.name || up)).filter(Boolean)
     : [];
   return {
     userId: id,
-    ...rest,
+    username,
+    fullName,
+    avatarUrl,
+    bio,
+    role,
     preferences: prefNames,
     postsCount: _count?.posts ?? 0,
     followersCount: _count?.followers ?? 0,
@@ -32,6 +48,7 @@ export function formatUserPrivate(user: any) {
     gender: user.gender,
     dateOfBirth: user.dateOfBirth,
     accountStatus: user.accountStatus,
+    isGoogleAccount: !user.passwordHash,
     createdAt: user.createdAt,
   };
 }
@@ -39,25 +56,21 @@ export function formatUserPrivate(user: any) {
 // ── GET /users/me ─────────────────────────
 
 export async function getMe(req: AuthRequest, res: Response): Promise<void> {
-  const userId = req.user?.userId || 11;
+  const userId = req.user!.userId;
 
-  let user = await prisma.user.findUnique({
+  const user = await prisma.user.findUnique({
     where: { id: userId },
     include: {
-      _count: { select: { followers: true, following: true, posts: true } },
+      _count: {
+        select: {
+          followers: true,
+          following: true,
+          posts: { where: { status: 'Active' } },
+        },
+      },
       preferences: { include: { preference: true } },
     },
   });
-
-  if (!user) {
-    user = await prisma.user.findFirst({
-      where: { role: 'User' },
-      include: {
-        _count: { select: { followers: true, following: true, posts: true } },
-        preferences: { include: { preference: true } },
-      },
-    });
-  }
 
   if (!user) {
     errorResponse(res, 'User not found', 404);
@@ -72,7 +85,15 @@ export async function getMe(req: AuthRequest, res: Response): Promise<void> {
 export async function updateMe(req: AuthRequest, res: Response): Promise<void> {
   const userId = req.user!.userId;
   const { username, fullName, bio, gender, dateOfBirth, avatarUrl, preferences } = req.body;
-  console.log('updateMe userId:', userId, 'preferences:', preferences);
+
+  let parsedDob: Date | undefined;
+  if (dateOfBirth !== undefined && dateOfBirth !== null && dateOfBirth !== '') {
+    parsedDob = new Date(dateOfBirth);
+    if (Number.isNaN(parsedDob.getTime())) {
+      errorResponse(res, 'Ngày sinh không hợp lệ', 400);
+      return;
+    }
+  }
 
   if (username) {
     const existing = await prisma.user.findFirst({
@@ -99,7 +120,7 @@ export async function updateMe(req: AuthRequest, res: Response): Promise<void> {
     await prisma.userPreference.deleteMany({ where: { userId } });
     if (prefIds.length > 0) {
       await prisma.userPreference.createMany({
-        data: prefIds.map(preferenceId => ({ userId, preferenceId })),
+        data: prefIds.map((preferenceId) => ({ userId, preferenceId })),
         skipDuplicates: true,
       });
     }
@@ -112,11 +133,17 @@ export async function updateMe(req: AuthRequest, res: Response): Promise<void> {
       fullName,
       bio,
       gender,
-      dateOfBirth: dateOfBirth ? new Date(dateOfBirth) : undefined,
-      avatarUrl,
+      dateOfBirth: parsedDob,
+      avatarUrl: avatarUrl === '' ? null : avatarUrl,
     },
     include: {
-      _count: { select: { followers: true, following: true } },
+      _count: {
+        select: {
+          followers: true,
+          following: true,
+          posts: { where: { status: 'Active' } },
+        },
+      },
       preferences: { include: { preference: true } },
     },
   });
@@ -128,35 +155,73 @@ export async function updateMe(req: AuthRequest, res: Response): Promise<void> {
 // ── GET /users/:userId ────────────────────
 
 export async function getUserById(req: AuthRequest, res: Response): Promise<void> {
-  const userId = parseInt(req.params.userId);
+  const userId = parsePositiveInt(req.params.userId);
+  if (!userId) {
+    errorResponse(res, 'Invalid user ID', 400);
+    return;
+  }
 
   const cacheKey = `user:${userId}`;
-  const cached = await getCache(cacheKey);
-  if (cached) { successResponse(res, cached); return; }
+  let baseProfile = await getCache<ReturnType<typeof formatUser>>(cacheKey);
 
-  const user = await prisma.user.findUnique({
-    where: { id: userId },
-    select: USER_PUBLIC_SELECT,
-  });
-  if (!user) { errorResponse(res, 'User not found', 404); return; }
+  if (!baseProfile) {
+    const user = await prisma.user.findUnique({
+      where: { id: userId, accountStatus: 'Active' },
+      select: USER_PUBLIC_SELECT,
+    });
+    if (!user) {
+      errorResponse(res, 'User not found', 404);
+      return;
+    }
+    baseProfile = formatUser(user);
+    await setCache(cacheKey, baseProfile, CACHE_TTL.USER_PROFILE);
+  }
 
-  const formatted = formatUser(user);
-  await setCache(cacheKey, formatted, CACHE_TTL.USER_PROFILE);
-  successResponse(res, formatted);
+  let isFollowing = false;
+  if (req.user?.userId && req.user.userId !== userId) {
+    const follow = await prisma.follow.findUnique({
+      where: {
+        followerId_followingId: {
+          followerId: req.user.userId,
+          followingId: userId,
+        },
+      },
+      select: { followerId: true },
+    });
+    isFollowing = Boolean(follow);
+  }
+
+  successResponse(res, { ...baseProfile, isFollowing });
 }
 
 // ── GET /users/:userId/posts ──────────────
 
 export async function getUserPosts(req: AuthRequest, res: Response): Promise<void> {
   const isMe = req.params.userId === 'me' || !req.params.userId;
-  const userId = isMe ? (req.user?.userId || 11) : (parseInt(req.params.userId) || 11);
-  const page = parseInt(req.query.page as string) || 1;
-  const limit = parseInt(req.query.limit as string) || 10;
-  const skip = (page - 1) * limit;
+  let targetUserId: number | null = null;
+  if (isMe) {
+    if (!req.user?.userId) {
+      errorResponse(res, 'Authentication required', 401);
+      return;
+    }
+    targetUserId = req.user.userId;
+  } else {
+    targetUserId = parsePositiveInt(req.params.userId);
+    if (!targetUserId) {
+      errorResponse(res, 'Invalid user ID', 400);
+      return;
+    }
+  }
 
-  let [posts, total] = await Promise.all([
+  const { page, limit, skip } = parsePagination(req.query, 10, 100);
+  const requestedStatus = typeof req.query.status === 'string' ? req.query.status : 'Active';
+  const postStatus = isMe && (requestedStatus === 'Active' || requestedStatus === 'Hidden')
+    ? requestedStatus
+    : 'Active';
+
+  const [posts, total] = await Promise.all([
     prisma.post.findMany({
-      where: { authorId: userId, status: 'Active' },
+      where: { authorId: targetUserId, status: postStatus },
       include: {
         author: { select: USER_PUBLIC_SELECT },
         images: true,
@@ -166,43 +231,42 @@ export async function getUserPosts(req: AuthRequest, res: Response): Promise<voi
       skip,
       take: limit,
     }),
-    prisma.post.count({ where: { authorId: userId, status: 'Active' } }),
+    prisma.post.count({ where: { authorId: targetUserId, status: postStatus } }),
   ]);
 
-  if (posts.length === 0) {
-    [posts, total] = await Promise.all([
-      prisma.post.findMany({
-        where: { status: 'Active' },
-        include: {
-          author: { select: USER_PUBLIC_SELECT },
-          images: true,
-          _count: { select: { likes: true, comments: true, shares: true } },
-        },
-        orderBy: { createdAt: 'desc' },
-        skip,
-        take: limit,
-      }),
-      prisma.post.count({ where: { status: 'Active' } }),
-    ]);
-  }
-
-  const formatted = await attachSavedFlags(posts.map(formatPost), req.user?.userId);
+  const formatted = await attachPostFlags(posts.map(formatPost), req.user?.userId);
   paginatedResponse(res, formatted, { page, limit, total });
 }
 
-/** Adds `isSaved` to each formatted post for the signed-in user (false for guests). */
-export async function attachSavedFlags<T extends { postId: number }>(
+/** Adds `isSaved` and `isLiked` to each formatted post for the signed-in user. */
+export async function attachPostFlags<T extends { postId: number }>(
   posts: T[],
   userId?: number,
-): Promise<(T & { isSaved: boolean })[]> {
-  if (!userId || posts.length === 0) return posts.map((p) => ({ ...p, isSaved: false }));
-  const saved = await prisma.savedPost.findMany({
-    where: { userId, postId: { in: posts.map((p) => p.postId) } },
-    select: { postId: true },
-  });
+): Promise<(T & { isSaved: boolean; isLiked: boolean })[]> {
+  if (!userId || posts.length === 0) {
+    return posts.map((p) => ({ ...p, isSaved: false, isLiked: false }));
+  }
+  const postIds = posts.map((p) => p.postId);
+  const [saved, liked] = await Promise.all([
+    prisma.savedPost.findMany({
+      where: { userId, postId: { in: postIds } },
+      select: { postId: true },
+    }),
+    prisma.postLike.findMany({
+      where: { userId, postId: { in: postIds } },
+      select: { postId: true },
+    }),
+  ]);
   const savedIds = new Set(saved.map((s) => s.postId));
-  return posts.map((p) => ({ ...p, isSaved: savedIds.has(p.postId) }));
+  const likedIds = new Set(liked.map((l) => l.postId));
+  return posts.map((p) => ({
+    ...p,
+    isSaved: savedIds.has(p.postId),
+    isLiked: likedIds.has(p.postId),
+  }));
 }
+
+export const attachSavedFlags = attachPostFlags;
 
 export function formatPost(post: any) {
   const { id, _count, author, ...rest } = post;
@@ -218,86 +282,117 @@ export function formatPost(post: any) {
 
 // ── Privacy & Blocked/Restricted Accounts ─────────
 
-const DEFAULT_PRIVACY = {
-  newPosts: 'friends',
-  profileInfo: 'only_me',
-  followingList: 'friends',
-  findEmail: 'no_one',
-  friendRequests: 'friends_of_friends',
-  messages: 'friends',
-  comments: 'friends',
-};
+const PRIVACY_KEYS = new Set([
+  'newPosts',
+  'profileInfo',
+  'followingList',
+  'findEmail',
+  'friendRequests',
+  'messages',
+  'comments',
+]);
 
-const DEFAULT_BLOCKED = [
-  { id: 1, name: 'Minh Anh', initials: 'MA', status: 'Đã chặn' },
-  { id: 2, name: 'Hoàng Nam', initials: 'HN', status: 'Đã chặn' },
-  { id: 3, name: 'Thanh Trúc', initials: 'TT', status: 'Đã chặn' },
-];
+function formatPrivacy(row: any) {
+  return {
+    newPosts: row.newPosts,
+    profileInfo: row.profileInfo,
+    followingList: row.followingList,
+    findEmail: row.findEmail,
+    friendRequests: row.friendRequests,
+    messages: row.messages,
+    comments: row.comments,
+  };
+}
 
-const DEFAULT_RESTRICTED = [
-  { id: 101, name: 'Ngọc Linh', initials: 'NL', status: 'Đã hạn chế' },
-];
+function getInitials(name: string): string {
+  const parts = String(name || 'U').trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return 'U';
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+}
+
+async function fetchBlockedList(userId: number) {
+  const rows = await prisma.blockedAccount.findMany({
+    where: { userId },
+    include: {
+      blockedUser: {
+        select: { id: true, username: true, fullName: true, avatarUrl: true },
+      },
+    },
+    orderBy: { createdAt: 'desc' },
+  });
+  return rows.map((r) => ({
+    id: r.blockedUser.id,
+    userId: r.blockedUser.id,
+    username: r.blockedUser.username,
+    name: r.blockedUser.fullName,
+    avatarUrl: r.blockedUser.avatarUrl,
+    initials: getInitials(r.blockedUser.fullName),
+    status: 'Đã chặn',
+  }));
+}
+
+async function fetchRestrictedList(userId: number) {
+  const rows = await prisma.restrictedAccount.findMany({
+    where: { userId },
+    include: {
+      restrictedUser: {
+        select: { id: true, username: true, fullName: true, avatarUrl: true },
+      },
+    },
+    orderBy: { createdAt: 'desc' },
+  });
+  return rows.map((r) => ({
+    id: r.restrictedUser.id,
+    userId: r.restrictedUser.id,
+    username: r.restrictedUser.username,
+    name: r.restrictedUser.fullName,
+    avatarUrl: r.restrictedUser.avatarUrl,
+    initials: getInitials(r.restrictedUser.fullName),
+    status: 'Đã hạn chế',
+  }));
+}
 
 export async function getPrivacySettings(req: AuthRequest, res: Response): Promise<void> {
-  const userId = req.user?.userId || 1;
-  const raw = await redis.get(`user:${userId}:privacy`);
-
-  let privacy = DEFAULT_PRIVACY;
-  if (raw) {
-    try {
-      privacy = { ...DEFAULT_PRIVACY, ...JSON.parse(raw) };
-    } catch {
-      privacy = DEFAULT_PRIVACY;
-    }
-  } else {
-    await redis.set(`user:${userId}:privacy`, JSON.stringify(DEFAULT_PRIVACY));
-  }
+  const userId = req.user!.userId;
+  const row = await prisma.userPrivacy.upsert({
+    where: { userId },
+    create: { userId },
+    update: {},
+  });
 
   res.status(200).json({
     success: true,
-    data: privacy,
+    data: formatPrivacy(row),
     message: 'Lấy cài đặt quyền riêng tư thành công',
   });
 }
 
 export async function updatePrivacySettings(req: AuthRequest, res: Response): Promise<void> {
-  const userId = req.user?.userId || 1;
-  const updates = req.body;
-
-  const raw = await redis.get(`user:${userId}:privacy`);
-  let privacy = DEFAULT_PRIVACY;
-  if (raw) {
-    try {
-      privacy = { ...DEFAULT_PRIVACY, ...JSON.parse(raw) };
-    } catch {
-      privacy = DEFAULT_PRIVACY;
+  const userId = req.user!.userId;
+  const updates: Record<string, string> = {};
+  for (const [k, v] of Object.entries(req.body || {})) {
+    if (PRIVACY_KEYS.has(k) && typeof v === 'string' && v.trim()) {
+      updates[k] = v.trim();
     }
   }
 
-  const updatedPrivacy = { ...privacy, ...updates };
-  await redis.set(`user:${userId}:privacy`, JSON.stringify(updatedPrivacy));
+  const row = await prisma.userPrivacy.upsert({
+    where: { userId },
+    create: { userId, ...updates },
+    update: updates,
+  });
 
   res.status(200).json({
     success: true,
-    data: updatedPrivacy,
+    data: formatPrivacy(row),
     message: 'Cập nhật quyền riêng tư thành công',
   });
 }
 
 export async function getBlockedAccounts(req: AuthRequest, res: Response): Promise<void> {
-  const userId = req.user?.userId || 1;
-  const raw = await redis.get(`user:${userId}:blocked`);
-
-  let blocked = DEFAULT_BLOCKED;
-  if (raw) {
-    try {
-      blocked = JSON.parse(raw);
-    } catch {
-      blocked = DEFAULT_BLOCKED;
-    }
-  } else {
-    await redis.set(`user:${userId}:blocked`, JSON.stringify(DEFAULT_BLOCKED));
-  }
+  const userId = req.user!.userId;
+  const blocked = await fetchBlockedList(userId);
 
   res.status(200).json({
     success: true,
@@ -306,23 +401,47 @@ export async function getBlockedAccounts(req: AuthRequest, res: Response): Promi
   });
 }
 
-export async function unblockAccount(req: AuthRequest, res: Response): Promise<void> {
-  const userId = req.user?.userId || 1;
-  const { accountId } = req.body;
-
-  const raw = await redis.get(`user:${userId}:blocked`);
-  let blocked = DEFAULT_BLOCKED;
-  if (raw) {
-    try {
-      blocked = JSON.parse(raw);
-    } catch {
-      blocked = DEFAULT_BLOCKED;
-    }
+export async function blockAccount(req: AuthRequest, res: Response): Promise<void> {
+  const userId = req.user!.userId;
+  const targetId = parsePositiveInt(req.body?.accountId ?? req.body?.targetUserId ?? req.body?.userId);
+  if (!targetId || targetId === userId) {
+    errorResponse(res, 'ID tài khoản không hợp lệ', 400);
+    return;
   }
 
-  blocked = blocked.filter((item: any) => item.id !== accountId && String(item.id) !== String(accountId));
-  await redis.set(`user:${userId}:blocked`, JSON.stringify(blocked));
+  const target = await prisma.user.findUnique({ where: { id: targetId }, select: { id: true } });
+  if (!target) {
+    errorResponse(res, 'Không tìm thấy tài khoản', 404);
+    return;
+  }
 
+  await prisma.blockedAccount.upsert({
+    where: { userId_blockedUserId: { userId, blockedUserId: targetId } },
+    create: { userId, blockedUserId: targetId },
+    update: {},
+  });
+
+  const blocked = await fetchBlockedList(userId);
+  res.status(200).json({
+    success: true,
+    data: blocked,
+    message: 'Đã chặn tài khoản thành công',
+  });
+}
+
+export async function unblockAccount(req: AuthRequest, res: Response): Promise<void> {
+  const userId = req.user!.userId;
+  const targetId = parsePositiveInt(req.body?.accountId ?? req.body?.targetUserId ?? req.body?.userId);
+  if (!targetId) {
+    errorResponse(res, 'ID tài khoản không hợp lệ', 400);
+    return;
+  }
+
+  await prisma.blockedAccount.deleteMany({
+    where: { userId, blockedUserId: targetId },
+  });
+
+  const blocked = await fetchBlockedList(userId);
   res.status(200).json({
     success: true,
     data: blocked,
@@ -331,19 +450,8 @@ export async function unblockAccount(req: AuthRequest, res: Response): Promise<v
 }
 
 export async function getRestrictedAccounts(req: AuthRequest, res: Response): Promise<void> {
-  const userId = req.user?.userId || 1;
-  const raw = await redis.get(`user:${userId}:restricted`);
-
-  let restricted = DEFAULT_RESTRICTED;
-  if (raw) {
-    try {
-      restricted = JSON.parse(raw);
-    } catch {
-      restricted = DEFAULT_RESTRICTED;
-    }
-  } else {
-    await redis.set(`user:${userId}:restricted`, JSON.stringify(DEFAULT_RESTRICTED));
-  }
+  const userId = req.user!.userId;
+  const restricted = await fetchRestrictedList(userId);
 
   res.status(200).json({
     success: true,
@@ -352,23 +460,47 @@ export async function getRestrictedAccounts(req: AuthRequest, res: Response): Pr
   });
 }
 
-export async function unrestrictAccount(req: AuthRequest, res: Response): Promise<void> {
-  const userId = req.user?.userId || 1;
-  const { accountId } = req.body;
-
-  const raw = await redis.get(`user:${userId}:restricted`);
-  let restricted = DEFAULT_RESTRICTED;
-  if (raw) {
-    try {
-      restricted = JSON.parse(raw);
-    } catch {
-      restricted = DEFAULT_RESTRICTED;
-    }
+export async function restrictAccount(req: AuthRequest, res: Response): Promise<void> {
+  const userId = req.user!.userId;
+  const targetId = parsePositiveInt(req.body?.accountId ?? req.body?.targetUserId ?? req.body?.userId);
+  if (!targetId || targetId === userId) {
+    errorResponse(res, 'ID tài khoản không hợp lệ', 400);
+    return;
   }
 
-  restricted = restricted.filter((item: any) => item.id !== accountId && String(item.id) !== String(accountId));
-  await redis.set(`user:${userId}:restricted`, JSON.stringify(restricted));
+  const target = await prisma.user.findUnique({ where: { id: targetId }, select: { id: true } });
+  if (!target) {
+    errorResponse(res, 'Không tìm thấy tài khoản', 404);
+    return;
+  }
 
+  await prisma.restrictedAccount.upsert({
+    where: { userId_restrictedUserId: { userId, restrictedUserId: targetId } },
+    create: { userId, restrictedUserId: targetId },
+    update: {},
+  });
+
+  const restricted = await fetchRestrictedList(userId);
+  res.status(200).json({
+    success: true,
+    data: restricted,
+    message: 'Đã hạn chế tài khoản thành công',
+  });
+}
+
+export async function unrestrictAccount(req: AuthRequest, res: Response): Promise<void> {
+  const userId = req.user!.userId;
+  const targetId = parsePositiveInt(req.body?.accountId ?? req.body?.targetUserId ?? req.body?.userId);
+  if (!targetId) {
+    errorResponse(res, 'ID tài khoản không hợp lệ', 400);
+    return;
+  }
+
+  await prisma.restrictedAccount.deleteMany({
+    where: { userId, restrictedUserId: targetId },
+  });
+
+  const restricted = await fetchRestrictedList(userId);
   res.status(200).json({
     success: true,
     data: restricted,
@@ -377,20 +509,118 @@ export async function unrestrictAccount(req: AuthRequest, res: Response): Promis
 }
 
 
+export async function getMyActivity(req: AuthRequest, res: Response): Promise<void> {
+  const userId = req.user!.userId;
+  const typeFilter = typeof req.query.type === 'string' ? req.query.type.trim() : '';
+  const daysParam = parsePositiveInt(typeof req.query.days === 'string' ? req.query.days : undefined);
+  const since = daysParam ? new Date(Date.now() - daysParam * 24 * 60 * 60 * 1000) : undefined;
+  const dateFilter = since ? { gte: since } : undefined;
+
+  const [posts, comments, likes, reviews, saved] = await Promise.all([
+    !typeFilter || typeFilter === 'post'
+      ? prisma.post.findMany({
+          where: { authorId: userId, status: { in: ['Active', 'Hidden'] }, ...(dateFilter ? { createdAt: dateFilter } : {}) },
+          select: { id: true, content: true, locationUrl: true, status: true, createdAt: true },
+          orderBy: { createdAt: 'desc' },
+          take: 30,
+        })
+      : Promise.resolve([]),
+    !typeFilter || typeFilter === 'comment'
+      ? prisma.comment.findMany({
+          where: { authorId: userId, ...(dateFilter ? { createdAt: dateFilter } : {}) },
+          include: { post: { select: { id: true, content: true } } },
+          orderBy: { createdAt: 'desc' },
+          take: 30,
+        })
+      : Promise.resolve([]),
+    !typeFilter || typeFilter === 'like'
+      ? prisma.postLike.findMany({
+          where: { userId, ...(dateFilter ? { createdAt: dateFilter } : {}) },
+          include: { post: { select: { id: true, content: true } } },
+          orderBy: { createdAt: 'desc' },
+          take: 30,
+        })
+      : Promise.resolve([]),
+    !typeFilter || typeFilter === 'review'
+      ? prisma.review.findMany({
+          where: { authorId: userId, ...(dateFilter ? { createdAt: dateFilter } : {}) },
+          select: { id: true, restaurantName: true, rating: true, content: true, createdAt: true },
+          orderBy: { createdAt: 'desc' },
+          take: 30,
+        })
+      : Promise.resolve([]),
+    !typeFilter || typeFilter === 'save'
+      ? prisma.savedPost.findMany({
+          where: { userId, ...(dateFilter ? { createdAt: dateFilter } : {}) },
+          include: { post: { select: { id: true, content: true } } },
+          orderBy: { createdAt: 'desc' },
+          take: 30,
+        })
+      : Promise.resolve([]),
+  ]);
+
+  const items: any[] = [];
+  for (const p of posts) {
+    items.push({
+      id: `post-${p.id}`,
+      type: 'post',
+      targetId: p.id,
+      title: p.status === 'Hidden' ? 'Bạn đã lưu trữ một bài viết' : 'Bạn đã đăng một bài viết',
+      snippet: p.content,
+      createdAt: p.createdAt,
+    });
+  }
+  for (const c of comments) {
+    items.push({
+      id: `comment-${c.id}`,
+      type: 'comment',
+      targetId: c.postId,
+      title: 'Bạn đã bình luận',
+      snippet: `“${c.content}”`,
+      createdAt: c.createdAt,
+    });
+  }
+  for (const l of likes) {
+    items.push({
+      id: `like-${l.postId}`,
+      type: 'like',
+      targetId: l.postId,
+      title: 'Bạn đã thích một bài viết',
+      snippet: l.post?.content || '',
+      createdAt: l.createdAt,
+    });
+  }
+  for (const r of reviews) {
+    items.push({
+      id: `review-${r.id}`,
+      type: 'review',
+      targetId: r.id,
+      title: `Bạn đã đánh giá ${r.restaurantName} (${r.rating}★)`,
+      snippet: r.content,
+      createdAt: r.createdAt,
+    });
+  }
+  for (const s of saved) {
+    items.push({
+      id: `save-${s.postId}`,
+      type: 'save',
+      targetId: s.postId,
+      title: 'Bạn đã lưu một bài viết',
+      snippet: s.post?.content || '',
+      createdAt: s.createdAt,
+    });
+  }
+
+  items.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  successResponse(res, items.slice(0, 60));
+}
+
 // ── Delete own account ───────────────────
 // Tries a hard delete; if related rows block it (FK constraints), the account is deactivated instead
 // so it can no longer sign in. Either way the current token is revoked.
 export async function deleteMe(req: AuthRequest, res: Response): Promise<void> {
-  // Never trust the demo fallback in `authenticate` for an irreversible action:
-  // require a real, verifiable access token and take the user id from it.
-  const token = req.headers.authorization?.startsWith('Bearer ') ? req.headers.authorization.split(' ')[1] : '';
-  let userId: number;
-  try {
-    userId = verifyAccessToken(token).userId;
-  } catch {
-    errorResponse(res, 'Invalid or expired token', 401);
-    return;
-  }
+  const userId = req.user!.userId;
+  const token = req.headers.authorization?.slice(7).trim() || '';
 
   let mode: 'deleted' | 'deactivated' = 'deleted';
   try {
@@ -403,7 +633,9 @@ export async function deleteMe(req: AuthRequest, res: Response): Promise<void> {
     });
   }
 
-  await redis.set(`blacklist:${token}`, '1', 'EX', getExpiresIn());
+  if (token) {
+    await redis.set(`blacklist:${token}`, '1', 'EX', getExpiresIn());
+  }
   const keys = ['privacy', 'blocked', 'restricted', 'sessions', '2fa_enabled'].map((k) => `user:${userId}:${k}`);
   await redis.del(...keys);
 

@@ -6,7 +6,6 @@
     android:background="#F9F9FF"
     android:orientation="vertical">
 
-    <!-- Top Bar Header -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="56dp"
@@ -46,7 +45,6 @@
             app:tint="#5B403A" />
     </LinearLayout>
 
-    <!-- Scrollable Content -->
     <ScrollView
         android:layout_width="match_parent"
         android:layout_height="0dp"
@@ -60,11 +58,14 @@
             android:orientation="vertical"
             android:padding="16dp">
 
-            <!-- Selected Restaurant Card -->
             <LinearLayout
+                android:id="@+id/layoutRestaurantPicker"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:background="@drawable/bg_card_white"
+                android:clickable="true"
+                android:focusable="true"
+                android:foreground="?attr/selectableItemBackground"
                 android:orientation="vertical"
                 android:padding="16dp">
 
@@ -89,18 +90,20 @@
                         android:orientation="vertical">
 
                         <TextView
+                            android:id="@+id/tvSelectedRestaurant"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="Quán Phở Bò Gia Truyền 1986"
+                            android:text="Chọn quán ăn"
                             android:textColor="#141B2B"
                             android:textSize="15sp"
                             android:textStyle="bold" />
 
                         <TextView
+                            android:id="@+id/tvSelectedLocation"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:layout_marginTop="2dp"
-                            android:text="Ba Đình, Hà Nội"
+                            android:text="Chạm để chọn hoặc nhập tên quán"
                             android:textColor="#6B7280"
                             android:textSize="12sp" />
                     </LinearLayout>
@@ -122,13 +125,12 @@
                     android:focusable="true"
                     android:foreground="?attr/selectableItemBackground"
                     android:padding="4dp"
-                    android:text="Đổi quán"
+                    android:text="Chọn / đổi quán ăn"
                     android:textColor="#FF5A36"
                     android:textSize="12sp"
                     android:textStyle="bold" />
             </LinearLayout>
 
-            <!-- Rating Section -->
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
@@ -217,7 +219,6 @@
                 android:textSize="14sp"
                 android:textStyle="bold" />
 
-            <!-- Experience Type Section -->
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
@@ -246,6 +247,7 @@
                     android:paddingVertical="8dp">
 
                     <TextView
+                        android:id="@+id/tvChipDineIn"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="✔ Ăn tại quán"
@@ -268,6 +270,7 @@
                     android:paddingVertical="8dp">
 
                     <TextView
+                        android:id="@+id/tvChipTakeaway"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="Mang về"
@@ -276,7 +279,6 @@
                 </LinearLayout>
             </LinearLayout>
 
-            <!-- Dishes Tried Section -->
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
@@ -300,13 +302,14 @@
                     android:layout_height="match_parent"
                     android:layout_weight="1"
                     android:background="@null"
+                    android:hint="VD: Phở tái lăn, trà đá..."
                     android:inputType="text"
-                    android:text="Phở bò đặc biệt"
+                    android:text=""
                     android:textColor="#141B2B"
+                    android:textColorHint="#8E7570"
                     android:textSize="14sp" />
             </LinearLayout>
 
-            <!-- Feedback Content Section -->
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
@@ -323,14 +326,15 @@
                 android:layout_marginTop="8dp"
                 android:background="@drawable/bg_card_white"
                 android:gravity="top|start"
+                android:hint="Chia sẻ cảm nhận về món ăn, không gian và phục vụ..."
                 android:inputType="textMultiLine"
-                android:minHeight="90dp"
+                android:minHeight="96dp"
                 android:padding="12dp"
-                android:text="Nước dùng đậm đà, thịt bò mềm. Mình thích phần gân và rau thơm ăn kèm. Lần sau sẽ thử thêm quẩy giòn."
+                android:text=""
                 android:textColor="#141B2B"
+                android:textColorHint="#8E7570"
                 android:textSize="14sp" />
 
-            <!-- Photo Upload Section -->
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
@@ -353,13 +357,16 @@
                 android:paddingHorizontal="16dp">
 
                 <ImageView
-                    android:layout_width="22dp"
-                    android:layout_height="22dp"
+                    android:id="@+id/imgUploadedPreview"
+                    android:layout_width="36dp"
+                    android:layout_height="36dp"
                     android:contentDescription="Photo Upload"
-                    android:src="@drawable/ic_image"
-                    app:tint="#8E7570" />
+                    android:padding="4dp"
+                    android:scaleType="centerCrop"
+                    android:src="@drawable/ic_image" />
 
                 <TextView
+                    android:id="@+id/tvUploadPhotoStatus"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginStart="10dp"
@@ -368,7 +375,6 @@
                     android:textSize="13sp" />
             </LinearLayout>
 
-            <!-- Disclaimer Banner -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -389,17 +395,17 @@
                     android:layout_height="wrap_content"
                     android:layout_marginStart="10dp"
                     android:layout_weight="1"
-                    android:text="Chia sẻ cảm nhận từ trải nghiệm của bạn; tránh thông tin cá nhân của người khác."
+                    android:text="Chia sẻ cảm nhận từ trải nghiệm thực tế của bạn; tránh thông tin cá nhân của người khác."
                     android:textColor="#505568"
                     android:textSize="12sp" />
             </LinearLayout>
 
-            <!-- Submit Button & Note -->
             <LinearLayout
                 android:id="@+id/btnSubmitReview"
                 android:layout_width="match_parent"
                 android:layout_height="50dp"
                 android:layout_marginTop="20dp"
+                android:layout_marginBottom="20dp"
                 android:background="@drawable/bg_button_orange"
                 android:clickable="true"
                 android:focusable="true"
@@ -415,6 +421,7 @@
                     app:tint="#FFFFFF" />
 
                 <TextView
+                    android:id="@+id/tvSubmitReviewLabel"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginStart="8dp"
@@ -423,16 +430,6 @@
                     android:textSize="16sp"
                     android:textStyle="bold" />
             </LinearLayout>
-
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
-                android:layout_marginBottom="20dp"
-                android:gravity="center"
-                android:text="Bản nháp minh họa · Chưa đăng"
-                android:textColor="#8E7570"
-                android:textSize="11sp" />
         </LinearLayout>
     </ScrollView>
 </LinearLayout>

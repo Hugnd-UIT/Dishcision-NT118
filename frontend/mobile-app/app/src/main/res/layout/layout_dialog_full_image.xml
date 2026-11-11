@@ -3,41 +3,39 @@
     android:id="@+id/main_full_image"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#DD000000">
+    android:background="@android:color/black">
 
-    <!-- Top Bar with Close Button -->
-    <RelativeLayout
-        android:id="@+id/topBar"
-        android:layout_width="match_parent"
-        android:layout_height="56dp"
-        android:layout_alignParentTop="true"
-        android:paddingHorizontal="16dp">
-
-        <ImageView
-            android:id="@+id/btnCloseFullImage"
-            android:layout_width="32dp"
-            android:layout_height="32dp"
-            android:layout_alignParentEnd="true"
-            android:layout_centerVertical="true"
-            android:background="@drawable/bg_heart_circle"
-            android:clickable="true"
-            android:focusable="true"
-            android:padding="6dp"
-            android:src="@drawable/ic_close" />
-    </RelativeLayout>
-
-    <!-- Main Fullscreen Photo -->
     <ImageView
         android:id="@+id/imgFullPhoto"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:layout_above="@id/bottomCaption"
-        android:layout_below="@id/topBar"
         android:contentDescription="@string/app_name"
-        android:scaleType="fitCenter"
-        android:src="@drawable/logo" />
+        android:scaleType="fitCenter" />
 
-    <!-- Bottom Caption Overlay (Transparent Black) -->
+    <RelativeLayout
+        android:id="@+id/topBar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_alignParentTop="true"
+        android:clipToPadding="false"
+        android:minHeight="56dp"
+        android:paddingHorizontal="16dp"
+        android:paddingVertical="12dp">
+
+        <ImageView
+            android:id="@+id/btnCloseFullImage"
+            android:layout_width="36dp"
+            android:layout_height="36dp"
+            android:layout_alignParentEnd="true"
+            android:layout_centerVertical="true"
+            android:background="@drawable/bg_heart_circle"
+            android:clickable="true"
+            android:contentDescription="@string/app_name"
+            android:focusable="true"
+            android:padding="8dp"
+            android:src="@drawable/ic_close" />
+    </RelativeLayout>
+
     <LinearLayout
         android:id="@+id/bottomCaption"
         android:layout_width="match_parent"
@@ -51,7 +49,7 @@
             android:id="@+id/tvFullAuthor"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Maya Lin • @mayafoodie"
+            android:text=""
             android:textColor="@color/white"
             android:textSize="15sp"
             android:textStyle="bold" />
@@ -62,7 +60,7 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="4dp"
             android:lineSpacingExtra="2dp"
-            android:text="Tìm thấy tô salad ngũ sắc tươi ngon nhất phố!..."
+            android:text=""
             android:textColor="@color/white"
             android:textSize="13sp" />
     </LinearLayout>

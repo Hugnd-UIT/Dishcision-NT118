@@ -2,16 +2,26 @@ package com.example.dishcision;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.util.Patterns;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.activity.EdgeToEdge;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
+
+import com.example.dishcision.network.ApiClient;
+import com.example.dishcision.network.AuthResponse;
+import com.example.dishcision.network.ForgotPasswordRequest;
+
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
 
 public class ForgotPasswordActivity extends AppCompatActivity {
 
@@ -33,6 +43,7 @@ public class ForgotPasswordActivity extends AppCompatActivity {
             return insets;
         });
 
+        ApiClient.init(this);
         initViews();
         setupListeners();
     }
@@ -65,21 +76,35 @@ public class ForgotPasswordActivity extends AppCompatActivity {
 
     private void performForgotPassword() {
         String email = getEnteredForgotEmail();
-        if (email == null || email.isEmpty()) {
-            email = "user@dishcision.com";
+        if (email.isEmpty()) {
+            Toast.makeText(this, "Vui lòng nhập email của bạn", Toast.LENGTH_SHORT).show();
+            if (edtForgotEmail != null) edtForgotEmail.requestFocus();
+            return;
+        }
+        if (!Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
+            Toast.makeText(this, "Email không hợp lệ", Toast.LENGTH_SHORT).show();
+            if (edtForgotEmail != null) edtForgotEmail.requestFocus();
+            return;
         }
 
-        com.example.dishcision.network.ForgotPasswordRequest request = new com.example.dishcision.network.ForgotPasswordRequest(email);
-        final String finalEmail = email;
-        com.example.dishcision.network.ApiClient.getApiService().forgotPassword(request).enqueue(new retrofit2.Callback<com.example.dishcision.network.AuthResponse>() {
+        if (btnSendCode != null) btnSendCode.setEnabled(false);
+        ForgotPasswordRequest request = new ForgotPasswordRequest(email);
+        ApiClient.getApiService().forgotPassword(request).enqueue(new Callback<AuthResponse>() {
             @Override
-            public void onResponse(retrofit2.Call<com.example.dishcision.network.AuthResponse> call, retrofit2.Response<com.example.dishcision.network.AuthResponse> response) {
-                navigateToOtp(finalEmail);
+            public void onResponse(Call<AuthResponse> call, Response<AuthResponse> response) {
+                if (btnSendCode != null) btnSendCode.setEnabled(true);
+                if (response.isSuccessful()) {
+                    Toast.makeText(ForgotPasswordActivity.this, "Đã gửi mã OTP nếu email tồn tại trên hệ thống", Toast.LENGTH_SHORT).show();
+                    navigateToOtp(email);
+                } else {
+                    Toast.makeText(ForgotPasswordActivity.this, "Không thể gửi yêu cầu (mã " + response.code() + ")", Toast.LENGTH_LONG).show();
+                }
             }
 
             @Override
-            public void onFailure(retrofit2.Call<com.example.dishcision.network.AuthResponse> call, Throwable t) {
-                navigateToOtp(finalEmail);
+            public void onFailure(Call<AuthResponse> call, Throwable t) {
+                if (btnSendCode != null) btnSendCode.setEnabled(true);
+                Toast.makeText(ForgotPasswordActivity.this, "Lỗi kết nối máy chủ: " + t.getMessage(), Toast.LENGTH_LONG).show();
             }
         });
     }

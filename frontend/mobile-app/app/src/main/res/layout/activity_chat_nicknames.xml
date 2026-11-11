@@ -61,7 +61,6 @@
             android:orientation="vertical"
             android:padding="16dp">
 
-            <!-- Headline Section -->
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
@@ -95,9 +94,11 @@
                     android:orientation="horizontal">
 
                     <ImageView
+                        android:id="@+id/imgPartnerAvatar"
                         android:layout_width="42dp"
                         android:layout_height="42dp"
                         android:contentDescription="Avatar"
+                        android:scaleType="centerCrop"
                         android:src="@drawable/bg_avatar_circle" />
 
                     <LinearLayout
@@ -111,7 +112,7 @@
                             android:id="@+id/tvName1"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="Maya Lin"
+                            android:text=""
                             android:textColor="#141B2B"
                             android:textSize="15sp"
                             android:textStyle="bold" />
@@ -154,9 +155,11 @@
                     android:orientation="horizontal">
 
                     <ImageView
+                        android:id="@+id/imgSelfAvatar"
                         android:layout_width="42dp"
                         android:layout_height="42dp"
                         android:contentDescription="Avatar You"
+                        android:scaleType="centerCrop"
                         android:src="@drawable/bg_avatar_circle" />
 
                     <LinearLayout
@@ -227,7 +230,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginStart="8dp"
-                        android:text="Thêm biệt danh cho Maya Lin"
+                        android:text="Đặt biệt danh"
                         android:textColor="#141B2B"
                         android:textSize="15sp"
                         android:textStyle="bold" />
@@ -254,7 +257,7 @@
                         android:layout_width="match_parent"
                         android:layout_height="match_parent"
                         android:background="@null"
-                        android:hint="Nhập biệt danh"
+                        android:hint="Nhập biệt danh (bỏ trống để xóa)"
                         android:inputType="textPersonName"
                         android:textColor="#141B2B"
                         android:textColorHint="#6B7280"
@@ -266,17 +269,16 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="6dp"
-                    android:text="Chưa có biệt danh được nhập hoặc áp dụng."
+                    android:text="Chọn thành viên phía trên rồi nhập biệt danh."
                     android:textColor="#8E7570"
                     android:textSize="12sp" />
 
-                <!-- Confirm & Cancel Action Buttons -->
                 <LinearLayout
                     android:id="@+id/btnConfirmNickname"
                     android:layout_width="match_parent"
                     android:layout_height="46dp"
                     android:layout_marginTop="16dp"
-                    android:background="@drawable/bg_button_light_small"
+                    android:background="@drawable/bg_button_orange"
                     android:clickable="true"
                     android:focusable="true"
                     android:foreground="?attr/selectableItemBackground"
@@ -285,8 +287,8 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Xác nhận biệt danh"
-                        android:textColor="#5B403A"
+                        android:text="Lưu biệt danh"
+                        android:textColor="#FFFFFF"
                         android:textSize="14sp"
                         android:textStyle="bold" />
                 </LinearLayout>
@@ -305,13 +307,12 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Hủy"
+                        android:text="Xóa biệt danh"
                         android:textColor="#5B403A"
                         android:textSize="14sp" />
                 </LinearLayout>
             </LinearLayout>
 
-            <!-- Disclaimer Banner -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -333,7 +334,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginStart="10dp"
                     android:layout_weight="1"
-                    android:text="Biệt danh giúp các thành viên nhận ra nhau trong đoạn chat. Tên tài khoản của mỗi người vẫn giữ nguyên."
+                    android:text="Biệt danh giúp các thành viên nhận ra nhau trong đoạn chat. Tên tài khoản gốc của mỗi người vẫn giữ nguyên."
                     android:textColor="#505568"
                     android:textSize="12sp" />
             </LinearLayout>

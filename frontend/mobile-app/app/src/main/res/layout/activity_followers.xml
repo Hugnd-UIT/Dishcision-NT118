@@ -65,17 +65,17 @@
                 android:id="@+id/tvFollowersHeaderName"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Maya Chen"
+                android:text=""
                 android:textColor="#141B2B"
                 android:textSize="22sp"
                 android:textStyle="bold" />
 
             <TextView
+                android:id="@+id/tvFollowersHeaderHandle"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="2dp"
-                android:id="@+id/tvFollowersHeaderHandle"
-                android:text="\@mayafoodie"
+                android:text=""
                 android:textColor="#6B7280"
                 android:textSize="14sp" />
 

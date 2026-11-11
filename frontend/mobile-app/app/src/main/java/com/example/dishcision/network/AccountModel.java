@@ -7,8 +7,14 @@ public class AccountModel {
     @SerializedName("id")
     private int id;
 
+    @SerializedName("username")
+    private String username;
+
     @SerializedName("name")
     private String name;
+
+    @SerializedName("avatarUrl")
+    private String avatarUrl;
 
     @SerializedName("initials")
     private String initials;
@@ -27,8 +33,16 @@ public class AccountModel {
         return id;
     }
 
+    public String getUsername() {
+        return username;
+    }
+
     public String getName() {
         return name;
+    }
+
+    public String getAvatarUrl() {
+        return avatarUrl;
     }
 
     public String getInitials() {

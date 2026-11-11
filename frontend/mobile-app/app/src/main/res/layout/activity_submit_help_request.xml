@@ -235,6 +235,7 @@
                     app:tint="#C5221F" />
 
                 <TextView
+                    android:id="@+id/tvAttachLabel"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginStart="8dp"

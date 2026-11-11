@@ -81,19 +81,19 @@
                     android:orientation="vertical">
 
                     <TextView
+                        android:id="@+id/tvProfileName"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:id="@+id/tvProfileName"
-            android:text=""
+                        android:text=""
                         android:textColor="#141B2B"
                         android:textSize="16sp"
                         android:textStyle="bold" />
 
                     <TextView
+                        android:id="@+id/tvProfileHandle"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:id="@+id/tvProfileHandle"
-            android:text=""
+                        android:text=""
                         android:textColor="#6B7280"
                         android:textSize="13sp" />
                 </LinearLayout>
@@ -113,7 +113,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="4dp"
-                android:text="Xem lại bài viết, bình luận và tương tác của bạn."
+                android:text="Xem lại bài viết, bình luận, đánh giá và tương tác của bạn."
                 android:textColor="#6B7280"
                 android:textSize="14sp" />
 
@@ -137,12 +137,15 @@
                     android:paddingHorizontal="12dp">
 
                     <TextView
+                        android:id="@+id/tvFilterTime"
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:text="Tháng 10, 2026"
+                        android:ellipsize="end"
+                        android:maxLines="1"
+                        android:text="Tất cả thời gian"
                         android:textColor="#141B2B"
-                        android:textSize="14sp" />
+                        android:textSize="13sp" />
 
                     <ImageView
                         android:layout_width="18dp"
@@ -166,12 +169,15 @@
                     android:paddingHorizontal="12dp">
 
                     <TextView
+                        android:id="@+id/tvFilterType"
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:text="Loại hoạt động"
+                        android:ellipsize="end"
+                        android:maxLines="1"
+                        android:text="Tất cả hoạt động"
                         android:textColor="#141B2B"
-                        android:textSize="14sp" />
+                        android:textSize="13sp" />
 
                     <ImageView
                         android:layout_width="18dp"
@@ -236,285 +242,33 @@
                     app:tint="#505568" />
             </LinearLayout>
 
-            <!-- Subtext Disclaimer -->
-            <TextView
+            <ProgressBar
+                android:id="@+id/progressBarActivityLog"
+                android:layout_width="28dp"
+                android:layout_height="28dp"
+                android:layout_gravity="center_horizontal"
+                android:layout_marginVertical="18dp"
+                android:indeterminateTint="#FF5A36"
+                android:visibility="gone" />
+
+            <LinearLayout
+                android:id="@+id/containerActivityLog"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="16dp"
-                android:text="Hoạt động và thời gian dưới đây là minh họa."
+                android:orientation="vertical" />
+
+            <TextView
+                android:id="@+id/tvActivityLogEmpty"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="24dp"
+                android:gravity="center"
+                android:text="Chưa có hoạt động nào trong khoảng thời gian đã chọn."
                 android:textColor="#8E7570"
-                android:textSize="12sp" />
+                android:textSize="13sp"
+                android:visibility="gone" />
 
-            <!-- Section 1: Posts -->
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="20dp"
-                android:layout_marginBottom="10dp"
-                android:text="Bài viết"
-                android:textColor="#141B2B"
-                android:textSize="16sp"
-                android:textStyle="bold" />
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:background="@drawable/bg_card_white"
-                android:gravity="center_vertical"
-                android:padding="16dp">
-
-                <ImageView
-                    android:layout_width="42dp"
-                    android:layout_height="42dp"
-                    android:background="@drawable/bg_icon_circle_light"
-                    android:contentDescription="Post"
-                    android:padding="10dp"
-                    android:src="@drawable/ic_image"
-                    app:tint="#505568" />
-
-                <LinearLayout
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="12dp"
-                    android:layout_weight="1"
-                    android:orientation="vertical">
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Bạn đã đăng một bài viết"
-                        android:textColor="#141B2B"
-                        android:textSize="14sp"
-                        android:textStyle="bold" />
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="2dp"
-                        android:text="Một tối pizza tại Pizza 4P's Bến Thành."
-                        android:textColor="#505568"
-                        android:textSize="13sp" />
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="4dp"
-                        android:text="16/10/2026 · 18:30"
-                        android:textColor="#8E7570"
-                        android:textSize="12sp" />
-                </LinearLayout>
-
-                <ImageView
-                    android:layout_width="20dp"
-                    android:layout_height="20dp"
-                    android:contentDescription="More"
-                    android:src="@drawable/ic_more_vert"
-                    app:tint="#505568" />
-            </LinearLayout>
-
-            <!-- Section 2: Comments -->
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="20dp"
-                android:layout_marginBottom="10dp"
-                android:text="Bình luận"
-                android:textColor="#141B2B"
-                android:textSize="16sp"
-                android:textStyle="bold" />
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:background="@drawable/bg_card_white"
-                android:gravity="center_vertical"
-                android:padding="16dp">
-
-                <ImageView
-                    android:layout_width="42dp"
-                    android:layout_height="42dp"
-                    android:background="@drawable/bg_icon_circle_light"
-                    android:contentDescription="Comment"
-                    android:padding="10dp"
-                    android:src="@drawable/ic_comment"
-                    app:tint="#505568" />
-
-                <LinearLayout
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="12dp"
-                    android:layout_weight="1"
-                    android:orientation="vertical">
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Bạn đã bình luận"
-                        android:textColor="#141B2B"
-                        android:textSize="14sp"
-                        android:textStyle="bold" />
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="2dp"
-                        android:text="“Nước dùng nhìn hấp dẫn quá, lưu lại thử thôi!”"
-                        android:textColor="#505568"
-                        android:textSize="13sp" />
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="4dp"
-                        android:text="15/10/2026 · 12:15"
-                        android:textColor="#8E7570"
-                        android:textSize="12sp" />
-                </LinearLayout>
-
-                <ImageView
-                    android:layout_width="20dp"
-                    android:layout_height="20dp"
-                    android:contentDescription="More"
-                    android:src="@drawable/ic_more_vert"
-                    app:tint="#505568" />
-            </LinearLayout>
-
-            <!-- Section 3: Interactions -->
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="20dp"
-                android:layout_marginBottom="10dp"
-                android:text="Tương tác"
-                android:textColor="#141B2B"
-                android:textSize="16sp"
-                android:textStyle="bold" />
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:background="@drawable/bg_card_white"
-                android:orientation="vertical"
-                android:padding="16dp">
-
-                <!-- Interaction Item 1 -->
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:gravity="center_vertical"
-                    android:orientation="horizontal">
-
-                    <ImageView
-                        android:layout_width="42dp"
-                        android:layout_height="42dp"
-                        android:background="@drawable/bg_icon_circle_light"
-                        android:contentDescription="Like"
-                        android:padding="10dp"
-                        android:src="@drawable/ic_heart_outline"
-                        app:tint="#505568" />
-
-                    <LinearLayout
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_marginStart="12dp"
-                        android:layout_weight="1"
-                        android:orientation="vertical">
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="Bạn đã thích một bài viết"
-                            android:textColor="#141B2B"
-                            android:textSize="14sp"
-                            android:textStyle="bold" />
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="2dp"
-                            android:text="Gợi ý bữa sáng với bún bò Huế."
-                            android:textColor="#505568"
-                            android:textSize="13sp" />
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="4dp"
-                            android:text="15/10/2026 · 09:10"
-                            android:textColor="#8E7570"
-                            android:textSize="12sp" />
-                    </LinearLayout>
-
-                    <ImageView
-                        android:layout_width="20dp"
-                        android:layout_height="20dp"
-                        android:contentDescription="More"
-                        android:src="@drawable/ic_more_vert"
-                        app:tint="#505568" />
-                </LinearLayout>
-
-                <View
-                    android:layout_width="match_parent"
-                    android:layout_height="1dp"
-                    android:layout_marginVertical="14dp"
-                    android:background="#E9EBF4" />
-
-                <!-- Interaction Item 2 -->
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:gravity="center_vertical"
-                    android:orientation="horizontal">
-
-                    <ImageView
-                        android:layout_width="42dp"
-                        android:layout_height="42dp"
-                        android:background="@drawable/bg_icon_circle_light"
-                        android:contentDescription="Thumb Up"
-                        android:padding="10dp"
-                        android:src="@drawable/ic_thumb_up"
-                        app:tint="#505568" />
-
-                    <LinearLayout
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_marginStart="12dp"
-                        android:layout_weight="1"
-                        android:orientation="vertical">
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="Bạn đã chọn Đáng thử"
-                            android:textColor="#141B2B"
-                            android:textSize="14sp"
-                            android:textStyle="bold" />
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="2dp"
-                            android:text="Một gợi ý món ramen cho ngày mưa."
-                            android:textColor="#505568"
-                            android:textSize="13sp" />
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="4dp"
-                            android:text="14/10/2026 · 19:20"
-                            android:textColor="#8E7570"
-                            android:textSize="12sp" />
-                    </LinearLayout>
-
-                    <ImageView
-                        android:layout_width="20dp"
-                        android:layout_height="20dp"
-                        android:contentDescription="More"
-                        android:src="@drawable/ic_more_vert"
-                        app:tint="#505568" />
-                </LinearLayout>
-            </LinearLayout>
         </LinearLayout>
     </ScrollView>
 </LinearLayout>

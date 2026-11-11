@@ -1,15 +1,21 @@
 package com.example.dishcision;
 
+import android.database.Cursor;
+import android.net.Uri;
 import android.os.Bundle;
+import android.provider.OpenableColumns;
 import android.text.TextUtils;
 import android.view.View;
 import android.widget.ArrayAdapter;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.Spinner;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.activity.EdgeToEdge;
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.graphics.Insets;
@@ -19,7 +25,17 @@ import androidx.core.view.WindowInsetsCompat;
 import com.example.dishcision.network.ApiClient;
 import com.example.dishcision.network.HelpCreateRequest;
 import com.example.dishcision.network.HelpCreateResponse;
+import com.example.dishcision.network.UploadResponse;
 
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.List;
+
+import okhttp3.MediaType;
+import okhttp3.MultipartBody;
+import okhttp3.RequestBody;
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
@@ -32,7 +48,13 @@ public class SubmitHelpRequestActivity extends AppCompatActivity {
     private EditText edtDesc;
     private EditText edtEmail;
     private View btnAttach;
+    private TextView tvAttachLabel;
     private View btnSubmit;
+
+    private ActivityResultLauncher<String> imagePickerLauncher;
+    private final List<HelpCreateRequest.AttachmentInput> uploadedAttachments = new ArrayList<>();
+    private boolean isUploadingAttachment = false;
+    private boolean isSubmitting = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -48,6 +70,7 @@ public class SubmitHelpRequestActivity extends AppCompatActivity {
 
         initViews();
         setupSpinner();
+        setupImagePicker();
         setupListeners();
     }
 
@@ -58,7 +81,13 @@ public class SubmitHelpRequestActivity extends AppCompatActivity {
         edtDesc = findViewById(R.id.edtDesc);
         edtEmail = findViewById(R.id.edtEmail);
         btnAttach = findViewById(R.id.btnAttach);
+        tvAttachLabel = findViewById(R.id.tvAttachLabel);
         btnSubmit = findViewById(R.id.btnSubmit);
+
+        String savedEmail = getSharedPreferences("DishcisionPrefs", MODE_PRIVATE).getString("user_email", "");
+        if (edtEmail != null && TextUtils.isEmpty(edtEmail.getText()) && !TextUtils.isEmpty(savedEmail)) {
+            edtEmail.setText(savedEmail);
+        }
     }
 
     private void setupSpinner() {
@@ -69,11 +98,25 @@ public class SubmitHelpRequestActivity extends AppCompatActivity {
         spinnerSubject.setAdapter(adapter);
     }
 
+    private void setupImagePicker() {
+        imagePickerLauncher = registerForActivityResult(
+                new ActivityResultContracts.GetContent(),
+                uri -> {
+                    if (uri != null) {
+                        uploadAttachment(uri);
+                    }
+                }
+        );
+    }
+
     private void setupListeners() {
         if (btnBack != null) btnBack.setOnClickListener(v -> finish());
 
         if (btnAttach != null) {
-            btnAttach.setOnClickListener(v -> Toast.makeText(this, "Chọn file đính kèm", Toast.LENGTH_SHORT).show());
+            btnAttach.setOnClickListener(v -> {
+                if (isUploadingAttachment) return;
+                imagePickerLauncher.launch("image/*");
+            });
         }
 
         if (btnSubmit != null) {
@@ -81,7 +124,94 @@ public class SubmitHelpRequestActivity extends AppCompatActivity {
         }
     }
 
+    private void uploadAttachment(Uri uri) {
+        String authHeader = ApiClient.getAuthHeader(this);
+        if (authHeader.isEmpty()) {
+            Toast.makeText(this, "Vui lòng đăng nhập lại trước khi tải ảnh", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        String fileName = resolveFileName(uri);
+        try {
+            isUploadingAttachment = true;
+            if (tvAttachLabel != null) tvAttachLabel.setText("Đang tải ảnh lên...");
+
+            InputStream inputStream = getContentResolver().openInputStream(uri);
+            if (inputStream == null) {
+                isUploadingAttachment = false;
+                if (tvAttachLabel != null) tvAttachLabel.setText(R.string.submit_help_attachment);
+                return;
+            }
+
+            File tempFile = File.createTempFile("help_attach_", ".jpg", getCacheDir());
+            FileOutputStream outputStream = new FileOutputStream(tempFile);
+            byte[] buffer = new byte[4096];
+            int read;
+            while ((read = inputStream.read(buffer)) != -1) {
+                outputStream.write(buffer, 0, read);
+            }
+            outputStream.flush();
+            outputStream.close();
+            inputStream.close();
+
+            String mimeType = getContentResolver().getType(uri);
+            if (mimeType == null || mimeType.isEmpty()) mimeType = "image/jpeg";
+
+            RequestBody requestFile = RequestBody.create(MediaType.parse(mimeType), tempFile);
+            MultipartBody.Part filePart = MultipartBody.Part.createFormData("file", fileName, requestFile);
+
+            ApiClient.getApiService().uploadSingleImage(authHeader, filePart).enqueue(new Callback<UploadResponse>() {
+                @Override
+                public void onResponse(@NonNull Call<UploadResponse> call, @NonNull Response<UploadResponse> response) {
+                    isUploadingAttachment = false;
+                    if (response.isSuccessful() && response.body() != null && response.body().data != null) {
+                        String rawUrl = (response.body().data.url != null && !response.body().data.url.isEmpty())
+                                ? response.body().data.url
+                                : response.body().data.fullUrl;
+                        if (rawUrl != null && !rawUrl.isEmpty()) {
+                            uploadedAttachments.clear();
+                            uploadedAttachments.add(new HelpCreateRequest.AttachmentInput(fileName, "Ảnh chụp màn hình", rawUrl));
+                            if (tvAttachLabel != null) tvAttachLabel.setText(fileName + " (chạm để đổi)");
+                            Toast.makeText(SubmitHelpRequestActivity.this, "Đính kèm ảnh thành công", Toast.LENGTH_SHORT).show();
+                            return;
+                        }
+                    }
+                    if (tvAttachLabel != null) tvAttachLabel.setText(R.string.submit_help_attachment);
+                    Toast.makeText(SubmitHelpRequestActivity.this, "Tải ảnh đính kèm thất bại", Toast.LENGTH_SHORT).show();
+                }
+
+                @Override
+                public void onFailure(@NonNull Call<UploadResponse> call, @NonNull Throwable t) {
+                    isUploadingAttachment = false;
+                    if (tvAttachLabel != null) tvAttachLabel.setText(R.string.submit_help_attachment);
+                    Toast.makeText(SubmitHelpRequestActivity.this, "Lỗi tải ảnh đính kèm", Toast.LENGTH_SHORT).show();
+                }
+            });
+        } catch (Exception e) {
+            isUploadingAttachment = false;
+            if (tvAttachLabel != null) tvAttachLabel.setText(R.string.submit_help_attachment);
+            Toast.makeText(this, "Không thể đọc tệp đã chọn", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    private String resolveFileName(Uri uri) {
+        String result = null;
+        try (Cursor cursor = getContentResolver().query(uri, null, null, null, null)) {
+            if (cursor != null && cursor.moveToFirst()) {
+                int idx = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME);
+                if (idx >= 0) result = cursor.getString(idx);
+            }
+        } catch (Exception ignored) {}
+        return (result != null && !result.trim().isEmpty()) ? result.trim() : "screenshot.jpg";
+    }
+
     private void submitRequest() {
+        if (isSubmitting) return;
+        if (isUploadingAttachment) {
+            Toast.makeText(this, "Ảnh đính kèm đang tải lên, vui lòng đợi", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
         String subject = spinnerSubject != null ? spinnerSubject.getSelectedItem().toString() : "";
         String title = edtTitle != null ? edtTitle.getText().toString().trim() : "";
         String desc = edtDesc != null ? edtDesc.getText().toString().trim() : "";
@@ -92,18 +222,40 @@ public class SubmitHelpRequestActivity extends AppCompatActivity {
             return;
         }
 
-        HelpCreateRequest req = new HelpCreateRequest(subject, title, desc, email);
-        ApiClient.getApiService().createTicket(ApiClient.getAuthHeader(this), req).enqueue(new Callback<HelpCreateResponse>() {
+        String authHeader = ApiClient.getAuthHeader(this);
+        if (authHeader.isEmpty()) {
+            Toast.makeText(this, "Vui lòng đăng nhập lại", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        isSubmitting = true;
+        if (btnSubmit != null) btnSubmit.setEnabled(false);
+
+        HelpCreateRequest req = new HelpCreateRequest(
+                subject,
+                title,
+                desc,
+                email,
+                uploadedAttachments.isEmpty() ? null : uploadedAttachments
+        );
+        ApiClient.getApiService().createTicket(authHeader, req).enqueue(new Callback<HelpCreateResponse>() {
             @Override
             public void onResponse(@NonNull Call<HelpCreateResponse> call, @NonNull Response<HelpCreateResponse> response) {
-                Toast.makeText(SubmitHelpRequestActivity.this, "Đã gửi yêu cầu hỗ trợ", Toast.LENGTH_SHORT).show();
-                finish();
+                isSubmitting = false;
+                if (btnSubmit != null) btnSubmit.setEnabled(true);
+                if (response.isSuccessful() && response.body() != null) {
+                    Toast.makeText(SubmitHelpRequestActivity.this, "Đã gửi yêu cầu hỗ trợ", Toast.LENGTH_SHORT).show();
+                    finish();
+                } else {
+                    Toast.makeText(SubmitHelpRequestActivity.this, "Gửi yêu cầu thất bại (mã " + response.code() + ")", Toast.LENGTH_LONG).show();
+                }
             }
 
             @Override
             public void onFailure(@NonNull Call<HelpCreateResponse> call, @NonNull Throwable t) {
-                Toast.makeText(SubmitHelpRequestActivity.this, "Đã gửi yêu cầu hỗ trợ", Toast.LENGTH_SHORT).show();
-                finish();
+                isSubmitting = false;
+                if (btnSubmit != null) btnSubmit.setEnabled(true);
+                Toast.makeText(SubmitHelpRequestActivity.this, "Lỗi kết nối máy chủ: " + t.getMessage(), Toast.LENGTH_LONG).show();
             }
         });
     }

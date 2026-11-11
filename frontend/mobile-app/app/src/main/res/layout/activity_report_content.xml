@@ -122,31 +122,36 @@
                         android:orientation="vertical">
 
                         <TextView
+                            android:id="@+id/tvReportTargetTitle"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="Bài viết trong bảng tin"
+                            android:text="Nội dung cần báo cáo"
                             android:textColor="@color/text_dark"
                             android:textSize="14sp"
                             android:textStyle="bold" />
 
                         <TextView
+                            android:id="@+id/tvReportTargetSubtitle"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:layout_marginTop="2dp"
-                            android:text="Nội dung minh họa, không gắn tên"
+                            android:text=""
                             android:textColor="@color/text_gray"
-                            android:textSize="12sp" />
+                            android:textSize="12sp"
+                            android:visibility="gone" />
                     </LinearLayout>
                 </LinearLayout>
 
                 <TextView
+                    android:id="@+id/tvReportTargetExcerpt"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="12dp"
                     android:lineSpacingExtra="2dp"
-                    android:text="“Chia sẻ một trải nghiệm ẩm thực…”"
+                    android:text=""
                     android:textColor="@color/text_dark"
-                    android:textSize="14sp" />
+                    android:textSize="14sp"
+                    android:visibility="gone" />
             </LinearLayout>
 
             <!-- Reasons Title -->
@@ -252,33 +257,6 @@
                 android:textColor="@color/text_dark"
                 android:textColorHint="@color/text_gray"
                 android:textSize="14sp" />
-
-            <!-- Disclaimer -->
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="16dp"
-                android:background="@drawable/bg_info_box"
-                android:gravity="center_vertical"
-                android:orientation="horizontal"
-                android:padding="16dp">
-
-                <ImageView
-                    android:layout_width="20dp"
-                    android:layout_height="20dp"
-                    android:contentDescription="Info"
-                    android:src="@drawable/ic_info"
-                    app:tint="@color/text_dark" />
-
-                <TextView
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="12dp"
-                    android:layout_weight="1"
-                    android:text="Lý do đang chọn chỉ minh họa cho biểu mẫu, không phải kết luận nội dung vi phạm."
-                    android:textColor="@color/text_gray"
-                    android:textSize="12sp" />
-            </LinearLayout>
 
             <!-- Submit Button -->
             <LinearLayout

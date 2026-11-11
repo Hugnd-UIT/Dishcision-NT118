@@ -40,8 +40,24 @@ export const loginSchema = z
     message: 'credential, username, or email is required',
   });
 
+const urlOrUploadPath = z.string().refine(
+  (val) => val.startsWith('/uploads/') || /^https?:\/\/.+/.test(val),
+  'Invalid URL'
+);
+
+export const googleAuthSchema = z.object({
+  email: z.string().email(),
+  fullName: z.string().max(100).optional(),
+  avatarUrl: z.string().optional().nullable(),
+});
+
 export const forgotPasswordSchema = z.object({
   email: z.string().email(),
+});
+
+export const verifyOtpSchema = z.object({
+  email: z.string().email(),
+  otp: z.string().regex(/^\d{6}$/, 'Mã OTP phải gồm 6 chữ số'),
 });
 
 export const resetPasswordSchema = z.object({
@@ -60,7 +76,7 @@ export const updateProfileSchema = z.object({
   bio: z.string().max(255).optional(),
   gender: z.enum(['Male', 'Female', 'Other']).optional(),
   dateOfBirth: z.string().optional(),
-  avatarUrl: z.string().url().optional(),
+  avatarUrl: urlOrUploadPath.nullable().optional().or(z.literal('')),
   preferences: z.array(z.string()).optional(),
 });
 
@@ -69,14 +85,30 @@ export const createPostSchema = z.object({
   images: z
     .array(
       z.object({
-        imageUrl: z.string().url(),
+        imageUrl: urlOrUploadPath,
         displayOrder: z.number().int().optional(),
       })
     )
     .optional(),
-  locationUrl: z.string().url().optional(),
-  voucherCode: z.string().max(50).optional(),
+  locationUrl: z.string().url().nullable().optional().or(z.literal('')),
+  voucherCode: z.string().max(50).nullable().optional(),
   hashtags: z.array(z.string()).optional(),
+});
+
+export const updatePostSchema = z.object({
+  content: z.string().min(1).max(2000).optional(),
+  images: z
+    .array(
+      z.object({
+        imageUrl: urlOrUploadPath,
+        displayOrder: z.number().int().optional(),
+      })
+    )
+    .optional(),
+  locationUrl: z.string().url().nullable().optional().or(z.literal('')),
+  voucherCode: z.string().max(50).nullable().optional(),
+  hashtags: z.array(z.string()).optional(),
+  status: z.enum(['Active', 'Hidden']).optional(),
 });
 
 export const createCommentSchema = z.object({
@@ -86,13 +118,13 @@ export const createCommentSchema = z.object({
 
 export const createReviewSchema = z.object({
   restaurantName: z.string().min(1).max(255),
-  locationUrl: z.string().url().optional(),
+  locationUrl: z.string().url().nullable().optional().or(z.literal('')),
   rating: z.number().int().min(1).max(5),
   content: z.string().min(1),
   images: z
     .array(
       z.object({
-        imageUrl: z.string().url(),
+        imageUrl: urlOrUploadPath,
         displayOrder: z.number().int().optional(),
       })
     )
@@ -110,7 +142,7 @@ export const aiFoodDecideSchema = z.object({
 
 export const sendMessageSchema = z.object({
   content: z.string().max(5000).optional(),
-  mediaUrl: z.string().url().nullable().optional(),
+  mediaUrl: urlOrUploadPath.nullable().optional().or(z.literal('')),
 });
 
 export const reportSchema = z.object({

@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@drawable/bg_bottom_sheet"
@@ -30,7 +29,7 @@
             android:layout_alignParentStart="true"
             android:layout_centerVertical="true"
             android:layout_toStartOf="@id/btnCloseMenu"
-            android:text="Menu Quán Phở Bò Gia Truyền 1986"
+            android:text="Thực đơn quán"
             android:textColor="@color/text_dark"
             android:textSize="20sp"
             android:textStyle="bold" />
@@ -55,10 +54,11 @@
     </RelativeLayout>
 
     <TextView
+        android:id="@+id/tvMenuStoreMeta"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="6dp"
-        android:text="🟢 Đang mở cửa  06:00 – 22:00 • Ba Đình, Hà Nội"
+        android:text=""
         android:textColor="@color/text_gray"
         android:textSize="13sp" />
 
@@ -70,43 +70,10 @@
         android:scrollbars="none">
 
         <LinearLayout
+            android:id="@+id/layoutMenuCategories"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:orientation="horizontal">
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:background="@drawable/bg_chip_active"
-                android:paddingHorizontal="20dp"
-                android:paddingVertical="10dp"
-                android:text="Phở bò"
-                android:textColor="@color/white"
-                android:textSize="14sp"
-                android:textStyle="bold" />
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="10dp"
-                android:background="@drawable/bg_favorite_search"
-                android:paddingHorizontal="20dp"
-                android:paddingVertical="10dp"
-                android:text="Ăn kèm"
-                android:textColor="@color/text_dark"
-                android:textSize="14sp" />
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="10dp"
-                android:background="@drawable/bg_favorite_search"
-                android:paddingHorizontal="20dp"
-                android:paddingVertical="10dp"
-                android:text="Đồ uống"
-                android:textColor="@color/text_dark"
-                android:textSize="14sp" />
-        </LinearLayout>
+            android:orientation="horizontal" />
     </HorizontalScrollView>
 
     <!-- Scrollable Menu Body -->
@@ -124,11 +91,16 @@
 
             <!-- Featured Dish Card -->
             <LinearLayout
+                android:id="@+id/layoutFeaturedDish"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:layout_marginBottom="16dp"
                 android:background="@drawable/bg_menu_featured_card"
+                android:clickable="true"
+                android:focusable="true"
                 android:orientation="horizontal"
-                android:padding="14dp">
+                android:padding="14dp"
+                android:visibility="gone">
 
                 <RelativeLayout
                     android:layout_width="88dp"
@@ -136,6 +108,7 @@
                     android:background="#E8ECF4">
 
                     <ImageView
+                        android:id="@+id/imgFeaturedDish"
                         android:layout_width="match_parent"
                         android:layout_height="match_parent"
                         android:contentDescription="@string/app_name"
@@ -159,325 +132,52 @@
                         android:textStyle="bold" />
 
                     <TextView
+                        android:id="@+id/tvFeaturedDishName"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="2dp"
-                        android:text="Phở bò đặc biệt"
+                        android:text=""
                         android:textColor="@color/text_dark"
                         android:textSize="16sp"
                         android:textStyle="bold" />
 
                     <TextView
+                        android:id="@+id/tvFeaturedDishDesc"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="2dp"
-                        android:text="Tái, nạm, gầu, gân; nước dùng đậm đà."
+                        android:text=""
                         android:textColor="@color/text_gray"
                         android:textSize="12sp" />
 
                     <TextView
+                        android:id="@+id/tvFeaturedDishPrice"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="6dp"
-                        android:text="75.000 đ"
+                        android:text=""
                         android:textColor="@color/primary"
                         android:textSize="15sp"
                         android:textStyle="bold" />
                 </LinearLayout>
             </LinearLayout>
 
-            <!-- Section 1: Phở bò -->
-            <RelativeLayout
+            <LinearLayout
+                android:id="@+id/layoutMenuItemsContainer"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="20dp">
+                android:orientation="vertical" />
 
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_alignParentStart="true"
-                    android:text="Phở bò"
-                    android:textColor="@color/text_dark"
-                    android:textSize="18sp"
-                    android:textStyle="bold" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_alignParentEnd="true"
-                    android:text="6 món • gồm món đặc biệt"
-                    android:textColor="@color/text_gray"
-                    android:textSize="12sp" />
-            </RelativeLayout>
-
-            <!-- Item 1 -->
-            <RelativeLayout
+            <TextView
+                android:id="@+id/tvEmptyMenu"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="14dp">
-
-                <TextView
-                    android:id="@+id/tvItem1"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_alignParentStart="true"
-                    android:text="Phở bò tái"
-                    android:textColor="@color/text_dark"
-                    android:textSize="15sp"
-                    android:textStyle="bold" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_alignParentEnd="true"
-                    android:text="50.000 đ"
-                    android:textColor="@color/text_dark"
-                    android:textSize="15sp"
-                    android:textStyle="bold" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_below="@id/tvItem1"
-                    android:layout_marginTop="2dp"
-                    android:text="Bò thái mỏng, chần mềm trong nước dùng."
-                    android:textColor="@color/text_gray"
-                    android:textSize="12sp" />
-            </RelativeLayout>
-
-            <!-- Item 2 -->
-            <RelativeLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="14dp">
-
-                <TextView
-                    android:id="@+id/tvItem2"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_alignParentStart="true"
-                    android:text="Phở bò chín"
-                    android:textColor="@color/text_dark"
-                    android:textSize="15sp"
-                    android:textStyle="bold" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_alignParentEnd="true"
-                    android:text="50.000 đ"
-                    android:textColor="@color/text_dark"
-                    android:textSize="15sp"
-                    android:textStyle="bold" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_below="@id/tvItem2"
-                    android:layout_marginTop="2dp"
-                    android:text="Thịt bò ninh mềm, thơm vị gừng nướng."
-                    android:textColor="@color/text_gray"
-                    android:textSize="12sp" />
-            </RelativeLayout>
-
-            <!-- Item 3 -->
-            <RelativeLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="14dp">
-
-                <TextView
-                    android:id="@+id/tvItem3"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_alignParentStart="true"
-                    android:text="Phở tái nạm"
-                    android:textColor="@color/text_dark"
-                    android:textSize="15sp"
-                    android:textStyle="bold" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_alignParentEnd="true"
-                    android:text="55.000 đ"
-                    android:textColor="@color/text_dark"
-                    android:textSize="15sp"
-                    android:textStyle="bold" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_below="@id/tvItem3"
-                    android:layout_marginTop="2dp"
-                    android:text="Bò tái mềm cùng nạm bò béo nhẹ."
-                    android:textColor="@color/text_gray"
-                    android:textSize="12sp" />
-            </RelativeLayout>
-
-            <!-- Item 4 -->
-            <RelativeLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="14dp">
-
-                <TextView
-                    android:id="@+id/tvItem4"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_alignParentStart="true"
-                    android:text="Phở tái gầu"
-                    android:textColor="@color/text_dark"
-                    android:textSize="15sp"
-                    android:textStyle="bold" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_alignParentEnd="true"
-                    android:text="60.000 đ"
-                    android:textColor="@color/text_dark"
-                    android:textSize="15sp"
-                    android:textStyle="bold" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_below="@id/tvItem4"
-                    android:layout_marginTop="2dp"
-                    android:text="Bò tái và gầu giòn, béo ngậy vừa đủ."
-                    android:textColor="@color/text_gray"
-                    android:textSize="12sp" />
-            </RelativeLayout>
-
-            <!-- Item 5 -->
-            <RelativeLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="14dp">
-
-                <TextView
-                    android:id="@+id/tvItem5"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_alignParentStart="true"
-                    android:text="Phở tái nạm gân"
-                    android:textColor="@color/text_dark"
-                    android:textSize="15sp"
-                    android:textStyle="bold" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_alignParentEnd="true"
-                    android:text="65.000 đ"
-                    android:textColor="@color/text_dark"
-                    android:textSize="15sp"
-                    android:textStyle="bold" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_below="@id/tvItem5"
-                    android:layout_marginTop="2dp"
-                    android:text="Tái mềm, nạm thơm, gân bò dai giòn."
-                    android:textColor="@color/text_gray"
-                    android:textSize="12sp" />
-            </RelativeLayout>
-
-            <!-- Section 2: Ăn kèm -->
-            <RelativeLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="24dp">
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_alignParentStart="true"
-                    android:text="Ăn kèm"
-                    android:textColor="@color/text_dark"
-                    android:textSize="18sp"
-                    android:textStyle="bold" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_alignParentEnd="true"
-                    android:text="3 món"
-                    android:textColor="@color/text_gray"
-                    android:textSize="12sp" />
-            </RelativeLayout>
-
-            <!-- Item 6 -->
-            <RelativeLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="14dp">
-
-                <TextView
-                    android:id="@+id/tvItem6"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_alignParentStart="true"
-                    android:text="Quẩy giòn"
-                    android:textColor="@color/text_dark"
-                    android:textSize="15sp"
-                    android:textStyle="bold" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_alignParentEnd="true"
-                    android:text="10.000 đ"
-                    android:textColor="@color/text_dark"
-                    android:textSize="15sp"
-                    android:textStyle="bold" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_below="@id/tvItem6"
-                    android:layout_marginTop="2dp"
-                    android:text="Một đĩa nhỏ, ngon hơn khi chấm nước phở."
-                    android:textColor="@color/text_gray"
-                    android:textSize="12sp" />
-            </RelativeLayout>
-
-            <!-- Item 7 -->
-            <RelativeLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="14dp">
-
-                <TextView
-                    android:id="@+id/tvItem7"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_alignParentStart="true"
-                    android:text="Trứng chần"
-                    android:textColor="@color/text_dark"
-                    android:textSize="15sp"
-                    android:textStyle="bold" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_alignParentEnd="true"
-                    android:text="10.000 đ"
-                    android:textColor="@color/text_dark"
-                    android:textSize="15sp"
-                    android:textStyle="bold" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_below="@id/tvItem7"
-                    android:layout_marginTop="2dp"
-                    android:text="Một quả trứng chần trong nước dùng."
-                    android:textColor="@color/text_gray"
-                    android:textSize="12sp" />
-            </RelativeLayout>
+                android:layout_marginTop="16dp"
+                android:gravity="center"
+                android:text="Quán chưa cập nhật danh sách món ăn."
+                android:textColor="@color/text_gray"
+                android:textSize="14sp"
+                android:visibility="gone" />
 
         </LinearLayout>
     </ScrollView>

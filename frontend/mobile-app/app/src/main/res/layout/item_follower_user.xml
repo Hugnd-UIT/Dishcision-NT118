@@ -16,7 +16,7 @@
         android:layout_height="48dp"
         android:background="@drawable/bg_avatar_initials"
         android:gravity="center"
-        android:text="U"
+        android:text=""
         android:textColor="#141B2B"
         android:textSize="16sp"
         android:textStyle="bold" />
@@ -35,7 +35,7 @@
             android:layout_height="wrap_content"
             android:ellipsize="end"
             android:maxLines="1"
-            android:text="User Name"
+            android:text=""
             android:textColor="#141B2B"
             android:textSize="15sp"
             android:textStyle="bold" />
@@ -47,7 +47,7 @@
             android:layout_marginTop="2dp"
             android:ellipsize="end"
             android:maxLines="1"
-            android:text="@username"
+            android:text=""
             android:textColor="#6B7280"
             android:textSize="12sp" />
     </LinearLayout>

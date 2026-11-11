@@ -27,6 +27,7 @@
             app:tint="#141B2B" />
 
         <TextView
+            android:id="@+id/tvHeaderTitle"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_marginStart="8dp"
@@ -412,32 +413,6 @@
                     android:layout_height="wrap_content"
                     android:checked="false"
                     app:thumbTint="#8E7570" />
-            </LinearLayout>
-
-            <!-- Disclaimer Banner -->
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="16dp"
-                android:background="@drawable/bg_input_field_light"
-                android:gravity="center_vertical"
-                android:padding="12dp">
-
-                <ImageView
-                    android:layout_width="18dp"
-                    android:layout_height="18dp"
-                    android:contentDescription="Info"
-                    android:src="@drawable/ic_info"
-                    app:tint="#505568" />
-
-                <TextView
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="10dp"
-                    android:layout_weight="1"
-                    android:text="Chỉ lưu địa chỉ bạn muốn dùng. Biểu mẫu hiện đang trống và chưa lưu dữ liệu."
-                    android:textColor="#505568"
-                    android:textSize="12sp" />
             </LinearLayout>
 
             <!-- Submit Button -->

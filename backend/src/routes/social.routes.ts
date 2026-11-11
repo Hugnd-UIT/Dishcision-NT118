@@ -12,24 +12,25 @@ import {
   sendMessage,
 } from '../controllers/social.controller';
 import { authenticate } from '../middlewares/auth.middleware';
+import { asyncHandler } from '../utils/http';
 import { validate, sendMessageSchema } from '../middlewares/validate.middleware';
 
 const router = Router();
 
 // Follow / Unfollow
-router.get('/users/:userId/followers', authenticate, getFollowers);
-router.get('/users/:userId/following', authenticate, getFollowing);
-router.post('/users/:userId/follow', authenticate, followUser);
-router.delete('/users/:userId/follow', authenticate, unfollowUser);
+router.get('/users/:userId/followers', authenticate, asyncHandler(getFollowers));
+router.get('/users/:userId/following', authenticate, asyncHandler(getFollowing));
+router.post('/users/:userId/follow', authenticate, asyncHandler(followUser));
+router.delete('/users/:userId/follow', authenticate, asyncHandler(unfollowUser));
 
 // Bookmarks
-router.get('/users/me/saved-posts', authenticate, getSavedPosts);
-router.post('/posts/:postId/save', authenticate, savePost);
-router.delete('/posts/:postId/save', authenticate, unsavePost);
+router.get('/users/me/saved-posts', authenticate, asyncHandler(getSavedPosts));
+router.post('/posts/:postId/save', authenticate, asyncHandler(savePost));
+router.delete('/posts/:postId/save', authenticate, asyncHandler(unsavePost));
 
 // Direct Messages / Chats
-router.get('/chats', authenticate, getChats);
-router.get('/chats/:recipientId/messages', authenticate, getMessages);
-router.post('/chats/:recipientId/messages', authenticate, validate(sendMessageSchema), sendMessage);
+router.get('/chats', authenticate, asyncHandler(getChats));
+router.get('/chats/:recipientId/messages', authenticate, asyncHandler(getMessages));
+router.post('/chats/:recipientId/messages', authenticate, validate(sendMessageSchema), asyncHandler(sendMessage));
 
 export default router;

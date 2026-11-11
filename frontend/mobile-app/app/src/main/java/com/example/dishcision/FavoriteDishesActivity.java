@@ -44,14 +44,6 @@ public class FavoriteDishesActivity extends AppCompatActivity {
     private LinearLayout navMessages;
     private LinearLayout navProfile;
 
-    private TextView chipAll;
-    private TextView chipNoodle;
-    private TextView chipRice;
-    private TextView chipSnack;
-    private TextView chipDessert;
-
-    private TextView currentActiveChip;
-
     private LinearLayout savedPostsContainer;
     private TextView tvSavedCount;
     private TextView tvEmptySaved;
@@ -83,14 +75,6 @@ public class FavoriteDishesActivity extends AppCompatActivity {
         navCreate = findViewById(R.id.navCreate);
         navMessages = findViewById(R.id.navMessages);
         navProfile = findViewById(R.id.navProfile);
-
-        chipAll = findViewById(R.id.chipAll);
-        chipNoodle = findViewById(R.id.chipNoodle);
-        chipRice = findViewById(R.id.chipRice);
-        chipSnack = findViewById(R.id.chipSnack);
-        chipDessert = findViewById(R.id.chipDessert);
-
-        currentActiveChip = chipAll;
 
         savedPostsContainer = findViewById(R.id.savedPostsContainer);
         tvSavedCount = findViewById(R.id.tvSavedCount);
@@ -153,28 +137,6 @@ public class FavoriteDishesActivity extends AppCompatActivity {
                 startActivity(intent);
             });
         }
-
-        if (chipAll != null) chipAll.setOnClickListener(v -> setActiveChip(chipAll));
-        if (chipNoodle != null) chipNoodle.setOnClickListener(v -> setActiveChip(chipNoodle));
-        if (chipRice != null) chipRice.setOnClickListener(v -> setActiveChip(chipRice));
-        if (chipSnack != null) chipSnack.setOnClickListener(v -> setActiveChip(chipSnack));
-        if (chipDessert != null) chipDessert.setOnClickListener(v -> setActiveChip(chipDessert));
-    }
-
-    private void setActiveChip(TextView selectedChip) {
-        if (selectedChip == null || selectedChip == currentActiveChip) return;
-
-        if (currentActiveChip != null) {
-            currentActiveChip.setBackgroundResource(R.drawable.bg_chip_inactive);
-            currentActiveChip.setTextColor(ContextCompat.getColor(this, R.color.text_dark));
-            currentActiveChip.setTypeface(null, Typeface.NORMAL);
-        }
-
-        selectedChip.setBackgroundResource(R.drawable.bg_chip_active);
-        selectedChip.setTextColor(ContextCompat.getColor(this, R.color.white));
-        selectedChip.setTypeface(null, Typeface.BOLD);
-
-        currentActiveChip = selectedChip;
     }
 
     @Override

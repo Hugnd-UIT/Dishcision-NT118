@@ -29,6 +29,7 @@ public class Setup2faStep2Activity extends AppCompatActivity {
     private EditText edt2FACode;
     private Button btnConfirm;
     private View btnBackGuide;
+    private boolean isSubmitting = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -73,7 +74,7 @@ public class Setup2faStep2Activity extends AppCompatActivity {
     }
 
     private void submit2FACodeToBackend() {
-        if (edt2FACode == null) return;
+        if (edt2FACode == null || isSubmitting) return;
         String code = edt2FACode.getText().toString().trim();
 
         if (TextUtils.isEmpty(code)) {
@@ -81,23 +82,34 @@ public class Setup2faStep2Activity extends AppCompatActivity {
             return;
         }
 
+        String authHeader = ApiClient.getAuthHeader(this);
+        if (authHeader.isEmpty()) {
+            Toast.makeText(this, "Vui lòng đăng nhập lại", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        isSubmitting = true;
+        if (btnConfirm != null) btnConfirm.setEnabled(false);
+
         TwoFactorVerifyRequest request = new TwoFactorVerifyRequest(code);
-        ApiClient.getApiService().verify2FA(ApiClient.getAuthHeader(this), request).enqueue(new Callback<TwoFactorStatusResponse>() {
+        ApiClient.getApiService().verify2FA(authHeader, request).enqueue(new Callback<TwoFactorStatusResponse>() {
             @Override
             public void onResponse(@NonNull Call<TwoFactorStatusResponse> call, @NonNull Response<TwoFactorStatusResponse> response) {
+                isSubmitting = false;
+                if (btnConfirm != null) btnConfirm.setEnabled(true);
                 if (response.isSuccessful() && response.body() != null && response.body().isSuccess()) {
                     Toast.makeText(Setup2faStep2Activity.this, "Xác thực hai yếu tố đã được bật thành công!", Toast.LENGTH_LONG).show();
                     finish();
                 } else {
-                    Toast.makeText(Setup2faStep2Activity.this, "Thiết lập thành công!", Toast.LENGTH_SHORT).show();
-                    finish();
+                    Toast.makeText(Setup2faStep2Activity.this, "Mã xác thực không hợp lệ (mã " + response.code() + ")", Toast.LENGTH_LONG).show();
                 }
             }
 
             @Override
             public void onFailure(@NonNull Call<TwoFactorStatusResponse> call, @NonNull Throwable t) {
-                Toast.makeText(Setup2faStep2Activity.this, "Đã lưu cài đặt xác thực hai yếu tố!", Toast.LENGTH_SHORT).show();
-                finish();
+                isSubmitting = false;
+                if (btnConfirm != null) btnConfirm.setEnabled(true);
+                Toast.makeText(Setup2faStep2Activity.this, "Lỗi kết nối máy chủ: " + t.getMessage(), Toast.LENGTH_LONG).show();
             }
         });
     }

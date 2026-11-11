@@ -57,8 +57,8 @@
     <string name="tag_vegetarian_suggestion">GỢI Ý MÓN CHAY</string>
     <string name="post_rating_dishcision">96% Điểm Đánh Giá Dishcision</string>
     <string name="post_rating_worth_it">100% Đáng Tiền</string>
-    <string name="like_count">1.2k Thích</string>
-    <string name="comment_count">84 Bình luận</string>
+    <string name="like_count">Lượt thích</string>
+    <string name="comment_count">Bình luận</string>
     <string name="nav_home">Trang chủ</string>
     <string name="nav_decide">Quyết định</string>
     <string name="nav_create">Tạo bài</string>
@@ -75,8 +75,8 @@
     <string name="security_login_title">Bảo mật &amp; đăng nhập</string>
     <string name="security_manage_title">Quản lý cách bạn đăng nhập</string>
     <string name="security_manage_subtitle">Xem các phiên đăng nhập và lựa chọn bảo vệ tài khoản của bạn.</string>
-    <string name="security_user_name">Maya Chen</string>
-    <string name="security_user_handle">\@mayafoodie</string>
+    <string name="security_user_name"></string>
+    <string name="security_user_handle"></string>
     <string name="security_recommended">Đề xuất cho bạn</string>
     <string name="security_not_setup">Chưa thiết lập</string>
     <string name="security_2fa_title">Xác thực hai yếu tố</string>
@@ -93,19 +93,19 @@
     <string name="session_top_bar_title">Nơi bạn đã đăng nhập</string>
     <string name="session_title">Các phiên đăng nhập</string>
     <string name="session_subtitle">Xem thiết bị và chọn phiên bạn muốn quản lý.</string>
-    <string name="session_warning_text">Thiết bị, vị trí và hoạt động bên dưới là dữ liệu minh hoạ, không phải phiên thực tế.</string>
+    <string name="session_warning_text">Kiểm tra các thiết bị đã đăng nhập và thu hồi phiên không nhận ra.</string>
     <string name="session_current_section">Phiên hiện tại</string>
-    <string name="session_current_device">Điện thoại · Dishcision</string>
-    <string name="session_current_status">Phiên đang xem trong thiết kế</string>
+    <string name="session_current_device">Thiết bị hiện tại</string>
+    <string name="session_current_status">Phiên đang hoạt động</string>
     <string name="session_manage">Quản lý</string>
     <string name="session_this_device">Thiết bị này</string>
     <string name="session_other_section">Các phiên khác</string>
-    <string name="session_other_device_1">Máy tính · Trình duyệt</string>
-    <string name="session_other_location_1">TP.HCM · 15/10/2026</string>
-    <string name="session_logout_action">Chọn đăng xuất phiên này</string>
-    <string name="session_other_device_2">Máy tính bảng · Ứng dụng</string>
-    <string name="session_other_location_2">Hà Nội · 12/10/2026</string>
-    <string name="session_manage_multiple">Chọn nhiều phiên để quản lý</string>
+    <string name="session_other_device_1">Thiết bị khác</string>
+    <string name="session_other_location_1"></string>
+    <string name="session_logout_action">Đăng xuất phiên này</string>
+    <string name="session_other_device_2">Thiết bị khác</string>
+    <string name="session_other_location_2"></string>
+    <string name="session_manage_multiple">Đăng xuất tất cả các phiên khác</string>
     <string name="session_unrecognized_title">Không nhận ra thiết bị?</string>
     <string name="session_unrecognized_desc">Kiểm tra chi tiết phiên, chọn đăng xuất nếu cần và cân nhắc đổi mật khẩu của bạn.</string>
     <string name="session_unrecognized_action">Xem cách xử lý</string>
@@ -117,10 +117,10 @@
     <string name="tfa_step1_desc">Dùng ứng dụng xác thực để tạo mã xác nhận cho tài khoản Dishcision.</string>
     <string name="tfa_step1_inst1">Mở ứng dụng xác thực bạn sử dụng, rồi chọn thêm tài khoản.</string>
     <string name="tfa_step1_inst2">Quét mã QR hoặc nhập mã thiết lập được cung cấp khi thiết lập thực tế.</string>
-    <string name="tfa_qr_warning">QR minh hoạ · Không thể quét</string>
+    <string name="tfa_qr_warning">Khóa thiết lập 2FA</string>
     <string name="tfa_setup_code_label">Mã thiết lập</string>
-    <string name="tfa_setup_code_mock">●●●●  ●●●●  ●●●●</string>
-    <string name="tfa_qr_note">Không chứa khóa bí mật dùng được.</string>
+    <string name="tfa_setup_code_loading">Đang tải khóa thiết lập...</string>
+    <string name="tfa_qr_note">Chạm vào mã để sao chép và nhập vào ứng dụng xác thực.</string>
     <string name="tfa_step1_bottom_desc">Sau khi thêm tài khoản trong ứng dụng xác thực, tiếp tục để nhập mã do ứng dụng tạo.</string>
     <string name="tfa_btn_continue">Tiếp tục nhập mã</string>
     <string name="tfa_info_not_enabled">Xác thực hai yếu tố chưa được bật. Bạn cần hoàn tất bước xác nhận mã.</string>
@@ -161,9 +161,9 @@
     <string name="privacy_sec3_desc">Giữ trải nghiệm ẩm thực luôn thoải mái.</string>
     <string name="privacy_item_comment">Bình luận bài đăng của bạn</string>
     <string name="privacy_item_blocked">Tài khoản đã chặn</string>
-    <string name="privacy_val_3_accounts">3 tài khoản</string>
+    <string name="privacy_val_3_accounts">0 tài khoản</string>
     <string name="privacy_item_restricted">Tài khoản bị hạn chế</string>
-    <string name="privacy_val_1_account">1 tài khoản</string>
+    <string name="privacy_val_1_account">0 tài khoản</string>
 
     <string name="privacy_bottom_saved">Các thay đổi được lưu tự động</string>
     <string name="privacy_bottom_learn_more">Tìm hiểu về quyền riêng tư</string>
@@ -186,11 +186,11 @@
     <string name="btn_add_blocked">+ Thêm tài khoản để chặn</string>
     <string name="search_blocked_hint">Tìm trong danh sách đã chặn</string>
     <string name="btn_unblock">Bỏ chặn</string>
-    <string name="blocked_list_header">3 tài khoản</string>
+    <string name="blocked_list_header">0 tài khoản</string>
 
     <!-- Help Center Main -->
     <string name="help_top_bar">Trung tâm hỗ trợ</string>
-    <string name="help_greeting">Chào bạn, Dishcision 2 đây.\nBạn cần giúp gì hôm nay?</string>
+    <string name="help_greeting">Chào bạn, Dishcision đây.\nBạn cần giúp gì hôm nay?</string>
     <string name="help_search_hint">Tìm kiếm câu hỏi, từ khóa...</string>
     <string name="help_categories_title">Bạn muốn tìm hiểu về...</string>
     <string name="help_cat_account">Tài khoản &amp; đăng nhập</string>

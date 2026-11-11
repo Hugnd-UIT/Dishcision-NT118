@@ -2,6 +2,7 @@ package com.example.dishcision;
 
 import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.view.ViewGroup;
 import android.widget.CheckBox;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
@@ -9,16 +10,23 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.activity.EdgeToEdge;
+import androidx.annotation.NonNull;
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 
 import com.example.dishcision.network.ApiClient;
+import com.example.dishcision.network.AuthHelper;
 import com.example.dishcision.network.TokenManager;
+import com.example.dishcision.network.UserPreferencesResponse;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -28,12 +36,18 @@ import retrofit2.Response;
 
 public class TastePreferencesActivity extends AppCompatActivity {
 
+    private static final String TASTE_SPICY = "🌶️ Chua cay";
+    private static final String TASTE_RICH = "🍲 Đậm đà";
+    private static final String TASTE_SOUP = "🍜 Món nước";
+    private static final String TASTE_SOURDOUGH = "🥖 Bánh mì sourdough";
+
     private ImageView btnBack;
     private TextView tvTasteCountSubtext;
     private TextView chipSpicy;
     private TextView chipRich;
     private TextView chipSoup;
     private TextView chipSourdough;
+    private LinearLayout layoutCustomTastes;
     private TextView btnAddTastePreference;
 
     private CheckBox chkPeanuts;
@@ -45,10 +59,11 @@ public class TastePreferencesActivity extends AppCompatActivity {
     private LinearLayout btnSaveTasteSettings;
 
     private TokenManager tokenManager;
-    private boolean isSpicySelected = true;
-    private boolean isRichSelected = true;
-    private boolean isSoupSelected = true;
-    private boolean isSourdoughSelected = true;
+    private boolean isSpicySelected = false;
+    private boolean isRichSelected = false;
+    private boolean isSoupSelected = false;
+    private boolean isSourdoughSelected = false;
+    private final Set<String> customSelectedTastes = new LinkedHashSet<>();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -77,6 +92,7 @@ public class TastePreferencesActivity extends AppCompatActivity {
         chipRich = findViewById(R.id.chipRich);
         chipSoup = findViewById(R.id.chipSoup);
         chipSourdough = findViewById(R.id.chipSourdough);
+        layoutCustomTastes = findViewById(R.id.layoutCustomTastes);
         btnAddTastePreference = findViewById(R.id.btnAddTastePreference);
 
         chkPeanuts = findViewById(R.id.chkPeanuts);
@@ -88,21 +104,85 @@ public class TastePreferencesActivity extends AppCompatActivity {
         btnSaveTasteSettings = findViewById(R.id.btnSaveTasteSettings);
     }
 
+    private String getAllergyPrefsKey() {
+        int uid = AuthHelper.getCurrentUserId(this);
+        return uid > 0 ? "user_allergies_" + uid : "user_allergies_guest";
+    }
+
     private void loadSavedPreferences() {
         SharedPreferences prefs = getSharedPreferences("DishcisionPrefs", MODE_PRIVATE);
         Set<String> savedTastes = prefs.getStringSet("user_taste_preferences", null);
-        if (savedTastes != null) {
-            isSpicySelected = savedTastes.contains("🌶️ Chua cay");
-            isRichSelected = savedTastes.contains("🍲 Đậm đà");
-            isSoupSelected = savedTastes.contains("🍜 Món nước");
-            isSourdoughSelected = savedTastes.contains("🥖 Bánh mì sourdough");
+        applyTasteSet(savedTastes);
+
+        Set<String> savedAllergies = prefs.getStringSet(getAllergyPrefsKey(), null);
+        if (chkPeanuts != null) chkPeanuts.setChecked(savedAllergies != null && savedAllergies.contains("peanuts"));
+        if (chkShellfish != null) chkShellfish.setChecked(savedAllergies != null && savedAllergies.contains("shellfish"));
+        if (chkMilk != null) chkMilk.setChecked(savedAllergies != null && savedAllergies.contains("milk"));
+        if (chkEggs != null) chkEggs.setChecked(savedAllergies != null && savedAllergies.contains("eggs"));
+        if (chkGluten != null) chkGluten.setChecked(savedAllergies != null && savedAllergies.contains("gluten"));
+        if (chkSoy != null) chkSoy.setChecked(savedAllergies != null && savedAllergies.contains("soy"));
+    }
+
+    private void applyTasteSet(Set<String> tastes) {
+        isSpicySelected = false;
+        isRichSelected = false;
+        isSoupSelected = false;
+        isSourdoughSelected = false;
+        customSelectedTastes.clear();
+
+        if (tastes != null) {
+            for (String item : tastes) {
+                if (item == null) continue;
+                String trimmed = item.trim();
+                if (trimmed.isEmpty()) continue;
+                if (TASTE_SPICY.equals(trimmed) || "Chua cay".equalsIgnoreCase(trimmed)) {
+                    isSpicySelected = true;
+                } else if (TASTE_RICH.equals(trimmed) || "Đậm đà".equalsIgnoreCase(trimmed)) {
+                    isRichSelected = true;
+                } else if (TASTE_SOUP.equals(trimmed) || "Món nước".equalsIgnoreCase(trimmed)) {
+                    isSoupSelected = true;
+                } else if (TASTE_SOURDOUGH.equals(trimmed) || "Bánh mì sourdough".equalsIgnoreCase(trimmed)) {
+                    isSourdoughSelected = true;
+                } else {
+                    customSelectedTastes.add(trimmed);
+                }
+            }
         }
 
         toggleChipStyle(chipSpicy, isSpicySelected, "Chua cay");
         toggleChipStyle(chipRich, isRichSelected, "Đậm đà");
         toggleChipStyle(chipSoup, isSoupSelected, "Món nước");
         toggleChipStyle(chipSourdough, isSourdoughSelected, "Bánh mì sourdough");
+        renderCustomTastes();
         updateTasteCount();
+    }
+
+    private void renderCustomTastes() {
+        if (layoutCustomTastes == null) return;
+        layoutCustomTastes.removeAllViews();
+        int gap = (int) (8 * getResources().getDisplayMetrics().density);
+        int padH = (int) (14 * getResources().getDisplayMetrics().density);
+        int padV = (int) (6 * getResources().getDisplayMetrics().density);
+
+        for (String taste : new ArrayList<>(customSelectedTastes)) {
+            TextView chip = new TextView(this);
+            chip.setBackgroundResource(R.drawable.bg_chip_selected_orange);
+            chip.setTextColor(0xFFFF5A36);
+            chip.setTextSize(13);
+            chip.setTypeface(null, android.graphics.Typeface.BOLD);
+            chip.setPadding(padH, padV, padH, padV);
+            chip.setText("✔ " + taste + " ✕");
+            LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
+                    ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+            lp.setMarginEnd(gap);
+            chip.setLayoutParams(lp);
+            chip.setOnClickListener(v -> {
+                customSelectedTastes.remove(taste);
+                renderCustomTastes();
+                updateTasteCount();
+            });
+            layoutCustomTastes.addView(chip);
+        }
     }
 
     private void setupListeners() {
@@ -148,30 +228,32 @@ public class TastePreferencesActivity extends AppCompatActivity {
 
         if (btnSaveTasteSettings != null) {
             btnSaveTasteSettings.setOnClickListener(v -> {
-                int allergyCount = 0;
-                if (chkPeanuts != null && chkPeanuts.isChecked()) allergyCount++;
-                if (chkShellfish != null && chkShellfish.isChecked()) allergyCount++;
-                if (chkMilk != null && chkMilk.isChecked()) allergyCount++;
-                if (chkEggs != null && chkEggs.isChecked()) allergyCount++;
-                if (chkGluten != null && chkGluten.isChecked()) allergyCount++;
-                if (chkSoy != null && chkSoy.isChecked()) allergyCount++;
-
-                int activeTasteCount = getActiveTasteCount();
-
-                // Save selected tastes into SharedPreferences for EditProfileActivity
-                Set<String> newTastes = new HashSet<>();
-                if (isSpicySelected) newTastes.add("🌶️ Chua cay");
-                if (isRichSelected) newTastes.add("🍲 Đậm đà");
-                if (isSoupSelected) newTastes.add("🍜 Món nước");
-                if (isSourdoughSelected) newTastes.add("🥖 Bánh mì sourdough");
-
-                getSharedPreferences("DishcisionPrefs", MODE_PRIVATE).edit()
-                        .putStringSet("user_taste_preferences", newTastes)
-                        .apply();
-
-                savePreferencesToApi(newTastes, activeTasteCount, allergyCount);
+                Set<String> newAllergies = collectSelectedAllergies();
+                Set<String> newTastes = collectSelectedTastes();
+                savePreferencesToApi(newTastes, newAllergies);
             });
         }
+    }
+
+    private Set<String> collectSelectedTastes() {
+        Set<String> set = new LinkedHashSet<>();
+        if (isSpicySelected) set.add(TASTE_SPICY);
+        if (isRichSelected) set.add(TASTE_RICH);
+        if (isSoupSelected) set.add(TASTE_SOUP);
+        if (isSourdoughSelected) set.add(TASTE_SOURDOUGH);
+        set.addAll(customSelectedTastes);
+        return set;
+    }
+
+    private Set<String> collectSelectedAllergies() {
+        Set<String> set = new HashSet<>();
+        if (chkPeanuts != null && chkPeanuts.isChecked()) set.add("peanuts");
+        if (chkShellfish != null && chkShellfish.isChecked()) set.add("shellfish");
+        if (chkMilk != null && chkMilk.isChecked()) set.add("milk");
+        if (chkEggs != null && chkEggs.isChecked()) set.add("eggs");
+        if (chkGluten != null && chkGluten.isChecked()) set.add("gluten");
+        if (chkSoy != null && chkSoy.isChecked()) set.add("soy");
+        return set;
     }
 
     private void showAddNewTasteDialog() {
@@ -180,19 +262,15 @@ public class TastePreferencesActivity extends AppCompatActivity {
         int padding = (int) (16 * getResources().getDisplayMetrics().density);
         input.setPadding(padding, padding, padding, padding);
 
-        new androidx.appcompat.app.AlertDialog.Builder(this)
+        new AlertDialog.Builder(this)
                 .setTitle("Thêm khẩu vị món ăn")
                 .setView(input)
                 .setPositiveButton("Thêm", (dialog, which) -> {
                     String newTaste = input.getText().toString().trim();
                     if (!newTaste.isEmpty()) {
-                        android.content.SharedPreferences prefs = getSharedPreferences("DishcisionPrefs", MODE_PRIVATE);
-                        java.util.Set<String> savedSet = prefs.getStringSet("user_taste_preferences", null);
-                        java.util.Set<String> updated = savedSet != null ? new java.util.HashSet<>(savedSet) : new java.util.HashSet<>();
-                        updated.add("✨ " + newTaste);
-                        prefs.edit().putStringSet("user_taste_preferences", updated).apply();
-                        Toast.makeText(this, "Đã thêm khẩu vị: " + newTaste, Toast.LENGTH_SHORT).show();
-                        loadSavedPreferences();
+                        customSelectedTastes.add(newTaste.startsWith("✨") ? newTaste : "✨ " + newTaste);
+                        renderCustomTastes();
+                        updateTasteCount();
                     }
                 })
                 .setNegativeButton("Hủy", null)
@@ -213,7 +291,7 @@ public class TastePreferencesActivity extends AppCompatActivity {
     }
 
     private int getActiveTasteCount() {
-        int count = 0;
+        int count = customSelectedTastes.size();
         if (isSpicySelected) count++;
         if (isRichSelected) count++;
         if (isSoupSelected) count++;
@@ -228,36 +306,75 @@ public class TastePreferencesActivity extends AppCompatActivity {
     }
 
     private void fetchPreferencesApi() {
-        ApiClient.getApiService().getPreferences(ApiClient.getAuthHeader(this)).enqueue(new Callback<Object>() {
-            @Override
-            public void onResponse(Call<Object> call, Response<Object> response) {}
+        String authHeader = ApiClient.getAuthHeader(this);
+        if (authHeader.isEmpty()) return;
 
+        ApiClient.getApiService().getPreferences(authHeader).enqueue(new Callback<UserPreferencesResponse>() {
             @Override
-            public void onFailure(Call<Object> call, Throwable t) {}
-        });
-    }
-
-    private void savePreferencesToApi(Set<String> newTastes, int activeTasteCount, int allergyCount) {
-        Map<String, Object> prefData = new HashMap<>();
-        if (newTastes != null) {
-            prefData.put("preferences", new java.util.ArrayList<>(newTastes));
-        }
-        prefData.put("activeTastes", activeTasteCount);
-        prefData.put("allergyCount", allergyCount);
-
-        ApiClient.getApiService().updatePreferences(ApiClient.getAuthHeader(this), prefData).enqueue(new Callback<Object>() {
-            @Override
-            public void onResponse(Call<Object> call, Response<Object> response) {
-                Toast.makeText(TastePreferencesActivity.this, "Đã lưu " + activeTasteCount + " khẩu vị & " + allergyCount + " dị ứng!", Toast.LENGTH_SHORT).show();
-                setResult(RESULT_OK);
-                finish();
+            public void onResponse(@NonNull Call<UserPreferencesResponse> call, @NonNull Response<UserPreferencesResponse> response) {
+                if (isFinishing() || isDestroyed()) return;
+                if (response.isSuccessful() && response.body() != null && response.body().data != null) {
+                    Set<String> serverTastes = new LinkedHashSet<>();
+                    for (UserPreferencesResponse.PreferenceItem item : response.body().data) {
+                        if (item != null && item.name != null && !item.name.trim().isEmpty()) {
+                            serverTastes.add(item.name.trim());
+                        }
+                    }
+                    getSharedPreferences("DishcisionPrefs", MODE_PRIVATE).edit()
+                            .putStringSet("user_taste_preferences", serverTastes)
+                            .apply();
+                    applyTasteSet(serverTastes);
+                }
             }
 
             @Override
-            public void onFailure(Call<Object> call, Throwable t) {
-                Toast.makeText(TastePreferencesActivity.this, "Đã lưu " + activeTasteCount + " khẩu vị & " + allergyCount + " dị ứng!", Toast.LENGTH_SHORT).show();
-                setResult(RESULT_OK);
-                finish();
+            public void onFailure(@NonNull Call<UserPreferencesResponse> call, @NonNull Throwable t) {}
+        });
+    }
+
+    private void savePreferencesToApi(Set<String> newTastes, Set<String> newAllergies) {
+        String authHeader = ApiClient.getAuthHeader(this);
+        if (authHeader.isEmpty()) {
+            Toast.makeText(this, "Vui lòng đăng nhập để lưu tùy chọn", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        List<String> tasteList = new ArrayList<>(newTastes);
+        Map<String, Object> prefData = new HashMap<>();
+        prefData.put("preferences", tasteList);
+
+        int activeTasteCount = tasteList.size();
+        int allergyCount = newAllergies.size();
+
+        if (btnSaveTasteSettings != null) btnSaveTasteSettings.setEnabled(false);
+
+        ApiClient.getApiService().updatePreferences(authHeader, prefData).enqueue(new Callback<Object>() {
+            @Override
+            public void onResponse(@NonNull Call<Object> call, @NonNull Response<Object> response) {
+                if (btnSaveTasteSettings != null) btnSaveTasteSettings.setEnabled(true);
+                if (response.isSuccessful()) {
+                    getSharedPreferences("DishcisionPrefs", MODE_PRIVATE).edit()
+                            .putStringSet("user_taste_preferences", new HashSet<>(newTastes))
+                            .putStringSet(getAllergyPrefsKey(), new HashSet<>(newAllergies))
+                            .apply();
+                    Toast.makeText(TastePreferencesActivity.this,
+                            "Đã lưu " + activeTasteCount + " khẩu vị & " + allergyCount + " dị ứng!",
+                            Toast.LENGTH_SHORT).show();
+                    setResult(RESULT_OK);
+                    finish();
+                } else {
+                    Toast.makeText(TastePreferencesActivity.this,
+                            "Không thể lưu tùy chọn (Mã " + response.code() + ")",
+                            Toast.LENGTH_SHORT).show();
+                }
+            }
+
+            @Override
+            public void onFailure(@NonNull Call<Object> call, @NonNull Throwable t) {
+                if (btnSaveTasteSettings != null) btnSaveTasteSettings.setEnabled(true);
+                Toast.makeText(TastePreferencesActivity.this,
+                        "Lỗi kết nối máy chủ, chưa thể lưu tùy chọn",
+                        Toast.LENGTH_SHORT).show();
             }
         });
     }

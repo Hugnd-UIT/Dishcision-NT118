@@ -23,6 +23,9 @@ public interface ApiService {
     @POST("auth/register")
     Call<AuthResponse> register(@Body RegisterRequest request);
 
+    @POST("auth/google")
+    Call<AuthResponse> googleAuth(@Body GoogleAuthRequest request);
+
     @POST("auth/forgot-password")
     Call<AuthResponse> forgotPassword(@Body ForgotPasswordRequest request);
 
@@ -49,10 +52,26 @@ public interface ApiService {
     );
 
     @GET("users/{userId}")
-    Call<UserProfileResponse> getUserProfile(@Path("userId") String userId);
+    Call<UserProfileResponse> getUserProfile(
+            @Header("Authorization") String authHeader,
+            @Path("userId") String userId
+    );
 
     @GET("users/me/posts")
     Call<FeedPostsResponse> getMyPosts(@Header("Authorization") String authHeader);
+
+    @GET("users/me/posts")
+    Call<FeedPostsResponse> getMyPostsByStatus(
+            @Header("Authorization") String authHeader,
+            @Query("status") String status
+    );
+
+    @GET("users/me/activity")
+    Call<ActivityLogResponse> getMyActivity(
+            @Header("Authorization") String authHeader,
+            @Query("type") String type,
+            @Query("days") Integer days
+    );
 
     @GET("users/{userId}/posts")
     Call<FeedPostsResponse> getUserPosts(
@@ -86,7 +105,7 @@ public interface ApiService {
 
     // ── TASTE PREFERENCES ENDPOINTS ───────────────
     @GET("preferences/me")
-    Call<Object> getPreferences(@Header("Authorization") String authHeader);
+    Call<UserPreferencesResponse> getPreferences(@Header("Authorization") String authHeader);
 
     @PUT("preferences/me")
     Call<Object> updatePreferences(
@@ -100,6 +119,12 @@ public interface ApiService {
 
     @GET("users/me/blocked")
     Call<AccountsListResponse> getBlockedAccounts(@Header("Authorization") String authHeader);
+
+    @POST("users/me/block")
+    Call<AccountsListResponse> blockAccount(
+            @Header("Authorization") String authHeader,
+            @Body AccountActionRequest request
+    );
 
     @POST("users/me/unblock")
     Call<AccountsListResponse> unblockAccount(
@@ -123,10 +148,37 @@ public interface ApiService {
     @GET("posts")
     Call<FeedPostsResponse> getFeedPosts(@Header("Authorization") String authHeader);
 
+    @GET("posts")
+    Call<FeedPostsResponse> getFeedPostsFiltered(
+            @Header("Authorization") String authHeader,
+            @Query("hasVoucher") Boolean hasVoucher,
+            @Query("sort") String sort,
+            @Query("limit") Integer limit
+    );
+
     @POST("posts")
     Call<CreatePostResponse> createPost(
             @Header("Authorization") String authHeader,
             @Body CreatePostRequest request
+    );
+
+    @PUT("posts/{postId}")
+    Call<CreatePostResponse> updatePost(
+            @Header("Authorization") String authHeader,
+            @Path("postId") int postId,
+            @Body UpdatePostRequest request
+    );
+
+    @DELETE("posts/{postId}")
+    Call<Object> deletePost(
+            @Header("Authorization") String authHeader,
+            @Path("postId") int postId
+    );
+
+    @POST("posts/{postId}/shares")
+    Call<Object> sharePost(
+            @Header("Authorization") String authHeader,
+            @Path("postId") int postId
     );
 
     @GET("users/me/saved-posts")
@@ -134,6 +186,47 @@ public interface ApiService {
 
     @GET("restaurants/following")
     Call<FollowingRestaurantsResponse> getFollowingRestaurants(@Header("Authorization") String authHeader);
+
+    @GET("restaurants/following")
+    Call<FollowingRestaurantsResponse> getFollowingRestaurantsFiltered(
+            @Header("Authorization") String authHeader,
+            @Query("keyword") String keyword
+    );
+
+    @GET("stores")
+    Call<FollowingRestaurantsResponse> getStores(
+            @Header("Authorization") String authHeader,
+            @Query("keyword") String keyword
+    );
+
+    @GET("stores/{id}")
+    Call<StoreDetailResponse> getStoreDetail(
+            @Header("Authorization") String authHeader,
+            @Path("id") int storeId
+    );
+
+    @GET("dishes")
+    Call<DishesResponse> getDishes(
+            @Query("storeId") Integer storeId,
+            @Query("category") String category,
+            @Query("keyword") String keyword,
+            @Query("limit") Integer limit
+    );
+
+    @GET("dishes/{id}")
+    Call<DishDetailResponse> getDishDetail(@Path("id") int dishId);
+
+    @GET("stories")
+    Call<StoriesResponse> getStories(
+            @Query("userId") Integer userId,
+            @Query("storeName") String storeName
+    );
+
+    @POST("stories")
+    Call<CreateStoryResponse> createStory(
+            @Header("Authorization") String authHeader,
+            @Body CreateStoryRequest request
+    );
 
     @GET("reviews")
     Call<ReviewsResponse> getReviews(
@@ -216,11 +309,17 @@ public interface ApiService {
     @GET("users/me/restricted")
     Call<AccountsListResponse> getRestrictedAccounts(@Header("Authorization") String authHeader);
 
+    @POST("users/me/restrict")
+    Call<AccountsListResponse> restrictAccount(@Header("Authorization") String authHeader, @Body AccountActionRequest request);
+
     @POST("users/me/unrestrict")
     Call<AccountsListResponse> unrestrictAccount(@Header("Authorization") String authHeader, @Body AccountActionRequest request);
 
     @GET("auth/2fa/status")
     Call<TwoFactorStatusResponse> get2FAStatus(@Header("Authorization") String authHeader);
+
+    @GET("auth/2fa/setup")
+    Call<TwoFactorSetupResponse> get2FASetup(@Header("Authorization") String authHeader);
 
     @POST("auth/2fa/disable")
     Call<TwoFactorStatusResponse> disable2FA(@Header("Authorization") String authHeader);
@@ -237,9 +336,93 @@ public interface ApiService {
     @DELETE("users/me")
     Call<Object> deleteMyAccount(@Header("Authorization") String authHeader);
 
-    // ── NOTIFICATIONS ENDPOINTS ───────────────────
+    @DELETE("reviews/{reviewId}")
+    Call<Object> deleteReview(
+            @Header("Authorization") String authHeader,
+            @Path("reviewId") int reviewId
+    );
+
+    @GET("users/me/addresses")
+    Call<AddressesResponse> getAddresses(@Header("Authorization") String authHeader);
+
+    @POST("users/me/addresses")
+    Call<AddressResponse> addAddress(
+            @Header("Authorization") String authHeader,
+            @Body AddressRequest request
+    );
+
+    @PUT("users/me/addresses/{id}")
+    Call<AddressResponse> updateAddress(
+            @Header("Authorization") String authHeader,
+            @Path("id") int addressId,
+            @Body AddressRequest request
+    );
+
+    @PATCH("users/me/addresses/{id}/default")
+    Call<AddressResponse> setDefaultAddress(
+            @Header("Authorization") String authHeader,
+            @Path("id") int addressId
+    );
+
+    @DELETE("users/me/addresses/{id}")
+    Call<Object> deleteAddress(
+            @Header("Authorization") String authHeader,
+            @Path("id") int addressId
+    );
+
+    @GET("search/food")
+    Call<FeedPostsResponse> searchFood(
+            @Query("keyword") String keyword,
+            @Query("location") String location,
+            @Query("limit") Integer limit
+    );
+
+    @GET("search/accounts")
+    Call<SearchAccountsResponse> searchAccounts(
+            @Query("keyword") String keyword,
+            @Query("limit") Integer limit
+    );
+
+    @GET("search/dishes")
+    Call<SearchDishesResponse> searchDishes(
+            @Query("keyword") String keyword,
+            @Query("limit") Integer limit
+    );
+
+    @GET("search/stores")
+    Call<SearchStoresResponse> searchStores(
+            @Query("keyword") String keyword,
+            @Query("limit") Integer limit
+    );
+
+    @GET("search/trending")
+    Call<TrendingResponse> getTrending();
+
+    @GET("food-decision/categories")
+    Call<CategoriesResponse> getFoodCategories();
+
+    @POST("food-decision/random-wheel")
+    Call<RandomWheelResponse> spinRandomWheel(@Body RandomWheelRequest request);
+
+    @GET("chats")
+    Call<ChatsListResponse> getChats(@Header("Authorization") String authHeader);
+
+    @GET("chats/{recipientId}/messages")
+    Call<ChatMessagesResponse> getChatMessages(
+            @Header("Authorization") String authHeader,
+            @Path("recipientId") int recipientId,
+            @Query("limit") Integer limit
+    );
+
+    @POST("chats/{recipientId}/messages")
+    Call<SendChatMessageResponse> sendChatMessage(
+            @Header("Authorization") String authHeader,
+            @Path("recipientId") int recipientId,
+            @Body SendChatMessageRequest request
+    );
+
     @GET("notifications")
-    Call<Object> getNotifications(@Header("Authorization") String authHeader);
+    Call<NotificationResponse> getNotifications(@Header("Authorization") String authHeader);
 
     @PATCH("notifications/{notificationId}/read")
     Call<Object> markNotificationRead(

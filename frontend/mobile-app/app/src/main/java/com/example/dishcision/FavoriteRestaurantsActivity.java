@@ -1,12 +1,16 @@
 package com.example.dishcision;
 
 import android.content.Intent;
+import android.graphics.Color;
 import android.graphics.Typeface;
 import android.os.Bundle;
 import android.text.Editable;
+import android.text.TextUtils;
 import android.text.TextWatcher;
+import android.view.Gravity;
 import android.view.View;
 import android.widget.EditText;
+import android.widget.HorizontalScrollView;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.RelativeLayout;
@@ -14,6 +18,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.activity.EdgeToEdge;
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.ContextCompat;
 import androidx.core.graphics.Insets;
@@ -21,10 +26,16 @@ import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 
 import com.example.dishcision.network.ApiClient;
+import com.example.dishcision.network.AuthResponse;
 import com.example.dishcision.network.FollowingRestaurantsResponse;
-import com.google.android.material.bottomsheet.BottomSheetDialog;
+import com.example.dishcision.network.ImageLoader;
 
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
@@ -34,6 +45,7 @@ public class FavoriteRestaurantsActivity extends AppCompatActivity {
     private ImageView btnBack;
     private ImageView btnNotification;
     private EditText edtSearch;
+    private TextView tvSummaryBadge;
 
     private LinearLayout navHome;
     private LinearLayout navDecide;
@@ -41,39 +53,19 @@ public class FavoriteRestaurantsActivity extends AppCompatActivity {
     private LinearLayout navMessages;
     private LinearLayout navProfile;
 
-    private View cardStore1;
-    private View cardStore2;
-    private View cardStore3;
-
-    private TextView tvStoreName1;
-    private TextView tvStoreName2;
-    private TextView tvStoreName3;
-
-    private TextView btnFollowStore1;
-    private TextView btnFollowStore2;
-    private TextView btnFollowStore3;
-
-    private View btnShareStore1;
-    private View btnShareStore2;
-    private View btnShareStore3;
-
-    private LinearLayout btnViewMenuPhoGiaTruyen;
-    private LinearLayout btnViewMenuComTam;
-    private LinearLayout btnViewMenuTocoToco;
-
-    private LinearLayout storyBepLucNam;
-    private LinearLayout storyPhoThin;
-    private LinearLayout storyTraMuaThu;
-    private LinearLayout storyPizzaLoCui;
-
     private TextView chipAll;
     private TextView chipOpen;
     private TextView chipNearMe;
     private TextView currentActiveChip;
 
-    private boolean isFollow1 = true;
-    private boolean isFollow2 = true;
-    private boolean isFollow3 = true;
+    private TextView tvStoriesHeader;
+    private HorizontalScrollView scrollStories;
+    private LinearLayout layoutStoriesContainer;
+    private LinearLayout layoutStoresContainer;
+    private TextView tvEmptyStores;
+
+    private final List<FollowingRestaurantsResponse.StoreItem> loadedStores = new ArrayList<>();
+    private final List<FollowingRestaurantsResponse.StoryItem> loadedStories = new ArrayList<>();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -87,15 +79,22 @@ public class FavoriteRestaurantsActivity extends AppCompatActivity {
             return insets;
         });
 
+        ApiClient.init(this);
         initViews();
         setupListeners();
-        fetchFollowingRestaurantsFromBackend();
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        fetchRestaurantsFromBackend();
     }
 
     private void initViews() {
         btnBack = findViewById(R.id.btnBack);
         btnNotification = findViewById(R.id.btnNotification);
         edtSearch = findViewById(R.id.edtSearch);
+        tvSummaryBadge = findViewById(R.id.tvSummaryBadge);
 
         navHome = findViewById(R.id.navHome);
         navDecide = findViewById(R.id.navDecide);
@@ -103,225 +102,62 @@ public class FavoriteRestaurantsActivity extends AppCompatActivity {
         navMessages = findViewById(R.id.navMessages);
         navProfile = findViewById(R.id.navProfile);
 
-        cardStore1 = findViewById(R.id.cardStore1);
-        cardStore2 = findViewById(R.id.cardStore2);
-        cardStore3 = findViewById(R.id.cardStore3);
-
-        tvStoreName1 = findViewById(R.id.tvStoreName1);
-        tvStoreName2 = findViewById(R.id.tvStoreName2);
-        tvStoreName3 = findViewById(R.id.tvStoreName3);
-
-        btnFollowStore1 = findViewById(R.id.btnFollowStore1);
-        btnFollowStore2 = findViewById(R.id.btnFollowStore2);
-        btnFollowStore3 = findViewById(R.id.btnFollowStore3);
-
-        btnShareStore1 = findViewById(R.id.btnShareStore1);
-        btnShareStore2 = findViewById(R.id.btnShareStore2);
-        btnShareStore3 = findViewById(R.id.btnShareStore3);
-
-        btnViewMenuPhoGiaTruyen = findViewById(R.id.btnViewMenuPhoGiaTruyen);
-        btnViewMenuComTam = findViewById(R.id.btnViewMenuComTam);
-        btnViewMenuTocoToco = findViewById(R.id.btnViewMenuTocoToco);
-
-        storyBepLucNam = findViewById(R.id.storyBepLucNam);
-        storyPhoThin = findViewById(R.id.storyPhoThin);
-        storyTraMuaThu = findViewById(R.id.storyTraMuaThu);
-        storyPizzaLoCui = findViewById(R.id.storyPizzaLoCui);
-
         chipAll = findViewById(R.id.chipAll);
         chipOpen = findViewById(R.id.chipOpen);
         chipNearMe = findViewById(R.id.chipNearMe);
         currentActiveChip = chipAll;
+
+        tvStoriesHeader = findViewById(R.id.tvStoriesHeader);
+        scrollStories = findViewById(R.id.scrollStories);
+        layoutStoriesContainer = findViewById(R.id.layoutStoriesContainer);
+        layoutStoresContainer = findViewById(R.id.layoutStoresContainer);
+        tvEmptyStores = findViewById(R.id.tvEmptyStores);
     }
 
     private void setupListeners() {
-        if (btnBack != null) {
-            btnBack.setOnClickListener(v -> finish());
-        }
+        if (btnBack != null) btnBack.setOnClickListener(v -> finish());
 
         if (btnNotification != null) {
-            btnNotification.setOnClickListener(v -> {
-                Intent intent = new Intent(FavoriteRestaurantsActivity.this, NotificationsActivity.class);
-                startActivity(intent);
-            });
+            btnNotification.setOnClickListener(v -> startActivity(new Intent(this, NotificationsActivity.class)));
         }
 
-        // Realtime search bar filter
         if (edtSearch != null) {
             edtSearch.addTextChangedListener(new TextWatcher() {
-                @Override
-                public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
-
-                @Override
-                public void onTextChanged(CharSequence s, int start, int before, int count) {
-                    filterStores(s.toString().toLowerCase().trim());
-                }
-
-                @Override
-                public void afterTextChanged(Editable s) {}
+                @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+                @Override public void onTextChanged(CharSequence s, int start, int before, int count) { renderStores(); }
+                @Override public void afterTextChanged(Editable s) {}
             });
         }
 
         if (navHome != null) {
             navHome.setOnClickListener(v -> {
-                Intent intent = new Intent(FavoriteRestaurantsActivity.this, HomeActivity.class);
+                Intent intent = new Intent(this, HomeActivity.class);
                 intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
                 startActivity(intent);
                 finish();
             });
         }
+        if (navDecide != null) navDecide.setOnClickListener(v -> startActivity(new Intent(this, DecideActivity.class)));
+        if (navCreate != null) navCreate.setOnClickListener(v -> startActivity(new Intent(this, CreatePostActivity.class)));
+        if (navMessages != null) navMessages.setOnClickListener(v -> startActivity(new Intent(this, MessagesInboxActivity.class)));
+        if (navProfile != null) navProfile.setOnClickListener(v -> startActivity(new Intent(this, ProfileActivity.class)));
 
-        if (navDecide != null) {
-            navDecide.setOnClickListener(v -> {
-                Intent intent = new Intent(FavoriteRestaurantsActivity.this, DecideActivity.class);
-                startActivity(intent);
-            });
-        }
-
-        if (navCreate != null) {
-            navCreate.setOnClickListener(v -> {
-                Intent intent = new Intent(FavoriteRestaurantsActivity.this, CreatePostActivity.class);
-                startActivity(intent);
-            });
-        }
-
-        if (navMessages != null) {
-            navMessages.setOnClickListener(v -> {
-                Intent intent = new Intent(FavoriteRestaurantsActivity.this, MessagesInboxActivity.class);
-                startActivity(intent);
-            });
-        }
-
-        if (navProfile != null) {
-            navProfile.setOnClickListener(v -> {
-                Intent intent = new Intent(FavoriteRestaurantsActivity.this, ProfileActivity.class);
-                startActivity(intent);
-            });
-        }
-
-        // Follow / Unfollow buttons
-        if (btnFollowStore1 != null) {
-            btnFollowStore1.setOnClickListener(v -> {
-                isFollow1 = !isFollow1;
-                btnFollowStore1.setText(isFollow1 ? "Đang theo dõi" : "Theo dõi");
-                Toast.makeText(this, isFollow1 ? "Đã theo dõi Phở Bò Gia Truyền" : "Đã bỏ theo dõi Phở Bò Gia Truyền", Toast.LENGTH_SHORT).show();
-            });
-        }
-
-        if (btnFollowStore2 != null) {
-            btnFollowStore2.setOnClickListener(v -> {
-                isFollow2 = !isFollow2;
-                btnFollowStore2.setText(isFollow2 ? "Đang theo dõi" : "Theo dõi");
-                Toast.makeText(this, isFollow2 ? "Đã theo dõi Cơm Tấm Ba Nghiền" : "Đã bỏ theo dõi Cơm Tấm Ba Nghiền", Toast.LENGTH_SHORT).show();
-            });
-        }
-
-        if (btnFollowStore3 != null) {
-            btnFollowStore3.setOnClickListener(v -> {
-                isFollow3 = !isFollow3;
-                btnFollowStore3.setText(isFollow3 ? "Đang theo dõi" : "Theo dõi");
-                Toast.makeText(this, isFollow3 ? "Đã theo dõi TocoToco" : "Đã bỏ theo dõi TocoToco", Toast.LENGTH_SHORT).show();
-            });
-        }
-
-        // Share buttons
-        View.OnClickListener shareListener = v -> openShareBottomSheet();
-        if (btnShareStore1 != null) btnShareStore1.setOnClickListener(shareListener);
-        if (btnShareStore2 != null) btnShareStore2.setOnClickListener(shareListener);
-        if (btnShareStore3 != null) btnShareStore3.setOnClickListener(shareListener);
-
-        if (btnViewMenuPhoGiaTruyen != null) {
-            btnViewMenuPhoGiaTruyen.setOnClickListener(v -> openMenuBottomSheet("Menu Quán Phở Bò Gia Truyền 1986"));
-        }
-        if (btnViewMenuComTam != null) {
-            btnViewMenuComTam.setOnClickListener(v -> openMenuBottomSheet("Menu Cơm Tấm Ba Nghiền"));
-        }
-        if (btnViewMenuTocoToco != null) {
-            btnViewMenuTocoToco.setOnClickListener(v -> openMenuBottomSheet("Menu Trà Sữa TocoToco - Cầu Giấy"));
-        }
-
-        if (storyBepLucNam != null) storyBepLucNam.setOnClickListener(v -> openStoryViewer("Bếp Lục Nam"));
-        if (storyPhoThin != null) storyPhoThin.setOnClickListener(v -> openStoryViewer("Phở Thìn"));
-        if (storyTraMuaThu != null) storyTraMuaThu.setOnClickListener(v -> openStoryViewer("Trà Mùa Thu"));
-        if (storyPizzaLoCui != null) storyPizzaLoCui.setOnClickListener(v -> openStoryViewer("Pizza Lò Củi"));
-
-        if (chipAll != null) chipAll.setOnClickListener(v -> setActiveChip(chipAll));
-        if (chipOpen != null) chipOpen.setOnClickListener(v -> setActiveChip(chipOpen));
-        if (chipNearMe != null) chipNearMe.setOnClickListener(v -> setActiveChip(chipNearMe));
-    }
-
-    private void filterStores(String query) {
-        if (query.isEmpty()) {
-            if (cardStore1 != null) cardStore1.setVisibility(View.VISIBLE);
-            if (cardStore2 != null) cardStore2.setVisibility(View.VISIBLE);
-            if (cardStore3 != null) cardStore3.setVisibility(View.VISIBLE);
-            return;
-        }
-
-        if (cardStore1 != null) {
-            cardStore1.setVisibility("quán phở bò gia truyền 1986 phở bò hà nội".contains(query) ? View.VISIBLE : View.GONE);
-        }
-        if (cardStore2 != null) {
-            cardStore2.setVisibility("cơm tấm ba nghiền hcm tphcm".contains(query) ? View.VISIBLE : View.GONE);
-        }
-        if (cardStore3 != null) {
-            cardStore3.setVisibility("trà sữa tocotoco cầu giấy hà nội".contains(query) ? View.VISIBLE : View.GONE);
-        }
-    }
-
-    private void openMenuBottomSheet(String storeName) {
-        BottomSheetDialog bottomSheetDialog = new BottomSheetDialog(FavoriteRestaurantsActivity.this);
-        View dialogView = getLayoutInflater().inflate(R.layout.layout_dialog_menu_bottomsheet, null);
-        bottomSheetDialog.setContentView(dialogView);
-
-        TextView tvMenuStoreName = dialogView.findViewById(R.id.tvMenuStoreName);
-        RelativeLayout btnCloseMenu = dialogView.findViewById(R.id.btnCloseMenu);
-
-        if (tvMenuStoreName != null && storeName != null) {
-            tvMenuStoreName.setText(storeName);
-        }
-
-        if (btnCloseMenu != null) {
-            btnCloseMenu.setOnClickListener(v -> bottomSheetDialog.dismiss());
-        }
-
-        bottomSheetDialog.show();
-    }
-
-    private void openShareBottomSheet() {
-        BottomSheetDialog bottomSheetDialog = new BottomSheetDialog(FavoriteRestaurantsActivity.this);
-        View dialogView = getLayoutInflater().inflate(R.layout.layout_dialog_share_post, null);
-        bottomSheetDialog.setContentView(dialogView);
-
-        View btnCloseShare = dialogView.findViewById(R.id.btnCloseShare);
-        View btnSendDishcision = dialogView.findViewById(R.id.btnSendDishcision);
-        View btnCopyLink = dialogView.findViewById(R.id.btnCopyLink);
-
-        if (btnCloseShare != null) {
-            btnCloseShare.setOnClickListener(v -> bottomSheetDialog.dismiss());
-        }
-
-        if (btnSendDishcision != null) {
-            btnSendDishcision.setOnClickListener(v -> {
-                Toast.makeText(FavoriteRestaurantsActivity.this, "Đã chia sẻ quán ăn!", Toast.LENGTH_SHORT).show();
-                bottomSheetDialog.dismiss();
-            });
-        }
-
-        if (btnCopyLink != null) {
-            btnCopyLink.setOnClickListener(v -> {
-                Toast.makeText(FavoriteRestaurantsActivity.this, "Đã sao chép liên kết quán ăn!", Toast.LENGTH_SHORT).show();
-                bottomSheetDialog.dismiss();
-            });
-        }
-
-        bottomSheetDialog.show();
-    }
-
-    private void openStoryViewer(String storeName) {
-        Intent intent = new Intent(FavoriteRestaurantsActivity.this, StoryActivity.class);
-        intent.putExtra(StoryActivity.EXTRA_STORE_NAME, storeName);
-        startActivity(intent);
+        if (chipAll != null) chipAll.setOnClickListener(v -> {
+            if (currentActiveChip != chipAll) {
+                setActiveChip(chipAll);
+                fetchRestaurantsFromBackend();
+            }
+        });
+        if (chipOpen != null) chipOpen.setOnClickListener(v -> {
+            setActiveChip(chipOpen);
+            renderStores();
+        });
+        if (chipNearMe != null) chipNearMe.setOnClickListener(v -> {
+            if (currentActiveChip != chipNearMe) {
+                setActiveChip(chipNearMe);
+                fetchRestaurantsFromBackend();
+            }
+        });
     }
 
     private void setActiveChip(TextView selectedChip) {
@@ -340,48 +176,429 @@ public class FavoriteRestaurantsActivity extends AppCompatActivity {
         currentActiveChip = selectedChip;
     }
 
-    private void fetchFollowingRestaurantsFromBackend() {
+    private void fetchRestaurantsFromBackend() {
         String authHeader = ApiClient.getAuthHeader(this);
-        ApiClient.getApiService().getFollowingRestaurants(authHeader).enqueue(new Callback<FollowingRestaurantsResponse>() {
+        boolean exploreMode = currentActiveChip == chipNearMe;
+        Call<FollowingRestaurantsResponse> call = exploreMode
+                ? ApiClient.getApiService().getStores(authHeader, null)
+                : ApiClient.getApiService().getFollowingRestaurants(authHeader);
+
+        call.enqueue(new Callback<FollowingRestaurantsResponse>() {
             @Override
-            public void onResponse(Call<FollowingRestaurantsResponse> call, Response<FollowingRestaurantsResponse> response) {
+            public void onResponse(@NonNull Call<FollowingRestaurantsResponse> call, @NonNull Response<FollowingRestaurantsResponse> response) {
+                if (isFinishing()) return;
                 if (response.isSuccessful() && response.body() != null && response.body().getData() != null) {
                     FollowingRestaurantsResponse.RestaurantData data = response.body().getData();
-                    bindRestaurantsData(data);
+                    loadedStores.clear();
+                    if (data.restaurants != null) loadedStores.addAll(data.restaurants);
+                    loadedStories.clear();
+                    if (data.stories != null) loadedStories.addAll(data.stories);
+
+                    if (tvSummaryBadge != null) {
+                        tvSummaryBadge.setText(data.newDishesSummary != null && !data.newDishesSummary.isEmpty()
+                                ? data.newDishesSummary
+                                : loadedStores.size() + " quán ăn");
+                    }
+
+                    int openCount = 0;
+                    for (FollowingRestaurantsResponse.StoreItem item : loadedStores) {
+                        if (item.isOpen) openCount++;
+                    }
+                    if (!exploreMode) {
+                        if (chipAll != null) chipAll.setText("Đang theo dõi (" + loadedStores.size() + ")");
+                        if (chipOpen != null) chipOpen.setText("Đang mở cửa (" + openCount + ")");
+                    }
+
+                    renderStories();
+                    renderStores();
+                } else {
+                    if (tvSummaryBadge != null) tvSummaryBadge.setText("Không thể tải danh sách quán");
+                    Toast.makeText(FavoriteRestaurantsActivity.this, "Không thể tải danh sách quán (mã " + response.code() + ")", Toast.LENGTH_SHORT).show();
                 }
             }
 
             @Override
-            public void onFailure(Call<FollowingRestaurantsResponse> call, Throwable t) {}
+            public void onFailure(@NonNull Call<FollowingRestaurantsResponse> call, @NonNull Throwable t) {
+                if (isFinishing()) return;
+                if (tvSummaryBadge != null) tvSummaryBadge.setText("Lỗi kết nối");
+                Toast.makeText(FavoriteRestaurantsActivity.this, "Lỗi kết nối máy chủ", Toast.LENGTH_SHORT).show();
+            }
         });
     }
 
-    private void bindRestaurantsData(FollowingRestaurantsResponse.RestaurantData data) {
-        if (data == null || data.restaurants == null) return;
-        List<FollowingRestaurantsResponse.StoreItem> stores = data.restaurants;
-        if (stores.size() > 0) {
-            FollowingRestaurantsResponse.StoreItem s1 = stores.get(0);
-            if (tvStoreName1 != null && s1.name != null) tvStoreName1.setText(s1.name);
-            if (btnFollowStore1 != null) {
-                isFollow1 = s1.isFollowing;
-                btnFollowStore1.setText(isFollow1 ? "Đang theo dõi" : "Theo dõi");
+    private void renderStories() {
+        if (layoutStoriesContainer == null) return;
+        layoutStoriesContainer.removeAllViews();
+
+        Map<Integer, FollowingRestaurantsResponse.StoryItem> distinctByStore = new LinkedHashMap<>();
+        for (FollowingRestaurantsResponse.StoryItem st : loadedStories) {
+            if (st.userId > 0 && !distinctByStore.containsKey(st.userId)) {
+                distinctByStore.put(st.userId, st);
             }
         }
-        if (stores.size() > 1) {
-            FollowingRestaurantsResponse.StoreItem s2 = stores.get(1);
-            if (tvStoreName2 != null && s2.name != null) tvStoreName2.setText(s2.name);
-            if (btnFollowStore2 != null) {
-                isFollow2 = s2.isFollowing;
-                btnFollowStore2.setText(isFollow2 ? "Đang theo dõi" : "Theo dõi");
-            }
+
+        if (distinctByStore.isEmpty()) {
+            if (tvStoriesHeader != null) tvStoriesHeader.setVisibility(View.GONE);
+            if (scrollStories != null) scrollStories.setVisibility(View.GONE);
+            return;
         }
-        if (stores.size() > 2) {
-            FollowingRestaurantsResponse.StoreItem s3 = stores.get(2);
-            if (tvStoreName3 != null && s3.name != null) tvStoreName3.setText(s3.name);
-            if (btnFollowStore3 != null) {
-                isFollow3 = s3.isFollowing;
-                btnFollowStore3.setText(isFollow3 ? "Đang theo dõi" : "Theo dõi");
+
+        if (tvStoriesHeader != null) tvStoriesHeader.setVisibility(View.VISIBLE);
+        if (scrollStories != null) scrollStories.setVisibility(View.VISIBLE);
+
+        boolean first = true;
+        for (FollowingRestaurantsResponse.StoryItem st : distinctByStore.values()) {
+            LinearLayout col = new LinearLayout(this);
+            LinearLayout.LayoutParams colParams = new LinearLayout.LayoutParams(dpToPx(72), LinearLayout.LayoutParams.WRAP_CONTENT);
+            if (!first) colParams.setMarginStart(dpToPx(10));
+            first = false;
+            col.setLayoutParams(colParams);
+            col.setOrientation(LinearLayout.VERTICAL);
+            col.setGravity(Gravity.CENTER_HORIZONTAL);
+            col.setClickable(true);
+            col.setFocusable(true);
+
+            RelativeLayout ring = new RelativeLayout(this);
+            ring.setLayoutParams(new LinearLayout.LayoutParams(dpToPx(60), dpToPx(60)));
+            ring.setBackgroundResource(R.drawable.bg_story_ring);
+            int pad = dpToPx(3);
+            ring.setPadding(pad, pad, pad, pad);
+
+            ImageView avatar = new ImageView(this);
+            avatar.setLayoutParams(new RelativeLayout.LayoutParams(
+                    RelativeLayout.LayoutParams.MATCH_PARENT, RelativeLayout.LayoutParams.MATCH_PARENT));
+            avatar.setScaleType(ImageView.ScaleType.CENTER_CROP);
+            avatar.setImageResource(R.drawable.logo);
+            if (st.avatarUrl != null && !st.avatarUrl.isEmpty()) {
+                ImageLoader.loadAvatar(avatar, st.avatarUrl);
             }
+            ring.addView(avatar);
+
+            TextView tvName = new TextView(this);
+            LinearLayout.LayoutParams nameParams = new LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+            nameParams.topMargin = dpToPx(6);
+            tvName.setLayoutParams(nameParams);
+            tvName.setMaxLines(1);
+            tvName.setEllipsize(TextUtils.TruncateAt.END);
+            tvName.setText(st.storeName != null ? st.storeName : "");
+            tvName.setTextColor(ContextCompat.getColor(this, R.color.text_dark));
+            tvName.setTextSize(12f);
+
+            col.addView(ring);
+            col.addView(tvName);
+            col.setOnClickListener(v -> {
+                Intent intent = new Intent(this, StoryActivity.class);
+                intent.putExtra(StoryActivity.EXTRA_USER_ID, st.userId);
+                intent.putExtra(StoryActivity.EXTRA_STORE_NAME, st.storeName);
+                startActivity(intent);
+            });
+            layoutStoriesContainer.addView(col);
         }
+    }
+
+    private void renderStores() {
+        if (layoutStoresContainer == null) return;
+        layoutStoresContainer.removeAllViews();
+
+        String query = edtSearch != null ? edtSearch.getText().toString().trim().toLowerCase(Locale.ROOT) : "";
+        boolean onlyOpen = currentActiveChip == chipOpen;
+
+        List<FollowingRestaurantsResponse.StoreItem> filtered = new ArrayList<>();
+        for (FollowingRestaurantsResponse.StoreItem store : loadedStores) {
+            if (onlyOpen && !store.isOpen) continue;
+            if (!query.isEmpty()) {
+                String haystack = ((store.name != null ? store.name : "") + " " +
+                        (store.address != null ? store.address : "") + " " +
+                        (store.highlightDish != null ? store.highlightDish : "")).toLowerCase(Locale.ROOT);
+                if (!haystack.contains(query)) continue;
+            }
+            filtered.add(store);
+        }
+
+        if (filtered.isEmpty()) {
+            if (tvEmptyStores != null) {
+                if (loadedStores.isEmpty() && currentActiveChip != chipNearMe) {
+                    tvEmptyStores.setText("Bạn chưa theo dõi quán ăn nào.\nChạm \"Khám phá quán\" ở trên để tìm quán mới!");
+                } else {
+                    tvEmptyStores.setText("Không tìm thấy quán ăn phù hợp.");
+                }
+                tvEmptyStores.setVisibility(View.VISIBLE);
+            }
+            return;
+        }
+
+        if (tvEmptyStores != null) tvEmptyStores.setVisibility(View.GONE);
+
+        for (int i = 0; i < filtered.size(); i++) {
+            layoutStoresContainer.addView(buildStoreCard(filtered.get(i), i > 0));
+        }
+    }
+
+    private View buildStoreCard(FollowingRestaurantsResponse.StoreItem store, boolean topMargin) {
+        LinearLayout card = new LinearLayout(this);
+        LinearLayout.LayoutParams cardParams = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+        if (topMargin) cardParams.topMargin = dpToPx(16);
+        card.setLayoutParams(cardParams);
+        card.setBackgroundResource(R.drawable.bg_card);
+        card.setOrientation(LinearLayout.VERTICAL);
+
+        RelativeLayout imageBox = new RelativeLayout(this);
+        imageBox.setLayoutParams(new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT, dpToPx(200)));
+
+        ImageView imgCover = new ImageView(this);
+        imgCover.setLayoutParams(new RelativeLayout.LayoutParams(
+                RelativeLayout.LayoutParams.MATCH_PARENT, RelativeLayout.LayoutParams.MATCH_PARENT));
+        imgCover.setScaleType(ImageView.ScaleType.CENTER_CROP);
+        imgCover.setImageResource(R.drawable.logo);
+        String coverSrc = (store.coverUrl != null && !store.coverUrl.isEmpty()) ? store.coverUrl : store.avatarUrl;
+        if (coverSrc != null && !coverSrc.isEmpty()) {
+            ImageLoader.loadImage(imgCover, coverSrc);
+        }
+        imageBox.addView(imgCover);
+
+        LinearLayout badgesRow = new LinearLayout(this);
+        RelativeLayout.LayoutParams badgesParams = new RelativeLayout.LayoutParams(
+                RelativeLayout.LayoutParams.WRAP_CONTENT, RelativeLayout.LayoutParams.WRAP_CONTENT);
+        badgesParams.addRule(RelativeLayout.ALIGN_PARENT_START);
+        badgesParams.addRule(RelativeLayout.ALIGN_PARENT_TOP);
+        int m12 = dpToPx(12);
+        badgesParams.setMargins(m12, m12, m12, m12);
+        badgesRow.setLayoutParams(badgesParams);
+        badgesRow.setOrientation(LinearLayout.HORIZONTAL);
+
+        TextView tvStatus = new TextView(this);
+        tvStatus.setBackgroundResource(R.drawable.bg_badge_verified);
+        tvStatus.setPadding(dpToPx(10), dpToPx(5), dpToPx(10), dpToPx(5));
+        tvStatus.setText(store.isOpen ? "Đang mở cửa" : "Đã đóng cửa");
+        tvStatus.setTextColor(Color.parseColor(store.isOpen ? "#0A8050" : "#6B7280"));
+        tvStatus.setTextSize(12f);
+        tvStatus.setTypeface(null, Typeface.BOLD);
+        badgesRow.addView(tvStatus);
+
+        if (store.openHours != null && !store.openHours.isEmpty()) {
+            TextView tvHours = new TextView(this);
+            LinearLayout.LayoutParams hrsParams = new LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+            hrsParams.setMarginStart(dpToPx(8));
+            tvHours.setLayoutParams(hrsParams);
+            tvHours.setBackgroundResource(R.drawable.bg_badge_rating);
+            tvHours.setPadding(dpToPx(10), dpToPx(5), dpToPx(10), dpToPx(5));
+            tvHours.setText(store.openHours);
+            tvHours.setTextColor(ContextCompat.getColor(this, R.color.text_dark));
+            tvHours.setTextSize(12f);
+            tvHours.setTypeface(null, Typeface.BOLD);
+            badgesRow.addView(tvHours);
+        }
+
+        if (store.rating > 0) {
+            LinearLayout ratingPill = new LinearLayout(this);
+            LinearLayout.LayoutParams rpParams = new LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+            rpParams.setMarginStart(dpToPx(8));
+            ratingPill.setLayoutParams(rpParams);
+            ratingPill.setBackgroundResource(R.drawable.bg_badge_rating);
+            ratingPill.setGravity(Gravity.CENTER_VERTICAL);
+            ratingPill.setPadding(dpToPx(8), dpToPx(5), dpToPx(8), dpToPx(5));
+
+            ImageView star = new ImageView(this);
+            star.setLayoutParams(new LinearLayout.LayoutParams(dpToPx(14), dpToPx(14)));
+            star.setImageResource(R.drawable.ic_star);
+
+            TextView tvRating = new TextView(this);
+            LinearLayout.LayoutParams trParams = new LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+            trParams.setMarginStart(dpToPx(4));
+            tvRating.setLayoutParams(trParams);
+            tvRating.setText(String.format(Locale.US, "%.1f (%d)", store.rating, store.reviewsCount));
+            tvRating.setTextColor(ContextCompat.getColor(this, R.color.text_dark));
+            tvRating.setTextSize(12f);
+            tvRating.setTypeface(null, Typeface.BOLD);
+
+            ratingPill.addView(star);
+            ratingPill.addView(tvRating);
+            badgesRow.addView(ratingPill);
+        }
+
+        imageBox.addView(badgesRow);
+        card.addView(imageBox);
+
+        LinearLayout infoBody = new LinearLayout(this);
+        infoBody.setOrientation(LinearLayout.VERTICAL);
+        int p16 = dpToPx(16);
+        infoBody.setPadding(p16, p16, p16, p16);
+
+        LinearLayout titleRow = new LinearLayout(this);
+        titleRow.setOrientation(LinearLayout.HORIZONTAL);
+        titleRow.setGravity(Gravity.CENTER_VERTICAL);
+
+        TextView tvName = new TextView(this);
+        tvName.setText(store.name != null ? store.name : "");
+        tvName.setTextColor(ContextCompat.getColor(this, R.color.text_dark));
+        tvName.setTextSize(18f);
+        tvName.setTypeface(null, Typeface.BOLD);
+
+        ImageView verified = new ImageView(this);
+        LinearLayout.LayoutParams vParams = new LinearLayout.LayoutParams(dpToPx(18), dpToPx(18));
+        vParams.setMarginStart(dpToPx(6));
+        verified.setLayoutParams(vParams);
+        verified.setImageResource(R.drawable.ic_verified);
+
+        titleRow.addView(tvName);
+        titleRow.addView(verified);
+        infoBody.addView(titleRow);
+
+        if (store.address != null && !store.address.isEmpty()) {
+            TextView tvAddr = new TextView(this);
+            LinearLayout.LayoutParams aParams = new LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+            aParams.topMargin = dpToPx(4);
+            tvAddr.setLayoutParams(aParams);
+            tvAddr.setText("📍 " + store.address);
+            tvAddr.setTextColor(ContextCompat.getColor(this, R.color.text_gray));
+            tvAddr.setTextSize(13f);
+            infoBody.addView(tvAddr);
+        }
+
+        if (store.highlightDish != null && !store.highlightDish.isEmpty()) {
+            TextView tvHighlight = new TextView(this);
+            LinearLayout.LayoutParams hParams = new LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+            hParams.topMargin = dpToPx(4);
+            tvHighlight.setLayoutParams(hParams);
+            String priceSuffix = (store.dishPrice != null && !store.dishPrice.isEmpty()) ? " • " + store.dishPrice : "";
+            tvHighlight.setText("Món nổi bật: " + store.highlightDish + priceSuffix);
+            tvHighlight.setTextColor(ContextCompat.getColor(this, R.color.primary));
+            tvHighlight.setTextSize(12f);
+            infoBody.addView(tvHighlight);
+        }
+
+        LinearLayout actionsRow = new LinearLayout(this);
+        LinearLayout.LayoutParams arParams = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT, dpToPx(44));
+        arParams.topMargin = dpToPx(16);
+        actionsRow.setLayoutParams(arParams);
+        actionsRow.setGravity(Gravity.CENTER_VERTICAL);
+        actionsRow.setOrientation(LinearLayout.HORIZONTAL);
+
+        TextView btnFollow = new TextView(this);
+        LinearLayout.LayoutParams bfParams = new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.MATCH_PARENT, 1f);
+        bfParams.setMarginEnd(dpToPx(6));
+        btnFollow.setLayoutParams(bfParams);
+        btnFollow.setBackgroundResource(R.drawable.bg_chip_inactive);
+        btnFollow.setClickable(true);
+        btnFollow.setFocusable(true);
+        btnFollow.setGravity(Gravity.CENTER);
+        btnFollow.setText(store.isFollowing ? "Đang theo dõi" : "+ Theo dõi");
+        btnFollow.setTextColor(ContextCompat.getColor(this, R.color.text_dark));
+        btnFollow.setTextSize(13f);
+        btnFollow.setTypeface(null, Typeface.BOLD);
+        btnFollow.setOnClickListener(v -> toggleFollowStore(store, btnFollow));
+
+        LinearLayout btnMenu = new LinearLayout(this);
+        LinearLayout.LayoutParams bmParams = new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.MATCH_PARENT, 1f);
+        bmParams.setMarginStart(dpToPx(6));
+        bmParams.setMarginEnd(dpToPx(6));
+        btnMenu.setLayoutParams(bmParams);
+        btnMenu.setBackgroundResource(R.drawable.bg_button_primary);
+        btnMenu.setClickable(true);
+        btnMenu.setFocusable(true);
+        btnMenu.setGravity(Gravity.CENTER);
+
+        TextView tvMenuLabel = new TextView(this);
+        tvMenuLabel.setText("🍴 Xem menu");
+        tvMenuLabel.setTextColor(ContextCompat.getColor(this, R.color.white));
+        tvMenuLabel.setTextSize(14f);
+        tvMenuLabel.setTypeface(null, Typeface.BOLD);
+        btnMenu.addView(tvMenuLabel);
+        btnMenu.setOnClickListener(v -> StoreMenuBottomSheetHelper.showByStoreId(this, store.id, store.name));
+
+        RelativeLayout btnShare = new RelativeLayout(this);
+        LinearLayout.LayoutParams bsParams = new LinearLayout.LayoutParams(dpToPx(44), LinearLayout.LayoutParams.MATCH_PARENT);
+        bsParams.setMarginStart(dpToPx(6));
+        btnShare.setLayoutParams(bsParams);
+        btnShare.setBackgroundResource(R.drawable.bg_chip_inactive);
+        btnShare.setClickable(true);
+        btnShare.setFocusable(true);
+
+        ImageView shareIcon = new ImageView(this);
+        RelativeLayout.LayoutParams siParams = new RelativeLayout.LayoutParams(dpToPx(20), dpToPx(20));
+        siParams.addRule(RelativeLayout.CENTER_IN_PARENT);
+        shareIcon.setLayoutParams(siParams);
+        shareIcon.setImageResource(R.drawable.ic_share);
+        btnShare.addView(shareIcon);
+        btnShare.setOnClickListener(v -> shareStore(store));
+
+        actionsRow.addView(btnFollow);
+        actionsRow.addView(btnMenu);
+        actionsRow.addView(btnShare);
+        infoBody.addView(actionsRow);
+
+        card.addView(infoBody);
+
+        View.OnClickListener openDetail = v -> {
+            Intent intent = new Intent(this, StoreDetailActivity.class);
+            intent.putExtra("STORE_ID", store.id);
+            intent.putExtra("STORE_NAME", store.name);
+            startActivity(intent);
+        };
+        imageBox.setOnClickListener(openDetail);
+        titleRow.setOnClickListener(openDetail);
+
+        return card;
+    }
+
+    private void toggleFollowStore(FollowingRestaurantsResponse.StoreItem store, TextView btnFollow) {
+        String authHeader = ApiClient.getAuthHeader(this);
+        if (authHeader.isEmpty()) {
+            Toast.makeText(this, "Vui lòng đăng nhập để theo dõi quán ăn", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        btnFollow.setEnabled(false);
+        Call<AuthResponse> call = store.isFollowing
+                ? ApiClient.getApiService().unfollowUser(authHeader, String.valueOf(store.id))
+                : ApiClient.getApiService().followUser(authHeader, String.valueOf(store.id));
+
+        call.enqueue(new Callback<AuthResponse>() {
+            @Override
+            public void onResponse(@NonNull Call<AuthResponse> call, @NonNull Response<AuthResponse> response) {
+                btnFollow.setEnabled(true);
+                if (response.isSuccessful()) {
+                    store.isFollowing = !store.isFollowing;
+                    btnFollow.setText(store.isFollowing ? "Đang theo dõi" : "+ Theo dõi");
+                    Toast.makeText(FavoriteRestaurantsActivity.this,
+                            store.isFollowing ? "Đã theo dõi " + store.name : "Đã bỏ theo dõi " + store.name,
+                            Toast.LENGTH_SHORT).show();
+                    if (!store.isFollowing && currentActiveChip != chipNearMe) {
+                        fetchRestaurantsFromBackend();
+                    }
+                } else {
+                    Toast.makeText(FavoriteRestaurantsActivity.this, "Không thể cập nhật trạng thái theo dõi", Toast.LENGTH_SHORT).show();
+                }
+            }
+
+            @Override
+            public void onFailure(@NonNull Call<AuthResponse> call, @NonNull Throwable t) {
+                btnFollow.setEnabled(true);
+                Toast.makeText(FavoriteRestaurantsActivity.this, "Lỗi kết nối máy chủ", Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
+
+    private void shareStore(FollowingRestaurantsResponse.StoreItem store) {
+        Intent shareIntent = new Intent(Intent.ACTION_SEND);
+        shareIntent.setType("text/plain");
+        String body = (store.name != null ? store.name : "Quán ăn trên Dishcision")
+                + (store.address != null && !store.address.isEmpty() ? " - " + store.address : "")
+                + "\nhttps://dishcision.duckdns.org/stores/" + store.id;
+        shareIntent.putExtra(Intent.EXTRA_TEXT, body);
+        startActivity(Intent.createChooser(shareIntent, "Chia sẻ quán ăn"));
+    }
+
+    private int dpToPx(int dp) {
+        return Math.round(dp * getResources().getDisplayMetrics().density);
     }
 }
