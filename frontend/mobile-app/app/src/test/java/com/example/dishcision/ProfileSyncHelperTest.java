@@ -165,3 +165,4 @@ public class ProfileSyncHelperTest {
         assertEquals("", ProfileSyncHelper.extractJsonField(null, "code"));
     }
 }
+

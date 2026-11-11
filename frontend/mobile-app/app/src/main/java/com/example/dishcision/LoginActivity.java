@@ -71,6 +71,29 @@ public class LoginActivity extends AppCompatActivity {
         setupGoogleSignIn();
         setupListeners();
         setupTermsAndPrivacy();
+        showSessionKickedDialogIfPresent(getIntent());
+    }
+
+    @Override
+    protected void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
+        setIntent(intent);
+        showSessionKickedDialogIfPresent(intent);
+    }
+
+    private void showSessionKickedDialogIfPresent(Intent intent) {
+        if (intent == null || !intent.hasExtra(AuthHelper.EXTRA_SESSION_KICK_MESSAGE)) return;
+        String message = intent.getStringExtra(AuthHelper.EXTRA_SESSION_KICK_MESSAGE);
+        intent.removeExtra(AuthHelper.EXTRA_SESSION_KICK_MESSAGE);
+        if (message == null || message.trim().isEmpty()) return;
+
+        new androidx.appcompat.app.AlertDialog.Builder(this)
+                .setTitle("Cảnh báo bảo mật")
+                .setMessage(message.trim() + "\n\nNếu không phải bạn vừa đăng nhập, hãy đổi lại mật khẩu ngay để bảo vệ tài khoản.")
+                .setPositiveButton("Đã hiểu", null)
+                .setNeutralButton("Đặt lại mật khẩu", (d, w) ->
+                        startActivity(new Intent(LoginActivity.this, ForgotPasswordActivity.class)))
+                .show();
     }
 
     private void setupGoogleSignIn() {

@@ -26,8 +26,8 @@ import retrofit2.Response;
  */
 public class DishcisionApp extends Application implements Application.ActivityLifecycleCallbacks {
 
-    private static final long SESSION_POLL_INTERVAL_MS = 6000L;
-    private static final long MIN_RESUME_CHECK_GAP_MS = 1500L;
+    private static final long SESSION_POLL_INTERVAL_MS = 3000L;
+    private static final long MIN_RESUME_CHECK_GAP_MS = 1000L;
 
     private static final Set<String> AUTH_EXEMPT_ACTIVITIES = new HashSet<>(Arrays.asList(
             MainActivity.class.getName(),
@@ -41,7 +41,9 @@ public class DishcisionApp extends Application implements Application.ActivityLi
 
     private final Handler mainHandler = new Handler(Looper.getMainLooper());
     private WeakReference<Activity> currentActivityRef = new WeakReference<>(null);
+    private int startedCount = 0;
     private int resumedCount = 0;
+    private boolean wasInBackground = true;
     private long lastSessionCheckMs = 0L;
     private boolean sessionCheckInFlight = false;
 
@@ -67,7 +69,9 @@ public class DishcisionApp extends Application implements Application.ActivityLi
     public void onActivityCreated(@NonNull Activity activity, @Nullable Bundle savedInstanceState) {}
 
     @Override
-    public void onActivityStarted(@NonNull Activity activity) {}
+    public void onActivityStarted(@NonNull Activity activity) {
+        startedCount++;
+    }
 
     @Override
     public void onActivityResumed(@NonNull Activity activity) {
@@ -78,10 +82,13 @@ public class DishcisionApp extends Application implements Application.ActivityLi
         mainHandler.removeCallbacks(sessionPollRunnable);
         if (shouldCheckSessionFor(activity)) {
             long elapsed = System.currentTimeMillis() - lastSessionCheckMs;
-            if (elapsed >= MIN_RESUME_CHECK_GAP_MS) {
+            if (wasInBackground || elapsed >= MIN_RESUME_CHECK_GAP_MS) {
                 verifyActiveSessionIfNeeded();
             }
+            wasInBackground = false;
             mainHandler.postDelayed(sessionPollRunnable, SESSION_POLL_INTERVAL_MS);
+        } else {
+            wasInBackground = false;
         }
     }
 
@@ -98,7 +105,12 @@ public class DishcisionApp extends Application implements Application.ActivityLi
     }
 
     @Override
-    public void onActivityStopped(@NonNull Activity activity) {}
+    public void onActivityStopped(@NonNull Activity activity) {
+        startedCount = Math.max(0, startedCount - 1);
+        if (startedCount == 0) {
+            wasInBackground = true;
+        }
+    }
 
     @Override
     public void onActivitySaveInstanceState(@NonNull Activity activity, @NonNull Bundle outState) {}
@@ -135,3 +147,4 @@ public class DishcisionApp extends Application implements Application.ActivityLi
         });
     }
 }
+

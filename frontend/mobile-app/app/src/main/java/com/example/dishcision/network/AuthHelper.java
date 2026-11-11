@@ -20,6 +20,7 @@ import retrofit2.Response;
 public class AuthHelper {
 
     public static final int OTP_RESEND_COOLDOWN_SECONDS = 60;
+    public static final String EXTRA_SESSION_KICK_MESSAGE = "SESSION_KICK_MESSAGE";
     private static final AtomicBoolean unauthorizedRedirectInProgress = new AtomicBoolean(false);
 
     /** Per-account values cached in DishcisionPrefs; device-level settings (notifications…) are kept. */
@@ -139,6 +140,7 @@ public class AuthHelper {
         Runnable redirectTask = () -> {
             Toast.makeText(context.getApplicationContext(), displayMessage, Toast.LENGTH_LONG).show();
             Intent intent = new Intent(context, LoginActivity.class);
+            intent.putExtra(EXTRA_SESSION_KICK_MESSAGE, displayMessage);
             intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
             context.startActivity(intent);
             if (context instanceof Activity) {
