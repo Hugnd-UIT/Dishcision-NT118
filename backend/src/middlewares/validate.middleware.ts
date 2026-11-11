@@ -60,6 +60,19 @@ export const verifyOtpSchema = z.object({
   otp: z.string().regex(/^\d{6}$/, 'Mã OTP phải gồm 6 chữ số'),
 });
 
+export const verify2FASchema = z.object({
+  code: z.string().trim().regex(/^\d{6}$/, 'Mã xác thực phải gồm 6 chữ số'),
+});
+
+export const verifyLogin2FASchema = z.object({
+  tempToken: z.string().min(10, 'Phiên xác thực không hợp lệ'),
+  otp: z.string().trim().regex(/^\d{6}$/, 'Mã xác thực phải gồm 6 chữ số'),
+});
+
+export const resendLogin2FASchema = z.object({
+  tempToken: z.string().min(10, 'Phiên xác thực không hợp lệ'),
+});
+
 export const resetPasswordSchema = z.object({
   tokenHash: z.string().min(1),
   newPassword: z.string().min(8),

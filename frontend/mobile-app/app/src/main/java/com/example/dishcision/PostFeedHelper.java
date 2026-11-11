@@ -13,6 +13,7 @@ import android.text.Editable;
 import android.text.TextWatcher;
 import android.util.TypedValue;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
@@ -274,7 +275,7 @@ public final class PostFeedHelper {
         ImageView btnOptions = cardView.findViewById(R.id.btnOptions);
 
         View containerPostImage = cardView.findViewById(R.id.containerPostImage);
-        ImageView imgPost = cardView.findViewById(R.id.imgPost);
+        androidx.viewpager.widget.ViewPager vpPostImages = cardView.findViewById(R.id.vpPostImages);
         TextView tvImageCountBadge = cardView.findViewById(R.id.tvImageCountBadge);
         TextView tvPostText = cardView.findViewById(R.id.tvPostText);
         TextView tvVoucherBadge = cardView.findViewById(R.id.tvVoucherBadge);
@@ -348,25 +349,70 @@ public final class PostFeedHelper {
         }
 
         if (containerPostImage != null) {
-            if (post.images != null && !post.images.isEmpty() && !isEmpty(post.images.get(0).imageUrl)) {
-                String primaryImageUrl = post.images.get(0).imageUrl;
-                containerPostImage.setVisibility(View.VISIBLE);
-                if (imgPost != null) {
-                    imgPost.setImageDrawable(null);
-                    imgPost.setTag(null);
-                    ImageLoader.loadImage(imgPost, primaryImageUrl);
-                }
-                if (tvImageCountBadge != null) {
-                    if (post.images.size() > 1) {
-                        tvImageCountBadge.setText("1 / " + post.images.size());
-                        tvImageCountBadge.setVisibility(View.VISIBLE);
-                    } else {
-                        tvImageCountBadge.setVisibility(View.GONE);
+            ArrayList<String> imageUrls = new ArrayList<>();
+            if (post.images != null) {
+                for (FeedPostsResponse.PostImage img : post.images) {
+                    if (img != null && !isEmpty(img.imageUrl)) {
+                        imageUrls.add(img.imageUrl.trim());
                     }
                 }
+            }
+            if (!imageUrls.isEmpty()) {
+                containerPostImage.setVisibility(View.VISIBLE);
                 final String fullAuthorHeader = usernameRaw.isEmpty() ? authorName : authorName + " • @" + usernameRaw;
-                containerPostImage.setOnClickListener(v ->
-                        openFullscreenImage(activity, fullAuthorHeader, post.content, primaryImageUrl));
+
+                if (vpPostImages != null) {
+                    vpPostImages.clearOnPageChangeListeners();
+                    vpPostImages.setOffscreenPageLimit(Math.max(1, imageUrls.size() - 1));
+                    vpPostImages.setAdapter(new androidx.viewpager.widget.PagerAdapter() {
+                        @Override
+                        public int getCount() {
+                            return imageUrls.size();
+                        }
+
+                        @Override
+                        public boolean isViewFromObject(@NonNull View view, @NonNull Object object) {
+                            return view == object;
+                        }
+
+                        @NonNull
+                        @Override
+                        public Object instantiateItem(@NonNull ViewGroup container, int position) {
+                            ImageView iv = new ImageView(container.getContext());
+                            iv.setLayoutParams(new ViewGroup.LayoutParams(
+                                    ViewGroup.LayoutParams.MATCH_PARENT,
+                                    ViewGroup.LayoutParams.MATCH_PARENT
+                            ));
+                            iv.setScaleType(ImageView.ScaleType.CENTER_CROP);
+                            iv.setOnClickListener(v ->
+                                    openFullscreenImages(activity, fullAuthorHeader, post.content, imageUrls, position));
+                            ImageLoader.loadImage(iv, imageUrls.get(position));
+                            container.addView(iv);
+                            return iv;
+                        }
+
+                        @Override
+                        public void destroyItem(@NonNull ViewGroup container, int position, @NonNull Object object) {
+                            container.removeView((View) object);
+                        }
+                    });
+                    vpPostImages.setCurrentItem(0, false);
+
+                    if (tvImageCountBadge != null) {
+                        if (imageUrls.size() > 1) {
+                            tvImageCountBadge.setText("1 / " + imageUrls.size());
+                            tvImageCountBadge.setVisibility(View.VISIBLE);
+                            vpPostImages.addOnPageChangeListener(new androidx.viewpager.widget.ViewPager.SimpleOnPageChangeListener() {
+                                @Override
+                                public void onPageSelected(int position) {
+                                    tvImageCountBadge.setText((position + 1) + " / " + imageUrls.size());
+                                }
+                            });
+                        } else {
+                            tvImageCountBadge.setVisibility(View.GONE);
+                        }
+                    }
+                }
             } else {
                 containerPostImage.setVisibility(View.GONE);
             }
@@ -486,11 +532,19 @@ public final class PostFeedHelper {
     }
 
     public static void openFullscreenImage(Activity activity, String author, String caption, String imageUrl) {
-        if (activity == null || activity.isFinishing()) return;
+        if (isEmpty(imageUrl)) return;
+        ArrayList<String> urls = new ArrayList<>();
+        urls.add(imageUrl.trim());
+        openFullscreenImages(activity, author, caption, urls, 0);
+    }
+
+    public static void openFullscreenImages(Activity activity, String author, String caption, List<String> imageUrls, int initialIndex) {
+        if (activity == null || activity.isFinishing() || imageUrls == null || imageUrls.isEmpty()) return;
         Intent intent = new Intent(activity, FullscreenImageActivity.class);
         intent.putExtra(FullscreenImageActivity.EXTRA_AUTHOR, author);
         intent.putExtra(FullscreenImageActivity.EXTRA_CAPTION, caption);
-        intent.putExtra(FullscreenImageActivity.EXTRA_IMAGE_URL, imageUrl);
+        intent.putStringArrayListExtra(FullscreenImageActivity.EXTRA_IMAGE_URLS, new ArrayList<>(imageUrls));
+        intent.putExtra(FullscreenImageActivity.EXTRA_INITIAL_INDEX, Math.max(0, initialIndex));
         activity.startActivity(intent);
         activity.overridePendingTransition(0, 0);
     }

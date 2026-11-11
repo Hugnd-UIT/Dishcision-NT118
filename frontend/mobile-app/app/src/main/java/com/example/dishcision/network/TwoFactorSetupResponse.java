@@ -21,6 +21,15 @@ public class TwoFactorSetupResponse {
 
         @SerializedName("otpauthUrl")
         public String otpauthUrl;
+
+        @SerializedName("email")
+        public String email;
+
+        @SerializedName("emailMasked")
+        public String emailMasked;
+
+        @SerializedName("otpSent")
+        public boolean otpSent;
     }
 }
 

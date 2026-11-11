@@ -20,6 +20,12 @@ public interface ApiService {
     @POST("auth/login")
     Call<AuthResponse> login(@Body LoginRequest request);
 
+    @POST("auth/login/verify-2fa")
+    Call<AuthResponse> verifyLogin2FA(@Body VerifyLogin2FARequest request);
+
+    @POST("auth/login/resend-2fa")
+    Call<AuthResponse> resendLogin2FA(@Body ResendLogin2FARequest request);
+
     @POST("auth/register")
     Call<AuthResponse> register(@Body RegisterRequest request);
 

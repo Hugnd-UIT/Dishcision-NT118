@@ -101,17 +101,28 @@ public class LoginActivity extends AppCompatActivity {
                                     @Override
                                     public void onResponse(Call<AuthResponse> call, Response<AuthResponse> response) {
                                         if (btnGoogleLogin != null) btnGoogleLogin.setEnabled(true);
-                                        if (response.isSuccessful() && response.body() != null
-                                                && TokenManager.isValidJwtToken(response.body().getToken())) {
-                                            AuthHelper.saveSessionFromAuth(LoginActivity.this, response.body(), email, fullName, true);
-                                            Toast.makeText(LoginActivity.this, "Đăng nhập Google thành công: " + fullName, Toast.LENGTH_SHORT).show();
-                                            Intent intent = new Intent(LoginActivity.this, HomeActivity.class);
-                                            intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-                                            startActivity(intent);
-                                            finish();
-                                        } else {
-                                            Toast.makeText(LoginActivity.this, "Xác thực Google thất bại (mã " + response.code() + ")", Toast.LENGTH_LONG).show();
+                                        if (response.isSuccessful() && response.body() != null) {
+                                            AuthResponse.AuthData data = response.body().getData();
+                                            if (data != null && data.requiresTwoFactor
+                                                    && data.tempToken != null && !data.tempToken.isEmpty()) {
+                                                String emailDisplay = (data.emailMasked != null && !data.emailMasked.isEmpty())
+                                                        ? data.emailMasked
+                                                        : (data.email != null && !data.email.isEmpty() ? data.email : email);
+                                                Toast.makeText(LoginActivity.this, "Đã gửi mã xác thực 2FA về email!", Toast.LENGTH_SHORT).show();
+                                                openTwoFactorVerification(data.tempToken, emailDisplay, true);
+                                                return;
+                                            }
+                                            if (TokenManager.isValidJwtToken(response.body().getToken())) {
+                                                AuthHelper.saveSessionFromAuth(LoginActivity.this, response.body(), email, fullName, true);
+                                                Toast.makeText(LoginActivity.this, "Đăng nhập Google thành công: " + fullName, Toast.LENGTH_SHORT).show();
+                                                Intent intent = new Intent(LoginActivity.this, HomeActivity.class);
+                                                intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+                                                startActivity(intent);
+                                                finish();
+                                                return;
+                                            }
                                         }
+                                        Toast.makeText(LoginActivity.this, "Xác thực Google thất bại (mã " + response.code() + ")", Toast.LENGTH_LONG).show();
                                     }
 
                                     @Override
@@ -211,26 +222,39 @@ public class LoginActivity extends AppCompatActivity {
             @Override
             public void onResponse(Call<AuthResponse> call, Response<AuthResponse> response) {
                 if (btnLogin != null) btnLogin.setEnabled(true);
-                if (response.isSuccessful() && response.body() != null
-                        && TokenManager.isValidJwtToken(response.body().getToken())) {
-                    AuthHelper.saveSessionFromAuth(LoginActivity.this, response.body(), email, "", false);
-
-                    Toast.makeText(LoginActivity.this, "Đăng nhập thành công!", Toast.LENGTH_SHORT).show();
-                    Intent intent = new Intent(LoginActivity.this, HomeActivity.class);
-                    intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-                    startActivity(intent);
-                    finish();
-                } else {
-                    String errorMsg;
-                    if (response.code() == 401) {
-                        errorMsg = "Mật khẩu hoặc Email/Tên đăng nhập không chính xác!";
-                    } else if (response.code() == 403) {
-                        errorMsg = "Tài khoản chưa được kích hoạt hoặc đã bị khóa!";
-                    } else {
-                        errorMsg = "Tài khoản hoặc mật khẩu không hợp lệ!";
+                if (response.isSuccessful() && response.body() != null) {
+                    AuthResponse.AuthData data = response.body().getData();
+                    if (data != null && data.requiresTwoFactor
+                            && data.tempToken != null && !data.tempToken.isEmpty()) {
+                        String emailDisplay = (data.emailMasked != null && !data.emailMasked.isEmpty())
+                                ? data.emailMasked
+                                : (data.email != null && !data.email.isEmpty() ? data.email : email);
+                        Toast.makeText(LoginActivity.this, "Đã gửi mã xác thực 2FA về email!", Toast.LENGTH_SHORT).show();
+                        openTwoFactorVerification(data.tempToken, emailDisplay, false);
+                        return;
                     }
-                    Toast.makeText(LoginActivity.this, "Đăng nhập thất bại: " + errorMsg, Toast.LENGTH_LONG).show();
+                    if (TokenManager.isValidJwtToken(response.body().getToken())) {
+                        AuthHelper.saveSessionFromAuth(LoginActivity.this, response.body(), email, "", false);
+
+                        Toast.makeText(LoginActivity.this, "Đăng nhập thành công!", Toast.LENGTH_SHORT).show();
+                        Intent intent = new Intent(LoginActivity.this, HomeActivity.class);
+                        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+                        startActivity(intent);
+                        finish();
+                        return;
+                    }
                 }
+                String errorMsg;
+                if (response.code() == 401) {
+                    errorMsg = "Mật khẩu hoặc Email/Tên đăng nhập không chính xác!";
+                } else if (response.code() == 403) {
+                    errorMsg = "Tài khoản chưa được kích hoạt hoặc đã bị khóa!";
+                } else if (response.code() == 503) {
+                    errorMsg = "Không thể gửi email xác thực lúc này. Vui lòng thử lại!";
+                } else {
+                    errorMsg = "Tài khoản hoặc mật khẩu không hợp lệ!";
+                }
+                Toast.makeText(LoginActivity.this, "Đăng nhập thất bại: " + errorMsg, Toast.LENGTH_LONG).show();
             }
 
             @Override
@@ -278,6 +302,15 @@ public class LoginActivity extends AppCompatActivity {
 
         tvTerms.setText(spannableString);
         tvTerms.setMovementMethod(LinkMovementMethod.getInstance());
+    }
+
+    private void openTwoFactorVerification(String tempToken, String emailDisplay, boolean isGoogleLogin) {
+        Intent intent = new Intent(LoginActivity.this, VerifyOtpActivity.class);
+        intent.putExtra(VerifyOtpActivity.EXTRA_MODE, VerifyOtpActivity.MODE_2FA_LOGIN);
+        intent.putExtra(VerifyOtpActivity.EXTRA_TEMP_TOKEN, tempToken);
+        intent.putExtra(VerifyOtpActivity.EXTRA_EMAIL, emailDisplay);
+        intent.putExtra(VerifyOtpActivity.EXTRA_IS_GOOGLE_LOGIN, isGoogleLogin);
+        startActivity(intent);
     }
 
     private void showServerConfigDialog() {

@@ -91,12 +91,37 @@ async function generateUniqueUsername(seedText: string): Promise<string> {
   return candidate;
 }
 
-async function sendOtpEmail(email: string, otp: string): Promise<void> {
+type OtpEmailPurpose = 'reset_password' | 'enable_2fa' | 'login_2fa';
+
+function maskEmail(email: string): string {
+  const parts = String(email || '').split('@');
+  if (parts.length !== 2) return email;
+  const local = parts[0];
+  const domain = parts[1];
+  const prefix = local.slice(0, Math.min(2, local.length));
+  return `${prefix}***@${domain}`;
+}
+
+async function sendOtpEmail(email: string, otp: string, purpose: OtpEmailPurpose = 'reset_password'): Promise<boolean> {
   const mailUser = process.env.MAIL_USER || 'hungnd.attt2024@gmail.com';
   const mailKey = process.env.MAIL_KEY?.replace(/\s+/g, '');
   if (!mailKey) {
-    console.log(`[MAIL] No MAIL_KEY provided. Skip sending email. OTP is: ${otp}`);
-    return;
+    console.log(`[MAIL] No MAIL_KEY provided. Skip sending email. OTP (${purpose}) is: ${otp}`);
+    return false;
+  }
+
+  let subject = 'Mã xác thực OTP Dishcision';
+  let title = 'Dishcision - Mã xác nhận OTP';
+  let description = 'Bạn vừa yêu cầu mã xác nhận để khôi phục mật khẩu tài khoản Dishcision.';
+
+  if (purpose === 'enable_2fa') {
+    subject = 'Mã xác thực bật bảo mật 2 lớp Dishcision';
+    title = 'Dishcision - Bật xác thực 2 yếu tố';
+    description = 'Nhập mã gồm 6 chữ số dưới đây để hoàn tất bật xác thực hai yếu tố qua email cho tài khoản Dishcision của bạn.';
+  } else if (purpose === 'login_2fa') {
+    subject = 'Mã xác thực đăng nhập Dishcision';
+    title = 'Dishcision - Xác thực đăng nhập 2 yếu tố';
+    description = 'Có yêu cầu đăng nhập vào tài khoản Dishcision của bạn. Vui lòng nhập mã gồm 6 chữ số dưới đây để hoàn tất đăng nhập:';
   }
 
   try {
@@ -111,24 +136,93 @@ async function sendOtpEmail(email: string, otp: string): Promise<void> {
     await transporter.sendMail({
       from: `"Dishcision App" <${mailUser}>`,
       to: email,
-      subject: 'Mã xác thực OTP Dishcision',
+      subject,
       html: `
         <div style="font-family: Arial, sans-serif; padding: 20px; line-height: 1.6; max-width: 500px; margin: 0 auto; border: 1px solid #eee; border-radius: 8px;">
-          <h2 style="color: #ff6b35;">Dishcision - Mã xác nhận OTP</h2>
+          <h2 style="color: #ff6b35;">${title}</h2>
           <p>Xin chào,</p>
-          <p>Bạn vừa yêu cầu mã xác nhận để khôi phục mật khẩu tài khoản Dishcision.</p>
+          <p>${description}</p>
           <div style="font-size: 32px; font-weight: bold; letter-spacing: 6px; color: #ff6b35; margin: 24px 0; text-align: center;">
             ${otp}
           </div>
-          <p>Mã này có hiệu lực trong 10 phút. Nếu bạn không yêu cầu mã này, vui lòng bỏ qua email.</p>
+          <p>Mã này có hiệu lực trong 10 phút. Nếu bạn không thực hiện yêu cầu này, vui lòng bỏ qua email và kiểm tra bảo mật tài khoản.</p>
           <p style="color: #888; font-size: 12px; margin-top: 30px;">Trân trọng,<br/>Đội ngũ phát triển Dishcision</p>
         </div>
       `,
     });
-    console.log(`[MAIL] Successfully sent OTP email to ${email}`);
+    console.log(`[MAIL] Successfully sent ${purpose} email to ${email}`);
+    return true;
   } catch (error) {
-    console.error(`[MAIL] Failed to send email to ${email}:`, error);
+    console.error(`[MAIL] Failed to send ${purpose} email to ${email}:`, error);
+    return false;
   }
+}
+
+async function issueAuthSession(user: any, req: Request, res: Response, message: string): Promise<void> {
+  const accessToken = generateAccessToken({ userId: user.id, role: user.role });
+  const refreshToken = generateRefreshToken({ userId: user.id });
+  await Promise.all([
+    prisma.user.update({ where: { id: user.id }, data: { refreshToken } }),
+    recordSession(user.id, req, accessToken),
+  ]);
+
+  res.status(200).json({
+    success: true,
+    message,
+    token: accessToken,
+    accessToken,
+    data: {
+      accessToken,
+      refreshToken,
+      expiresIn: getExpiresIn(),
+      user: formatUser(user),
+    },
+  });
+}
+
+async function issueLoginOr2FAChallenge(
+  user: any,
+  req: Request,
+  res: Response,
+  successMessage: string,
+  isGoogleLogin: boolean
+): Promise<void> {
+  const isTwoFactorEnabled = (await redis.get(`user:${user.id}:2fa_enabled`)) === 'true';
+  if (!isTwoFactorEnabled) {
+    await issueAuthSession(user, req, res, successMessage);
+    return;
+  }
+
+  const otp = crypto.randomInt(100000, 1000000).toString();
+  const tempToken = crypto.randomBytes(32).toString('hex');
+  const payload = {
+    userId: user.id,
+    email: user.email,
+    otp,
+    attempts: 0,
+    lastSentAt: Date.now(),
+    isGoogleLogin,
+  };
+
+  await redis.set(`2fa_login:${tempToken}`, JSON.stringify(payload), 'EX', 600);
+  const sent = await sendOtpEmail(user.email, otp, 'login_2fa');
+  if (!sent) {
+    await redis.del(`2fa_login:${tempToken}`);
+    errorResponse(res, 'Không thể gửi email mã xác thực lúc này. Vui lòng thử lại sau.', 503);
+    return;
+  }
+
+  const emailMasked = maskEmail(user.email);
+  res.status(200).json({
+    success: true,
+    message: 'Mã xác thực đã được gửi tới email của bạn',
+    data: {
+      requiresTwoFactor: true,
+      tempToken,
+      email: emailMasked,
+      emailMasked,
+    },
+  });
 }
 
 // ── Register ──────────────────────────────
@@ -213,25 +307,125 @@ export async function login(req: Request, res: Response): Promise<void> {
     return;
   }
 
-  const accessToken = generateAccessToken({ userId: user.id, role: user.role });
-  const refreshToken = generateRefreshToken({ userId: user.id });
-  await Promise.all([
-    prisma.user.update({ where: { id: user.id }, data: { refreshToken } }),
-    recordSession(user.id, req, accessToken),
-  ]);
+  await issueLoginOr2FAChallenge(user, req, res, 'Login successful', false);
+}
 
-  res.status(200).json({
-    success: true,
-    message: 'Login successful',
-    token: accessToken,
-    accessToken,
-    data: {
-      accessToken,
-      refreshToken,
-      expiresIn: getExpiresIn(),
-      user: formatUser(user),
-    },
+export async function verifyLogin2FA(req: Request, res: Response): Promise<void> {
+  const { tempToken, otp } = req.body;
+  const redisKey = `2fa_login:${String(tempToken).trim()}`;
+  const raw = await redis.get(redisKey);
+
+  if (!raw) {
+    errorResponse(res, 'Phiên xác thực đã hết hạn hoặc không hợp lệ. Vui lòng đăng nhập lại.', 400);
+    return;
+  }
+
+  let stored: {
+    userId: number;
+    email: string;
+    otp: string;
+    attempts: number;
+    lastSentAt: number;
+    isGoogleLogin?: boolean;
+  };
+  try {
+    stored = JSON.parse(raw);
+  } catch {
+    await redis.del(redisKey);
+    errorResponse(res, 'Phiên xác thực không hợp lệ. Vui lòng đăng nhập lại.', 400);
+    return;
+  }
+
+  const cleanOtp = String(otp || '').trim();
+  if (!stored.otp || stored.otp !== cleanOtp) {
+    const nextAttempts = (stored.attempts || 0) + 1;
+    if (nextAttempts >= 5) {
+      await redis.del(redisKey);
+      errorResponse(res, 'Bạn đã nhập sai mã quá nhiều lần. Vui lòng đăng nhập lại.', 429);
+      return;
+    }
+    const ttl = await redis.ttl(redisKey);
+    await redis.set(
+      redisKey,
+      JSON.stringify({ ...stored, attempts: nextAttempts }),
+      'EX',
+      ttl > 0 ? ttl : 300
+    );
+    errorResponse(res, 'Mã xác thực không chính xác', 400);
+    return;
+  }
+
+  await redis.del(redisKey);
+
+  const user = await prisma.user.findUnique({
+    where: { id: stored.userId },
+    include: { _count: { select: { followers: true, following: true } } },
   });
+
+  if (!user) {
+    errorResponse(res, 'Tài khoản không tồn tại', 404);
+    return;
+  }
+  if (user.accountStatus !== 'Active') {
+    errorResponse(res, `Account is ${user.accountStatus.toLowerCase()}`, 403);
+    return;
+  }
+
+  await issueAuthSession(
+    user,
+    req,
+    res,
+    stored.isGoogleLogin ? 'Google authentication successful' : 'Login successful'
+  );
+}
+
+export async function resendLogin2FA(req: Request, res: Response): Promise<void> {
+  const { tempToken } = req.body;
+  const redisKey = `2fa_login:${String(tempToken).trim()}`;
+  const raw = await redis.get(redisKey);
+
+  if (!raw) {
+    errorResponse(res, 'Phiên xác thực đã hết hạn. Vui lòng đăng nhập lại.', 400);
+    return;
+  }
+
+  let stored: {
+    userId: number;
+    email: string;
+    otp: string;
+    attempts: number;
+    lastSentAt: number;
+    isGoogleLogin?: boolean;
+  };
+  try {
+    stored = JSON.parse(raw);
+  } catch {
+    await redis.del(redisKey);
+    errorResponse(res, 'Phiên xác thực không hợp lệ. Vui lòng đăng nhập lại.', 400);
+    return;
+  }
+
+  if (stored.lastSentAt && Date.now() - stored.lastSentAt < 20000) {
+    errorResponse(res, 'Vui lòng đợi vài giây trước khi gửi lại mã', 429);
+    return;
+  }
+
+  const newOtp = crypto.randomInt(100000, 1000000).toString();
+  const updated = {
+    ...stored,
+    otp: newOtp,
+    attempts: 0,
+    lastSentAt: Date.now(),
+  };
+
+  await redis.set(redisKey, JSON.stringify(updated), 'EX', 600);
+  const sent = await sendOtpEmail(stored.email, newOtp, 'login_2fa');
+  if (!sent) {
+    errorResponse(res, 'Không thể gửi email mã xác thực lúc này. Vui lòng thử lại sau.', 503);
+    return;
+  }
+
+  successResponse(res, { email: maskEmail(stored.email) }, 'Đã gửi lại mã xác thực tới email của bạn');
 }
 
 // ── Google Auth (Sign in / Auto Sign up) ───
@@ -278,25 +472,7 @@ export async function googleAuth(req: Request, res: Response): Promise<void> {
     return;
   }
 
-  const accessToken = generateAccessToken({ userId: user.id, role: user.role });
-  const refreshToken = generateRefreshToken({ userId: user.id });
-  await Promise.all([
-    prisma.user.update({ where: { id: user.id }, data: { refreshToken } }),
-    recordSession(user.id, req, accessToken),
-  ]);
-
-  res.status(200).json({
-    success: true,
-    message: 'Google authentication successful',
-    token: accessToken,
-    accessToken,
-    data: {
-      accessToken,
-      refreshToken,
-      expiresIn: getExpiresIn(),
-      user: formatUser(user),
-    },
-  });
+  await issueLoginOr2FAChallenge(user, req, res, 'Google authentication successful', true);
 }
 
 // ── Logout ────────────────────────────────
@@ -457,34 +633,103 @@ export async function get2FAStatus(req: AuthRequest, res: Response): Promise<voi
 export async function get2FASetup(req: AuthRequest, res: Response): Promise<void> {
   const userId = req.user!.userId;
   const user = await prisma.user.findUnique({ where: { id: userId }, select: { email: true } });
-  let secret = await redis.get(`user:${userId}:2fa_secret`);
-  if (!secret) {
-    const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
-    const bytes = crypto.randomBytes(16);
-    secret = Array.from(bytes, (b) => alphabet[b % alphabet.length]).join('');
-    await redis.set(`user:${userId}:2fa_secret`, secret, 'EX', 86400);
+  if (!user || !user.email) {
+    errorResponse(res, 'Không tìm thấy email tài khoản', 404);
+    return;
   }
-  const formattedKey = secret.match(/.{1,4}/g)?.join(' ') || secret;
-  const label = encodeURIComponent(`Dishcision:${user?.email || userId}`);
-  const otpauthUrl = `otpauth://totp/${label}?secret=${secret}&issuer=Dishcision`;
 
+  const setupKey = `user:${userId}:2fa_setup_otp`;
+  const existingRaw = await redis.get(setupKey);
+  if (existingRaw) {
+    try {
+      const existing = JSON.parse(existingRaw);
+      if (existing.lastSentAt && Date.now() - existing.lastSentAt < 15000) {
+        res.status(200).json({
+          success: true,
+          data: {
+            email: maskEmail(user.email),
+            emailMasked: maskEmail(user.email),
+            otpSent: true,
+          },
+          message: 'Mã xác thực đã được gửi tới email của bạn',
+        });
+        return;
+      }
+    } catch {
+      // Proceed to regenerate
+    }
+  }
+
+  const otp = crypto.randomInt(100000, 1000000).toString();
+  await redis.set(
+    setupKey,
+    JSON.stringify({ otp, attempts: 0, lastSentAt: Date.now() }),
+    'EX',
+    600
+  );
+
+  const sent = await sendOtpEmail(user.email, otp, 'enable_2fa');
+  if (!sent) {
+    await redis.del(setupKey);
+    errorResponse(res, 'Không thể gửi email xác thực lúc này. Vui lòng thử lại.', 503);
+    return;
+  }
+
+  const emailMasked = maskEmail(user.email);
   res.status(200).json({
     success: true,
-    data: { secret, formattedKey, otpauthUrl },
-    message: 'Lấy mã thiết lập 2FA thành công',
+    data: {
+      email: emailMasked,
+      emailMasked,
+      otpSent: true,
+    },
+    message: 'Mã xác thực 6 chữ số đã được gửi tới email của bạn',
   });
 }
 
 export async function verify2FA(req: AuthRequest, res: Response): Promise<void> {
   const userId = req.user!.userId;
-  const { code } = req.body;
+  const code = String(req.body.code || '').trim();
+  const setupKey = `user:${userId}:2fa_setup_otp`;
+  const raw = await redis.get(setupKey);
 
-  if (!code || String(code).trim().length < 4) {
-    errorResponse(res, 'Mã xác thực không hợp lệ. Vui lòng nhập lại.', 400);
+  if (!raw) {
+    errorResponse(res, 'Mã xác thực đã hết hạn. Vui lòng bấm gửi lại mã.', 400);
     return;
   }
 
-  await redis.set(`user:${userId}:2fa_enabled`, 'true');
+  let stored: { otp: string; attempts: number; lastSentAt: number };
+  try {
+    stored = JSON.parse(raw);
+  } catch {
+    await redis.del(setupKey);
+    errorResponse(res, 'Mã xác thực không hợp lệ. Vui lòng bấm gửi lại mã.', 400);
+    return;
+  }
+
+  if (!stored.otp || stored.otp !== code) {
+    const nextAttempts = (stored.attempts || 0) + 1;
+    if (nextAttempts >= 5) {
+      await redis.del(setupKey);
+      errorResponse(res, 'Bạn đã nhập sai mã quá nhiều lần. Vui lòng gửi lại mã mới.', 429);
+      return;
+    }
+    const ttl = await redis.ttl(setupKey);
+    await redis.set(
+      setupKey,
+      JSON.stringify({ ...stored, attempts: nextAttempts }),
+      'EX',
+      ttl > 0 ? ttl : 300
+    );
+    errorResponse(res, 'Mã xác thực không chính xác.', 400);
+    return;
+  }
+
+  await Promise.all([
+    redis.set(`user:${userId}:2fa_enabled`, 'true'),
+    redis.del(setupKey),
+    redis.del(`user:${userId}:2fa_secret`),
+  ]);
 
   res.status(200).json({
     success: true,
@@ -492,13 +737,17 @@ export async function verify2FA(req: AuthRequest, res: Response): Promise<void> 
     data: {
       isTwoFactorEnabled: true,
     },
-    message: 'Thiết lập xác thực 2 yếu tố thành công!',
+    message: 'Đã bật xác thực 2 yếu tố qua email thành công!',
   });
 }
 
 export async function disable2FA(req: AuthRequest, res: Response): Promise<void> {
   const userId = req.user!.userId;
-  await redis.set(`user:${userId}:2fa_enabled`, 'false');
+  await Promise.all([
+    redis.set(`user:${userId}:2fa_enabled`, 'false'),
+    redis.del(`user:${userId}:2fa_setup_otp`),
+    redis.del(`user:${userId}:2fa_secret`),
+  ]);
 
   res.status(200).json({
     success: true,

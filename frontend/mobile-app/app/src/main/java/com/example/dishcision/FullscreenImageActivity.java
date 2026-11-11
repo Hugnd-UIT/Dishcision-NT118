@@ -1,11 +1,13 @@
 package com.example.dishcision;
 
 import android.graphics.Color;
+import android.graphics.drawable.GradientDrawable;
 import android.os.Build;
 import android.os.Bundle;
 import android.text.TextUtils;
 import android.util.TypedValue;
 import android.view.View;
+import android.view.ViewGroup;
 import android.view.Window;
 import android.view.WindowManager;
 import android.widget.ImageView;
@@ -13,20 +15,28 @@ import android.widget.TextView;
 
 import androidx.activity.EdgeToEdge;
 import androidx.activity.SystemBarStyle;
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowCompat;
 import androidx.core.view.WindowInsetsCompat;
 import androidx.core.view.WindowInsetsControllerCompat;
+import androidx.viewpager.widget.PagerAdapter;
+import androidx.viewpager.widget.ViewPager;
 
 import com.example.dishcision.network.ImageLoader;
+
+import java.util.ArrayList;
+import java.util.List;
 
 public class FullscreenImageActivity extends AppCompatActivity {
 
     public static final String EXTRA_AUTHOR = "extra_author";
     public static final String EXTRA_CAPTION = "extra_caption";
     public static final String EXTRA_IMAGE_URL = "extra_image_url";
+    public static final String EXTRA_IMAGE_URLS = "extra_image_urls";
+    public static final String EXTRA_INITIAL_INDEX = "extra_initial_index";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -64,7 +74,8 @@ public class FullscreenImageActivity extends AppCompatActivity {
         View rootView = findViewById(R.id.main_full_image);
         View topBar = findViewById(R.id.topBar);
         View bottomCaption = findViewById(R.id.bottomCaption);
-        ImageView imgFullPhoto = findViewById(R.id.imgFullPhoto);
+        ViewPager vpFullPhotos = findViewById(R.id.vpFullPhotos);
+        TextView tvFullImageCounter = findViewById(R.id.tvFullImageCounter);
         ImageView btnClose = findViewById(R.id.btnCloseFullImage);
         TextView tvFullAuthor = findViewById(R.id.tvFullAuthor);
         TextView tvFullCaption = findViewById(R.id.tvFullCaption);
@@ -96,10 +107,82 @@ public class FullscreenImageActivity extends AppCompatActivity {
 
         String author = getIntent().getStringExtra(EXTRA_AUTHOR);
         String caption = getIntent().getStringExtra(EXTRA_CAPTION);
-        String imageUrl = getIntent().getStringExtra(EXTRA_IMAGE_URL);
+        List<String> imageUrls = new ArrayList<>();
+        ArrayList<String> passedList = getIntent().getStringArrayListExtra(EXTRA_IMAGE_URLS);
+        if (passedList != null) {
+            for (String u : passedList) {
+                if (!TextUtils.isEmpty(u) && !TextUtils.isEmpty(u.trim())) {
+                    imageUrls.add(u.trim());
+                }
+            }
+        }
+        if (imageUrls.isEmpty()) {
+            String singleUrl = getIntent().getStringExtra(EXTRA_IMAGE_URL);
+            if (!TextUtils.isEmpty(singleUrl) && !TextUtils.isEmpty(singleUrl.trim())) {
+                imageUrls.add(singleUrl.trim());
+            }
+        }
 
-        if (imgFullPhoto != null && !TextUtils.isEmpty(imageUrl)) {
-            ImageLoader.loadImage(imgFullPhoto, imageUrl);
+        int initialIndex = getIntent().getIntExtra(EXTRA_INITIAL_INDEX, 0);
+        if (initialIndex < 0 || initialIndex >= imageUrls.size()) {
+            initialIndex = 0;
+        }
+
+        if (tvFullImageCounter != null) {
+            GradientDrawable badgeBg = new GradientDrawable();
+            badgeBg.setColor(Color.parseColor("#80000000"));
+            badgeBg.setCornerRadius(dpToPx(16));
+            tvFullImageCounter.setBackground(badgeBg);
+            if (imageUrls.size() > 1) {
+                tvFullImageCounter.setText((initialIndex + 1) + " / " + imageUrls.size());
+                tvFullImageCounter.setVisibility(View.VISIBLE);
+            } else {
+                tvFullImageCounter.setVisibility(View.GONE);
+            }
+        }
+
+        if (vpFullPhotos != null && !imageUrls.isEmpty()) {
+            vpFullPhotos.setOffscreenPageLimit(Math.max(1, imageUrls.size() - 1));
+            vpFullPhotos.setAdapter(new PagerAdapter() {
+                @Override
+                public int getCount() {
+                    return imageUrls.size();
+                }
+
+                @Override
+                public boolean isViewFromObject(@NonNull View view, @NonNull Object object) {
+                    return view == object;
+                }
+
+                @NonNull
+                @Override
+                public Object instantiateItem(@NonNull ViewGroup container, int position) {
+                    ImageView iv = new ImageView(container.getContext());
+                    iv.setLayoutParams(new ViewGroup.LayoutParams(
+                            ViewGroup.LayoutParams.MATCH_PARENT,
+                            ViewGroup.LayoutParams.MATCH_PARENT
+                    ));
+                    iv.setScaleType(ImageView.ScaleType.FIT_CENTER);
+                    iv.setOnClickListener(v -> finish());
+                    ImageLoader.loadImage(iv, imageUrls.get(position));
+                    container.addView(iv);
+                    return iv;
+                }
+
+                @Override
+                public void destroyItem(@NonNull ViewGroup container, int position, @NonNull Object object) {
+                    container.removeView((View) object);
+                }
+            });
+            vpFullPhotos.setCurrentItem(initialIndex, false);
+            vpFullPhotos.addOnPageChangeListener(new ViewPager.SimpleOnPageChangeListener() {
+                @Override
+                public void onPageSelected(int position) {
+                    if (tvFullImageCounter != null && imageUrls.size() > 1) {
+                        tvFullImageCounter.setText((position + 1) + " / " + imageUrls.size());
+                    }
+                }
+            });
         }
 
         boolean hasAuthor = !TextUtils.isEmpty(author) && !TextUtils.isEmpty(author.trim());
@@ -139,3 +222,4 @@ public class FullscreenImageActivity extends AppCompatActivity {
         );
     }
 }
+

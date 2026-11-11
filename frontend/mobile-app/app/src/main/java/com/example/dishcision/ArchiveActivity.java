@@ -401,10 +401,18 @@ public class ArchiveActivity extends AppCompatActivity {
     }
 
     private void showPostPreview(FeedPostsResponse.PostItem post) {
-        if (post.images != null && !post.images.isEmpty() && post.images.get(0).imageUrl != null && !post.images.get(0).imageUrl.trim().isEmpty()) {
-            String author = post.author != null && post.author.fullName != null ? post.author.fullName : "Bài viết của bạn";
-            PostFeedHelper.openFullscreenImage(this, author, post.content, post.images.get(0).imageUrl);
-            return;
+        if (post.images != null && !post.images.isEmpty()) {
+            ArrayList<String> urls = new ArrayList<>();
+            for (FeedPostsResponse.PostImage img : post.images) {
+                if (img != null && img.imageUrl != null && !img.imageUrl.trim().isEmpty()) {
+                    urls.add(img.imageUrl.trim());
+                }
+            }
+            if (!urls.isEmpty()) {
+                String author = post.author != null && post.author.fullName != null ? post.author.fullName : "Bài viết của bạn";
+                PostFeedHelper.openFullscreenImages(this, author, post.content, urls, 0);
+                return;
+            }
         }
         StringBuilder msg = new StringBuilder();
         if (post.content != null && !post.content.trim().isEmpty()) {

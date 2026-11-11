@@ -85,7 +85,7 @@ public class SecurityLoginActivity extends AppCompatActivity {
                 if (is2FAEnabled) {
                     disable2FAOnBackend();
                 } else {
-                    Intent intent = new Intent(SecurityLoginActivity.this, Setup2faStep1Activity.class);
+                    Intent intent = new Intent(SecurityLoginActivity.this, Setup2faStep2Activity.class);
                     startActivity(intent);
                 }
             });

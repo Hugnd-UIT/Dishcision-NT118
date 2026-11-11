@@ -65,5 +65,17 @@ public class AuthResponse {
 
         @SerializedName("user")
         public UserProfileResponse.UserData user;
+
+        @SerializedName("requiresTwoFactor")
+        public boolean requiresTwoFactor;
+
+        @SerializedName("tempToken")
+        public String tempToken;
+
+        @SerializedName("email")
+        public String email;
+
+        @SerializedName("emailMasked")
+        public String emailMasked;
     }
 }

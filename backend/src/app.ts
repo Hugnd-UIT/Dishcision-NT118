@@ -43,6 +43,7 @@ import {
 import { createReport } from './controllers/report.controller';
 import { getTicketDetail, createTicket } from './controllers/help.controller';
 import { authenticate } from './middlewares/auth.middleware';
+import { validate, verify2FASchema } from './middlewares/validate.middleware';
 import { asyncHandler } from './utils/http';
 import { errorHandler } from './middlewares/error.middleware';
 import { notFound } from './middlewares/not-found.middleware';
@@ -122,7 +123,7 @@ app.post(`${API_PREFIX}/sessions/revoke`, authenticate, asyncHandler(revokeSessi
 
 app.get(`${API_PREFIX}/2fa/status`, authenticate, asyncHandler(get2FAStatus));
 app.get(`${API_PREFIX}/2fa/setup`, authenticate, asyncHandler(get2FASetup));
-app.post(`${API_PREFIX}/2fa/verify`, authenticate, asyncHandler(verify2FA));
+app.post(`${API_PREFIX}/2fa/verify`, authenticate, validate(verify2FASchema), asyncHandler(verify2FA));
 app.post(`${API_PREFIX}/2fa/disable`, authenticate, asyncHandler(disable2FA));
 
 app.post(`${API_PREFIX}/report`, authenticate, asyncHandler(async (req, res) => {

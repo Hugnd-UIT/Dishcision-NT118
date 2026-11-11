@@ -125,12 +125,10 @@
         android:background="#E8ECF4"
         android:visibility="gone">
 
-        <ImageView
-            android:id="@+id/imgPost"
+        <androidx.viewpager.widget.ViewPager
+            android:id="@+id/vpPostImages"
             android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:contentDescription="@string/app_name"
-            android:scaleType="centerCrop" />
+            android:layout_height="match_parent" />
 
         <TextView
             android:id="@+id/tvImageCountBadge"

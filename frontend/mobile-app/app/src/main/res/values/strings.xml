@@ -80,7 +80,7 @@
     <string name="security_recommended">Đề xuất cho bạn</string>
     <string name="security_not_setup">Chưa thiết lập</string>
     <string name="security_2fa_title">Xác thực hai yếu tố</string>
-    <string name="security_2fa_desc">Thêm bước xác nhận bằng ứng dụng xác thực khi đăng nhập.</string>
+    <string name="security_2fa_desc">Nhận mã xác thực gồm 6 chữ số qua email mỗi khi đăng nhập lại.</string>
     <string name="security_2fa_button">Bắt đầu thiết lập</string>
     <string name="security_section_login">Đăng nhập</string>
     <string name="security_change_password">Đổi mật khẩu</string>
@@ -125,16 +125,16 @@
     <string name="tfa_btn_continue">Tiếp tục nhập mã</string>
     <string name="tfa_info_not_enabled">Xác thực hai yếu tố chưa được bật. Bạn cần hoàn tất bước xác nhận mã.</string>
 
-    <string name="tfa_step2_top_bar">Xác nhận xác thực hai yếu tố</string>
-    <string name="tfa_step2_progress">BƯỚC 2 / 2 · CHƯA HOÀN TẤT</string>
-    <string name="tfa_step2_title">Nhập mã từ ứng dụng</string>
-    <string name="tfa_step2_desc">Mở ứng dụng xác thực và nhập mã đang hiển thị cho tài khoản Dishcision của bạn.</string>
-    <string name="tfa_input_label">Mã từ ứng dụng xác thực</string>
-    <string name="tfa_input_hint">Nhập mã xác thực</string>
-    <string name="tfa_input_note">Đây là mã từ ứng dụng xác thực, không phải mã khôi phục gửi qua email.</string>
-    <string name="tfa_btn_confirm">Xác nhận và hoàn tất</string>
-    <string name="tfa_btn_back">Quay lại hướng dẫn</string>
-    <string name="tfa_info_incomplete">Chưa nhập mã. Xác thực hai yếu tố vẫn chưa được thiết lập xong.</string>
+    <string name="tfa_step2_top_bar">Xác thực hai yếu tố</string>
+    <string name="tfa_step2_progress">BẢO MẬT EMAIL · CHƯA BẬT</string>
+    <string name="tfa_step2_title">Nhập mã xác thực từ email</string>
+    <string name="tfa_step2_desc">Chúng tôi đang gửi mã xác nhận gồm 6 chữ số tới email đăng ký của bạn.</string>
+    <string name="tfa_input_label">Mã xác thực 6 chữ số</string>
+    <string name="tfa_input_hint">Nhập mã 6 chữ số</string>
+    <string name="tfa_input_note">Kiểm tra hộp thư đến hoặc thư mục Spam nếu chưa thấy email.</string>
+    <string name="tfa_btn_confirm">Xác nhận và bật 2FA</string>
+    <string name="tfa_btn_back">Quay lại</string>
+    <string name="tfa_info_incomplete">Sau khi bật, mỗi lần đăng nhập lại bạn sẽ cần nhập mã được gửi về email.</string>
 
     <!-- Privacy Settings Strings -->
     <string name="privacy_top_bar">Quyền riêng tư</string>
