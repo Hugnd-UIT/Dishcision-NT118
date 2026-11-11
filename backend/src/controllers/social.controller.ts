@@ -4,7 +4,7 @@ import { delCache } from '../config/redis';
 import { successResponse, paginatedResponse, errorResponse } from '../utils/response';
 import { parsePagination, parsePositiveInt } from '../utils/http';
 import { AuthRequest } from '../middlewares/auth.middleware';
-import { formatUser, attachPostFlags } from './user.controller';
+import { formatUser, attachPostFlags, resolveAvatarUrl } from './user.controller';
 
 const AUTHOR_SELECT = {
   id: true, username: true, fullName: true, avatarUrl: true,
@@ -123,7 +123,7 @@ export async function getFollowers(req: AuthRequest, res: Response): Promise<voi
     userId: f.follower.id,
     username: f.follower.username,
     fullName: f.follower.fullName,
-    avatarUrl: f.follower.avatarUrl,
+    avatarUrl: resolveAvatarUrl(f.follower.avatarUrl),
     bio: f.follower.bio,
     isFollowing: myFollowingSet.has(f.follower.id),
   }));
@@ -168,7 +168,7 @@ export async function getFollowing(req: AuthRequest, res: Response): Promise<voi
     userId: f.following.id,
     username: f.following.username,
     fullName: f.following.fullName,
-    avatarUrl: f.following.avatarUrl,
+    avatarUrl: resolveAvatarUrl(f.following.avatarUrl),
     bio: f.following.bio,
     isFollowing: myFollowingSet.has(f.following.id),
   }));

@@ -3,6 +3,7 @@
 # Uploaded user media (keep folder structure with .gitkeep)
 backend/uploads/images/*
 !backend/uploads/images/.gitkeep
+!backend/uploads/images/default-avatar.jpg
 backend/uploads/videos/*
 !backend/uploads/videos/.gitkeep
 

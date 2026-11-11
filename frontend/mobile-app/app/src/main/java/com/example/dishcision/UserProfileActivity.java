@@ -342,11 +342,7 @@ public class UserProfileActivity extends AppCompatActivity {
         }
 
         if (imgAvatar != null) {
-            if (user.avatarUrl != null && !user.avatarUrl.trim().isEmpty()) {
-                ImageLoader.loadAvatar(imgAvatar, user.avatarUrl);
-            } else {
-                imgAvatar.setImageResource(R.drawable.bg_avatar_circle);
-            }
+            ImageLoader.loadAvatar(imgAvatar, user.avatarUrl);
         }
 
         boolean isRestaurant = "RestaurantAccount".equals(user.role);

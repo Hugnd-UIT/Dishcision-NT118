@@ -163,7 +163,9 @@ public class ProfileActivity extends AppCompatActivity {
         }
         if (currentAvatarUrl.isEmpty() && savedAvatar != null && !savedAvatar.trim().isEmpty()) {
             currentAvatarUrl = savedAvatar.trim();
-            if (imgAvatar != null) ImageLoader.loadAvatar(imgAvatar, currentAvatarUrl);
+        }
+        if (imgAvatar != null) {
+            ImageLoader.loadAvatar(imgAvatar, currentAvatarUrl);
         }
         if (tvLocation != null) {
             tvLocation.setText(savedCity != null && !savedCity.trim().isEmpty() ? savedCity : "Chưa cập nhật vị trí");
@@ -377,11 +379,7 @@ public class ProfileActivity extends AppCompatActivity {
                     }
 
                     if (imgAvatar != null) {
-                        if (!currentAvatarUrl.isEmpty()) {
-                            ImageLoader.loadAvatar(imgAvatar, currentAvatarUrl);
-                        } else {
-                            imgAvatar.setImageResource(R.drawable.bg_avatar_circle);
-                        }
+                        ImageLoader.loadAvatar(imgAvatar, currentAvatarUrl);
                     }
                     if (user.preferences != null) {
                         renderTasteTags(user.preferences);

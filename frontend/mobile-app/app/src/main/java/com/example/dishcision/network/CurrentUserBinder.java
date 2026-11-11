@@ -97,7 +97,7 @@ public final class CurrentUserBinder {
             if (notEmpty(username)) handle.setText("@" + username.replace("@", ""));
             else if (notEmpty(email)) handle.setText(email);
         }
-        if (avatar != null && notEmpty(avatarUrl)) {
+        if (avatar != null) {
             ImageLoader.loadAvatar(avatar, avatarUrl);
         }
     }

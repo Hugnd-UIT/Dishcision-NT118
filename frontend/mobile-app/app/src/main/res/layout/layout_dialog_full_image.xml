@@ -54,6 +54,8 @@
         android:layout_height="wrap_content"
         android:layout_alignParentBottom="true"
         android:background="#B3000000"
+        android:clickable="true"
+        android:focusable="true"
         android:orientation="vertical"
         android:padding="16dp">
 
@@ -66,15 +68,23 @@
             android:textSize="15sp"
             android:textStyle="bold" />
 
-        <TextView
-            android:id="@+id/tvFullCaption"
+        <ScrollView
+            android:id="@+id/scrollFullCaption"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="4dp"
-            android:lineSpacingExtra="2dp"
-            android:text=""
-            android:textColor="@color/white"
-            android:textSize="13sp" />
+            android:fadeScrollbars="false"
+            android:scrollbars="vertical">
+
+            <TextView
+                android:id="@+id/tvFullCaption"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:lineSpacingExtra="2dp"
+                android:text=""
+                android:textColor="@color/white"
+                android:textSize="13sp" />
+        </ScrollView>
     </LinearLayout>
 
 </RelativeLayout>

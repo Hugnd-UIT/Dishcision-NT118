@@ -3,7 +3,7 @@ import { prisma } from '../config/prisma';
 import { getCache, setCache, CACHE_TTL } from '../config/redis';
 import { successResponse, paginatedResponse } from '../utils/response';
 import { parsePagination } from '../utils/http';
-import { formatUser } from './user.controller';
+import { formatUser, resolveAvatarUrl } from './user.controller';
 
 const AUTHOR_SELECT = {
   id: true, username: true, fullName: true, avatarUrl: true,
@@ -161,7 +161,7 @@ export async function searchStores(req: Request, res: Response): Promise<void> {
     id: s.id,
     name: s.fullName,
     username: s.username,
-    avatarUrl: s.avatarUrl,
+    avatarUrl: resolveAvatarUrl(s.avatarUrl),
     bio: s.bio || '',
     address: s.storeProfile?.address || '',
     openHours: s.storeProfile?.openHours || '',

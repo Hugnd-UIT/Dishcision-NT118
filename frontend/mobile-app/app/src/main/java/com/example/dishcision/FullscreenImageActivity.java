@@ -74,6 +74,7 @@ public class FullscreenImageActivity extends AppCompatActivity {
         View rootView = findViewById(R.id.main_full_image);
         View topBar = findViewById(R.id.topBar);
         View bottomCaption = findViewById(R.id.bottomCaption);
+        View scrollFullCaption = findViewById(R.id.scrollFullCaption);
         ViewPager vpFullPhotos = findViewById(R.id.vpFullPhotos);
         TextView tvFullImageCounter = findViewById(R.id.tvFullImageCounter);
         ImageView btnClose = findViewById(R.id.btnCloseFullImage);
@@ -141,48 +142,53 @@ public class FullscreenImageActivity extends AppCompatActivity {
             }
         }
 
-        if (vpFullPhotos != null && !imageUrls.isEmpty()) {
-            vpFullPhotos.setOffscreenPageLimit(Math.max(1, imageUrls.size() - 1));
-            vpFullPhotos.setAdapter(new PagerAdapter() {
-                @Override
-                public int getCount() {
-                    return imageUrls.size();
-                }
-
-                @Override
-                public boolean isViewFromObject(@NonNull View view, @NonNull Object object) {
-                    return view == object;
-                }
-
-                @NonNull
-                @Override
-                public Object instantiateItem(@NonNull ViewGroup container, int position) {
-                    ImageView iv = new ImageView(container.getContext());
-                    iv.setLayoutParams(new ViewGroup.LayoutParams(
-                            ViewGroup.LayoutParams.MATCH_PARENT,
-                            ViewGroup.LayoutParams.MATCH_PARENT
-                    ));
-                    iv.setScaleType(ImageView.ScaleType.FIT_CENTER);
-                    iv.setOnClickListener(v -> finish());
-                    ImageLoader.loadImage(iv, imageUrls.get(position));
-                    container.addView(iv);
-                    return iv;
-                }
-
-                @Override
-                public void destroyItem(@NonNull ViewGroup container, int position, @NonNull Object object) {
-                    container.removeView((View) object);
-                }
-            });
-            vpFullPhotos.setCurrentItem(initialIndex, false);
-            vpFullPhotos.addOnPageChangeListener(new ViewPager.SimpleOnPageChangeListener() {
-                @Override
-                public void onPageSelected(int position) {
-                    if (tvFullImageCounter != null && imageUrls.size() > 1) {
-                        tvFullImageCounter.setText((position + 1) + " / " + imageUrls.size());
+        if (vpFullPhotos != null) {
+            if (!imageUrls.isEmpty()) {
+                vpFullPhotos.setVisibility(View.VISIBLE);
+                vpFullPhotos.setOffscreenPageLimit(Math.max(1, imageUrls.size() - 1));
+                vpFullPhotos.setAdapter(new PagerAdapter() {
+                    @Override
+                    public int getCount() {
+                        return imageUrls.size();
                     }
-                }
-            });
+
+                    @Override
+                    public boolean isViewFromObject(@NonNull View view, @NonNull Object object) {
+                        return view == object;
+                    }
+
+                    @NonNull
+                    @Override
+                    public Object instantiateItem(@NonNull ViewGroup container, int position) {
+                        ImageView iv = new ImageView(container.getContext());
+                        iv.setLayoutParams(new ViewGroup.LayoutParams(
+                                ViewGroup.LayoutParams.MATCH_PARENT,
+                                ViewGroup.LayoutParams.MATCH_PARENT
+                        ));
+                        iv.setScaleType(ImageView.ScaleType.FIT_CENTER);
+                        iv.setOnClickListener(v -> finish());
+                        ImageLoader.loadImage(iv, imageUrls.get(position));
+                        container.addView(iv);
+                        return iv;
+                    }
+
+                    @Override
+                    public void destroyItem(@NonNull ViewGroup container, int position, @NonNull Object object) {
+                        container.removeView((View) object);
+                    }
+                });
+                vpFullPhotos.setCurrentItem(initialIndex, false);
+                vpFullPhotos.addOnPageChangeListener(new ViewPager.SimpleOnPageChangeListener() {
+                    @Override
+                    public void onPageSelected(int position) {
+                        if (tvFullImageCounter != null && imageUrls.size() > 1) {
+                            tvFullImageCounter.setText((position + 1) + " / " + imageUrls.size());
+                        }
+                    }
+                });
+            } else {
+                vpFullPhotos.setVisibility(View.GONE);
+            }
         }
 
         boolean hasAuthor = !TextUtils.isEmpty(author) && !TextUtils.isEmpty(author.trim());
@@ -203,8 +209,28 @@ public class FullscreenImageActivity extends AppCompatActivity {
             if (hasCaption) {
                 tvFullCaption.setText(caption.trim());
                 tvFullCaption.setVisibility(View.VISIBLE);
+                if (scrollFullCaption != null) {
+                    scrollFullCaption.setVisibility(View.VISIBLE);
+                    scrollFullCaption.post(() -> {
+                        int rootH = rootView != null && rootView.getHeight() > 0
+                                ? rootView.getHeight()
+                                : getResources().getDisplayMetrics().heightPixels;
+                        int topH = topBar != null ? topBar.getHeight() : dpToPx(56);
+                        int maxRatioH = (int) (rootH * (imageUrls.isEmpty() ? 0.68f : 0.34f));
+                        int availableH = Math.max(dpToPx(80), rootH - topH - dpToPx(96));
+                        int maxAllowed = Math.min(maxRatioH, availableH);
+                        if (scrollFullCaption.getHeight() > maxAllowed) {
+                            ViewGroup.LayoutParams svLp = scrollFullCaption.getLayoutParams();
+                            svLp.height = maxAllowed;
+                            scrollFullCaption.setLayoutParams(svLp);
+                        }
+                    });
+                }
             } else {
                 tvFullCaption.setVisibility(View.GONE);
+                if (scrollFullCaption != null) {
+                    scrollFullCaption.setVisibility(View.GONE);
+                }
             }
         }
 

@@ -3,6 +3,7 @@ import { prisma } from '../config/prisma';
 import { successResponse, errorResponse } from '../utils/response';
 import { AuthRequest } from '../middlewares/auth.middleware';
 import { parsePositiveInt } from '../utils/http';
+import { resolveAvatarUrl } from './user.controller';
 
 // ─────────────────────────────────────────
 // 1. STORIES
@@ -14,7 +15,7 @@ function formatStory(s: any) {
     userId: s.userId,
     username: s.user?.username || '',
     userFullName: s.user?.fullName || '',
-    userAvatar: s.user?.avatarUrl || null,
+    userAvatar: resolveAvatarUrl(s.user?.avatarUrl),
     mediaUrl: s.mediaUrl,
     caption: s.caption || '',
     createdAt: s.createdAt,
@@ -249,8 +250,8 @@ export async function getStoreDetail(req: AuthRequest, res: Response): Promise<v
     name: restaurantUser.fullName,
     username: restaurantUser.username,
     bio: restaurantUser.bio || '',
-    avatarUrl: restaurantUser.avatarUrl,
-    coverUrl: restaurantUser.storeProfile?.coverUrl || restaurantUser.avatarUrl,
+    avatarUrl: resolveAvatarUrl(restaurantUser.avatarUrl),
+    coverUrl: restaurantUser.storeProfile?.coverUrl || resolveAvatarUrl(restaurantUser.avatarUrl),
     address: restaurantUser.storeProfile?.address || '',
     openHours: restaurantUser.storeProfile?.openHours || '',
     isOpen: restaurantUser.storeProfile?.isOpen ?? true,
@@ -267,7 +268,7 @@ export async function getStoreDetail(req: AuthRequest, res: Response): Promise<v
       content: r.content,
       tags: r.tags,
       createdAt: r.createdAt,
-      author: r.author,
+      author: r.author ? { ...r.author, avatarUrl: resolveAvatarUrl(r.author.avatarUrl) } : r.author,
       images: r.images,
     })),
     menu,
@@ -347,8 +348,8 @@ async function buildRestaurantsPayload(userId: number | undefined, keyword: stri
       id: ru.id,
       name: ru.fullName,
       username: ru.username,
-      avatarUrl: ru.avatarUrl,
-      coverUrl: ru.storeProfile?.coverUrl || ru.avatarUrl,
+      avatarUrl: resolveAvatarUrl(ru.avatarUrl),
+      coverUrl: ru.storeProfile?.coverUrl || resolveAvatarUrl(ru.avatarUrl),
       address: ru.storeProfile?.address || '',
       openHours: ru.storeProfile?.openHours || '',
       isOpen: ru.storeProfile?.isOpen ?? true,
@@ -373,7 +374,7 @@ async function buildRestaurantsPayload(userId: number | undefined, keyword: stri
     userId: st.userId,
     storeName: st.user.fullName,
     title: st.caption || st.user.fullName,
-    avatarUrl: st.user.avatarUrl || st.mediaUrl,
+    avatarUrl: resolveAvatarUrl(st.user.avatarUrl || st.mediaUrl),
     mediaUrl: st.mediaUrl,
   }));
 

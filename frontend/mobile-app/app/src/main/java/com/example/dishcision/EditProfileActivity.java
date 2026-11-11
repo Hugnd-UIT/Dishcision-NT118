@@ -175,7 +175,7 @@ public class EditProfileActivity extends AppCompatActivity {
         }
         updateBioCount(bio != null ? bio.length() : 0);
 
-        if (imgAvatar != null && avatarUrl != null && !avatarUrl.isEmpty()) {
+        if (imgAvatar != null) {
             ImageLoader.loadAvatar(imgAvatar, avatarUrl);
         }
     }

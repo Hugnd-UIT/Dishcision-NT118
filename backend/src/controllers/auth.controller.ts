@@ -4,6 +4,7 @@ import { redis } from '../config/redis';
 import { hashPassword, comparePassword, generateAccessToken, generateRefreshToken, getExpiresIn } from '../utils/auth';
 import { successResponse, errorResponse } from '../utils/response';
 import { AuthRequest } from '../middlewares/auth.middleware';
+import { DEFAULT_AVATAR_URL, resolveAvatarUrl } from './user.controller';
 import crypto from 'crypto';
 import nodemailer from 'nodemailer';
 
@@ -20,7 +21,7 @@ function formatUser(user: any) {
     userId: user.id,
     username: user.username,
     fullName: user.fullName,
-    avatarUrl: user.avatarUrl,
+    avatarUrl: resolveAvatarUrl(user.avatarUrl),
     bio: user.bio,
     role: user.role,
     isGoogleAccount: typeof user.passwordHash === 'string' ? user.passwordHash === '' : undefined,
@@ -254,7 +255,7 @@ export async function register(req: Request, res: Response): Promise<void> {
 
   const passwordHash = await hashPassword(password);
   const user = await prisma.user.create({
-    data: { username: finalUsername, email: normalizedEmail, passwordHash, fullName: fullName.trim() },
+    data: { username: finalUsername, email: normalizedEmail, passwordHash, fullName: fullName.trim(), avatarUrl: DEFAULT_AVATAR_URL },
     select: { ...USER_PUBLIC_SELECT, email: true, passwordHash: true },
   });
 
@@ -423,6 +424,7 @@ export async function resendLogin2FA(req: Request, res: Response): Promise<void>
 
 export async function googleAuth(req: Request, res: Response): Promise<void> {
   const { email, fullName, avatarUrl } = req.body;
+  const cleanGoogleAvatar = typeof avatarUrl === 'string' ? avatarUrl.trim() : '';
   const normalizedEmail = String(email || '').trim().toLowerCase();
   if (!normalizedEmail) {
     errorResponse(res, 'Email is required', 400);
@@ -443,17 +445,17 @@ export async function googleAuth(req: Request, res: Response): Promise<void> {
         email: normalizedEmail,
         username,
         fullName: (fullName && String(fullName).trim()) || emailLocal,
-        avatarUrl: avatarUrl || null,
+        avatarUrl: cleanGoogleAvatar || DEFAULT_AVATAR_URL,
         passwordHash: '',
         role: 'User',
         accountStatus: 'Active',
       },
       include: { _count: { select: { followers: true, following: true } } },
     });
-  } else if (!user.avatarUrl && avatarUrl) {
+  } else if ((!user.avatarUrl || user.avatarUrl === DEFAULT_AVATAR_URL) && cleanGoogleAvatar) {
     user = await prisma.user.update({
       where: { id: user.id },
-      data: { avatarUrl },
+      data: { avatarUrl: cleanGoogleAvatar },
       include: { _count: { select: { followers: true, following: true } } },
     });
   }

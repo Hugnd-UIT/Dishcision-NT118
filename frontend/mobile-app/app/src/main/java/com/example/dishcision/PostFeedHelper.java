@@ -10,7 +10,13 @@ import android.graphics.Color;
 import android.graphics.Typeface;
 import android.net.Uri;
 import android.text.Editable;
+import android.text.Layout;
+import android.text.SpannableString;
+import android.text.Spanned;
+import android.text.TextUtils;
 import android.text.TextWatcher;
+import android.text.style.ForegroundColorSpan;
+import android.text.style.StyleSpan;
 import android.util.TypedValue;
 import android.view.View;
 import android.view.ViewGroup;
@@ -320,9 +326,8 @@ public final class PostFeedHelper {
         if (imgAvatar != null) {
             imgAvatar.setImageResource(R.drawable.logo);
             imgAvatar.setTag(null);
-            if (post.author != null && !isEmpty(post.author.avatarUrl)) {
-                ImageLoader.loadAvatar(imgAvatar, post.author.avatarUrl);
-            }
+            String avatarUrl = post.author != null ? post.author.avatarUrl : null;
+            ImageLoader.loadAvatar(imgAvatar, avatarUrl);
         }
 
         final int targetAuthorId = authorId;
@@ -348,18 +353,19 @@ public final class PostFeedHelper {
             tvLocation.setText((!locDisplay.isEmpty() ? locDisplay : "Dishcision") + " • " + timeDisplay);
         }
 
-        if (containerPostImage != null) {
-            ArrayList<String> imageUrls = new ArrayList<>();
-            if (post.images != null) {
-                for (FeedPostsResponse.PostImage img : post.images) {
-                    if (img != null && !isEmpty(img.imageUrl)) {
-                        imageUrls.add(img.imageUrl.trim());
-                    }
+        final String fullAuthorHeader = usernameRaw.isEmpty() ? authorName : authorName + " • @" + usernameRaw;
+        final ArrayList<String> imageUrls = new ArrayList<>();
+        if (post.images != null) {
+            for (FeedPostsResponse.PostImage img : post.images) {
+                if (img != null && !isEmpty(img.imageUrl)) {
+                    imageUrls.add(img.imageUrl.trim());
                 }
             }
+        }
+
+        if (containerPostImage != null) {
             if (!imageUrls.isEmpty()) {
                 containerPostImage.setVisibility(View.VISIBLE);
-                final String fullAuthorHeader = usernameRaw.isEmpty() ? authorName : authorName + " • @" + usernameRaw;
 
                 if (vpPostImages != null) {
                     vpPostImages.clearOnPageChangeListeners();
@@ -419,7 +425,7 @@ public final class PostFeedHelper {
         }
 
         if (tvPostText != null) {
-            tvPostText.setText(post.content != null ? post.content : "");
+            bindExpandableCaption(activity, tvPostText, post.content, fullAuthorHeader, imageUrls, vpPostImages);
         }
 
         if (tvVoucherBadge != null) {
@@ -531,6 +537,99 @@ public final class PostFeedHelper {
         }
     }
 
+    private static void bindExpandableCaption(
+            Activity activity,
+            TextView tvPostText,
+            String rawContent,
+            String fullAuthorHeader,
+            ArrayList<String> imageUrls,
+            androidx.viewpager.widget.ViewPager vpPostImages
+    ) {
+        final String cleanCaption = rawContent != null ? rawContent.trim() : "";
+        tvPostText.setOnClickListener(null);
+        tvPostText.setClickable(false);
+
+        if (cleanCaption.isEmpty()) {
+            tvPostText.setMaxLines(3);
+            tvPostText.setEllipsize(null);
+            tvPostText.setText("");
+            return;
+        }
+
+        final int maxLines = 3;
+        final String seeMoreLabel = "Xem thêm";
+        final String suffix = "... " + seeMoreLabel;
+
+        tvPostText.setMaxLines(maxLines);
+        tvPostText.setEllipsize(TextUtils.TruncateAt.END);
+        tvPostText.setText(cleanCaption);
+
+        tvPostText.post(() -> {
+            Layout layout = tvPostText.getLayout();
+            if (layout == null) return;
+
+            int lineCount = layout.getLineCount();
+            boolean truncated = lineCount > maxLines
+                    || (lineCount > 0 && layout.getEllipsisCount(lineCount - 1) > 0)
+                    || (lineCount > 0 && layout.getLineEnd(lineCount - 1) < cleanCaption.length());
+            if (!truncated) return;
+
+            int targetLine = Math.min(maxLines - 1, lineCount - 1);
+            int lineStart = layout.getLineStart(targetLine);
+            int lineVisibleEnd = layout.getEllipsisCount(targetLine) > 0
+                    ? lineStart + layout.getEllipsisStart(targetLine)
+                    : layout.getLineEnd(targetLine);
+            lineVisibleEnd = Math.min(lineVisibleEnd, cleanCaption.length());
+
+            float maxLineWidth = Math.max(0f, layout.getWidth());
+            float suffixWidth = tvPostText.getPaint().measureText(suffix);
+            int cutIndex = lineVisibleEnd;
+            while (cutIndex > lineStart) {
+                char ch = cleanCaption.charAt(cutIndex - 1);
+                if (ch == '\n' || ch == '\r') {
+                    cutIndex--;
+                    continue;
+                }
+                float lineTextWidth = tvPostText.getPaint().measureText(cleanCaption, lineStart, cutIndex);
+                if (lineTextWidth + suffixWidth <= maxLineWidth) {
+                    break;
+                }
+                cutIndex--;
+            }
+
+            if (cutIndex < lineVisibleEnd && cutIndex > lineStart) {
+                int lastSpace = -1;
+                for (int i = cutIndex - 1; i >= lineStart; i--) {
+                    if (Character.isWhitespace(cleanCaption.charAt(i))) {
+                        lastSpace = i;
+                        break;
+                    }
+                }
+                if (lastSpace > lineStart) {
+                    cutIndex = lastSpace;
+                }
+            }
+
+            String prefix = cleanCaption.substring(0, Math.max(0, cutIndex)).replaceAll("\\s+$", "");
+            String collapsed = prefix + suffix;
+            SpannableString spannable = new SpannableString(collapsed);
+            int seeMoreStart = collapsed.length() - seeMoreLabel.length();
+            spannable.setSpan(new ForegroundColorSpan(Color.parseColor("#FF5A36")),
+                    seeMoreStart, collapsed.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+            spannable.setSpan(new StyleSpan(Typeface.BOLD),
+                    seeMoreStart, collapsed.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+
+            tvPostText.setMaxLines(maxLines + 1);
+            tvPostText.setEllipsize(null);
+            tvPostText.setText(spannable);
+            tvPostText.setClickable(true);
+            tvPostText.setOnClickListener(v -> {
+                int idx = vpPostImages != null ? vpPostImages.getCurrentItem() : 0;
+                openFullscreenImages(activity, fullAuthorHeader, cleanCaption, imageUrls, idx);
+            });
+        });
+    }
+
     public static void openFullscreenImage(Activity activity, String author, String caption, String imageUrl) {
         if (isEmpty(imageUrl)) return;
         ArrayList<String> urls = new ArrayList<>();
@@ -539,11 +638,15 @@ public final class PostFeedHelper {
     }
 
     public static void openFullscreenImages(Activity activity, String author, String caption, List<String> imageUrls, int initialIndex) {
-        if (activity == null || activity.isFinishing() || imageUrls == null || imageUrls.isEmpty()) return;
+        boolean hasImages = imageUrls != null && !imageUrls.isEmpty();
+        boolean hasCaption = !isEmpty(caption);
+        if (activity == null || activity.isFinishing() || (!hasImages && !hasCaption)) return;
         Intent intent = new Intent(activity, FullscreenImageActivity.class);
         intent.putExtra(FullscreenImageActivity.EXTRA_AUTHOR, author);
         intent.putExtra(FullscreenImageActivity.EXTRA_CAPTION, caption);
-        intent.putStringArrayListExtra(FullscreenImageActivity.EXTRA_IMAGE_URLS, new ArrayList<>(imageUrls));
+        if (hasImages) {
+            intent.putStringArrayListExtra(FullscreenImageActivity.EXTRA_IMAGE_URLS, new ArrayList<>(imageUrls));
+        }
         intent.putExtra(FullscreenImageActivity.EXTRA_INITIAL_INDEX, Math.max(0, initialIndex));
         activity.startActivity(intent);
         activity.overridePendingTransition(0, 0);

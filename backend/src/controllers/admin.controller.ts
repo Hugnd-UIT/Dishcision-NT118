@@ -2,7 +2,7 @@ import { Response } from 'express';
 import { prisma } from '../config/prisma';
 import { successResponse, paginatedResponse, errorResponse } from '../utils/response';
 import { AuthRequest } from '../middlewares/auth.middleware';
-import { formatUserPrivate } from './user.controller';
+import { formatUserPrivate, resolveAvatarUrl } from './user.controller';
 import { formatPost, POST_INCLUDE } from './post.controller';
 import { AccountStatus, Role, PostStatus, ReportStatus, ReportPriority, AuditTargetType, Prisma } from '@prisma/client';
 
@@ -261,8 +261,8 @@ export async function listReports(req: AuthRequest, res: Response): Promise<void
 
   const formatted = reports.map(({ id, reporter, reportedUser, post, ...r }) => ({
     reportId: id,
-    reporter: reporter ? { userId: reporter.id, ...reporter } : null,
-    reportedUser: reportedUser ? { userId: reportedUser.id, ...reportedUser } : null,
+    reporter: reporter ? { userId: reporter.id, ...reporter, avatarUrl: resolveAvatarUrl(reporter.avatarUrl) } : null,
+    reportedUser: reportedUser ? { userId: reportedUser.id, ...reportedUser, avatarUrl: resolveAvatarUrl(reportedUser.avatarUrl) } : null,
     post: post ? { postId: post.id, content: post.content, status: post.status } : null,
     ...r,
   }));

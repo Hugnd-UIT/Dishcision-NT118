@@ -31,6 +31,8 @@ public class ImageLoader {
 
     private static final ExecutorService executor = Executors.newFixedThreadPool(4);
 
+    public static final String DEFAULT_AVATAR_URL = "/uploads/images/default-avatar.jpg";
+
     /** Drops every cached bitmap; returns the approximate size freed in KB. */
     public static int clearCache() {
         int sizeKb = memoryCache.size();
@@ -39,11 +41,15 @@ public class ImageLoader {
     }
 
     public static void loadAvatar(ImageView imageView, String imageUrl) {
-        if (imageView == null || imageUrl == null || imageUrl.trim().isEmpty()) {
+        if (imageView == null) {
             return;
         }
 
-        String finalUrl = ApiClient.normalizeMediaUrl(imageUrl);
+        String resolved = (imageUrl == null || imageUrl.trim().isEmpty()) ? DEFAULT_AVATAR_URL : imageUrl.trim();
+        String finalUrl = ApiClient.normalizeMediaUrl(resolved);
+        if (finalUrl.isEmpty()) {
+            finalUrl = ApiClient.normalizeMediaUrl(DEFAULT_AVATAR_URL);
+        }
         if (finalUrl.isEmpty()) {
             return;
         }

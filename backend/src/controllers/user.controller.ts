@@ -22,6 +22,13 @@ const USER_PUBLIC_SELECT = {
   },
 };
 
+export const DEFAULT_AVATAR_URL = '/uploads/images/default-avatar.jpg';
+
+export function resolveAvatarUrl(avatarUrl?: string | null): string {
+  const trimmed = typeof avatarUrl === 'string' ? avatarUrl.trim() : '';
+  return trimmed || DEFAULT_AVATAR_URL;
+}
+
 export function formatUser(user: any) {
   const { id, username, fullName, avatarUrl, bio, role, _count, preferences } = user;
   const prefNames = preferences
@@ -31,7 +38,7 @@ export function formatUser(user: any) {
     userId: id,
     username,
     fullName,
-    avatarUrl,
+    avatarUrl: resolveAvatarUrl(avatarUrl),
     bio,
     role,
     preferences: prefNames,
@@ -134,7 +141,7 @@ export async function updateMe(req: AuthRequest, res: Response): Promise<void> {
       bio,
       gender,
       dateOfBirth: parsedDob,
-      avatarUrl: avatarUrl === '' ? null : avatarUrl,
+      avatarUrl: avatarUrl === '' || avatarUrl === null ? DEFAULT_AVATAR_URL : avatarUrl,
     },
     include: {
       _count: {
@@ -326,7 +333,7 @@ async function fetchBlockedList(userId: number) {
     userId: r.blockedUser.id,
     username: r.blockedUser.username,
     name: r.blockedUser.fullName,
-    avatarUrl: r.blockedUser.avatarUrl,
+    avatarUrl: resolveAvatarUrl(r.blockedUser.avatarUrl),
     initials: getInitials(r.blockedUser.fullName),
     status: 'Đã chặn',
   }));
@@ -347,7 +354,7 @@ async function fetchRestrictedList(userId: number) {
     userId: r.restrictedUser.id,
     username: r.restrictedUser.username,
     name: r.restrictedUser.fullName,
-    avatarUrl: r.restrictedUser.avatarUrl,
+    avatarUrl: resolveAvatarUrl(r.restrictedUser.avatarUrl),
     initials: getInitials(r.restrictedUser.fullName),
     status: 'Đã hạn chế',
   }));
