@@ -19,7 +19,7 @@ import {
   getUserPreferences,
   updateUserPreferences,
 } from '../controllers/preference.controller';
-import { authenticate, optionalAuth } from '../middlewares/auth.middleware';
+import { authenticate } from '../middlewares/auth.middleware';
 import { asyncHandler } from '../utils/http';
 import { validate, updateProfileSchema, updatePrivacySchema } from '../middlewares/validate.middleware';
 
@@ -43,8 +43,8 @@ router.get('/me/restricted', authenticate, asyncHandler(getRestrictedAccounts));
 router.post('/me/restrict', authenticate, asyncHandler(restrictAccount));
 router.post('/me/unrestrict', authenticate, asyncHandler(unrestrictAccount));
 
-router.get('/:userId', optionalAuth, asyncHandler(getUserById));
-router.get('/:userId/posts', optionalAuth, asyncHandler(getUserPosts));
+router.get('/:userId', authenticate, asyncHandler(getUserById));
+router.get('/:userId/posts', authenticate, asyncHandler(getUserPosts));
 
 export default router;
 

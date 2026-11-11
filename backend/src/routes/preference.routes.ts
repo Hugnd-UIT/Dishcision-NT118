@@ -8,7 +8,7 @@ import { authenticate } from '../middlewares/auth.middleware';
 
 const router = Router();
 
-router.get('/', listPreferences);
+router.get('/', authenticate, listPreferences);
 router.get('/me', authenticate, getUserPreferences);
 router.put('/me', authenticate, updateUserPreferences);
 

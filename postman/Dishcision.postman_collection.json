@@ -1,0 +1,4399 @@
+{
+  "info": {
+    "_postman_id": "72e6834b-99de-593c-8570-adb1ee691186",
+    "name": "Dishcision API v1",
+    "description": "Bộ sưu tập API đầy đủ của **Dishcision Backend** (`/api/v1`).\n\n### Hướng dẫn sử dụng nhanh:\n1. Import cả 2 file `Dishcision.postman_collection.json` và `Dishcision.postman_environment.json` vào Postman.\n2. Chọn Environment **Dishcision** ở góc trên bên phải (mặc định trỏ vào server live `https://dishcision.duckdns.org/api/v1`; nếu chạy local đổi thành `http://localhost:3000/api/v1`).\n3. Mở thư mục **01. Auth, Sessions & 2FA -> Login**, điền tài khoản của bạn và bấm **Send**.\n4. Script sau request tự động lưu `{{token}}` vào biến môi trường/collection — toàn bộ các endpoint khác sẽ tự gắn `Authorization: Bearer {{token}}`.\n\n> **Lưu ý bảo mật 1 phiên (Single Active Session):** Gọi Login / Google Auth trên Postman sẽ tự động thay thế và đăng xuất phiên đang đăng nhập trước đó trên điện thoại.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "variable": [
+    {
+      "key": "rootUrl",
+      "value": "https://dishcision.duckdns.org",
+      "type": "string"
+    },
+    {
+      "key": "baseUrl",
+      "value": "https://dishcision.duckdns.org/api/v1",
+      "type": "string"
+    },
+    {
+      "key": "token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "refreshToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "tempToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "tokenHash",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "userId",
+      "value": "1",
+      "type": "string"
+    },
+    {
+      "key": "targetUserId",
+      "value": "2",
+      "type": "string"
+    },
+    {
+      "key": "recipientId",
+      "value": "2",
+      "type": "string"
+    },
+    {
+      "key": "postId",
+      "value": "1",
+      "type": "string"
+    },
+    {
+      "key": "commentId",
+      "value": "1",
+      "type": "string"
+    },
+    {
+      "key": "reviewId",
+      "value": "1",
+      "type": "string"
+    },
+    {
+      "key": "storeId",
+      "value": "1",
+      "type": "string"
+    },
+    {
+      "key": "dishId",
+      "value": "1",
+      "type": "string"
+    },
+    {
+      "key": "addressId",
+      "value": "1",
+      "type": "string"
+    },
+    {
+      "key": "ticketId",
+      "value": "1",
+      "type": "string"
+    },
+    {
+      "key": "reportId",
+      "value": "1",
+      "type": "string"
+    },
+    {
+      "key": "aiRequestId",
+      "value": "1",
+      "type": "string"
+    },
+    {
+      "key": "notificationId",
+      "value": "1",
+      "type": "string"
+    },
+    {
+      "key": "uploadedUrl",
+      "value": "/uploads/images/sample.jpg",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "00. Health",
+      "description": "Kiểm tra trạng thái hoạt động của Backend server (nằm ở root `/health`, ngoài prefix `/api/v1`).",
+      "item": [
+        {
+          "name": "Health Check",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{rootUrl}}/health",
+              "host": [
+                "{{rootUrl}}"
+              ],
+              "path": [
+                "health"
+              ]
+            },
+            "description": "Trả về `{ status: 'ok', timestamp }` nếu backend đang chạy bình thường.",
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "01. Auth, Sessions & 2FA",
+      "description": "Đăng ký, đăng nhập (có hỗ trợ 2FA qua email), Google Auth, quên mật khẩu OTP, đổi mật khẩu, cài đặt xác thực 2 lớp và quản lý phiên đăng nhập.\n\n**Lưu ý Single Active Session:** Mỗi tài khoản chỉ cho phép **1 phiên đăng nhập hoạt động tại một thời điểm**. Khi gọi Login / Verify 2FA / Google trên Postman, phiên đang đăng nhập trước đó trên điện thoại (hoặc thiết bị khác) sẽ bị đăng xuất và trả về `401` (`code: SESSION_REPLACED`).\n\nCác endpoint Login / Verify 2FA / Google / Register đã gắn sẵn **Scripts (Tests)** tự động lưu `{{token}}`, `{{refreshToken}}`, `{{userId}}` (hoặc `{{tempToken}}` nếu bật 2FA).",
+      "item": [
+        {
+          "name": "Register",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/register",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "register"
+              ]
+            },
+            "description": "Tạo tài khoản mới và tự động lưu `{{token}}`, `{{userId}}`.\n- `password`: từ 8-100 ký tự, không chứa khoảng trắng, bắt buộc có chữ thường, chữ hoa, chữ số và ký tự đặc biệt.\n- `username`: tùy chọn (3-50 ký tự); nếu bỏ trống backend tự sinh từ email.",
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"foodie_demo\",\n  \"email\": \"user@example.com\",\n  \"password\": \"Password@123\",\n  \"fullName\": \"Nguyen Van A\",\n  \"deviceName\": \"Postman Client\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code >= 200 && pm.response.code < 300) {",
+                  "  try {",
+                  "    const json = pm.response.json();",
+                  "    const setVar = (k, v) => {",
+                  "      if (v === undefined || v === null || v === '') return;",
+                  "      const s = String(v);",
+                  "      pm.collectionVariables.set(k, s);",
+                  "      if (pm.environment && pm.environment.name) pm.environment.set(k, s);",
+                  "    };",
+                  "    const tok = json?.data?.accessToken || json?.accessToken || json?.token;",
+                  "    if (tok) setVar('token', tok);",
+                  "    if (json?.data?.refreshToken) setVar('refreshToken', json.data.refreshToken);",
+                  "    if (json?.data?.user?.userId) setVar('userId', json.data.user.userId);",
+                  "    if (json?.data?.tempToken) setVar('tempToken', json.data.tempToken);",
+                  "  } catch (e) {}",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "description": "Đăng nhập bằng `credential` (email hoặc username), hoặc truyền `email` / `username` đều được.\n- Nếu tài khoản không bật 2FA: trả `accessToken` và tự động lưu vào `{{token}}`.\n- Nếu tài khoản đang bật 2FA: trả `requiresTwoFactor: true` + `tempToken` (tự động lưu vào `{{tempToken}}`), sau đó gọi **Verify Login 2FA**.",
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"credential\": \"user@example.com\",\n  \"password\": \"Password@123\",\n  \"deviceName\": \"Postman Client\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code >= 200 && pm.response.code < 300) {",
+                  "  try {",
+                  "    const json = pm.response.json();",
+                  "    const setVar = (k, v) => {",
+                  "      if (v === undefined || v === null || v === '') return;",
+                  "      const s = String(v);",
+                  "      pm.collectionVariables.set(k, s);",
+                  "      if (pm.environment && pm.environment.name) pm.environment.set(k, s);",
+                  "    };",
+                  "    const tok = json?.data?.accessToken || json?.accessToken || json?.token;",
+                  "    if (tok) setVar('token', tok);",
+                  "    if (json?.data?.refreshToken) setVar('refreshToken', json.data.refreshToken);",
+                  "    if (json?.data?.user?.userId) setVar('userId', json.data.user.userId);",
+                  "    if (json?.data?.tempToken) setVar('tempToken', json.data.tempToken);",
+                  "  } catch (e) {}",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Verify Login 2FA",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/login/verify-2fa",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "login",
+                "verify-2fa"
+              ]
+            },
+            "description": "Xác thực OTP 6 chữ số được gửi về email khi đăng nhập tài khoản có bật 2FA. Tự lưu `{{token}}` khi thành công.",
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"tempToken\": \"{{tempToken}}\",\n  \"otp\": \"123456\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code >= 200 && pm.response.code < 300) {",
+                  "  try {",
+                  "    const json = pm.response.json();",
+                  "    const setVar = (k, v) => {",
+                  "      if (v === undefined || v === null || v === '') return;",
+                  "      const s = String(v);",
+                  "      pm.collectionVariables.set(k, s);",
+                  "      if (pm.environment && pm.environment.name) pm.environment.set(k, s);",
+                  "    };",
+                  "    const tok = json?.data?.accessToken || json?.accessToken || json?.token;",
+                  "    if (tok) setVar('token', tok);",
+                  "    if (json?.data?.refreshToken) setVar('refreshToken', json.data.refreshToken);",
+                  "    if (json?.data?.user?.userId) setVar('userId', json.data.user.userId);",
+                  "    if (json?.data?.tempToken) setVar('tempToken', json.data.tempToken);",
+                  "  } catch (e) {}",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Resend Login 2FA OTP",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/login/resend-2fa",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "login",
+                "resend-2fa"
+              ]
+            },
+            "description": "Gửi lại mã OTP đăng nhập 2FA (cooldown 60 giây giữa các lần gửi).",
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"tempToken\": \"{{tempToken}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Google Auth",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/google",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "google"
+              ]
+            },
+            "description": "Đăng nhập / tự động đăng ký bằng tài khoản Google và lưu `{{token}}`.",
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"user@example.com\",\n  \"fullName\": \"Nguyen Van A\",\n  \"avatarUrl\": \"https://example.com/avatar.jpg\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code >= 200 && pm.response.code < 300) {",
+                  "  try {",
+                  "    const json = pm.response.json();",
+                  "    const setVar = (k, v) => {",
+                  "      if (v === undefined || v === null || v === '') return;",
+                  "      const s = String(v);",
+                  "      pm.collectionVariables.set(k, s);",
+                  "      if (pm.environment && pm.environment.name) pm.environment.set(k, s);",
+                  "    };",
+                  "    const tok = json?.data?.accessToken || json?.accessToken || json?.token;",
+                  "    if (tok) setVar('token', tok);",
+                  "    if (json?.data?.refreshToken) setVar('refreshToken', json.data.refreshToken);",
+                  "    if (json?.data?.user?.userId) setVar('userId', json.data.user.userId);",
+                  "    if (json?.data?.tempToken) setVar('tempToken', json.data.tempToken);",
+                  "  } catch (e) {}",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Logout",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/auth/logout",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "logout"
+              ]
+            },
+            "description": "Đăng xuất phiên hiện tại, thu hồi JWT token hiện tại trên Redis & DB và xóa `{{token}}`."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code >= 200 && pm.response.code < 300) {",
+                  "  const clearVar = (k) => {",
+                  "    pm.collectionVariables.set(k, '');",
+                  "    if (pm.environment && pm.environment.name) pm.environment.set(k, '');",
+                  "  };",
+                  "  clearVar('token');",
+                  "  clearVar('refreshToken');",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Forgot Password (Send OTP)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/forgot-password",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "forgot-password"
+              ]
+            },
+            "description": "Gửi mã OTP 6 chữ số khôi phục mật khẩu tới email (cooldown 60 giây).",
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"user@example.com\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Verify Forgot-Password OTP",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/verify-otp",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "verify-otp"
+              ]
+            },
+            "description": "Xác thực OTP quên mật khẩu. Thành công sẽ trả và tự lưu `{{tokenHash}}` để gọi **Reset Password**.",
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"user@example.com\",\n  \"otp\": \"123456\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code >= 200 && pm.response.code < 300) {",
+                  "  try {",
+                  "    const json = pm.response.json();",
+                  "    const val = json?.data?.tokenHash;",
+                  "    if (val !== undefined && val !== null && val !== '') {",
+                  "      const s = String(val);",
+                  "      pm.collectionVariables.set('tokenHash', s);",
+                  "      if (pm.environment && pm.environment.name) pm.environment.set('tokenHash', s);",
+                  "    }",
+                  "  } catch (e) {}",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Reset Password",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/reset-password",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "reset-password"
+              ]
+            },
+            "description": "Đặt lại mật khẩu mới bằng `tokenHash` lấy từ bước Verify OTP. Mật khẩu mới phải đủ mạnh và khác mật khẩu cũ.",
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"tokenHash\": \"{{tokenHash}}\",\n  \"newPassword\": \"NewPassword@123\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Change Password",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/change-password",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "change-password"
+              ]
+            },
+            "description": "Đổi mật khẩu cho tài khoản đang đăng nhập (không áp dụng cho tài khoản Google chưa có mật khẩu).",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"currentPassword\": \"Password@123\",\n  \"newPassword\": \"NewPassword@123\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Get 2FA Status",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/auth/2fa/status",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "2fa",
+                "status"
+              ]
+            },
+            "description": "Kiểm tra trạng thái bật/tắt xác thực 2 yếu tố của tài khoản hiện tại."
+          }
+        },
+        {
+          "name": "Setup 2FA (Send OTP)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/auth/2fa/setup",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "2fa",
+                "setup"
+              ]
+            },
+            "description": "Gửi mã OTP 6 chữ số về email tài khoản để kích hoạt 2FA."
+          }
+        },
+        {
+          "name": "Verify & Enable 2FA",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/2fa/verify",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "2fa",
+                "verify"
+              ]
+            },
+            "description": "Nhập mã OTP 6 chữ số từ email để bật 2FA.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"code\": \"123456\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Disable 2FA",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/auth/2fa/disable",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "2fa",
+                "disable"
+              ]
+            },
+            "description": "Tắt xác thực 2 yếu tố của tài khoản hiện tại."
+          }
+        },
+        {
+          "name": "Get Active Sessions",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/auth/sessions",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "sessions"
+              ]
+            },
+            "description": "Lấy danh sách phiên đăng nhập hiện đang hoạt động."
+          }
+        },
+        {
+          "name": "Revoke Sessions",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/sessions/revoke",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "sessions",
+                "revoke"
+              ]
+            },
+            "description": "Thu hồi các phiên đăng nhập khác (`sessionId` hoặc `sessionIds`); để mảng rỗng sẽ thu hồi toàn bộ phiên khác phiên hiện tại.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"sessionIds\": []\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Check Session Status",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/auth/session-status",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "session-status"
+              ]
+            },
+            "description": "Kiểm tra nhanh phiên token hiện tại còn hiệu lực hay đã bị thay thế (`SESSION_REPLACED`)."
+          }
+        }
+      ]
+    },
+    {
+      "name": "02. Users, Privacy & Safety",
+      "description": "Quản lý hồ sơ cá nhân, lịch sử hoạt động, cài đặt quyền riêng tư và danh sách chặn / hạn chế.",
+      "item": [
+        {
+          "name": "Get My Profile",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/users/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users",
+                "me"
+              ]
+            },
+            "description": "Lấy thông tin chi tiết hồ sơ cá nhân của user đang đăng nhập."
+          }
+        },
+        {
+          "name": "Update My Profile",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/users/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users",
+                "me"
+              ]
+            },
+            "description": "Cập nhật từng phần hoặc toàn bộ hồ sơ cá nhân (chỉ gửi các trường cần sửa; các trường không gửi được giữ nguyên).\n- `gender`: `Male` | `Female` | `Other`\n- `avatarUrl`: `/uploads/...` hoặc `https://...` hoặc `\"\"` để reset về ảnh mặc định",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"fullName\": \"Nguyen Van A\",\n  \"bio\": \"Yêu ẩm thực Việt Nam\",\n  \"city\": \"Hà Nội\",\n  \"gender\": \"Male\",\n  \"dateOfBirth\": \"2000-01-15\",\n  \"avatarUrl\": \"/uploads/images/default-avatar.jpg\",\n  \"preferences\": [\n    \"Phở\",\n    \"Bún\",\n    \"Hải sản\"\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Delete / Deactivate My Account",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/users/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users",
+                "me"
+              ]
+            },
+            "description": "Xóa tài khoản (hoặc vô hiệu hóa nếu có dữ liệu liên kết) và thu hồi toàn bộ phiên đăng nhập. **Cẩn thận khi gọi trên tài khoản thật!**"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code >= 200 && pm.response.code < 300) {",
+                  "  const clearVar = (k) => {",
+                  "    pm.collectionVariables.set(k, '');",
+                  "    if (pm.environment && pm.environment.name) pm.environment.set(k, '');",
+                  "  };",
+                  "  clearVar('token');",
+                  "  clearVar('refreshToken');",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get My Posts",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/users/me/posts?page=1&limit=10",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users",
+                "me",
+                "posts"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                },
+                {
+                  "key": "status",
+                  "value": "Active",
+                  "description": "Active | Hidden",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Lấy danh sách bài viết của bản thân (có thể lọc `status=Hidden` để xem bài đã ẩn/lưu trữ)."
+          }
+        },
+        {
+          "name": "Get My Activity Log",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/users/me/activity",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users",
+                "me",
+                "activity"
+              ],
+              "query": [
+                {
+                  "key": "type",
+                  "value": "post",
+                  "description": "post | comment | like | review | save",
+                  "disabled": true
+                },
+                {
+                  "key": "days",
+                  "value": "7",
+                  "description": "Số ngày gần nhất",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Lấy nhật ký hoạt động gần đây của user (tối đa 60 mục)."
+          }
+        },
+        {
+          "name": "Get My Preferences & Allergies (via /users)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/users/me/preferences",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users",
+                "me",
+                "preferences"
+              ]
+            },
+            "description": "Lấy danh sách sở thích ăn uống và dị ứng thực phẩm của user hiện tại."
+          }
+        },
+        {
+          "name": "Update My Preferences & Allergies (via /users)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/users/me/preferences",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users",
+                "me",
+                "preferences"
+              ]
+            },
+            "description": "Cập nhật sở thích (theo `preferences: string[]` hoặc `preferenceIds: number[]`) và `allergies: string[]`.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"preferences\": [\n    \"Món Việt\",\n    \"Lẩu & Nướng\",\n    \"Đồ uống\"\n  ],\n  \"allergies\": [\n    \"Hải sản có vỏ\",\n    \"Đậu phộng\"\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Get Privacy Settings",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/users/me/privacy",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users",
+                "me",
+                "privacy"
+              ]
+            },
+            "description": "Lấy cấu hình quyền riêng tư của tài khoản."
+          }
+        },
+        {
+          "name": "Update Privacy Settings",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/users/me/privacy",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users",
+                "me",
+                "privacy"
+              ]
+            },
+            "description": "Cập nhật quyền riêng tư (chỉ cho phép các key hợp lệ bên dưới, phải có ít nhất 1 trường):\n- `newPosts`, `profileInfo`, `followingList`: `public` | `friends` | `only_me`\n- `findEmail`: `public` | `friends_of_friends` | `friends` | `no_one`\n- `friendRequests`: `public` | `friends_of_friends`\n- `messages`, `comments`: `public` | `friends` | `no_one`",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"newPosts\": \"public\",\n  \"profileInfo\": \"public\",\n  \"followingList\": \"public\",\n  \"findEmail\": \"no_one\",\n  \"friendRequests\": \"friends_of_friends\",\n  \"messages\": \"public\",\n  \"comments\": \"public\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Get Blocked Accounts",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/users/me/blocked",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users",
+                "me",
+                "blocked"
+              ]
+            },
+            "description": "Danh sách tài khoản đã chặn."
+          }
+        },
+        {
+          "name": "Block Account",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/users/me/block",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users",
+                "me",
+                "block"
+              ]
+            },
+            "description": "Chặn một user (chấp nhận `targetUserId`, `accountId` hoặc `userId`).",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"targetUserId\": \"{{targetUserId}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Unblock Account",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/users/me/unblock",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users",
+                "me",
+                "unblock"
+              ]
+            },
+            "description": "Bỏ chặn user.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"targetUserId\": \"{{targetUserId}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Get Restricted Accounts",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/users/me/restricted",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users",
+                "me",
+                "restricted"
+              ]
+            },
+            "description": "Danh sách tài khoản bị hạn chế."
+          }
+        },
+        {
+          "name": "Restrict Account",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/users/me/restrict",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users",
+                "me",
+                "restrict"
+              ]
+            },
+            "description": "Hạn chế user bình luận/nhắn tin.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"targetUserId\": \"{{targetUserId}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Unrestrict Account",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/users/me/unrestrict",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users",
+                "me",
+                "unrestrict"
+              ]
+            },
+            "description": "Bỏ hạn chế user.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"targetUserId\": \"{{targetUserId}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Get User Profile by ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/users/:userId",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users",
+                ":userId"
+              ],
+              "variable": [
+                {
+                  "key": "userId",
+                  "value": "{{targetUserId}}",
+                  "description": "ID user cần xem"
+                }
+              ]
+            },
+            "description": "Xem trang cá nhân của một user khác (tôn trọng cài đặt `profileInfo` privacy và danh sách chặn)."
+          }
+        },
+        {
+          "name": "Get User Posts by ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/users/:userId/posts?page=1&limit=10",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users",
+                ":userId",
+                "posts"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                }
+              ],
+              "variable": [
+                {
+                  "key": "userId",
+                  "value": "{{targetUserId}}",
+                  "description": "ID user hoặc 'me'"
+                }
+              ]
+            },
+            "description": "Lấy bài viết công khai (hoặc bạn bè được phép xem) của một user."
+          }
+        }
+      ]
+    },
+    {
+      "name": "03. Taste Preferences & Allergies",
+      "description": "Danh mục sở thích ăn uống hệ thống và alias quản lý sở thích/dị ứng của bản thân.",
+      "item": [
+        {
+          "name": "List All Food Preferences",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/preferences",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "preferences"
+              ]
+            },
+            "description": "Lấy toàn bộ danh sách sở thích ăn uống có sẵn trên hệ thống (yêu cầu đăng nhập)."
+          }
+        },
+        {
+          "name": "Get My Preferences & Allergies",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/preferences/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "preferences",
+                "me"
+              ]
+            },
+            "description": "Lấy sở thích và dị ứng của user đang đăng nhập."
+          }
+        },
+        {
+          "name": "Update My Preferences & Allergies",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/preferences/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "preferences",
+                "me"
+              ]
+            },
+            "description": "Cập nhật bằng mảng `preferenceIds` (ID từ GET `/preferences`) hoặc `preferences` (mảng tên), kèm `allergies`.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"preferenceIds\": [\n    1,\n    2\n  ],\n  \"allergies\": [\n    \"Đậu phộng\"\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "04. Posts, Likes, Comments & Bookmarks",
+      "description": "Bảng tin (Newsfeed), tạo/sửa/xóa bài viết, thả tim, chia sẻ, lưu bài viết và bình luận.",
+      "item": [
+        {
+          "name": "Get Newsfeed",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/posts?page=1&limit=10&sort=latest",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "posts"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                },
+                {
+                  "key": "sort",
+                  "value": "latest",
+                  "description": "latest | trending | following"
+                },
+                {
+                  "key": "hasVoucher",
+                  "value": "true",
+                  "description": "Chỉ lọc bài có mã ưu đãi",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Lấy danh sách bài viết trên bảng tin (yêu cầu đăng nhập; trả kèm `isLiked`, `isSaved` và lọc theo quyền riêng tư / danh sách chặn)."
+          }
+        },
+        {
+          "name": "Get Saved Posts",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/posts/saved?page=1&limit=10",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "posts",
+                "saved"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                }
+              ]
+            },
+            "description": "Lấy các bài viết đã lưu của user hiện tại."
+          }
+        },
+        {
+          "name": "Get Liked Posts",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/posts/liked?page=1&limit=10",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "posts",
+                "liked"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                }
+              ]
+            },
+            "description": "Lấy các bài viết đã thích của user hiện tại."
+          }
+        },
+        {
+          "name": "Create Post",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/posts",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "posts"
+              ]
+            },
+            "description": "Đăng bài viết mới và tự lưu `{{postId}}`. Upload ảnh trước qua `/posts/upload-media` hoặc `/upload` rồi lấy `data.url` đưa vào `images[].imageUrl`.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"content\": \"Hôm nay đi ăn bún chả ngon tuyệt vời!\",\n  \"images\": [\n    {\n      \"imageUrl\": \"/uploads/images/sample.jpg\",\n      \"displayOrder\": 0\n    }\n  ],\n  \"locationUrl\": \"https://maps.google.com/?q=Ha+Noi\",\n  \"voucherCode\": \"DISH15\",\n  \"hashtags\": [\n    \"buncha\",\n    \"hanoi\",\n    \"monngon\"\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code >= 200 && pm.response.code < 300) {",
+                  "  try {",
+                  "    const json = pm.response.json();",
+                  "    const val = json?.data?.postId;",
+                  "    if (val !== undefined && val !== null && val !== '') {",
+                  "      const s = String(val);",
+                  "      pm.collectionVariables.set('postId', s);",
+                  "      if (pm.environment && pm.environment.name) pm.environment.set('postId', s);",
+                  "    }",
+                  "  } catch (e) {}",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Upload Post Media",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/posts/upload-media",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "posts",
+                "upload-media"
+              ]
+            },
+            "description": "Upload 1 file ảnh/video cho bài viết (`multipart/form-data`, field key: `file`). Tự lưu `{{uploadedUrl}}`.",
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": [],
+                  "description": "Chọn ảnh hoặc video (tối đa 100MB)"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code >= 200 && pm.response.code < 300) {",
+                  "  try {",
+                  "    const json = pm.response.json();",
+                  "    const val = json?.data?.url;",
+                  "    if (val !== undefined && val !== null && val !== '') {",
+                  "      const s = String(val);",
+                  "      pm.collectionVariables.set('uploadedUrl', s);",
+                  "      if (pm.environment && pm.environment.name) pm.environment.set('uploadedUrl', s);",
+                  "    }",
+                  "  } catch (e) {}",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get Post Detail",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/posts/:postId",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "posts",
+                ":postId"
+              ],
+              "variable": [
+                {
+                  "key": "postId",
+                  "value": "{{postId}}",
+                  "description": "ID bài viết"
+                }
+              ]
+            },
+            "description": "Lấy chi tiết một bài viết."
+          }
+        },
+        {
+          "name": "Update Post",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/posts/:postId",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "posts",
+                ":postId"
+              ],
+              "variable": [
+                {
+                  "key": "postId",
+                  "value": "{{postId}}",
+                  "description": "ID bài viết"
+                }
+              ]
+            },
+            "description": "Chỉnh sửa bài viết của mình (`status`: `Active` | `Hidden`).",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"content\": \"Nội dung bài viết sau khi chỉnh sửa\",\n  \"status\": \"Active\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Delete Post",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/posts/:postId",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "posts",
+                ":postId"
+              ],
+              "variable": [
+                {
+                  "key": "postId",
+                  "value": "{{postId}}",
+                  "description": "ID bài viết"
+                }
+              ]
+            },
+            "description": "Xóa mềm bài viết (chuyển `status = Deleted`)."
+          }
+        },
+        {
+          "name": "Get Post Likes",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/posts/:postId/likes?page=1&limit=20",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "posts",
+                ":postId",
+                "likes"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "20"
+                }
+              ],
+              "variable": [
+                {
+                  "key": "postId",
+                  "value": "{{postId}}",
+                  "description": "ID bài viết"
+                }
+              ]
+            },
+            "description": "Xem danh sách những người đã thích bài viết."
+          }
+        },
+        {
+          "name": "Like Post",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/posts/:postId/likes",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "posts",
+                ":postId",
+                "likes"
+              ],
+              "variable": [
+                {
+                  "key": "postId",
+                  "value": "{{postId}}",
+                  "description": "ID bài viết"
+                }
+              ]
+            },
+            "description": "Thả tim bài viết."
+          }
+        },
+        {
+          "name": "Unlike Post",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/posts/:postId/likes",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "posts",
+                ":postId",
+                "likes"
+              ],
+              "variable": [
+                {
+                  "key": "postId",
+                  "value": "{{postId}}",
+                  "description": "ID bài viết"
+                }
+              ]
+            },
+            "description": "Bỏ thích bài viết."
+          }
+        },
+        {
+          "name": "Share Post",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/posts/:postId/shares",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "posts",
+                ":postId",
+                "shares"
+              ],
+              "variable": [
+                {
+                  "key": "postId",
+                  "value": "{{postId}}",
+                  "description": "ID bài viết"
+                }
+              ]
+            },
+            "description": "Ghi nhận lượt chia sẻ bài viết."
+          }
+        },
+        {
+          "name": "Get Post Comments",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/posts/:postId/comments?page=1&limit=10",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "posts",
+                ":postId",
+                "comments"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                }
+              ],
+              "variable": [
+                {
+                  "key": "postId",
+                  "value": "{{postId}}",
+                  "description": "ID bài viết"
+                }
+              ]
+            },
+            "description": "Lấy danh sách bình luận gốc kèm phản hồi (`replies`)."
+          }
+        },
+        {
+          "name": "Create Comment / Reply",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/posts/:postId/comments",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "posts",
+                ":postId",
+                "comments"
+              ],
+              "variable": [
+                {
+                  "key": "postId",
+                  "value": "{{postId}}",
+                  "description": "ID bài viết"
+                }
+              ]
+            },
+            "description": "Thêm bình luận mới vào bài viết (truyền `parentCommentId` là số nguyên nếu trả lời bình luận cha). Tự lưu `{{commentId}}`.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"content\": \"Quán này nhìn hấp dẫn quá!\",\n  \"parentCommentId\": null\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code >= 200 && pm.response.code < 300) {",
+                  "  try {",
+                  "    const json = pm.response.json();",
+                  "    const val = json?.data?.commentId;",
+                  "    if (val !== undefined && val !== null && val !== '') {",
+                  "      const s = String(val);",
+                  "      pm.collectionVariables.set('commentId', s);",
+                  "      if (pm.environment && pm.environment.name) pm.environment.set('commentId', s);",
+                  "    }",
+                  "  } catch (e) {}",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Delete Comment",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/comments/:commentId",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "comments",
+                ":commentId"
+              ],
+              "variable": [
+                {
+                  "key": "commentId",
+                  "value": "{{commentId}}",
+                  "description": "ID bình luận"
+                }
+              ]
+            },
+            "description": "Xóa bình luận (kèm toàn bộ reply con) nếu là tác giả hoặc Admin."
+          }
+        },
+        {
+          "name": "Save Post (Bookmark)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/posts/:postId/save",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "posts",
+                ":postId",
+                "save"
+              ],
+              "variable": [
+                {
+                  "key": "postId",
+                  "value": "{{postId}}",
+                  "description": "ID bài viết"
+                }
+              ]
+            },
+            "description": "Lưu bài viết vào danh sách bookmark."
+          }
+        },
+        {
+          "name": "Unsave Post (Remove Bookmark)",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/posts/:postId/save",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "posts",
+                ":postId",
+                "save"
+              ],
+              "variable": [
+                {
+                  "key": "postId",
+                  "value": "{{postId}}",
+                  "description": "ID bài viết"
+                }
+              ]
+            },
+            "description": "Bỏ lưu bài viết."
+          }
+        }
+      ]
+    },
+    {
+      "name": "05. Social, Follow & Chat",
+      "description": "Theo dõi / hủy theo dõi người dùng, danh sách bài đã lưu/thích (alias `/users/me/*`) và nhắn tin trực tiếp.",
+      "item": [
+        {
+          "name": "Get Followers",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/users/:userId/followers",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users",
+                ":userId",
+                "followers"
+              ],
+              "variable": [
+                {
+                  "key": "userId",
+                  "value": "{{targetUserId}}",
+                  "description": "ID user hoặc 'me'"
+                }
+              ]
+            },
+            "description": "Lấy danh sách người đang theo dõi user."
+          }
+        },
+        {
+          "name": "Get Following",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/users/:userId/following",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users",
+                ":userId",
+                "following"
+              ],
+              "variable": [
+                {
+                  "key": "userId",
+                  "value": "{{targetUserId}}",
+                  "description": "ID user hoặc 'me'"
+                }
+              ]
+            },
+            "description": "Lấy danh sách những người mà user đang theo dõi (tôn trọng quyền riêng tư `followingList`)."
+          }
+        },
+        {
+          "name": "Follow User",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/users/:userId/follow",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users",
+                ":userId",
+                "follow"
+              ],
+              "variable": [
+                {
+                  "key": "userId",
+                  "value": "{{targetUserId}}",
+                  "description": "ID user cần theo dõi"
+                }
+              ]
+            },
+            "description": "Theo dõi một user hoặc nhà hàng."
+          }
+        },
+        {
+          "name": "Unfollow User",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/users/:userId/follow",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users",
+                ":userId",
+                "follow"
+              ],
+              "variable": [
+                {
+                  "key": "userId",
+                  "value": "{{targetUserId}}",
+                  "description": "ID user cần bỏ theo dõi"
+                }
+              ]
+            },
+            "description": "Hủy theo dõi một user."
+          }
+        },
+        {
+          "name": "Get My Saved Posts (User Alias)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/users/me/saved-posts?page=1&limit=10",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users",
+                "me",
+                "saved-posts"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                }
+              ]
+            },
+            "description": "Lấy danh sách bài viết đã lưu của user hiện tại."
+          }
+        },
+        {
+          "name": "Get My Liked Posts (User Alias)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/users/me/liked-posts?page=1&limit=10",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users",
+                "me",
+                "liked-posts"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                }
+              ]
+            },
+            "description": "Lấy danh sách bài viết đã thích của user hiện tại."
+          }
+        },
+        {
+          "name": "Get Chat Conversations",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/chats",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "chats"
+              ]
+            },
+            "description": "Lấy danh sách cuộc trò chuyện gần nhất và số tin nhắn chưa đọc."
+          }
+        },
+        {
+          "name": "Get Messages with User",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/chats/:recipientId/messages?page=1&limit=20",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "chats",
+                ":recipientId",
+                "messages"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "20"
+                }
+              ],
+              "variable": [
+                {
+                  "key": "recipientId",
+                  "value": "{{recipientId}}",
+                  "description": "ID người nhận"
+                }
+              ]
+            },
+            "description": "Lấy lịch sử tin nhắn với `recipientId` và đánh dấu đã đọc các tin nhắn gửi tới mình."
+          }
+        },
+        {
+          "name": "Send Direct Message",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/chats/:recipientId/messages",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "chats",
+                ":recipientId",
+                "messages"
+              ],
+              "variable": [
+                {
+                  "key": "recipientId",
+                  "value": "{{recipientId}}",
+                  "description": "ID người nhận"
+                }
+              ]
+            },
+            "description": "Gửi tin nhắn text hoặc kèm `mediaUrl` (`/uploads/...` hoặc `https://...`). Cần ít nhất `content` hoặc `mediaUrl`.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"content\": \"Chiều nay đi ăn bún bò nhé?\",\n  \"mediaUrl\": \"\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "06. Stories, Stores, Dishes & Addresses",
+      "description": "Stories, danh sách & chi tiết món ăn, quán ăn/nhà hàng và sổ địa chỉ giao hàng.",
+      "item": [
+        {
+          "name": "Get Stories",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/stories",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "stories"
+              ],
+              "query": [
+                {
+                  "key": "userId",
+                  "value": "{{targetUserId}}",
+                  "disabled": true
+                },
+                {
+                  "key": "storeName",
+                  "value": "",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Lấy tối đa 50 story gần nhất (có thể lọc theo `userId` hoặc `storeName`)."
+          }
+        },
+        {
+          "name": "Create Story",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/stories",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "stories"
+              ]
+            },
+            "description": "Đăng story mới (`mediaUrl` là bắt buộc).",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"mediaUrl\": \"/uploads/images/sample.jpg\",\n  \"caption\": \"Bữa trưa hôm nay!\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "List Dishes",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/dishes?limit=50",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "dishes"
+              ],
+              "query": [
+                {
+                  "key": "storeId",
+                  "value": "{{storeId}}",
+                  "disabled": true
+                },
+                {
+                  "key": "category",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "keyword",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "limit",
+                  "value": "50"
+                }
+              ]
+            },
+            "description": "Lấy danh sách món ăn trên hệ thống (lọc theo `storeId`, `category`, `keyword`)."
+          }
+        },
+        {
+          "name": "Get Dish Detail",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/dishes/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "dishes",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "{{dishId}}",
+                  "description": "ID món ăn"
+                }
+              ]
+            },
+            "description": "Xem chi tiết món ăn cùng đánh giá của quán."
+          }
+        },
+        {
+          "name": "List Stores",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/stores",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "stores"
+              ],
+              "query": [
+                {
+                  "key": "keyword",
+                  "value": "",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Lấy danh sách quán ăn, stories của quán và thực đơn nổi bật."
+          }
+        },
+        {
+          "name": "Get Store Detail",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/stores/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "stores",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "{{storeId}}",
+                  "description": "ID tài khoản quán ăn"
+                }
+              ]
+            },
+            "description": "Xem chi tiết nhà hàng: menu, đánh giá, bài viết và trạng thái follow."
+          }
+        },
+        {
+          "name": "List Restaurants (Alias for /stores)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/restaurants",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "restaurants"
+              ],
+              "query": [
+                {
+                  "key": "keyword",
+                  "value": "",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Alias của `GET /stores`."
+          }
+        },
+        {
+          "name": "Get Following Restaurants",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/restaurants/following",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "restaurants",
+                "following"
+              ],
+              "query": [
+                {
+                  "key": "keyword",
+                  "value": "",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Lấy danh sách các quán ăn mà user hiện tại đang theo dõi."
+          }
+        },
+        {
+          "name": "Get My Delivery Addresses",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/users/me/addresses",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users",
+                "me",
+                "addresses"
+              ]
+            },
+            "description": "Lấy sổ địa chỉ giao hàng của user hiện tại."
+          }
+        },
+        {
+          "name": "Add Delivery Address",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/users/me/addresses",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users",
+                "me",
+                "addresses"
+              ]
+            },
+            "description": "Thêm địa chỉ giao hàng mới (`recipientName`, `phoneNumber`, `detailAddress` là bắt buộc). Tự lưu `{{addressId}}`.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"label\": \"Nhà riêng\",\n  \"recipientName\": \"Nguyen Van A\",\n  \"phoneNumber\": \"0901234567\",\n  \"detailAddress\": \"123 Đường Láng, Đống Đa, Hà Nội\",\n  \"notes\": \"Gọi trước khi giao\",\n  \"isDefault\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code >= 200 && pm.response.code < 300) {",
+                  "  try {",
+                  "    const json = pm.response.json();",
+                  "    const val = json?.data?.id;",
+                  "    if (val !== undefined && val !== null && val !== '') {",
+                  "      const s = String(val);",
+                  "      pm.collectionVariables.set('addressId', s);",
+                  "      if (pm.environment && pm.environment.name) pm.environment.set('addressId', s);",
+                  "    }",
+                  "  } catch (e) {}",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Update Delivery Address",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/users/me/addresses/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users",
+                "me",
+                "addresses",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "{{addressId}}",
+                  "description": "ID địa chỉ"
+                }
+              ]
+            },
+            "description": "Cập nhật thông tin địa chỉ giao hàng.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"label\": \"Công ty\",\n  \"detailAddress\": \"456 Cầu Giấy, Hà Nội\",\n  \"isDefault\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Set Default Delivery Address",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/users/me/addresses/:id/default",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users",
+                "me",
+                "addresses",
+                ":id",
+                "default"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "{{addressId}}",
+                  "description": "ID địa chỉ"
+                }
+              ]
+            },
+            "description": "Đặt địa chỉ làm mặc định."
+          }
+        },
+        {
+          "name": "Delete Delivery Address",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/users/me/addresses/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users",
+                "me",
+                "addresses",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "{{addressId}}",
+                  "description": "ID địa chỉ"
+                }
+              ]
+            },
+            "description": "Xóa địa chỉ giao hàng."
+          }
+        }
+      ]
+    },
+    {
+      "name": "07. Reviews",
+      "description": "Xem, đăng và xóa đánh giá quán ăn.",
+      "item": [
+        {
+          "name": "List Reviews",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/reviews?page=1&limit=10",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "reviews"
+              ],
+              "query": [
+                {
+                  "key": "restaurantName",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "rating",
+                  "value": "5",
+                  "disabled": true
+                },
+                {
+                  "key": "authorId",
+                  "value": "{{userId}}",
+                  "disabled": true
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                }
+              ]
+            },
+            "description": "Lấy danh sách đánh giá (lọc theo tên quán, số sao 1-5 hoặc tác giả)."
+          }
+        },
+        {
+          "name": "Create Review",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/reviews",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "reviews"
+              ]
+            },
+            "description": "Đăng đánh giá quán ăn (`rating` từ 1 đến 5) và tự lưu `{{reviewId}}`.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"restaurantName\": \"Phở Thìn Bờ Hồ\",\n  \"locationUrl\": \"https://maps.google.com/?q=Pho+Thin\",\n  \"rating\": 5,\n  \"content\": \"Nước dùng đậm đà, thịt tái lăn thơm ngon.\",\n  \"images\": [\n    {\n      \"imageUrl\": \"/uploads/images/sample.jpg\",\n      \"displayOrder\": 0\n    }\n  ],\n  \"tags\": [\n    \"pho\",\n    \"hanoi\",\n    \"ngon\"\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code >= 200 && pm.response.code < 300) {",
+                  "  try {",
+                  "    const json = pm.response.json();",
+                  "    const val = json?.data?.reviewId;",
+                  "    if (val !== undefined && val !== null && val !== '') {",
+                  "      const s = String(val);",
+                  "      pm.collectionVariables.set('reviewId', s);",
+                  "      if (pm.environment && pm.environment.name) pm.environment.set('reviewId', s);",
+                  "    }",
+                  "  } catch (e) {}",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Delete Review",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/reviews/:reviewId",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "reviews",
+                ":reviewId"
+              ],
+              "variable": [
+                {
+                  "key": "reviewId",
+                  "value": "{{reviewId}}",
+                  "description": "ID bài đánh giá"
+                }
+              ]
+            },
+            "description": "Xóa bài đánh giá (tác giả hoặc Admin)."
+          }
+        }
+      ]
+    },
+    {
+      "name": "08. Food Decision & AI",
+      "description": "Danh mục món, vòng quay ngẫu nhiên và gợi ý món ăn bằng AI (Gemini / DB matcher).",
+      "item": [
+        {
+          "name": "Get Food Decision Categories",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/food-decision/categories",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "food-decision",
+                "categories"
+              ]
+            },
+            "description": "Lấy danh sách danh mục món ăn cho vòng quay chọn món."
+          }
+        },
+        {
+          "name": "Spin Random Wheel",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/food-decision/random-wheel",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "food-decision",
+                "random-wheel"
+              ]
+            },
+            "description": "Quay ngẫu nhiên chọn 1 món & quán phù hợp (`budget`, `category` đều tùy chọn).",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"budget\": \"60000\",\n  \"category\": \"Món nước\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "AI Food Decide",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/ai/food-decide",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "ai",
+                "food-decide"
+              ]
+            },
+            "description": "Gửi yêu cầu gợi ý 3 món ăn phù hợp từ AI, lưu lịch sử và tự lưu `{{aiRequestId}}`.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"mood\": \"Vui vẻ, muốn ăn nóng hổi\",\n  \"budget\": \"100000\",\n  \"companions\": 2,\n  \"craving\": \"lẩu hoặc nướng\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code >= 200 && pm.response.code < 300) {",
+                  "  try {",
+                  "    const json = pm.response.json();",
+                  "    const val = json?.data?.requestId;",
+                  "    if (val !== undefined && val !== null && val !== '') {",
+                  "      const s = String(val);",
+                  "      pm.collectionVariables.set('aiRequestId', s);",
+                  "      if (pm.environment && pm.environment.name) pm.environment.set('aiRequestId', s);",
+                  "    }",
+                  "  } catch (e) {}",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Submit AI Request Feedback",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/ai/requests/:requestId/feedback",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "ai",
+                "requests",
+                ":requestId",
+                "feedback"
+              ],
+              "variable": [
+                {
+                  "key": "requestId",
+                  "value": "{{aiRequestId}}",
+                  "description": "ID lần gọi AI"
+                }
+              ]
+            },
+            "description": "Đánh giá chất lượng gợi ý AI cho `requestId` đã lưu.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"rating\": 5,\n  \"comment\": \"Gợi ý rất chuẩn ý!\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "09. Search & Trending",
+      "description": "Tìm kiếm bài viết ẩm thực, tài khoản, món ăn, quán ăn và xu hướng nổi bật.",
+      "item": [
+        {
+          "name": "Search Food Posts",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/search/food?keyword=phở&page=1&limit=10",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "search",
+                "food"
+              ],
+              "query": [
+                {
+                  "key": "keyword",
+                  "value": "phở"
+                },
+                {
+                  "key": "location",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                }
+              ]
+            },
+            "description": "Tìm kiếm bài viết theo từ khóa nội dung/hashtag và vị trí."
+          }
+        },
+        {
+          "name": "Search Accounts",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/search/accounts?keyword=foodie&page=1&limit=10",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "search",
+                "accounts"
+              ],
+              "query": [
+                {
+                  "key": "keyword",
+                  "value": "foodie"
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                }
+              ]
+            },
+            "description": "Tìm kiếm tài khoản người dùng / nhà hàng theo `username` hoặc `fullName`."
+          }
+        },
+        {
+          "name": "Search Dishes",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/search/dishes?keyword=bún&page=1&limit=20",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "search",
+                "dishes"
+              ],
+              "query": [
+                {
+                  "key": "keyword",
+                  "value": "bún"
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "20"
+                }
+              ]
+            },
+            "description": "Tìm kiếm món ăn theo tên, danh mục, mô tả hoặc tên quán."
+          }
+        },
+        {
+          "name": "Search Stores",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/search/stores?keyword=Hà Nội&page=1&limit=20",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "search",
+                "stores"
+              ],
+              "query": [
+                {
+                  "key": "keyword",
+                  "value": "Hà Nội"
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "20"
+                }
+              ]
+            },
+            "description": "Tìm kiếm quán ăn theo tên quán, địa chỉ hoặc món ăn phục vụ."
+          }
+        },
+        {
+          "name": "Get Trending Hashtags & Dishes",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/search/trending",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "search",
+                "trending"
+              ]
+            },
+            "description": "Lấy top hashtag 30 ngày qua và top món ăn được đánh giá nhiều nhất."
+          }
+        }
+      ]
+    },
+    {
+      "name": "10. Notifications, Reports & Help Center",
+      "description": "Thông báo hệ thống, báo cáo vi phạm và hộp thư hỗ trợ.",
+      "item": [
+        {
+          "name": "Get Notifications",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/notifications?page=1&limit=20",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "notifications"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "20"
+                },
+                {
+                  "key": "isRead",
+                  "value": "false",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Lấy danh sách thông báo của user hiện tại."
+          }
+        },
+        {
+          "name": "Mark Notification as Read",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/notifications/:notificationId/read",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "notifications",
+                ":notificationId",
+                "read"
+              ],
+              "variable": [
+                {
+                  "key": "notificationId",
+                  "value": "{{notificationId}}",
+                  "description": "ID thông báo"
+                }
+              ]
+            },
+            "description": "Đánh dấu 1 thông báo đã đọc."
+          }
+        },
+        {
+          "name": "Create Report",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/reports",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "reports"
+              ]
+            },
+            "description": "Báo cáo bài viết (`postId`) hoặc người dùng (`reportedUserId`), bắt buộc có ít nhất 1 trong 2.\n- `reason`: `Spam` | `Nudity` | `Violence` | `FakeNews` | `Harassment` | `Other`",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"postId\": 1,\n  \"reportedUserId\": null,\n  \"reason\": \"Spam\",\n  \"description\": \"Bài viết có dấu hiệu quảng cáo lặp lại.\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code >= 200 && pm.response.code < 300) {",
+                  "  try {",
+                  "    const json = pm.response.json();",
+                  "    const val = json?.data?.reportId;",
+                  "    if (val !== undefined && val !== null && val !== '') {",
+                  "      const s = String(val);",
+                  "      pm.collectionVariables.set('reportId', s);",
+                  "      if (pm.environment && pm.environment.name) pm.environment.set('reportId', s);",
+                  "    }",
+                  "  } catch (e) {}",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get Help Center Inbox",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/help/inbox",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "help",
+                "inbox"
+              ]
+            },
+            "description": "Lấy danh sách ticket hỗ trợ và báo cáo vi phạm đã gửi (`id` dạng số hoặc `real_<reportId>`)."
+          }
+        },
+        {
+          "name": "Get Support Ticket / Report Detail",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/help/tickets/:ticketId",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "help",
+                "tickets",
+                ":ticketId"
+              ],
+              "variable": [
+                {
+                  "key": "ticketId",
+                  "value": "{{ticketId}}",
+                  "description": "ID ticket (vd: 1 hoặc real_1)"
+                }
+              ]
+            },
+            "description": "Xem chi tiết trạng thái xử lý của yêu cầu hỗ trợ hoặc báo cáo (`real_<reportId>`)."
+          }
+        },
+        {
+          "name": "Create Support Ticket",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/help/tickets",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "help",
+                "tickets"
+              ]
+            },
+            "description": "Gửi yêu cầu hỗ trợ mới (`subject`, `title`, `description` bắt buộc). Tự lưu `{{ticketId}}`.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"subject\": \"Lỗi tài khoản\",\n  \"title\": \"Không cập nhật được ảnh đại diện\",\n  \"description\": \"Nhờ bộ phận kỹ thuật kiểm tra giúp lỗi upload ảnh.\",\n  \"email\": \"user@example.com\",\n  \"attachments\": []\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code >= 200 && pm.response.code < 300) {",
+                  "  try {",
+                  "    const json = pm.response.json();",
+                  "    const val = json?.data?.ticketId;",
+                  "    if (val !== undefined && val !== null && val !== '') {",
+                  "      const s = String(val);",
+                  "      pm.collectionVariables.set('ticketId', s);",
+                  "      if (pm.environment && pm.environment.name) pm.environment.set('ticketId', s);",
+                  "    }",
+                  "  } catch (e) {}",
+                  "}"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "11. Media Upload",
+      "description": "Tải lên ảnh/video dùng chung (lưu vào `/uploads/images/` hoặc `/uploads/videos/`, giới hạn 100MB/tệp).",
+      "item": [
+        {
+          "name": "Upload Single Media",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/upload",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "upload"
+              ]
+            },
+            "description": "Upload 1 ảnh/video (`multipart/form-data`, key: `file`). Tự lưu `{{uploadedUrl}}` (vd: `/uploads/images/...`).",
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": [],
+                  "description": "Ảnh hoặc video <= 100MB"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code >= 200 && pm.response.code < 300) {",
+                  "  try {",
+                  "    const json = pm.response.json();",
+                  "    const val = json?.data?.url;",
+                  "    if (val !== undefined && val !== null && val !== '') {",
+                  "      const s = String(val);",
+                  "      pm.collectionVariables.set('uploadedUrl', s);",
+                  "      if (pm.environment && pm.environment.name) pm.environment.set('uploadedUrl', s);",
+                  "    }",
+                  "  } catch (e) {}",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Upload Multiple Media (up to 10)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/upload/multiple",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "upload",
+                "multiple"
+              ]
+            },
+            "description": "Upload tối đa 10 tệp cùng lúc (`multipart/form-data`, key: `files`).",
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "files",
+                  "type": "file",
+                  "src": [],
+                  "description": "Tối đa 10 ảnh/video"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code >= 200 && pm.response.code < 300) {",
+                  "  try {",
+                  "    const json = pm.response.json();",
+                  "    const val = json?.data?.files?.[0]?.url;",
+                  "    if (val !== undefined && val !== null && val !== '') {",
+                  "      const s = String(val);",
+                  "      pm.collectionVariables.set('uploadedUrl', s);",
+                  "      if (pm.environment && pm.environment.name) pm.environment.set('uploadedUrl', s);",
+                  "    }",
+                  "  } catch (e) {}",
+                  "}"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "12. Admin (Admin Role Required)",
+      "description": "Toàn bộ API quản trị yêu cầu tài khoản có `role = Admin` (trả `403 Admin access required` nếu gọi bằng user thường).",
+      "item": [
+        {
+          "name": "Admin: List Users",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/admin/users?page=1&limit=20",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "users"
+              ],
+              "query": [
+                {
+                  "key": "keyword",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "status",
+                  "value": "Active",
+                  "description": "Active | Banned | Suspended",
+                  "disabled": true
+                },
+                {
+                  "key": "role",
+                  "value": "User",
+                  "description": "User | RestaurantAccount | Admin",
+                  "disabled": true
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "20"
+                }
+              ]
+            },
+            "description": "Tìm kiếm và phân trang danh sách toàn bộ người dùng."
+          }
+        },
+        {
+          "name": "Admin: Update User Status",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/users/:userId/status",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "users",
+                ":userId",
+                "status"
+              ],
+              "variable": [
+                {
+                  "key": "userId",
+                  "value": "{{targetUserId}}",
+                  "description": "ID user"
+                }
+              ]
+            },
+            "description": "`status`: `Active` | `Banned` | `Suspended` (`reason` bắt buộc). Nếu khóa tài khoản sẽ xóa toàn bộ phiên đăng nhập của user.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"Suspended\",\n  \"reason\": \"Vi phạm điều khoản cộng đồng\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Admin: Warn User",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/users/:userId/warn",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "users",
+                ":userId",
+                "warn"
+              ],
+              "variable": [
+                {
+                  "key": "userId",
+                  "value": "{{targetUserId}}",
+                  "description": "ID user"
+                }
+              ]
+            },
+            "description": "Gửi thông báo cảnh báo hệ thống tới user và ghi audit log.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"message\": \"Vui lòng không đăng nội dung spam.\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Admin: List Posts",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/admin/posts?page=1&limit=20",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "posts"
+              ],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "Active",
+                  "description": "Active | Hidden | Deleted",
+                  "disabled": true
+                },
+                {
+                  "key": "authorId",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "20"
+                }
+              ]
+            },
+            "description": "Quản lý danh sách bài viết toàn hệ thống."
+          }
+        },
+        {
+          "name": "Admin: Pin / Unpin Post",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/posts/:postId/pin",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "posts",
+                ":postId",
+                "pin"
+              ],
+              "variable": [
+                {
+                  "key": "postId",
+                  "value": "{{postId}}",
+                  "description": "ID bài viết"
+                }
+              ]
+            },
+            "description": "Ghim hoặc bỏ ghim bài viết.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"isPinned\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Admin: Hide / Unhide Post",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/posts/:postId/hide",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "posts",
+                ":postId",
+                "hide"
+              ],
+              "variable": [
+                {
+                  "key": "postId",
+                  "value": "{{postId}}",
+                  "description": "ID bài viết"
+                }
+              ]
+            },
+            "description": "Ẩn hoặc hiện lại bài viết.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"isHidden\": true,\n  \"reason\": \"Nội dung đang chờ kiểm duyệt\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Admin: Hard Delete Post",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/admin/posts/:postId",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "posts",
+                ":postId"
+              ],
+              "variable": [
+                {
+                  "key": "postId",
+                  "value": "{{postId}}",
+                  "description": "ID bài viết"
+                }
+              ]
+            },
+            "description": "Xóa vĩnh viễn bài viết khỏi database."
+          }
+        },
+        {
+          "name": "Admin: List Reports",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/admin/reports?page=1&limit=20",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "reports"
+              ],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "Pending",
+                  "description": "Pending | Resolved | Dismissed",
+                  "disabled": true
+                },
+                {
+                  "key": "priority",
+                  "value": "High",
+                  "description": "Low | Medium | High",
+                  "disabled": true
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "20"
+                }
+              ]
+            },
+            "description": "Lấy danh sách báo cáo vi phạm."
+          }
+        },
+        {
+          "name": "Admin: Process Report",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/reports/:reportId/process",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "reports",
+                ":reportId",
+                "process"
+              ],
+              "variable": [
+                {
+                  "key": "reportId",
+                  "value": "{{reportId}}",
+                  "description": "ID báo cáo"
+                }
+              ]
+            },
+            "description": "Xử lý báo cáo vi phạm:\n- `status`: `Resolved` | `Dismissed`\n- `action`: `DeletePost` | `WarnUser` | `BanUser` | `NoAction`",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"Resolved\",\n  \"action\": \"NoAction\",\n  \"note\": \"Đã kiểm tra và xử lý.\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Admin: List AI Configs",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/admin/ai-configs",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "ai-configs"
+              ]
+            },
+            "description": "Lấy cấu hình các model AI."
+          }
+        },
+        {
+          "name": "Admin: Set Active AI Config",
+          "request": {
+            "method": "PUT",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/admin/ai-configs/:configId/active",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "ai-configs",
+                ":configId",
+                "active"
+              ],
+              "variable": [
+                {
+                  "key": "configId",
+                  "value": "1",
+                  "description": "ID cấu hình AI"
+                }
+              ]
+            },
+            "description": "Kích hoạt 1 model AI làm mặc định."
+          }
+        },
+        {
+          "name": "Admin: List AI Prompts",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/admin/ai-prompts",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "ai-prompts"
+              ]
+            },
+            "description": "Lấy danh sách prompt AI."
+          }
+        },
+        {
+          "name": "Admin: Update AI Prompt",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/ai-prompts/:promptId",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "ai-prompts",
+                ":promptId"
+              ],
+              "variable": [
+                {
+                  "key": "promptId",
+                  "value": "1",
+                  "description": "ID prompt"
+                }
+              ]
+            },
+            "description": "Chỉnh sửa nội dung prompt AI.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Food Recommendation Prompt\",\n  \"content\": \"Gợi ý 3 món ăn phù hợp tâm trạng và ngân sách.\",\n  \"isActive\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Admin: Get AI Stats",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/admin/ai-stats",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "ai-stats"
+              ],
+              "query": [
+                {
+                  "key": "from",
+                  "value": "2026-01-01T00:00:00.000Z",
+                  "disabled": true
+                },
+                {
+                  "key": "to",
+                  "value": "2026-12-31T23:59:59.000Z",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Thống kê số lượt gọi AI, tỷ lệ lỗi, đánh giá trung bình và từ khóa mood phổ biến."
+          }
+        },
+        {
+          "name": "Admin: Broadcast System Notification",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/system-notifications",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "system-notifications"
+              ]
+            },
+            "description": "Gửi thông báo hàng loạt (`targetGroup`: `All` | `User` | `RestaurantAccount`).",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Bảo trì hệ thống\",\n  \"message\": \"Hệ thống sẽ bảo trì định kỳ lúc 02:00 sáng.\",\n  \"targetGroup\": \"All\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Admin: Get Audit Logs",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/admin/audit-logs?page=1&limit=20",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "audit-logs"
+              ],
+              "query": [
+                {
+                  "key": "adminId",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "action",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "from",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "to",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "20"
+                }
+              ]
+            },
+            "description": "Xem nhật ký thao tác quản trị."
+          }
+        }
+      ]
+    },
+    {
+      "name": "13. Mobile Compatibility Aliases",
+      "description": "Các đường dẫn rút gọn được khai báo thêm trong `app.ts` để tương thích với ứng dụng mobile.",
+      "item": [
+        {
+          "name": "Alias: Get Blocked Accounts",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/accounts/blocked",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "accounts",
+                "blocked"
+              ]
+            },
+            "description": "Alias của `GET /users/me/blocked`."
+          }
+        },
+        {
+          "name": "Alias: Block Account",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/accounts/block",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "accounts",
+                "block"
+              ]
+            },
+            "description": "Alias của `POST /users/me/block`.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"targetUserId\": \"{{targetUserId}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Alias: Unblock Account",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/accounts/unblock",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "accounts",
+                "unblock"
+              ]
+            },
+            "description": "Alias của `POST /users/me/unblock`.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"targetUserId\": \"{{targetUserId}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Alias: Get Restricted Accounts",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/accounts/restricted",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "accounts",
+                "restricted"
+              ]
+            },
+            "description": "Alias của `GET /users/me/restricted`."
+          }
+        },
+        {
+          "name": "Alias: Restrict Account",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/accounts/restrict",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "accounts",
+                "restrict"
+              ]
+            },
+            "description": "Alias của `POST /users/me/restrict`.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"targetUserId\": \"{{targetUserId}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Alias: Unrestrict Account",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/accounts/unrestrict",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "accounts",
+                "unrestrict"
+              ]
+            },
+            "description": "Alias của `POST /users/me/unrestrict`.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"targetUserId\": \"{{targetUserId}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Alias: Get Privacy",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/privacy",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "privacy"
+              ]
+            },
+            "description": "Alias của `GET /users/me/privacy`."
+          }
+        },
+        {
+          "name": "Alias: Update Privacy",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/privacy/update",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "privacy",
+                "update"
+              ]
+            },
+            "description": "Alias `POST` của `PUT /users/me/privacy`.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"newPosts\": \"public\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Alias: Get Sessions",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/sessions",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "sessions"
+              ]
+            },
+            "description": "Alias của `GET /auth/sessions`."
+          }
+        },
+        {
+          "name": "Alias: Revoke Session",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/sessions/revoke",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "sessions",
+                "revoke"
+              ]
+            },
+            "description": "Alias của `POST /auth/sessions/revoke`.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"sessionIds\": []\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Alias: Get 2FA Status",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/2fa/status",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "2fa",
+                "status"
+              ]
+            },
+            "description": "Alias của `GET /auth/2fa/status`."
+          }
+        },
+        {
+          "name": "Alias: Setup 2FA",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/2fa/setup",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "2fa",
+                "setup"
+              ]
+            },
+            "description": "Alias của `GET /auth/2fa/setup`."
+          }
+        },
+        {
+          "name": "Alias: Verify 2FA",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/2fa/verify",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "2fa",
+                "verify"
+              ]
+            },
+            "description": "Alias của `POST /auth/2fa/verify`.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"code\": \"123456\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Alias: Disable 2FA",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/2fa/disable",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "2fa",
+                "disable"
+              ]
+            },
+            "description": "Alias của `POST /auth/2fa/disable`."
+          }
+        },
+        {
+          "name": "Alias: Create Report",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/report",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "report"
+              ]
+            },
+            "description": "Alias của `POST /reports` (mặc định `reason = 'Other'` nếu bỏ trống).",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"postId\": 1,\n  \"reason\": \"Other\",\n  \"description\": \"Mô tả báo cáo\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code >= 200 && pm.response.code < 300) {",
+                  "  try {",
+                  "    const json = pm.response.json();",
+                  "    const val = json?.data?.reportId;",
+                  "    if (val !== undefined && val !== null && val !== '') {",
+                  "      const s = String(val);",
+                  "      pm.collectionVariables.set('reportId', s);",
+                  "      if (pm.environment && pm.environment.name) pm.environment.set('reportId', s);",
+                  "    }",
+                  "  } catch (e) {}",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Alias: Get Ticket by Query",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/help/ticket?ticketId={{ticketId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "help",
+                "ticket"
+              ],
+              "query": [
+                {
+                  "key": "ticketId",
+                  "value": "{{ticketId}}"
+                }
+              ]
+            },
+            "description": "Alias dùng query `?ticketId=...` của `GET /help/tickets/:ticketId`."
+          }
+        },
+        {
+          "name": "Alias: Create Ticket",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/help/ticket",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "help",
+                "ticket"
+              ]
+            },
+            "description": "Alias của `POST /help/tickets`.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"subject\": \"Góp ý tính năng\",\n  \"title\": \"Đề xuất tính năng mới\",\n  \"description\": \"Chi tiết nội dung góp ý.\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code >= 200 && pm.response.code < 300) {",
+                  "  try {",
+                  "    const json = pm.response.json();",
+                  "    const val = json?.data?.ticketId;",
+                  "    if (val !== undefined && val !== null && val !== '') {",
+                  "      const s = String(val);",
+                  "      pm.collectionVariables.set('ticketId', s);",
+                  "      if (pm.environment && pm.environment.name) pm.environment.set('ticketId', s);",
+                  "    }",
+                  "  } catch (e) {}",
+                  "}"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
