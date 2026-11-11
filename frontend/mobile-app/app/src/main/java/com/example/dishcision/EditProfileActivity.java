@@ -2,6 +2,7 @@ package com.example.dishcision;
 
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.graphics.Bitmap;
 import android.graphics.Color;
 import android.net.Uri;
 import android.os.Bundle;
@@ -29,13 +30,11 @@ import androidx.core.view.WindowInsetsCompat;
 import com.example.dishcision.network.ApiClient;
 import com.example.dishcision.network.AuthResponse;
 import com.example.dishcision.network.ImageLoader;
+import com.example.dishcision.network.ImageOrientationHelper;
 import com.example.dishcision.network.TokenManager;
 import com.example.dishcision.network.UploadResponse;
 import com.example.dishcision.network.UserProfileResponse;
 
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -422,75 +421,80 @@ public class EditProfileActivity extends AppCompatActivity {
     }
 
     private void uploadAvatarImage(Uri imageUri) {
-        try {
-            isUploadingAvatar = true;
-            if (btnChangeAvatar != null) {
-                btnChangeAvatar.setText("Đang tải ảnh...");
-            }
-            if (imgAvatar != null) {
-                imgAvatar.setImageURI(imageUri);
-            }
-
-            File tempFile = new File(getCacheDir(), "avatar_" + System.currentTimeMillis() + ".jpg");
-            InputStream inputStream = getContentResolver().openInputStream(imageUri);
-            if (inputStream == null) {
-                isUploadingAvatar = false;
-                if (btnChangeAvatar != null) btnChangeAvatar.setText("Đổi ảnh đại diện");
-                return;
-            }
-
-            FileOutputStream outputStream = new FileOutputStream(tempFile);
-            byte[] buffer = new byte[4096];
-            int read;
-            while ((read = inputStream.read(buffer)) != -1) {
-                outputStream.write(buffer, 0, read);
-            }
-            outputStream.flush();
-            outputStream.close();
-            inputStream.close();
-
-            RequestBody requestFile = RequestBody.create(MediaType.parse("image/*"), tempFile);
-            MultipartBody.Part filePart = MultipartBody.Part.createFormData("file", tempFile.getName(), requestFile);
-
-            String authHeader = ApiClient.getAuthHeader(this);
-            ApiClient.getApiService().uploadSingleImage(authHeader, filePart).enqueue(new Callback<UploadResponse>() {
-                @Override
-                public void onResponse(Call<UploadResponse> call, Response<UploadResponse> response) {
-                    isUploadingAvatar = false;
-                    if (btnChangeAvatar != null) {
-                        btnChangeAvatar.setText("Đổi ảnh đại diện");
-                    }
-
-                    if (response.isSuccessful() && response.body() != null && response.body().data != null) {
-                        String rawUrl = (response.body().data.url != null && !response.body().data.url.isEmpty())
-                                ? response.body().data.url
-                                : response.body().data.fullUrl;
-                        currentAvatarUrl = rawUrl != null ? rawUrl.trim() : "";
-                        Toast.makeText(EditProfileActivity.this, "Tải ảnh đại diện lên thành công!", Toast.LENGTH_SHORT).show();
-                    } else if (response.code() == 401) {
-                        Toast.makeText(EditProfileActivity.this, "Phiên đăng nhập hết hạn, vui lòng đăng nhập lại!", Toast.LENGTH_LONG).show();
-                    } else {
-                        Toast.makeText(EditProfileActivity.this, "Không thể tải ảnh: Mã phản hồi " + response.code(), Toast.LENGTH_SHORT).show();
-                    }
-                }
-
-                @Override
-                public void onFailure(Call<UploadResponse> call, Throwable t) {
-                    isUploadingAvatar = false;
-                    if (btnChangeAvatar != null) {
-                        btnChangeAvatar.setText("Đổi ảnh đại diện");
-                    }
-                    Toast.makeText(EditProfileActivity.this, "Lỗi kết nối tải ảnh: " + t.getMessage(), Toast.LENGTH_SHORT).show();
-                }
-            });
-
-        } catch (Exception e) {
-            isUploadingAvatar = false;
-            if (btnChangeAvatar != null) {
-                btnChangeAvatar.setText("Đổi ảnh đại diện");
-            }
-            Toast.makeText(this, "Không thể xử lý ảnh: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+        isUploadingAvatar = true;
+        if (btnChangeAvatar != null) {
+            btnChangeAvatar.setText("Đang tải ảnh...");
         }
+
+        String authHeader = ApiClient.getAuthHeader(this);
+        ImageOrientationHelper.prepareUploadAsync(
+                this,
+                imageUri,
+                "avatar_",
+                ImageOrientationHelper.DEFAULT_AVATAR_MAX_DIM,
+                new ImageOrientationHelper.PrepareUploadCallback() {
+                    @Override
+                    public void onReady(ImageOrientationHelper.PreparedImage prepared, Bitmap previewBitmap) {
+                        if (isFinishing() || isDestroyed()) {
+                            ImageOrientationHelper.deleteQuietly(prepared.file);
+                            return;
+                        }
+                        if (imgAvatar != null && previewBitmap != null) {
+                            Bitmap circular = ImageLoader.getCircularBitmap(previewBitmap);
+                            imgAvatar.setImageBitmap(circular != null ? circular : previewBitmap);
+                        }
+
+                        RequestBody requestFile = RequestBody.create(
+                                MediaType.parse(prepared.mimeType), prepared.file
+                        );
+                        MultipartBody.Part filePart = MultipartBody.Part.createFormData(
+                                "file", prepared.file.getName(), requestFile
+                        );
+
+                        ApiClient.getApiService().uploadSingleImage(authHeader, filePart).enqueue(new Callback<UploadResponse>() {
+                            @Override
+                            public void onResponse(Call<UploadResponse> call, Response<UploadResponse> response) {
+                                ImageOrientationHelper.deleteQuietly(prepared.file);
+                                isUploadingAvatar = false;
+                                if (btnChangeAvatar != null) {
+                                    btnChangeAvatar.setText("Đổi ảnh đại diện");
+                                }
+
+                                if (response.isSuccessful() && response.body() != null && response.body().data != null) {
+                                    String rawUrl = (response.body().data.url != null && !response.body().data.url.isEmpty())
+                                            ? response.body().data.url
+                                            : response.body().data.fullUrl;
+                                    currentAvatarUrl = rawUrl != null ? rawUrl.trim() : "";
+                                    Toast.makeText(EditProfileActivity.this, "Tải ảnh đại diện lên thành công!", Toast.LENGTH_SHORT).show();
+                                } else if (response.code() == 401) {
+                                    Toast.makeText(EditProfileActivity.this, "Phiên đăng nhập hết hạn, vui lòng đăng nhập lại!", Toast.LENGTH_LONG).show();
+                                } else {
+                                    Toast.makeText(EditProfileActivity.this, "Không thể tải ảnh: Mã phản hồi " + response.code(), Toast.LENGTH_SHORT).show();
+                                }
+                            }
+
+                            @Override
+                            public void onFailure(Call<UploadResponse> call, Throwable t) {
+                                ImageOrientationHelper.deleteQuietly(prepared.file);
+                                isUploadingAvatar = false;
+                                if (btnChangeAvatar != null) {
+                                    btnChangeAvatar.setText("Đổi ảnh đại diện");
+                                }
+                                Toast.makeText(EditProfileActivity.this, "Lỗi kết nối tải ảnh: " + t.getMessage(), Toast.LENGTH_SHORT).show();
+                            }
+                        });
+                    }
+
+                    @Override
+                    public void onError(Exception error) {
+                        isUploadingAvatar = false;
+                        if (btnChangeAvatar != null) {
+                            btnChangeAvatar.setText("Đổi ảnh đại diện");
+                        }
+                        Toast.makeText(EditProfileActivity.this, "Không thể xử lý ảnh: " + error.getMessage(), Toast.LENGTH_SHORT).show();
+                    }
+                }
+        );
     }
 
     private void validateAndSave() {

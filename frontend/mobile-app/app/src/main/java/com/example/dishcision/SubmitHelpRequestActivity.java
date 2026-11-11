@@ -1,6 +1,7 @@
 package com.example.dishcision;
 
 import android.database.Cursor;
+import android.graphics.Bitmap;
 import android.net.Uri;
 import android.os.Bundle;
 import android.provider.OpenableColumns;
@@ -25,11 +26,9 @@ import androidx.core.view.WindowInsetsCompat;
 import com.example.dishcision.network.ApiClient;
 import com.example.dishcision.network.HelpCreateRequest;
 import com.example.dishcision.network.HelpCreateResponse;
+import com.example.dishcision.network.ImageOrientationHelper;
 import com.example.dishcision.network.UploadResponse;
 
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -131,67 +130,66 @@ public class SubmitHelpRequestActivity extends AppCompatActivity {
             return;
         }
 
-        String fileName = resolveFileName(uri);
-        try {
-            isUploadingAttachment = true;
-            if (tvAttachLabel != null) tvAttachLabel.setText("Đang tải ảnh lên...");
+        String displayName = resolveFileName(uri);
+        isUploadingAttachment = true;
+        if (tvAttachLabel != null) tvAttachLabel.setText("Đang tải ảnh lên...");
 
-            InputStream inputStream = getContentResolver().openInputStream(uri);
-            if (inputStream == null) {
-                isUploadingAttachment = false;
-                if (tvAttachLabel != null) tvAttachLabel.setText(R.string.submit_help_attachment);
-                return;
-            }
-
-            File tempFile = File.createTempFile("help_attach_", ".jpg", getCacheDir());
-            FileOutputStream outputStream = new FileOutputStream(tempFile);
-            byte[] buffer = new byte[4096];
-            int read;
-            while ((read = inputStream.read(buffer)) != -1) {
-                outputStream.write(buffer, 0, read);
-            }
-            outputStream.flush();
-            outputStream.close();
-            inputStream.close();
-
-            String mimeType = getContentResolver().getType(uri);
-            if (mimeType == null || mimeType.isEmpty()) mimeType = "image/jpeg";
-
-            RequestBody requestFile = RequestBody.create(MediaType.parse(mimeType), tempFile);
-            MultipartBody.Part filePart = MultipartBody.Part.createFormData("file", fileName, requestFile);
-
-            ApiClient.getApiService().uploadSingleImage(authHeader, filePart).enqueue(new Callback<UploadResponse>() {
-                @Override
-                public void onResponse(@NonNull Call<UploadResponse> call, @NonNull Response<UploadResponse> response) {
-                    isUploadingAttachment = false;
-                    if (response.isSuccessful() && response.body() != null && response.body().data != null) {
-                        String rawUrl = (response.body().data.url != null && !response.body().data.url.isEmpty())
-                                ? response.body().data.url
-                                : response.body().data.fullUrl;
-                        if (rawUrl != null && !rawUrl.isEmpty()) {
-                            uploadedAttachments.clear();
-                            uploadedAttachments.add(new HelpCreateRequest.AttachmentInput(fileName, "Ảnh chụp màn hình", rawUrl));
-                            if (tvAttachLabel != null) tvAttachLabel.setText(fileName + " (chạm để đổi)");
-                            Toast.makeText(SubmitHelpRequestActivity.this, "Đính kèm ảnh thành công", Toast.LENGTH_SHORT).show();
+        ImageOrientationHelper.prepareUploadAsync(
+                this,
+                uri,
+                "help_attach_",
+                0,
+                new ImageOrientationHelper.PrepareUploadCallback() {
+                    @Override
+                    public void onReady(ImageOrientationHelper.PreparedImage prepared, Bitmap previewBitmap) {
+                        if (isFinishing() || isDestroyed()) {
+                            ImageOrientationHelper.deleteQuietly(prepared.file);
                             return;
                         }
-                    }
-                    if (tvAttachLabel != null) tvAttachLabel.setText(R.string.submit_help_attachment);
-                    Toast.makeText(SubmitHelpRequestActivity.this, "Tải ảnh đính kèm thất bại", Toast.LENGTH_SHORT).show();
-                }
 
-                @Override
-                public void onFailure(@NonNull Call<UploadResponse> call, @NonNull Throwable t) {
-                    isUploadingAttachment = false;
-                    if (tvAttachLabel != null) tvAttachLabel.setText(R.string.submit_help_attachment);
-                    Toast.makeText(SubmitHelpRequestActivity.this, "Lỗi tải ảnh đính kèm", Toast.LENGTH_SHORT).show();
+                        String fileName = ImageOrientationHelper.ensureExtensionMatchesMime(displayName, prepared.mimeType);
+                        RequestBody requestFile = RequestBody.create(MediaType.parse(prepared.mimeType), prepared.file);
+                        MultipartBody.Part filePart = MultipartBody.Part.createFormData("file", fileName, requestFile);
+
+                        ApiClient.getApiService().uploadSingleImage(authHeader, filePart).enqueue(new Callback<UploadResponse>() {
+                            @Override
+                            public void onResponse(@NonNull Call<UploadResponse> call, @NonNull Response<UploadResponse> response) {
+                                ImageOrientationHelper.deleteQuietly(prepared.file);
+                                isUploadingAttachment = false;
+                                if (response.isSuccessful() && response.body() != null && response.body().data != null) {
+                                    String rawUrl = (response.body().data.url != null && !response.body().data.url.isEmpty())
+                                            ? response.body().data.url
+                                            : response.body().data.fullUrl;
+                                    if (rawUrl != null && !rawUrl.isEmpty()) {
+                                        uploadedAttachments.clear();
+                                        uploadedAttachments.add(new HelpCreateRequest.AttachmentInput(fileName, "Ảnh chụp màn hình", rawUrl));
+                                        if (tvAttachLabel != null) tvAttachLabel.setText(fileName + " (chạm để đổi)");
+                                        Toast.makeText(SubmitHelpRequestActivity.this, "Đính kèm ảnh thành công", Toast.LENGTH_SHORT).show();
+                                        return;
+                                    }
+                                }
+                                if (tvAttachLabel != null) tvAttachLabel.setText(R.string.submit_help_attachment);
+                                Toast.makeText(SubmitHelpRequestActivity.this, "Tải ảnh đính kèm thất bại", Toast.LENGTH_SHORT).show();
+                            }
+
+                            @Override
+                            public void onFailure(@NonNull Call<UploadResponse> call, @NonNull Throwable t) {
+                                ImageOrientationHelper.deleteQuietly(prepared.file);
+                                isUploadingAttachment = false;
+                                if (tvAttachLabel != null) tvAttachLabel.setText(R.string.submit_help_attachment);
+                                Toast.makeText(SubmitHelpRequestActivity.this, "Lỗi tải ảnh đính kèm", Toast.LENGTH_SHORT).show();
+                            }
+                        });
+                    }
+
+                    @Override
+                    public void onError(Exception error) {
+                        isUploadingAttachment = false;
+                        if (tvAttachLabel != null) tvAttachLabel.setText(R.string.submit_help_attachment);
+                        Toast.makeText(SubmitHelpRequestActivity.this, "Không thể đọc tệp đã chọn", Toast.LENGTH_SHORT).show();
+                    }
                 }
-            });
-        } catch (Exception e) {
-            isUploadingAttachment = false;
-            if (tvAttachLabel != null) tvAttachLabel.setText(R.string.submit_help_attachment);
-            Toast.makeText(this, "Không thể đọc tệp đã chọn", Toast.LENGTH_SHORT).show();
-        }
+        );
     }
 
     private String resolveFileName(Uri uri) {

@@ -44,6 +44,7 @@ dependencies {
     implementation(libs.security.crypto)
     implementation(libs.swiperefreshlayout)
     implementation(libs.zxing.core)
+    implementation(libs.exifinterface)
     implementation("com.google.android.gms:play-services-auth:21.2.0")
 
     testImplementation(libs.junit)

@@ -2,6 +2,7 @@ package com.example.dishcision;
 
 import android.app.AlertDialog;
 import android.database.Cursor;
+import android.graphics.Bitmap;
 import android.graphics.Color;
 import android.graphics.Typeface;
 import android.net.Uri;
@@ -26,11 +27,9 @@ import androidx.core.view.WindowInsetsCompat;
 
 import com.example.dishcision.network.ApiClient;
 import com.example.dishcision.network.FollowingRestaurantsResponse;
+import com.example.dishcision.network.ImageOrientationHelper;
 import com.example.dishcision.network.UploadResponse;
 
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -328,69 +327,72 @@ public class WriteReviewActivity extends AppCompatActivity {
             return;
         }
 
-        File tempFile = null;
-        try {
-            InputStream in = getContentResolver().openInputStream(uri);
-            if (in == null) return;
+        isUploadingPhoto = true;
+        if (tvUploadPhotoStatus != null) tvUploadPhotoStatus.setText("Đang tải ảnh lên...");
+        final String displayName = resolveFileName(uri);
 
-            tempFile = File.createTempFile("review_photo_", ".jpg", getCacheDir());
-            try (FileOutputStream out = new FileOutputStream(tempFile); InputStream input = in) {
-                byte[] buffer = new byte[4096];
-                int read;
-                while ((read = input.read(buffer)) != -1) {
-                    out.write(buffer, 0, read);
-                }
-                out.flush();
-            }
-
-            isUploadingPhoto = true;
-            if (tvUploadPhotoStatus != null) tvUploadPhotoStatus.setText("Đang tải ảnh lên...");
-            if (imgUploadedPreview != null) imgUploadedPreview.setImageURI(uri);
-
-            String mimeType = getContentResolver().getType(uri);
-            if (mimeType == null || mimeType.isEmpty()) mimeType = "image/jpeg";
-            String fileName = resolveFileName(uri);
-            RequestBody requestFile = RequestBody.create(MediaType.parse(mimeType), tempFile);
-            MultipartBody.Part filePart = MultipartBody.Part.createFormData("file", fileName, requestFile);
-
-            final File cleanup = tempFile;
-            ApiClient.getApiService().uploadSingleImage(authHeader, filePart).enqueue(new Callback<UploadResponse>() {
-                @Override
-                public void onResponse(@NonNull Call<UploadResponse> call, @NonNull Response<UploadResponse> response) {
-                    if (cleanup.exists()) cleanup.delete();
-                    isUploadingPhoto = false;
-                    if (response.isSuccessful() && response.body() != null && response.body().data != null) {
-                        String rawUrl = !TextUtils.isEmpty(response.body().data.url)
-                                ? response.body().data.url
-                                : response.body().data.fullUrl;
-                        if (!TextUtils.isEmpty(rawUrl)) {
-                            uploadedPhotoUrl = rawUrl;
-                            if (tvUploadPhotoStatus != null) tvUploadPhotoStatus.setText(fileName + " (chạm để đổi)");
-                            Toast.makeText(WriteReviewActivity.this, "Tải ảnh thành công", Toast.LENGTH_SHORT).show();
+        ImageOrientationHelper.prepareUploadAsync(
+                this,
+                uri,
+                "review_photo_",
+                800,
+                new ImageOrientationHelper.PrepareUploadCallback() {
+                    @Override
+                    public void onReady(ImageOrientationHelper.PreparedImage prepared, Bitmap previewBitmap) {
+                        if (isFinishing() || isDestroyed()) {
+                            ImageOrientationHelper.deleteQuietly(prepared.file);
                             return;
                         }
-                    }
-                    uploadedPhotoUrl = null;
-                    if (tvUploadPhotoStatus != null) tvUploadPhotoStatus.setText("Thêm ảnh trải nghiệm của bạn");
-                    if (imgUploadedPreview != null) imgUploadedPreview.setImageResource(R.drawable.ic_image);
-                    Toast.makeText(WriteReviewActivity.this, "Tải ảnh thất bại", Toast.LENGTH_SHORT).show();
-                }
+                        if (imgUploadedPreview != null && previewBitmap != null) {
+                            imgUploadedPreview.setImageBitmap(previewBitmap);
+                        }
 
-                @Override
-                public void onFailure(@NonNull Call<UploadResponse> call, @NonNull Throwable t) {
-                    if (cleanup.exists()) cleanup.delete();
-                    isUploadingPhoto = false;
-                    uploadedPhotoUrl = null;
-                    if (tvUploadPhotoStatus != null) tvUploadPhotoStatus.setText("Thêm ảnh trải nghiệm của bạn");
-                    if (imgUploadedPreview != null) imgUploadedPreview.setImageResource(R.drawable.ic_image);
-                    Toast.makeText(WriteReviewActivity.this, "Lỗi tải ảnh: " + t.getMessage(), Toast.LENGTH_SHORT).show();
+                        String fileName = ImageOrientationHelper.ensureExtensionMatchesMime(displayName, prepared.mimeType);
+                        RequestBody requestFile = RequestBody.create(MediaType.parse(prepared.mimeType), prepared.file);
+                        MultipartBody.Part filePart = MultipartBody.Part.createFormData("file", fileName, requestFile);
+
+                        ApiClient.getApiService().uploadSingleImage(authHeader, filePart).enqueue(new Callback<UploadResponse>() {
+                            @Override
+                            public void onResponse(@NonNull Call<UploadResponse> call, @NonNull Response<UploadResponse> response) {
+                                ImageOrientationHelper.deleteQuietly(prepared.file);
+                                isUploadingPhoto = false;
+                                if (response.isSuccessful() && response.body() != null && response.body().data != null) {
+                                    String rawUrl = !TextUtils.isEmpty(response.body().data.url)
+                                            ? response.body().data.url
+                                            : response.body().data.fullUrl;
+                                    if (!TextUtils.isEmpty(rawUrl)) {
+                                        uploadedPhotoUrl = rawUrl;
+                                        if (tvUploadPhotoStatus != null) tvUploadPhotoStatus.setText(fileName + " (chạm để đổi)");
+                                        Toast.makeText(WriteReviewActivity.this, "Tải ảnh thành công", Toast.LENGTH_SHORT).show();
+                                        return;
+                                    }
+                                }
+                                uploadedPhotoUrl = null;
+                                if (tvUploadPhotoStatus != null) tvUploadPhotoStatus.setText("Thêm ảnh trải nghiệm của bạn");
+                                if (imgUploadedPreview != null) imgUploadedPreview.setImageResource(R.drawable.ic_image);
+                                Toast.makeText(WriteReviewActivity.this, "Tải ảnh thất bại", Toast.LENGTH_SHORT).show();
+                            }
+
+                            @Override
+                            public void onFailure(@NonNull Call<UploadResponse> call, @NonNull Throwable t) {
+                                ImageOrientationHelper.deleteQuietly(prepared.file);
+                                isUploadingPhoto = false;
+                                uploadedPhotoUrl = null;
+                                if (tvUploadPhotoStatus != null) tvUploadPhotoStatus.setText("Thêm ảnh trải nghiệm của bạn");
+                                if (imgUploadedPreview != null) imgUploadedPreview.setImageResource(R.drawable.ic_image);
+                                Toast.makeText(WriteReviewActivity.this, "Lỗi tải ảnh: " + t.getMessage(), Toast.LENGTH_SHORT).show();
+                            }
+                        });
+                    }
+
+                    @Override
+                    public void onError(Exception error) {
+                        isUploadingPhoto = false;
+                        if (tvUploadPhotoStatus != null) tvUploadPhotoStatus.setText("Thêm ảnh trải nghiệm của bạn");
+                        Toast.makeText(WriteReviewActivity.this, "Không thể đọc ảnh đã chọn", Toast.LENGTH_SHORT).show();
+                    }
                 }
-            });
-        } catch (Exception e) {
-            if (tempFile != null && tempFile.exists()) tempFile.delete();
-            isUploadingPhoto = false;
-            Toast.makeText(this, "Không thể đọc ảnh đã chọn", Toast.LENGTH_SHORT).show();
-        }
+        );
     }
 
     private String resolveFileName(Uri uri) {

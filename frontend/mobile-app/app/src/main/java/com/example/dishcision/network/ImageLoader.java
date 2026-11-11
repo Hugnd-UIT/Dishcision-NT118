@@ -1,7 +1,6 @@
 package com.example.dishcision.network;
 
 import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.PorterDuff;
@@ -13,6 +12,7 @@ import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
 
+import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
@@ -64,9 +64,12 @@ public class ImageLoader {
         imageView.setTag(targetUrl);
 
         executor.execute(() -> {
-            Bitmap bitmap = downloadBitmap(targetUrl);
+            Bitmap bitmap = downloadBitmap(targetUrl, ImageOrientationHelper.DEFAULT_AVATAR_MAX_DIM);
             if (bitmap != null) {
                 Bitmap circular = getCircularBitmap(bitmap);
+                if (circular != bitmap && !bitmap.isRecycled()) {
+                    bitmap.recycle();
+                }
                 memoryCache.put(targetUrl + "_circle", circular);
                 imageView.post(() -> {
                     Object tag = imageView.getTag();
@@ -98,7 +101,7 @@ public class ImageLoader {
         imageView.setTag(targetUrl);
 
         executor.execute(() -> {
-            Bitmap bitmap = downloadBitmap(targetUrl);
+            Bitmap bitmap = downloadBitmap(targetUrl, ImageOrientationHelper.DEFAULT_DISPLAY_MAX_DIM);
             if (bitmap != null) {
                 memoryCache.put(targetUrl, bitmap);
                 imageView.post(() -> {
@@ -111,25 +114,48 @@ public class ImageLoader {
         });
     }
 
-    private static Bitmap downloadBitmap(String src) {
+    private static Bitmap downloadBitmap(String src, int maxDimension) {
+        HttpURLConnection connection = null;
         try {
             URL url = new URL(src);
-            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+            connection = (HttpURLConnection) url.openConnection();
+            connection.setInstanceFollowRedirects(true);
             connection.setDoInput(true);
             connection.setConnectTimeout(10000);
             connection.setReadTimeout(10000);
             connection.connect();
-            InputStream input = connection.getInputStream();
-            Bitmap bitmap = BitmapFactory.decodeStream(input);
-            input.close();
-            connection.disconnect();
-            return bitmap;
+            int status = connection.getResponseCode();
+            if (status < 200 || status >= 400) {
+                return null;
+            }
+            byte[] bytes;
+            try (InputStream input = connection.getInputStream();
+                 ByteArrayOutputStream buffer = new ByteArrayOutputStream()) {
+                byte[] chunk = new byte[8192];
+                int read;
+                int total = 0;
+                int maxBytes = 25 * 1024 * 1024;
+                while ((read = input.read(chunk)) != -1) {
+                    total += read;
+                    if (total > maxBytes) {
+                        return null;
+                    }
+                    buffer.write(chunk, 0, read);
+                }
+                bytes = buffer.toByteArray();
+            }
+            return ImageOrientationHelper.decodeSampledAndOrientedBitmap(bytes, maxDimension);
         } catch (Exception e) {
             return null;
+        } finally {
+            if (connection != null) {
+                connection.disconnect();
+            }
         }
     }
 
-    private static Bitmap getCircularBitmap(Bitmap bitmap) {
+    public static Bitmap getCircularBitmap(Bitmap bitmap) {
+        if (bitmap == null) return null;
         int size = Math.min(bitmap.getWidth(), bitmap.getHeight());
         Bitmap output = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888);
 

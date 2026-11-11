@@ -1,6 +1,7 @@
 package com.example.dishcision;
 
 import android.database.Cursor;
+import android.graphics.Bitmap;
 import android.net.Uri;
 import android.os.Bundle;
 import android.provider.OpenableColumns;
@@ -23,11 +24,8 @@ import androidx.core.view.WindowInsetsCompat;
 import com.example.dishcision.network.ApiClient;
 import com.example.dishcision.network.CreateStoryRequest;
 import com.example.dishcision.network.CreateStoryResponse;
+import com.example.dishcision.network.ImageOrientationHelper;
 import com.example.dishcision.network.UploadResponse;
-
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.InputStream;
 
 import okhttp3.MediaType;
 import okhttp3.MultipartBody;
@@ -87,7 +85,7 @@ public class CreateStoryActivity extends AppCompatActivity {
                     if (uri != null) {
                         selectedImageUri = uri;
                         if (imgStoryPreview != null) {
-                            imgStoryPreview.setImageURI(uri);
+                            ImageOrientationHelper.loadLocalUri(this, imgStoryPreview, uri, 1200);
                         }
                         if (layoutEmptyPreview != null) {
                             layoutEmptyPreview.setVisibility(View.GONE);
@@ -134,63 +132,60 @@ public class CreateStoryActivity extends AppCompatActivity {
 
         String caption = edtStoryCaption != null ? edtStoryCaption.getText().toString().trim() : "";
 
-        File tempFile = null;
-        try {
-            InputStream inputStream = getContentResolver().openInputStream(selectedImageUri);
-            if (inputStream == null) {
-                Toast.makeText(this, "Không thể đọc ảnh đã chọn", Toast.LENGTH_SHORT).show();
-                return;
-            }
+        setSubmitting(true, "Đang tải ảnh lên...");
+        final Uri targetUri = selectedImageUri;
+        final String displayName = resolveFileName(targetUri);
 
-            tempFile = File.createTempFile("story_upload_", ".jpg", getCacheDir());
-            try (FileOutputStream outputStream = new FileOutputStream(tempFile);
-                 InputStream in = inputStream) {
-                byte[] buffer = new byte[4096];
-                int read;
-                while ((read = in.read(buffer)) != -1) {
-                    outputStream.write(buffer, 0, read);
-                }
-                outputStream.flush();
-            }
-
-            String mimeType = getContentResolver().getType(selectedImageUri);
-            if (mimeType == null || mimeType.isEmpty()) mimeType = "image/jpeg";
-            String fileName = resolveFileName(selectedImageUri);
-
-            setSubmitting(true, "Đang tải ảnh lên...");
-            RequestBody requestFile = RequestBody.create(MediaType.parse(mimeType), tempFile);
-            MultipartBody.Part filePart = MultipartBody.Part.createFormData("file", fileName, requestFile);
-
-            final File cleanupFile = tempFile;
-            ApiClient.getApiService().uploadSingleImage(authHeader, filePart).enqueue(new Callback<UploadResponse>() {
-                @Override
-                public void onResponse(@NonNull Call<UploadResponse> call, @NonNull Response<UploadResponse> response) {
-                    if (cleanupFile.exists()) cleanupFile.delete();
-                    if (response.isSuccessful() && response.body() != null && response.body().data != null) {
-                        String uploadedUrl = !android.text.TextUtils.isEmpty(response.body().data.url)
-                                ? response.body().data.url
-                                : response.body().data.fullUrl;
-                        if (!android.text.TextUtils.isEmpty(uploadedUrl)) {
-                            createStoryRecord(authHeader, uploadedUrl, caption);
+        ImageOrientationHelper.prepareUploadAsync(
+                this,
+                targetUri,
+                "story_upload_",
+                0,
+                new ImageOrientationHelper.PrepareUploadCallback() {
+                    @Override
+                    public void onReady(ImageOrientationHelper.PreparedImage prepared, Bitmap previewBitmap) {
+                        if (isFinishing() || isDestroyed()) {
+                            ImageOrientationHelper.deleteQuietly(prepared.file);
                             return;
                         }
-                    }
-                    setSubmitting(false, "Đăng Story");
-                    Toast.makeText(CreateStoryActivity.this, "Tải ảnh thất bại (mã " + response.code() + ")", Toast.LENGTH_SHORT).show();
-                }
 
-                @Override
-                public void onFailure(@NonNull Call<UploadResponse> call, @NonNull Throwable t) {
-                    if (cleanupFile.exists()) cleanupFile.delete();
-                    setSubmitting(false, "Đăng Story");
-                    Toast.makeText(CreateStoryActivity.this, "Lỗi tải ảnh: " + t.getMessage(), Toast.LENGTH_SHORT).show();
+                        String fileName = ImageOrientationHelper.ensureExtensionMatchesMime(displayName, prepared.mimeType);
+                        RequestBody requestFile = RequestBody.create(MediaType.parse(prepared.mimeType), prepared.file);
+                        MultipartBody.Part filePart = MultipartBody.Part.createFormData("file", fileName, requestFile);
+
+                        ApiClient.getApiService().uploadSingleImage(authHeader, filePart).enqueue(new Callback<UploadResponse>() {
+                            @Override
+                            public void onResponse(@NonNull Call<UploadResponse> call, @NonNull Response<UploadResponse> response) {
+                                ImageOrientationHelper.deleteQuietly(prepared.file);
+                                if (response.isSuccessful() && response.body() != null && response.body().data != null) {
+                                    String uploadedUrl = !android.text.TextUtils.isEmpty(response.body().data.url)
+                                            ? response.body().data.url
+                                            : response.body().data.fullUrl;
+                                    if (!android.text.TextUtils.isEmpty(uploadedUrl)) {
+                                        createStoryRecord(authHeader, uploadedUrl, caption);
+                                        return;
+                                    }
+                                }
+                                setSubmitting(false, "Đăng Story");
+                                Toast.makeText(CreateStoryActivity.this, "Tải ảnh thất bại (mã " + response.code() + ")", Toast.LENGTH_SHORT).show();
+                            }
+
+                            @Override
+                            public void onFailure(@NonNull Call<UploadResponse> call, @NonNull Throwable t) {
+                                ImageOrientationHelper.deleteQuietly(prepared.file);
+                                setSubmitting(false, "Đăng Story");
+                                Toast.makeText(CreateStoryActivity.this, "Lỗi tải ảnh: " + t.getMessage(), Toast.LENGTH_SHORT).show();
+                            }
+                        });
+                    }
+
+                    @Override
+                    public void onError(Exception error) {
+                        setSubmitting(false, "Đăng Story");
+                        Toast.makeText(CreateStoryActivity.this, "Không thể xử lý ảnh đã chọn", Toast.LENGTH_SHORT).show();
+                    }
                 }
-            });
-        } catch (Exception e) {
-            if (tempFile != null && tempFile.exists()) tempFile.delete();
-            setSubmitting(false, "Đăng Story");
-            Toast.makeText(this, "Không thể xử lý ảnh đã chọn", Toast.LENGTH_SHORT).show();
-        }
+        );
     }
 
     private void createStoryRecord(String authHeader, String mediaUrl, String caption) {

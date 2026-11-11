@@ -13,6 +13,7 @@ gson = "2.11.0"
 securityCrypto = "1.1.0"
 swiperefreshlayout = "1.1.0"
 zxingCore = "3.5.3"
+exifinterface = "1.3.7"
 
 [libraries]
 junit = { group = "junit", name = "junit", version.ref = "junit" }
@@ -29,6 +30,7 @@ gson = { group = "com.google.code.gson", name = "gson", version.ref = "gson" }
 security-crypto = { group = "androidx.security", name = "security-crypto", version.ref = "securityCrypto" }
 swiperefreshlayout = { group = "androidx.swiperefreshlayout", name = "swiperefreshlayout", version.ref = "swiperefreshlayout" }
 zxing-core = { group = "com.google.zxing", name = "core", version.ref = "zxingCore" }
+exifinterface = { group = "androidx.exifinterface", name = "exifinterface", version.ref = "exifinterface" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

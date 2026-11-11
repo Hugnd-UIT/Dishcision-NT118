@@ -5,6 +5,7 @@ import android.content.ClipboardManager;
 import android.content.Context;
 import android.content.Intent;
 import android.content.res.ColorStateList;
+import android.graphics.Bitmap;
 import android.graphics.Color;
 import android.graphics.Typeface;
 import android.graphics.drawable.GradientDrawable;
@@ -37,14 +38,12 @@ import com.example.dishcision.network.ApiClient;
 import com.example.dishcision.network.AuthHelper;
 import com.example.dishcision.network.ChatMessagesResponse;
 import com.example.dishcision.network.ImageLoader;
+import com.example.dishcision.network.ImageOrientationHelper;
 import com.example.dishcision.network.SendChatMessageRequest;
 import com.example.dishcision.network.SendChatMessageResponse;
 import com.example.dishcision.network.UploadResponse;
 import com.example.dishcision.network.UserProfileResponse;
 
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -466,56 +465,61 @@ public class ChatActivity extends AppCompatActivity {
         String auth = ApiClient.getAuthHeader(this);
         if (auth.isEmpty()) return;
 
-        try {
-            isUploadingImage = true;
-            Toast.makeText(this, "Đang tải ảnh lên...", Toast.LENGTH_SHORT).show();
+        isUploadingImage = true;
+        Toast.makeText(this, "Đang tải ảnh lên...", Toast.LENGTH_SHORT).show();
 
-            File tempFile = new File(getCacheDir(), "chat_img_" + System.currentTimeMillis() + ".jpg");
-            InputStream in = getContentResolver().openInputStream(imageUri);
-            if (in == null) {
-                isUploadingImage = false;
-                return;
-            }
-            FileOutputStream out = new FileOutputStream(tempFile);
-            byte[] buf = new byte[4096];
-            int read;
-            while ((read = in.read(buf)) != -1) {
-                out.write(buf, 0, read);
-            }
-            out.flush();
-            out.close();
-            in.close();
+        ImageOrientationHelper.prepareUploadAsync(
+                this,
+                imageUri,
+                "chat_img_",
+                0,
+                new ImageOrientationHelper.PrepareUploadCallback() {
+                    @Override
+                    public void onReady(ImageOrientationHelper.PreparedImage prepared, Bitmap previewBitmap) {
+                        if (isFinishing() || isDestroyed()) {
+                            ImageOrientationHelper.deleteQuietly(prepared.file);
+                            return;
+                        }
 
-            RequestBody reqBody = RequestBody.create(MediaType.parse("image/*"), tempFile);
-            MultipartBody.Part part = MultipartBody.Part.createFormData("file", tempFile.getName(), reqBody);
+                        RequestBody reqBody = RequestBody.create(MediaType.parse(prepared.mimeType), prepared.file);
+                        MultipartBody.Part part = MultipartBody.Part.createFormData("file", prepared.file.getName(), reqBody);
 
-            ApiClient.getApiService().uploadSingleImage(auth, part).enqueue(new Callback<UploadResponse>() {
-                @Override
-                public void onResponse(@NonNull Call<UploadResponse> call, @NonNull Response<UploadResponse> response) {
-                    isUploadingImage = false;
-                    if (isFinishing() || isDestroyed()) return;
-                    if (response.isSuccessful() && response.body() != null && response.body().data != null) {
-                        String url = response.body().data.url;
-                        if (url == null || url.trim().isEmpty()) url = response.body().data.fullUrl;
-                        String caption = edtChatMessage != null ? edtChatMessage.getText().toString().trim() : "";
-                        sendMessageToBackend(caption, url);
-                    } else {
-                        Toast.makeText(ChatActivity.this, "Không thể tải ảnh lên", Toast.LENGTH_SHORT).show();
+                        ApiClient.getApiService().uploadSingleImage(auth, part).enqueue(new Callback<UploadResponse>() {
+                            @Override
+                            public void onResponse(@NonNull Call<UploadResponse> call, @NonNull Response<UploadResponse> response) {
+                                ImageOrientationHelper.deleteQuietly(prepared.file);
+                                isUploadingImage = false;
+                                if (isFinishing() || isDestroyed()) return;
+                                if (response.isSuccessful() && response.body() != null && response.body().data != null) {
+                                    String url = response.body().data.url;
+                                    if (url == null || url.trim().isEmpty()) url = response.body().data.fullUrl;
+                                    String caption = edtChatMessage != null ? edtChatMessage.getText().toString().trim() : "";
+                                    sendMessageToBackend(caption, url);
+                                } else {
+                                    Toast.makeText(ChatActivity.this, "Không thể tải ảnh lên", Toast.LENGTH_SHORT).show();
+                                }
+                            }
+
+                            @Override
+                            public void onFailure(@NonNull Call<UploadResponse> call, @NonNull Throwable t) {
+                                ImageOrientationHelper.deleteQuietly(prepared.file);
+                                isUploadingImage = false;
+                                if (!isFinishing()) {
+                                    Toast.makeText(ChatActivity.this, "Lỗi kết nối khi tải ảnh", Toast.LENGTH_SHORT).show();
+                                }
+                            }
+                        });
+                    }
+
+                    @Override
+                    public void onError(Exception error) {
+                        isUploadingImage = false;
+                        if (!isFinishing()) {
+                            Toast.makeText(ChatActivity.this, "Không thể đọc tệp ảnh", Toast.LENGTH_SHORT).show();
+                        }
                     }
                 }
-
-                @Override
-                public void onFailure(@NonNull Call<UploadResponse> call, @NonNull Throwable t) {
-                    isUploadingImage = false;
-                    if (!isFinishing()) {
-                        Toast.makeText(ChatActivity.this, "Lỗi kết nối khi tải ảnh", Toast.LENGTH_SHORT).show();
-                    }
-                }
-            });
-        } catch (Exception e) {
-            isUploadingImage = false;
-            Toast.makeText(this, "Không thể đọc tệp ảnh", Toast.LENGTH_SHORT).show();
-        }
+        );
     }
 
     private void sendMessageToBackend(String content, String mediaUrl) {
