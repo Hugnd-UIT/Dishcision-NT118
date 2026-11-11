@@ -102,11 +102,27 @@ export const updateProfileSchema = z.object({
   username: z.string().min(3).max(50).regex(/^[a-zA-Z0-9_.]+$/, 'Tên người dùng không hợp lệ').optional(),
   fullName: z.string().min(1).max(100).optional(),
   bio: z.string().max(255).optional(),
+  city: z.string().max(100, 'Thành phố không được vượt quá 100 ký tự').nullable().optional(),
   gender: z.enum(['Male', 'Female', 'Other']).optional(),
   dateOfBirth: z.string().optional(),
   avatarUrl: urlOrUploadPath.nullable().optional().or(z.literal('')),
   preferences: z.array(z.string()).optional(),
 });
+
+export const updatePrivacySchema = z
+  .object({
+    newPosts: z.enum(['public', 'friends', 'only_me']).optional(),
+    profileInfo: z.enum(['public', 'friends', 'only_me']).optional(),
+    followingList: z.enum(['public', 'friends', 'only_me']).optional(),
+    findEmail: z.enum(['public', 'friends_of_friends', 'friends', 'no_one']).optional(),
+    friendRequests: z.enum(['public', 'friends_of_friends']).optional(),
+    messages: z.enum(['public', 'friends', 'no_one']).optional(),
+    comments: z.enum(['public', 'friends', 'no_one']).optional(),
+  })
+  .strict()
+  .refine((data) => Object.values(data).some((v) => v !== undefined), {
+    message: 'Phải cung cấp ít nhất một trường cài đặt quyền riêng tư',
+  });
 
 export const createPostSchema = z.object({
   content: z.string().min(1).max(2000),

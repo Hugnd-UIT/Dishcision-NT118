@@ -13,6 +13,9 @@ public class UserPreferencesResponse {
     @SerializedName("data")
     public List<PreferenceItem> data;
 
+    @SerializedName("allergies")
+    public List<String> allergies;
+
     public static class PreferenceItem {
         @SerializedName("preferenceId")
         public int preferenceId;

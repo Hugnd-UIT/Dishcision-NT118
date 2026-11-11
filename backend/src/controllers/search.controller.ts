@@ -3,11 +3,20 @@ import { prisma } from '../config/prisma';
 import { getCache, setCache, CACHE_TTL } from '../config/redis';
 import { successResponse, paginatedResponse } from '../utils/response';
 import { parsePagination } from '../utils/http';
+import { AuthRequest } from '../middlewares/auth.middleware';
 import { formatUser, resolveAvatarUrl } from './user.controller';
+import { buildPostAuthorWhere, getBlockedUserIds } from '../utils/privacy';
 
 const AUTHOR_SELECT = {
   id: true, username: true, fullName: true, avatarUrl: true,
-  bio: true, role: true, _count: { select: { followers: true, following: true } },
+  bio: true, city: true, role: true,
+  _count: {
+    select: {
+      followers: true,
+      following: true,
+      posts: { where: { status: 'Active' as const } },
+    },
+  },
 };
 
 function formatPost(post: any) {
@@ -24,11 +33,16 @@ function formatPost(post: any) {
 
 // ── GET /search/food ──────────────────────
 
-export async function searchFood(req: Request, res: Response): Promise<void> {
+export async function searchFood(req: AuthRequest, res: Response): Promise<void> {
   const { keyword, location } = req.query;
   const { page: p, limit: l, skip } = parsePagination(req.query, 10, 100);
+  const viewerId = req.user?.userId;
+  const blockedIds = await getBlockedUserIds(viewerId);
 
-  const where: any = { status: 'Active' };
+  const where: any = {
+    status: 'Active',
+    author: buildPostAuthorWhere(viewerId, blockedIds),
+  };
   if (keyword) {
     const kw = String(keyword).trim();
     where.OR = [
@@ -41,7 +55,17 @@ export async function searchFood(req: Request, res: Response): Promise<void> {
   const [posts, total] = await Promise.all([
     prisma.post.findMany({
       where,
-      include: { author: { select: AUTHOR_SELECT }, images: true, _count: { select: { likes: true, comments: true, shares: true } } },
+      include: {
+        author: { select: AUTHOR_SELECT },
+        images: true,
+        _count: {
+          select: {
+            likes: true,
+            comments: { where: { author: { accountStatus: 'Active' as const } } },
+            shares: true,
+          },
+        },
+      },
       orderBy: { createdAt: 'desc' },
       skip, take: l,
     }),
@@ -53,11 +77,15 @@ export async function searchFood(req: Request, res: Response): Promise<void> {
 
 // ── GET /search/accounts ──────────────────
 
-export async function searchAccounts(req: Request, res: Response): Promise<void> {
+export async function searchAccounts(req: AuthRequest, res: Response): Promise<void> {
   const { keyword } = req.query;
   const { page: p, limit: l, skip } = parsePagination(req.query, 10, 100);
+  const blockedIds = await getBlockedUserIds(req.user?.userId);
 
-  const where: any = {};
+  const where: any = {
+    accountStatus: 'Active',
+    ...(blockedIds.length > 0 ? { id: { notIn: blockedIds } } : {}),
+  };
   if (keyword) {
     const kw = String(keyword).trim();
     where.OR = [
@@ -68,11 +96,11 @@ export async function searchAccounts(req: Request, res: Response): Promise<void>
 
   const [users, total] = await Promise.all([
     prisma.user.findMany({
-      where: { ...where, accountStatus: 'Active' },
+      where,
       select: AUTHOR_SELECT,
       skip, take: l,
     }),
-    prisma.user.count({ where: { ...where, accountStatus: 'Active' } }),
+    prisma.user.count({ where }),
   ]);
 
   paginatedResponse(res, users.map(formatUser), { page: p, limit: l, total });
@@ -84,7 +112,7 @@ export async function searchDishes(req: Request, res: Response): Promise<void> {
   const keyword = typeof req.query.keyword === 'string' ? req.query.keyword.trim() : '';
   const { page: p, limit: l, skip } = parsePagination(req.query, 20, 100);
 
-  const where: any = {};
+  const where: any = { storeUser: { accountStatus: 'Active' } };
   if (keyword) {
     where.OR = [
       { name: { contains: keyword, mode: 'insensitive' } },
@@ -184,10 +212,15 @@ export async function getTrending(_req: Request, res: Response): Promise<void> {
 
   const [posts, topDishes] = await Promise.all([
     prisma.post.findMany({
-      where: { status: 'Active', createdAt: { gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) } },
+      where: {
+        status: 'Active',
+        author: { accountStatus: 'Active' },
+        createdAt: { gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) },
+      },
       select: { hashtags: true },
     }),
     prisma.dish.findMany({
+      where: { storeUser: { accountStatus: 'Active' } },
       orderBy: [{ reviewsCount: 'desc' }, { rating: 'desc' }],
       take: 8,
       select: { id: true, name: true, category: true, reviewsCount: true },

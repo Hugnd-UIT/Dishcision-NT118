@@ -542,7 +542,19 @@ public class ChatActivity extends AppCompatActivity {
                     renderMessages();
                     scrollToBottom();
                 } else {
-                    Toast.makeText(ChatActivity.this, "Không thể gửi tin nhắn (mã " + response.code() + ")", Toast.LENGTH_SHORT).show();
+                    String errMsg = response.code() == 403
+                            ? "Bạn không thể gửi tin nhắn cho người dùng này"
+                            : "Không thể gửi tin nhắn (mã " + response.code() + ")";
+                    try {
+                        if (response.errorBody() != null) {
+                            String raw = response.errorBody().string();
+                            com.google.gson.JsonObject obj = com.google.gson.JsonParser.parseString(raw).getAsJsonObject();
+                            if (obj.has("message") && !obj.get("message").getAsString().trim().isEmpty()) {
+                                errMsg = obj.get("message").getAsString().trim();
+                            }
+                        }
+                    } catch (Exception ignored) {}
+                    Toast.makeText(ChatActivity.this, errMsg, Toast.LENGTH_LONG).show();
                 }
             }
 

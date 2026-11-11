@@ -1,5 +1,6 @@
 import { Response } from 'express';
 import { prisma } from '../config/prisma';
+import { delCache, delCacheByPattern } from '../config/redis';
 import { successResponse, paginatedResponse, errorResponse } from '../utils/response';
 import { AuthRequest } from '../middlewares/auth.middleware';
 import { formatUserPrivate, resolveAvatarUrl } from './user.controller';
@@ -65,6 +66,13 @@ export async function updateUserStatus(req: AuthRequest, res: Response): Promise
   if (status !== AccountStatus.Active) {
     await prisma.userSession.deleteMany({ where: { userId } });
   }
+
+  await Promise.all([
+    delCache(`user:${userId}`),
+    delCache('search:trending'),
+    delCacheByPattern('post:*'),
+    delCacheByPattern('newsfeed:*'),
+  ]);
 
   await prisma.auditLog.create({
     data: {
@@ -188,6 +196,13 @@ export async function hidePost(req: AuthRequest, res: Response): Promise<void> {
     data: { status: isHidden ? PostStatus.Hidden : PostStatus.Active },
   });
 
+  await Promise.all([
+    delCache(`post:${postId}`),
+    delCache(`user:${post.authorId}`),
+    delCache('search:trending'),
+    delCacheByPattern('newsfeed:*'),
+  ]);
+
   await prisma.auditLog.create({
     data: {
       adminId: req.user!.userId,
@@ -214,6 +229,13 @@ export async function deletePostAdmin(req: AuthRequest, res: Response): Promise<
   }
 
   await prisma.post.delete({ where: { id: postId } });
+
+  await Promise.all([
+    delCache(`post:${postId}`),
+    delCache(`user:${post.authorId}`),
+    delCache('search:trending'),
+    delCacheByPattern('newsfeed:*'),
+  ]);
 
   await prisma.auditLog.create({
     data: {
@@ -312,6 +334,28 @@ export async function processReport(req: AuthRequest, res: Response): Promise<vo
     where: { id: reportId },
     data: { status: status as ReportStatus },
   });
+
+  const cacheInvalidations: Promise<void>[] = [];
+  if (action === 'DeletePost' && report.postId) {
+    cacheInvalidations.push(
+      delCache(`post:${report.postId}`),
+      delCache('search:trending'),
+      delCacheByPattern('newsfeed:*')
+    );
+    if (report.reportedUserId) {
+      cacheInvalidations.push(delCache(`user:${report.reportedUserId}`));
+    }
+  } else if (action === 'BanUser' && report.reportedUserId) {
+    cacheInvalidations.push(
+      delCache(`user:${report.reportedUserId}`),
+      delCache('search:trending'),
+      delCacheByPattern('post:*'),
+      delCacheByPattern('newsfeed:*')
+    );
+  }
+  if (cacheInvalidations.length > 0) {
+    await Promise.all(cacheInvalidations);
+  }
 
   await prisma.auditLog.create({
     data: {

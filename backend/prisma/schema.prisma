@@ -89,6 +89,8 @@ model User {
   passwordHash  String        @db.VarChar(255)
   fullName      String        @db.VarChar(100)
   bio           String?       @db.VarChar(255)
+  city          String?       @db.VarChar(100)
+  allergies     String[]      @default([])
   avatarUrl     String?       @db.VarChar(500)
   gender        Gender?
   dateOfBirth   DateTime?     @db.Date
@@ -232,7 +234,7 @@ model Comment {
 
   post          Post      @relation(fields: [postId], references: [id], onDelete: Cascade)
   author        User      @relation(fields: [authorId], references: [id], onDelete: Cascade)
-  parentComment Comment?  @relation("Replies", fields: [parentCommentId], references: [id])
+  parentComment Comment?  @relation("Replies", fields: [parentCommentId], references: [id], onDelete: Cascade)
   replies       Comment[] @relation("Replies")
   likes         CommentLike[]
 
@@ -537,13 +539,13 @@ model UserSession {
 
 model UserPrivacy {
   userId         Int      @id
-  newPosts       String   @default("friends") @db.VarChar(50)
-  profileInfo    String   @default("only_me") @db.VarChar(50)
-  followingList  String   @default("friends") @db.VarChar(50)
+  newPosts       String   @default("public") @db.VarChar(50)
+  profileInfo    String   @default("public") @db.VarChar(50)
+  followingList  String   @default("public") @db.VarChar(50)
   findEmail      String   @default("no_one") @db.VarChar(50)
   friendRequests String   @default("friends_of_friends") @db.VarChar(50)
-  messages       String   @default("friends") @db.VarChar(50)
-  comments       String   @default("friends") @db.VarChar(50)
+  messages       String   @default("public") @db.VarChar(50)
+  comments       String   @default("public") @db.VarChar(50)
   updatedAt      DateTime @updatedAt
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)

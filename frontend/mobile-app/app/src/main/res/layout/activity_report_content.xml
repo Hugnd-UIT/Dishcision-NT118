@@ -165,75 +165,82 @@
                 android:textStyle="bold" />
 
             <!-- RadioGroup Reasons -->
-            <LinearLayout
+            <RadioGroup
+                android:id="@+id/rgReasons"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="12dp"
-                android:background="@drawable/bg_card"
-                android:orientation="vertical"
-                android:paddingVertical="8dp">
+                android:orientation="vertical">
 
-                <RadioGroup
-                    android:id="@+id/rgReasons"
+                <RadioButton
+                    android:id="@+id/rbSpam"
                     android:layout_width="match_parent"
-                    android:layout_height="wrap_content">
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="10dp"
+                    android:background="@drawable/bg_radio_selector"
+                    android:button="@drawable/bg_radio_button_circle"
+                    android:paddingHorizontal="14dp"
+                    android:paddingVertical="14dp"
+                    android:text="Nội dung rác hoặc quảng cáo lặp lại"
+                    android:textColor="@color/text_dark"
+                    android:textSize="14sp"
+                    app:useMaterialThemeColors="false" />
 
-                    <RadioButton
-                        android:id="@+id/rbSpam"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:background="?attr/selectableItemBackground"
-                        android:button="@drawable/bg_radio_selector"
-                        android:padding="16dp"
-                        android:text="Nội dung rác hoặc quảng cáo lặp lại"
-                        android:textColor="@color/text_dark"
-                        android:textSize="14sp" />
+                <RadioButton
+                    android:id="@+id/rbFake"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="10dp"
+                    android:background="@drawable/bg_radio_selector"
+                    android:button="@drawable/bg_radio_button_circle"
+                    android:paddingHorizontal="14dp"
+                    android:paddingVertical="14dp"
+                    android:text="Thông tin gây hiểu nhầm"
+                    android:textColor="@color/text_dark"
+                    android:textSize="14sp"
+                    app:useMaterialThemeColors="false" />
 
-                    <RadioButton
-                        android:id="@+id/rbFake"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:background="?attr/selectableItemBackground"
-                        android:button="@drawable/bg_radio_selector"
-                        android:padding="16dp"
-                        android:text="Thông tin gây hiểu nhầm"
-                        android:textColor="@color/text_dark"
-                        android:textSize="14sp" />
+                <RadioButton
+                    android:id="@+id/rbHarass"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="10dp"
+                    android:background="@drawable/bg_radio_selector"
+                    android:button="@drawable/bg_radio_button_circle"
+                    android:paddingHorizontal="14dp"
+                    android:paddingVertical="14dp"
+                    android:text="Quấy rối hoặc ngôn từ thù ghét"
+                    android:textColor="@color/text_dark"
+                    android:textSize="14sp"
+                    app:useMaterialThemeColors="false" />
 
-                    <RadioButton
-                        android:id="@+id/rbHarass"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:background="?attr/selectableItemBackground"
-                        android:button="@drawable/bg_radio_selector"
-                        android:padding="16dp"
-                        android:text="Quấy rối hoặc ngôn từ thù ghét"
-                        android:textColor="@color/text_dark"
-                        android:textSize="14sp" />
+                <RadioButton
+                    android:id="@+id/rbInappropriate"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="10dp"
+                    android:background="@drawable/bg_radio_selector"
+                    android:button="@drawable/bg_radio_button_circle"
+                    android:paddingHorizontal="14dp"
+                    android:paddingVertical="14dp"
+                    android:text="Nội dung không phù hợp"
+                    android:textColor="@color/text_dark"
+                    android:textSize="14sp"
+                    app:useMaterialThemeColors="false" />
 
-                    <RadioButton
-                        android:id="@+id/rbInappropriate"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:background="?attr/selectableItemBackground"
-                        android:button="@drawable/bg_radio_selector"
-                        android:padding="16dp"
-                        android:text="Nội dung không phù hợp"
-                        android:textColor="@color/text_dark"
-                        android:textSize="14sp" />
-
-                    <RadioButton
-                        android:id="@+id/rbOther"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:background="?attr/selectableItemBackground"
-                        android:button="@drawable/bg_radio_selector"
-                        android:padding="16dp"
-                        android:text="Lý do khác"
-                        android:textColor="@color/text_dark"
-                        android:textSize="14sp" />
-                </RadioGroup>
-            </LinearLayout>
+                <RadioButton
+                    android:id="@+id/rbOther"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:background="@drawable/bg_radio_selector"
+                    android:button="@drawable/bg_radio_button_circle"
+                    android:paddingHorizontal="14dp"
+                    android:paddingVertical="14dp"
+                    android:text="Lý do khác"
+                    android:textColor="@color/text_dark"
+                    android:textSize="14sp"
+                    app:useMaterialThemeColors="false" />
+            </RadioGroup>
 
             <!-- Extra Info -->
             <TextView

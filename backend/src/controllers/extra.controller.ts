@@ -4,6 +4,8 @@ import { successResponse, errorResponse } from '../utils/response';
 import { AuthRequest } from '../middlewares/auth.middleware';
 import { parsePositiveInt } from '../utils/http';
 import { resolveAvatarUrl } from './user.controller';
+import { toRelativeUploadPath } from './upload.controller';
+import { canAccessPrivacy, getBlockedUserIds, getUserPrivacy } from '../utils/privacy';
 
 // ─────────────────────────────────────────
 // 1. STORIES
@@ -25,12 +27,17 @@ function formatStory(s: any) {
 export async function getStories(req: AuthRequest, res: Response): Promise<void> {
   const userIdFilter = req.query.userId ? parsePositiveInt(req.query.userId as string) : null;
   const storeName = typeof req.query.storeName === 'string' ? req.query.storeName.trim() : '';
+  const blockedIds = await getBlockedUserIds(req.user?.userId);
 
-  const where: any = {};
+  const where: any = {
+    user: {
+      accountStatus: 'Active',
+      ...(blockedIds.length > 0 ? { id: { notIn: blockedIds } } : {}),
+      ...(!userIdFilter && storeName ? { fullName: { contains: storeName, mode: 'insensitive' } } : {}),
+    },
+  };
   if (userIdFilter) {
     where.userId = userIdFilter;
-  } else if (storeName) {
-    where.user = { fullName: { contains: storeName, mode: 'insensitive' } };
   }
 
   const stories = await prisma.story.findMany({
@@ -54,10 +61,12 @@ export async function createStory(req: AuthRequest, res: Response): Promise<void
     return;
   }
 
+  const normalizedMediaUrl = toRelativeUploadPath(mediaUrl) || mediaUrl.trim();
+
   const newStory = await prisma.story.create({
     data: {
       userId,
-      mediaUrl: mediaUrl.trim(),
+      mediaUrl: normalizedMediaUrl,
       caption: typeof caption === 'string' ? caption.trim() : '',
     },
     include: {
@@ -104,19 +113,23 @@ export async function getDishDetail(req: AuthRequest, res: Response): Promise<vo
           id: true,
           fullName: true,
           avatarUrl: true,
+          accountStatus: true,
           storeProfile: true,
         },
       },
     },
   });
 
-  if (!dish) {
+  if (!dish || dish.storeUser.accountStatus !== 'Active') {
     errorResponse(res, 'Không tìm thấy món ăn', 404);
     return;
   }
 
   const reviews = await prisma.review.findMany({
-    where: { restaurantName: { contains: dish.storeUser.fullName, mode: 'insensitive' } },
+    where: {
+      restaurantName: { contains: dish.storeUser.fullName, mode: 'insensitive' },
+      author: { accountStatus: 'Active' },
+    },
     include: {
       author: { select: { id: true, username: true, fullName: true, avatarUrl: true } },
     },
@@ -149,7 +162,7 @@ export async function getDishes(req: AuthRequest, res: Response): Promise<void> 
   const keyword = typeof req.query.keyword === 'string' ? req.query.keyword.trim() : '';
   const limit = req.query.limit ? Math.min(Math.max(parseInt(req.query.limit as string, 10) || 50, 1), 100) : 50;
 
-  const where: any = {};
+  const where: any = { storeUser: { accountStatus: 'Active' } };
   if (storeId) where.storeUserId = storeId;
   if (category) where.category = { contains: category, mode: 'insensitive' };
   if (keyword) {
@@ -205,6 +218,9 @@ export async function getStoreDetail(req: AuthRequest, res: Response): Promise<v
     return;
   }
 
+  const privacy = await getUserPrivacy(storeId);
+  const canViewPosts = await canAccessPrivacy(privacy.newPosts, storeId, req.user?.userId);
+
   let isFollowing = false;
   if (req.user?.userId && req.user.userId !== storeId) {
     const follow = await prisma.follow.findUnique({
@@ -220,7 +236,10 @@ export async function getStoreDetail(req: AuthRequest, res: Response): Promise<v
   }
 
   const reviews = await prisma.review.findMany({
-    where: { restaurantName: { contains: restaurantUser.fullName, mode: 'insensitive' } },
+    where: {
+      restaurantName: { contains: restaurantUser.fullName, mode: 'insensitive' },
+      author: { accountStatus: 'Active' },
+    },
     include: {
       author: { select: { id: true, username: true, fullName: true, avatarUrl: true } },
       images: true,
@@ -272,7 +291,7 @@ export async function getStoreDetail(req: AuthRequest, res: Response): Promise<v
       images: r.images,
     })),
     menu,
-    posts: restaurantUser.posts,
+    posts: canViewPosts ? restaurantUser.posts : [],
   };
 
   successResponse(res, storeInfo, 'Lấy thông tin nhà hàng thành công');

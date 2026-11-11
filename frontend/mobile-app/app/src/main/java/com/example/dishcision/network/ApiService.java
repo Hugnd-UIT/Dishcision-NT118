@@ -190,6 +190,9 @@ public interface ApiService {
     @GET("users/me/saved-posts")
     Call<FeedPostsResponse> getSavedPosts(@Header("Authorization") String authHeader, @Query("limit") int limit);
 
+    @GET("users/me/liked-posts")
+    Call<FeedPostsResponse> getLikedPosts(@Header("Authorization") String authHeader, @Query("limit") int limit);
+
     @GET("restaurants/following")
     Call<FollowingRestaurantsResponse> getFollowingRestaurants(@Header("Authorization") String authHeader);
 
@@ -267,6 +270,7 @@ public interface ApiService {
 
     @GET("posts/{postId}/comments")
     Call<CommentsListResponse> getPostComments(
+            @Header("Authorization") String authHeader,
             @Path("postId") int postId
     );
 

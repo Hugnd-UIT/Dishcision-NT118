@@ -42,6 +42,11 @@ public class MyPostsActivity extends AppCompatActivity {
     public static final String EXTRA_POST_ID = "POST_ID";
     public static final String EXTRA_USER_ID = "USER_ID";
     public static final String EXTRA_USER_NAME = "USER_NAME";
+    public static final String EXTRA_MODE = "MODE";
+
+    public static final String MODE_MY_POSTS = "my_posts";
+    public static final String MODE_SAVED = "saved";
+    public static final String MODE_LIKED = "liked";
 
     private ImageView btnBack;
     private ImageView btnNotification;
@@ -56,6 +61,7 @@ public class MyPostsActivity extends AppCompatActivity {
 
     private int targetUserId = 0;
     private String targetUserName = "";
+    private String targetMode = MODE_MY_POSTS;
     private int targetPostId = 0;
     private int targetPostIndex = 1;
     private boolean hasScrolledToInitialTarget = false;
@@ -96,6 +102,12 @@ public class MyPostsActivity extends AppCompatActivity {
                 } catch (Exception ignored) {}
             }
         }
+        String modeExtra = intent.getStringExtra(EXTRA_MODE);
+        if (MODE_SAVED.equals(modeExtra) || MODE_LIKED.equals(modeExtra)) {
+            targetMode = modeExtra;
+        } else {
+            targetMode = MODE_MY_POSTS;
+        }
         String nameExtra = intent.getStringExtra(EXTRA_USER_NAME);
         targetUserName = nameExtra != null ? nameExtra.trim() : "";
         targetPostId = intent.getIntExtra(EXTRA_POST_ID, 0);
@@ -114,10 +126,14 @@ public class MyPostsActivity extends AppCompatActivity {
         int selfId = AuthHelper.getCurrentUserId(this);
         boolean isOwnPosts = targetUserId <= 0 || (selfId > 0 && targetUserId == selfId);
         if (tvHeaderTitle != null) {
-            if (isOwnPosts) {
-                tvHeaderTitle.setText("Bài viết của tôi");
-            } else {
+            if (!isOwnPosts) {
                 tvHeaderTitle.setText(!targetUserName.isEmpty() ? "Bài viết của " + targetUserName : "Bài viết");
+            } else if (MODE_SAVED.equals(targetMode)) {
+                tvHeaderTitle.setText("Bài viết đã lưu");
+            } else if (MODE_LIKED.equals(targetMode)) {
+                tvHeaderTitle.setText("Bài viết yêu thích");
+            } else {
+                tvHeaderTitle.setText("Bài viết của tôi");
             }
         }
     }
@@ -132,6 +148,12 @@ public class MyPostsActivity extends AppCompatActivity {
         }
     }
 
+    private String getEmptyMessage() {
+        if (MODE_SAVED.equals(targetMode)) return "Chưa có bài viết đã lưu nào";
+        if (MODE_LIKED.equals(targetMode)) return "Chưa có bài viết yêu thích nào";
+        return "Chưa có bài viết nào";
+    }
+
     private void fetchPostsFromBackend() {
         String authHeader = ApiClient.getAuthHeader(this);
         int selfId = AuthHelper.getCurrentUserId(this);
@@ -142,9 +164,16 @@ public class MyPostsActivity extends AppCompatActivity {
             return;
         }
 
-        Call<FeedPostsResponse> call = isOwnPosts
-                ? ApiClient.getApiService().getMyPosts(authHeader)
-                : ApiClient.getApiService().getUserPosts(authHeader, String.valueOf(targetUserId));
+        Call<FeedPostsResponse> call;
+        if (!isOwnPosts) {
+            call = ApiClient.getApiService().getUserPosts(authHeader, String.valueOf(targetUserId));
+        } else if (MODE_SAVED.equals(targetMode)) {
+            call = ApiClient.getApiService().getSavedPosts(authHeader, 100);
+        } else if (MODE_LIKED.equals(targetMode)) {
+            call = ApiClient.getApiService().getLikedPosts(authHeader, 100);
+        } else {
+            call = ApiClient.getApiService().getMyPosts(authHeader);
+        }
 
         call.enqueue(new Callback<FeedPostsResponse>() {
             @Override
@@ -154,6 +183,8 @@ public class MyPostsActivity extends AppCompatActivity {
                     loadedPosts.clear();
                     loadedPosts.addAll(response.body().getData());
                     renderPosts();
+                } else if (response.code() == 403) {
+                    showEmptyState("Bài viết đang ở chế độ riêng tư.");
                 } else {
                     showEmptyState("Chưa thể tải danh sách bài viết.");
                 }
@@ -177,7 +208,7 @@ public class MyPostsActivity extends AppCompatActivity {
         postCardViews.clear();
 
         if (loadedPosts.isEmpty()) {
-            showEmptyState("Chưa có bài viết nào");
+            showEmptyState(getEmptyMessage());
             return;
         }
 
@@ -218,7 +249,7 @@ public class MyPostsActivity extends AppCompatActivity {
             }
         }
         if (loadedPosts.isEmpty()) {
-            showEmptyState("Chưa có bài viết nào");
+            showEmptyState(getEmptyMessage());
         }
     }
 

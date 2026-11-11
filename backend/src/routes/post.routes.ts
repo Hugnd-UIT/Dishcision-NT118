@@ -12,7 +12,7 @@ import {
   uploadMedia,
 } from '../controllers/post.controller';
 import { getComments, createComment } from '../controllers/comment.controller';
-import { savePost, unsavePost, getSavedPosts } from '../controllers/social.controller';
+import { savePost, unsavePost, getSavedPosts, getLikedPosts } from '../controllers/social.controller';
 import { authenticate, optionalAuth } from '../middlewares/auth.middleware';
 import { mediaUpload } from '../middlewares/upload.middleware';
 import { asyncHandler } from '../utils/http';
@@ -27,6 +27,7 @@ const router = Router();
 
 router.get('/', optionalAuth, asyncHandler(getNewsfeed));
 router.get('/saved', authenticate, asyncHandler(getSavedPosts));
+router.get('/liked', authenticate, asyncHandler(getLikedPosts));
 router.post('/', authenticate, validate(createPostSchema), asyncHandler(createPost));
 router.post('/upload-media', authenticate, mediaUpload.single('file'), asyncHandler(uploadMedia));
 
@@ -34,13 +35,13 @@ router.get('/:postId', optionalAuth, asyncHandler(getPostById));
 router.put('/:postId', authenticate, validate(updatePostSchema), asyncHandler(updatePost));
 router.delete('/:postId', authenticate, asyncHandler(deletePost));
 
-router.get('/:postId/likes', asyncHandler(getPostLikes));
+router.get('/:postId/likes', optionalAuth, asyncHandler(getPostLikes));
 router.post('/:postId/likes', authenticate, asyncHandler(likePost));
 router.delete('/:postId/likes', authenticate, asyncHandler(unlikePost));
 
 router.post('/:postId/shares', authenticate, asyncHandler(sharePost));
 
-router.get('/:postId/comments', asyncHandler(getComments));
+router.get('/:postId/comments', optionalAuth, asyncHandler(getComments));
 router.post('/:postId/comments', authenticate, validate(createCommentSchema), asyncHandler(createComment));
 
 router.post('/:postId/save', authenticate, asyncHandler(savePost));

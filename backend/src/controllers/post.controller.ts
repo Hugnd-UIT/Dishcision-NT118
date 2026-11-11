@@ -1,11 +1,17 @@
-import { Request, Response } from 'express';
+import { Response } from 'express';
 import { prisma } from '../config/prisma';
 import { getCache, setCache, delCache, delCacheByPattern, CACHE_TTL } from '../config/redis';
 import { successResponse, paginatedResponse, errorResponse } from '../utils/response';
 import { parsePagination, parsePositiveInt } from '../utils/http';
 import { AuthRequest } from '../middlewares/auth.middleware';
 import { formatUser, attachPostFlags } from './user.controller';
-import { handleUploadedFile } from './upload.controller';
+import { handleUploadedFile, toRelativeUploadPath } from './upload.controller';
+import {
+  areUsersBlocked,
+  buildPostAuthorWhere,
+  canAccessPrivacy,
+  getBlockedUserIds,
+} from '../utils/privacy';
 
 export const POST_INCLUDE = {
   author: {
@@ -15,6 +21,7 @@ export const POST_INCLUDE = {
       fullName: true,
       avatarUrl: true,
       bio: true,
+      city: true,
       role: true,
       _count: {
         select: {
@@ -26,7 +33,13 @@ export const POST_INCLUDE = {
     },
   },
   images: true,
-  _count: { select: { likes: true, comments: true, shares: true } },
+  _count: {
+    select: {
+      likes: true,
+      comments: { where: { author: { accountStatus: 'Active' as const } } },
+      shares: true,
+    },
+  },
 };
 
 export function formatPost(post: any) {
@@ -46,28 +59,41 @@ export function formatPost(post: any) {
 export async function getNewsfeed(req: AuthRequest, res: Response): Promise<void> {
   const { page, limit, skip } = parsePagination(req.query, 10, 100);
   const sort = (req.query.sort as string) || 'latest';
+  const viewerId = req.user?.userId;
 
   const orderBy: any =
     sort === 'trending'
       ? [{ likes: { _count: 'desc' } }, { createdAt: 'desc' }]
       : { createdAt: 'desc' };
 
-  const where: any = { status: 'Active' };
+  const blockedIds = await getBlockedUserIds(viewerId);
+  const where: any = {
+    status: 'Active',
+    author: buildPostAuthorWhere(viewerId, blockedIds),
+  };
 
   if (req.query.hasVoucher === 'true') {
     where.voucherCode = { not: null };
   }
 
   if (sort === 'following') {
-    if (!req.user) {
+    if (!viewerId) {
       paginatedResponse(res, [], { page, limit, total: 0 });
       return;
     }
     const follows = await prisma.follow.findMany({
-      where: { followerId: req.user.userId },
+      where: { followerId: viewerId },
       select: { followingId: true },
     });
-    where.authorId = { in: follows.map((f) => f.followingId) };
+    const blockedSet = new Set(blockedIds);
+    const followingIds = follows
+      .map((f) => f.followingId)
+      .filter((id) => !blockedSet.has(id));
+    if (followingIds.length === 0) {
+      paginatedResponse(res, [], { page, limit, total: 0 });
+      return;
+    }
+    where.authorId = { in: followingIds };
   }
 
   const [posts, total] = await Promise.all([
@@ -75,7 +101,7 @@ export async function getNewsfeed(req: AuthRequest, res: Response): Promise<void
     prisma.post.count({ where }),
   ]);
 
-  const formatted = await attachPostFlags(posts.map(formatPost), req.user?.userId);
+  const formatted = await attachPostFlags(posts.map(formatPost), viewerId);
   paginatedResponse(res, formatted, { page, limit, total });
 }
 
@@ -93,13 +119,18 @@ export async function createPost(req: AuthRequest, res: Response): Promise<void>
       voucherCode: voucherCode || null,
       hashtags: hashtags || [],
       images: images
-        ? { create: images.map((img: any) => ({ imageUrl: img.imageUrl, displayOrder: img.displayOrder ?? 0 })) }
+        ? {
+            create: images.map((img: any) => ({
+              imageUrl: toRelativeUploadPath(img.imageUrl) || img.imageUrl,
+              displayOrder: img.displayOrder ?? 0,
+            })),
+          }
         : undefined,
     },
     include: POST_INCLUDE,
   });
 
-  await Promise.all([delCacheByPattern('newsfeed:*'), delCache(`user:${userId}`)]);
+  await Promise.all([delCacheByPattern('newsfeed:*'), delCache(`user:${userId}`), delCache('search:trending')]);
   successResponse(res, { ...formatPost(post), isSaved: false, isLiked: false }, 'Post created', 201);
 }
 
@@ -113,11 +144,34 @@ export async function getPostById(req: AuthRequest, res: Response): Promise<void
   }
 
   const cacheKey = `post:${postId}`;
+  const viewerId = req.user?.userId;
+
+  const liveCheck = await prisma.post.findFirst({
+    where: { id: postId, status: 'Active', author: { accountStatus: 'Active' } },
+    select: {
+      authorId: true,
+      author: { select: { privacySetting: { select: { newPosts: true } } } },
+    },
+  });
+  if (!liveCheck) {
+    await delCache(cacheKey);
+    errorResponse(res, 'Post not found', 404);
+    return;
+  }
+  if (viewerId && viewerId !== liveCheck.authorId && (await areUsersBlocked(viewerId, liveCheck.authorId))) {
+    errorResponse(res, 'Post not found', 404);
+    return;
+  }
+  if (!(await canAccessPrivacy(liveCheck.author.privacySetting?.newPosts, liveCheck.authorId, viewerId))) {
+    errorResponse(res, 'Bài viết này đã được giới hạn quyền xem', 403);
+    return;
+  }
+
   let basePost = await getCache<ReturnType<typeof formatPost>>(cacheKey);
 
   if (!basePost) {
     const post = await prisma.post.findFirst({
-      where: { id: postId, status: 'Active' },
+      where: { id: postId, status: 'Active', author: { accountStatus: 'Active' } },
       include: POST_INCLUDE,
     });
     if (!post) {
@@ -128,7 +182,7 @@ export async function getPostById(req: AuthRequest, res: Response): Promise<void
     await setCache(cacheKey, basePost, CACHE_TTL.POST_DETAIL);
   }
 
-  const [enriched] = await attachPostFlags([basePost], req.user?.userId);
+  const [enriched] = await attachPostFlags([basePost], viewerId);
   successResponse(res, enriched);
 }
 
@@ -168,7 +222,12 @@ export async function updatePost(req: AuthRequest, res: Response): Promise<void>
       hashtags: hashtags ?? undefined,
       status: status ?? undefined,
       images: Array.isArray(images)
-        ? { create: images.map((img: any) => ({ imageUrl: img.imageUrl, displayOrder: img.displayOrder ?? 0 })) }
+        ? {
+            create: images.map((img: any) => ({
+              imageUrl: toRelativeUploadPath(img.imageUrl) || img.imageUrl,
+              displayOrder: img.displayOrder ?? 0,
+            })),
+          }
         : undefined,
     },
     include: POST_INCLUDE,
@@ -177,6 +236,7 @@ export async function updatePost(req: AuthRequest, res: Response): Promise<void>
   await Promise.all([
     delCache(`post:${postId}`),
     delCache(`user:${post.authorId}`),
+    delCache('search:trending'),
     delCacheByPattern('newsfeed:*'),
   ]);
   const [enriched] = await attachPostFlags([formatPost(updated)], userId);
@@ -207,6 +267,7 @@ export async function deletePost(req: AuthRequest, res: Response): Promise<void>
   await Promise.all([
     delCache(`post:${postId}`),
     delCache(`user:${post.authorId}`),
+    delCache('search:trending'),
     delCacheByPattern('newsfeed:*'),
   ]);
   successResponse(res, null, 'Post deleted');
@@ -222,10 +283,27 @@ export async function likePost(req: AuthRequest, res: Response): Promise<void> {
     return;
   }
 
-  const post = await prisma.post.findFirst({ where: { id: postId, status: 'Active' } });
+  const post = await prisma.post.findFirst({
+    where: { id: postId, status: 'Active', author: { accountStatus: 'Active' } },
+    select: {
+      id: true,
+      authorId: true,
+      author: { select: { privacySetting: { select: { newPosts: true } } } },
+    },
+  });
   if (!post) {
     errorResponse(res, 'Post not found', 404);
     return;
+  }
+  if (userId !== post.authorId) {
+    if (await areUsersBlocked(userId, post.authorId)) {
+      errorResponse(res, 'Bạn không thể tương tác với bài viết này', 403);
+      return;
+    }
+    if (!(await canAccessPrivacy(post.author.privacySetting?.newPosts, post.authorId, userId))) {
+      errorResponse(res, 'Bạn không có quyền xem hoặc tương tác với bài viết này', 403);
+      return;
+    }
   }
 
   try {
@@ -236,6 +314,7 @@ export async function likePost(req: AuthRequest, res: Response): Promise<void> {
         data: { userId: post.authorId, type: 'Like', message: `${liker?.username} liked your post`, relatedPostId: postId },
       });
     }
+    await delCache(`post:${postId}`);
     successResponse(res, null, 'Liked successfully');
   } catch {
     errorResponse(res, 'Already liked', 409);
@@ -253,27 +332,59 @@ export async function unlikePost(req: AuthRequest, res: Response): Promise<void>
   }
 
   await prisma.postLike.deleteMany({ where: { userId, postId } });
+  await delCache(`post:${postId}`);
   successResponse(res, null, 'Unliked successfully');
 }
 
 // ── GET /posts/:postId/likes ──────────────
 
-export async function getPostLikes(req: Request, res: Response): Promise<void> {
+export async function getPostLikes(req: AuthRequest, res: Response): Promise<void> {
   const postId = parsePositiveInt(req.params.postId);
   if (!postId) {
     errorResponse(res, 'Invalid post ID', 400);
     return;
   }
   const { page, limit, skip } = parsePagination(req.query, 20, 100);
+  const viewerId = req.user?.userId;
+
+  const post = await prisma.post.findFirst({
+    where: { id: postId, status: 'Active', author: { accountStatus: 'Active' } },
+    select: {
+      id: true,
+      authorId: true,
+      author: { select: { privacySetting: { select: { newPosts: true } } } },
+    },
+  });
+  if (!post) {
+    errorResponse(res, 'Post not found', 404);
+    return;
+  }
+  if (viewerId && viewerId !== post.authorId && (await areUsersBlocked(viewerId, post.authorId))) {
+    errorResponse(res, 'Post not found', 404);
+    return;
+  }
+  if (!(await canAccessPrivacy(post.author.privacySetting?.newPosts, post.authorId, viewerId))) {
+    errorResponse(res, 'Bạn không có quyền xem bài viết này', 403);
+    return;
+  }
+
+  const blockedIds = await getBlockedUserIds(viewerId);
+  const likerWhere = {
+    postId,
+    user: {
+      accountStatus: 'Active' as const,
+      ...(blockedIds.length > 0 ? { id: { notIn: blockedIds } } : {}),
+    },
+  };
 
   const [likes, total] = await Promise.all([
     prisma.postLike.findMany({
-      where: { postId },
-      include: { user: { select: { id: true, username: true, fullName: true, avatarUrl: true, bio: true, role: true, _count: { select: { followers: true, following: true } } } } },
+      where: likerWhere,
+      include: { user: { select: { id: true, username: true, fullName: true, avatarUrl: true, bio: true, city: true, role: true, _count: { select: { followers: true, following: true } } } } },
       skip,
       take: limit,
     }),
-    prisma.postLike.count({ where: { postId } }),
+    prisma.postLike.count({ where: likerWhere }),
   ]);
 
   paginatedResponse(res, likes.map((l) => formatUser(l.user)), { page, limit, total });
@@ -289,10 +400,27 @@ export async function sharePost(req: AuthRequest, res: Response): Promise<void> 
     return;
   }
 
-  const post = await prisma.post.findFirst({ where: { id: postId, status: 'Active' }, select: { id: true } });
+  const post = await prisma.post.findFirst({
+    where: { id: postId, status: 'Active', author: { accountStatus: 'Active' } },
+    select: {
+      id: true,
+      authorId: true,
+      author: { select: { privacySetting: { select: { newPosts: true } } } },
+    },
+  });
   if (!post) {
     errorResponse(res, 'Post not found', 404);
     return;
+  }
+  if (userId !== post.authorId) {
+    if (await areUsersBlocked(userId, post.authorId)) {
+      errorResponse(res, 'Bạn không thể chia sẻ bài viết này', 403);
+      return;
+    }
+    if (!(await canAccessPrivacy(post.author.privacySetting?.newPosts, post.authorId, userId))) {
+      errorResponse(res, 'Bạn không có quyền xem hoặc chia sẻ bài viết này', 403);
+      return;
+    }
   }
 
   await prisma.postShare.upsert({
@@ -300,6 +428,7 @@ export async function sharePost(req: AuthRequest, res: Response): Promise<void> 
     update: {},
     create: { userId, postId },
   });
+  await delCache(`post:${postId}`);
   successResponse(res, { postId, shared: true }, 'Shared successfully');
 }
 

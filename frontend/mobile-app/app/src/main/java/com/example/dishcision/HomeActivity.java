@@ -1,7 +1,13 @@
 package com.example.dishcision;
 
+import android.content.Context;
 import android.content.Intent;
+import android.net.ConnectivityManager;
+import android.net.Network;
+import android.net.NetworkCapabilities;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.view.LayoutInflater;
@@ -24,6 +30,7 @@ import androidx.core.view.GravityCompat;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 import androidx.drawerlayout.widget.DrawerLayout;
+import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
 import com.example.dishcision.network.ApiClient;
 import com.example.dishcision.network.AuthHelper;
@@ -48,6 +55,8 @@ public class HomeActivity extends AppCompatActivity {
     private EditText edtSearch;
     private ImageView imgSearchIcon;
     private RelativeLayout btnFilter;
+    private SwipeRefreshLayout swipeRefreshFeed;
+    private ScrollView scrollFeed;
     private LinearLayout feedContainer;
     private TextView tvEmptyFeed;
 
@@ -69,6 +78,19 @@ public class HomeActivity extends AppCompatActivity {
     private final List<FeedPostsResponse.PostItem> allPosts = new ArrayList<>();
     private ActivityResultLauncher<Intent> postFormLauncher;
     private boolean skipFirstResumeFetch = true;
+    private int feedRequestSeq = 0;
+    private boolean needsNetworkRetry = false;
+    private boolean networkDisconnectedSeen = false;
+    private ConnectivityManager connectivityManager;
+    private ConnectivityManager.NetworkCallback networkCallback;
+    private boolean isNetworkCallbackRegistered = false;
+    private final Handler mainHandler = new Handler(Looper.getMainLooper());
+    private final Runnable reconnectRetryRunnable = () -> {
+        if (isFinishing() || isDestroyed() || !isNetworkConnected()) return;
+        if (needsNetworkRetry || allPosts.isEmpty()) {
+            reloadHomeFromNetwork(allPosts.isEmpty());
+        }
+    };
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -82,6 +104,7 @@ public class HomeActivity extends AppCompatActivity {
             return insets;
         });
 
+        connectivityManager = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
         postFormLauncher = registerForActivityResult(
                 new ActivityResultContracts.StartActivityForResult(),
                 result -> {
@@ -99,15 +122,46 @@ public class HomeActivity extends AppCompatActivity {
     }
 
     @Override
+    protected void onStart() {
+        super.onStart();
+        if (!isNetworkConnected()) {
+            networkDisconnectedSeen = true;
+        } else if (needsNetworkRetry) {
+            networkDisconnectedSeen = false;
+            mainHandler.post(() -> {
+                if (!isFinishing() && !isDestroyed() && needsNetworkRetry) {
+                    reloadHomeFromNetwork(allPosts.isEmpty());
+                }
+            });
+        }
+        registerNetworkMonitor();
+    }
+
+    @Override
     protected void onResume() {
         super.onResume();
         if (skipFirstResumeFetch) {
             skipFirstResumeFetch = false;
             return;
         }
-        CurrentUserBinder.bind(this, imgSidebarAvatar, tvSidebarUserName, tvSidebarUserHandle);
-        fetchFeedFromBackend();
-        fetchUnreadNotificationDot();
+        reloadHomeFromNetwork(false);
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+        mainHandler.removeCallbacks(reconnectRetryRunnable);
+        unregisterNetworkMonitor();
+        if (swipeRefreshFeed != null) {
+            swipeRefreshFeed.setRefreshing(false);
+        }
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        mainHandler.removeCallbacks(reconnectRetryRunnable);
+        unregisterNetworkMonitor();
     }
 
     private void initViews() {
@@ -118,6 +172,8 @@ public class HomeActivity extends AppCompatActivity {
         edtSearch = findViewById(R.id.edtSearch);
         imgSearchIcon = findViewById(R.id.imgSearchIcon);
         btnFilter = findViewById(R.id.btnFilter);
+        swipeRefreshFeed = findViewById(R.id.swipeRefreshFeed);
+        scrollFeed = findViewById(R.id.scrollFeed);
         feedContainer = findViewById(R.id.feedContainer);
         tvEmptyFeed = findViewById(R.id.tvEmptyFeed);
 
@@ -169,8 +225,21 @@ public class HomeActivity extends AppCompatActivity {
 
         if (navHome != null) {
             navHome.setOnClickListener(v -> {
-                ScrollView scrollFeed = findViewById(R.id.scrollFeed);
                 if (scrollFeed != null) scrollFeed.smoothScrollTo(0, 0);
+            });
+        }
+
+        if (swipeRefreshFeed != null) {
+            swipeRefreshFeed.setColorSchemeColors(0xFFFF5A36, 0xFF141B2B);
+            swipeRefreshFeed.setOnChildScrollUpCallback((parent, child) -> scrollFeed != null && scrollFeed.canScrollVertically(-1));
+            swipeRefreshFeed.setOnRefreshListener(() -> reloadHomeFromNetwork(true));
+        }
+
+        if (tvEmptyFeed != null) {
+            tvEmptyFeed.setOnClickListener(v -> {
+                if (needsNetworkRetry || allPosts.isEmpty()) {
+                    reloadHomeFromNetwork(true);
+                }
             });
         }
 
@@ -231,6 +300,72 @@ public class HomeActivity extends AppCompatActivity {
         }
     }
 
+    private void reloadHomeFromNetwork(boolean showSpinner) {
+        if (showSpinner && swipeRefreshFeed != null) {
+            swipeRefreshFeed.setRefreshing(true);
+        }
+        CurrentUserBinder.bind(this, imgSidebarAvatar, tvSidebarUserName, tvSidebarUserHandle);
+        fetchFeedFromBackend();
+        fetchUnreadNotificationDot();
+    }
+
+    private boolean isNetworkConnected() {
+        if (connectivityManager == null) return true;
+        try {
+            Network active = connectivityManager.getActiveNetwork();
+            if (active == null) return false;
+            NetworkCapabilities caps = connectivityManager.getNetworkCapabilities(active);
+            return caps != null && caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET);
+        } catch (Exception e) {
+            return true;
+        }
+    }
+
+    private void registerNetworkMonitor() {
+        if (connectivityManager == null || isNetworkCallbackRegistered) return;
+        try {
+            if (networkCallback == null) {
+                networkCallback = new ConnectivityManager.NetworkCallback() {
+                    @Override
+                    public void onAvailable(@NonNull Network network) {
+                        mainHandler.post(() -> {
+                            if (isFinishing() || isDestroyed()) return;
+                            if (needsNetworkRetry || networkDisconnectedSeen) {
+                                networkDisconnectedSeen = false;
+                                mainHandler.removeCallbacks(reconnectRetryRunnable);
+                                mainHandler.postDelayed(reconnectRetryRunnable, 450);
+                            }
+                        });
+                    }
+
+                    @Override
+                    public void onLost(@NonNull Network network) {
+                        mainHandler.post(() -> {
+                            if (!isNetworkConnected()) {
+                                networkDisconnectedSeen = true;
+                                mainHandler.removeCallbacks(reconnectRetryRunnable);
+                            }
+                        });
+                    }
+                };
+            }
+            connectivityManager.registerDefaultNetworkCallback(networkCallback);
+            isNetworkCallbackRegistered = true;
+        } catch (Exception ignored) {
+            isNetworkCallbackRegistered = false;
+        }
+    }
+
+    private void unregisterNetworkMonitor() {
+        if (connectivityManager == null || !isNetworkCallbackRegistered || networkCallback == null) return;
+        try {
+            connectivityManager.unregisterNetworkCallback(networkCallback);
+        } catch (Exception ignored) {
+        } finally {
+            isNetworkCallbackRegistered = false;
+        }
+    }
+
     private void fetchUnreadNotificationDot() {
         String authHeader = ApiClient.getAuthHeader(this);
         if (authHeader.isEmpty() || viewNotifDot == null) {
@@ -259,27 +394,43 @@ public class HomeActivity extends AppCompatActivity {
     }
 
     private void fetchFeedFromBackend() {
+        final int reqSeq = ++feedRequestSeq;
         String authHeader = ApiClient.getAuthHeader(this);
         ApiClient.getApiService().getFeedPosts(authHeader).enqueue(new Callback<FeedPostsResponse>() {
             @Override
             public void onResponse(@NonNull Call<FeedPostsResponse> call, @NonNull Response<FeedPostsResponse> response) {
-                if (isFinishing()) return;
+                if (isFinishing() || isDestroyed() || reqSeq != feedRequestSeq) return;
+                if (swipeRefreshFeed != null) swipeRefreshFeed.setRefreshing(false);
                 if (response.isSuccessful() && response.body() != null && response.body().getData() != null) {
+                    needsNetworkRetry = false;
+                    networkDisconnectedSeen = false;
                     allPosts.clear();
                     allPosts.addAll(response.body().getData());
                     filterAndRenderFeed();
-                } else if (allPosts.isEmpty()) {
-                    showEmptyState("Chưa thể tải bảng tin lúc này.");
+                } else {
+                    needsNetworkRetry = true;
+                    if (allPosts.isEmpty()) {
+                        showEmptyState("Chưa thể tải bảng tin lúc này.\nVuốt xuống hoặc nhấn để thử lại.");
+                    } else {
+                        Toast.makeText(HomeActivity.this, "Không thể làm mới bảng tin", Toast.LENGTH_SHORT).show();
+                    }
                 }
             }
 
             @Override
             public void onFailure(@NonNull Call<FeedPostsResponse> call, @NonNull Throwable t) {
-                if (isFinishing()) return;
+                if (isFinishing() || isDestroyed() || reqSeq != feedRequestSeq) return;
+                if (swipeRefreshFeed != null) swipeRefreshFeed.setRefreshing(false);
+                needsNetworkRetry = true;
                 if (allPosts.isEmpty()) {
-                    showEmptyState("Không thể kết nối máy chủ.");
+                    showEmptyState("Không thể kết nối máy chủ.\nVuốt xuống hoặc nhấn để thử lại.");
                 } else {
                     Toast.makeText(HomeActivity.this, "Không thể làm mới bảng tin", Toast.LENGTH_SHORT).show();
+                }
+                if (isNetworkConnected() && networkDisconnectedSeen) {
+                    networkDisconnectedSeen = false;
+                    mainHandler.removeCallbacks(reconnectRetryRunnable);
+                    mainHandler.postDelayed(reconnectRetryRunnable, 450);
                 }
             }
         });

@@ -1,14 +1,30 @@
 import { Response } from 'express';
 import { prisma } from '../config/prisma';
-import { delCache } from '../config/redis';
+import { delCache, delCacheByPattern } from '../config/redis';
 import { successResponse, paginatedResponse, errorResponse } from '../utils/response';
 import { parsePagination, parsePositiveInt } from '../utils/http';
 import { AuthRequest } from '../middlewares/auth.middleware';
 import { formatUser, attachPostFlags, resolveAvatarUrl } from './user.controller';
+import { toRelativeUploadPath } from './upload.controller';
+import {
+  areUsersBlocked,
+  buildPostAuthorWhere,
+  canAccessPrivacy,
+  getBlockedUserIds,
+  getUserPrivacy,
+  isUserRestricted,
+} from '../utils/privacy';
 
 const AUTHOR_SELECT = {
   id: true, username: true, fullName: true, avatarUrl: true,
-  bio: true, role: true, _count: { select: { followers: true, following: true } },
+  bio: true, city: true, role: true,
+  _count: {
+    select: {
+      followers: true,
+      following: true,
+      posts: { where: { status: 'Active' as const } },
+    },
+  },
 };
 
 function formatPost(post: any) {
@@ -56,6 +72,11 @@ export async function followUser(req: AuthRequest, res: Response): Promise<void>
     return;
   }
 
+  if (await areUsersBlocked(followerId, followingId)) {
+    errorResponse(res, 'Không thể theo dõi người dùng này', 403);
+    return;
+  }
+
   try {
     await prisma.follow.create({ data: { followerId, followingId } });
 
@@ -63,7 +84,11 @@ export async function followUser(req: AuthRequest, res: Response): Promise<void>
     await prisma.notification.create({
       data: { userId: followingId, type: 'Follow', message: `${follower?.username} started following you` },
     });
-    await Promise.all([delCache(`user:${followingId}`), delCache(`user:${followerId}`)]);
+    await Promise.all([
+      delCache(`user:${followingId}`),
+      delCache(`user:${followerId}`),
+      delCacheByPattern('newsfeed:*'),
+    ]);
 
     successResponse(res, null, 'Follow successful');
   } catch {
@@ -82,7 +107,11 @@ export async function unfollowUser(req: AuthRequest, res: Response): Promise<voi
   }
 
   await prisma.follow.deleteMany({ where: { followerId, followingId } });
-  await Promise.all([delCache(`user:${followingId}`), delCache(`user:${followerId}`)]);
+  await Promise.all([
+    delCache(`user:${followingId}`),
+    delCache(`user:${followerId}`),
+    delCacheByPattern('newsfeed:*'),
+  ]);
   successResponse(res, null, 'Unfollow successful');
 }
 
@@ -96,8 +125,28 @@ export async function getFollowers(req: AuthRequest, res: Response): Promise<voi
   }
   const currentUserId = req.user!.userId;
 
+  const targetUser = await prisma.user.findUnique({
+    where: { id: targetId, accountStatus: 'Active' },
+    select: { id: true },
+  });
+  if (!targetUser) {
+    errorResponse(res, 'User not found', 404);
+    return;
+  }
+  if (targetId !== currentUserId && (await areUsersBlocked(currentUserId, targetId))) {
+    errorResponse(res, 'User not found', 404);
+    return;
+  }
+
+  const blockedIds = await getBlockedUserIds(currentUserId);
   const follows = await prisma.follow.findMany({
-    where: { followingId: targetId },
+    where: {
+      followingId: targetId,
+      follower: {
+        accountStatus: 'Active',
+        ...(blockedIds.length > 0 ? { id: { notIn: blockedIds } } : {}),
+      },
+    },
     include: {
       follower: {
         select: {
@@ -106,6 +155,7 @@ export async function getFollowers(req: AuthRequest, res: Response): Promise<voi
           fullName: true,
           avatarUrl: true,
           bio: true,
+          city: true,
           role: true,
         },
       },
@@ -141,8 +191,35 @@ export async function getFollowing(req: AuthRequest, res: Response): Promise<voi
   }
   const currentUserId = req.user!.userId;
 
+  const targetUser = await prisma.user.findUnique({
+    where: { id: targetId, accountStatus: 'Active' },
+    select: { id: true },
+  });
+  if (!targetUser) {
+    errorResponse(res, 'User not found', 404);
+    return;
+  }
+  if (targetId !== currentUserId) {
+    if (await areUsersBlocked(currentUserId, targetId)) {
+      errorResponse(res, 'User not found', 404);
+      return;
+    }
+    const privacy = await getUserPrivacy(targetId);
+    if (!(await canAccessPrivacy(privacy.followingList, targetId, currentUserId))) {
+      errorResponse(res, 'Danh sách đang theo dõi đang ở chế độ riêng tư', 403);
+      return;
+    }
+  }
+
+  const blockedIds = await getBlockedUserIds(currentUserId);
   const follows = await prisma.follow.findMany({
-    where: { followerId: targetId },
+    where: {
+      followerId: targetId,
+      following: {
+        accountStatus: 'Active',
+        ...(blockedIds.length > 0 ? { id: { notIn: blockedIds } } : {}),
+      },
+    },
     include: {
       following: {
         select: {
@@ -151,6 +228,7 @@ export async function getFollowing(req: AuthRequest, res: Response): Promise<voi
           fullName: true,
           avatarUrl: true,
           bio: true,
+          city: true,
           role: true,
         },
       },
@@ -186,11 +264,20 @@ export async function savePost(req: AuthRequest, res: Response): Promise<void> {
     return;
   }
 
-  const post = await prisma.post.findFirst({ where: { id: postId, status: 'Active' }, select: { id: true } });
-  if (!post) {
+  const post = await prisma.post.findFirst({
+    where: { id: postId, status: 'Active', author: { accountStatus: 'Active' } },
+    select: { id: true, authorId: true },
+  });
+  if (!post || (await areUsersBlocked(userId, post.authorId))) {
     errorResponse(res, 'Post not found', 404);
     return;
   }
+  const privacy = await getUserPrivacy(post.authorId);
+  if (!(await canAccessPrivacy(privacy.newPosts, post.authorId, userId))) {
+    errorResponse(res, 'Bạn không có quyền truy cập bài viết này', 403);
+    return;
+  }
+
   const existing = await prisma.savedPost.findFirst({ where: { userId, postId } });
   if (!existing) await prisma.savedPost.create({ data: { userId, postId } });
   successResponse(res, { postId, isSaved: true }, 'Saved successfully');
@@ -215,16 +302,27 @@ export async function unsavePost(req: AuthRequest, res: Response): Promise<void>
 export async function getSavedPosts(req: AuthRequest, res: Response): Promise<void> {
   const userId = req.user!.userId;
   const { page, limit, skip } = parsePagination(req.query, 10, 100);
+  const blockedIds = await getBlockedUserIds(userId);
+  const postWhere = {
+    status: 'Active' as const,
+    author: buildPostAuthorWhere(userId, blockedIds),
+  };
 
   const [saved, total] = await Promise.all([
     prisma.savedPost.findMany({
-      where: { userId, post: { status: 'Active' } },
+      where: { userId, post: postWhere },
       include: {
         post: {
           include: {
             author: { select: AUTHOR_SELECT },
             images: true,
-            _count: { select: { likes: true, comments: true, shares: true } },
+            _count: {
+              select: {
+                likes: true,
+                comments: { where: { author: { accountStatus: 'Active' as const } } },
+                shares: true,
+              },
+            },
           },
         },
       },
@@ -232,7 +330,7 @@ export async function getSavedPosts(req: AuthRequest, res: Response): Promise<vo
       skip,
       take: limit,
     }),
-    prisma.savedPost.count({ where: { userId, post: { status: 'Active' } } }),
+    prisma.savedPost.count({ where: { userId, post: postWhere } }),
   ]);
 
   const formatted = await attachPostFlags(
@@ -242,13 +340,62 @@ export async function getSavedPosts(req: AuthRequest, res: Response): Promise<vo
   paginatedResponse(res, formatted, { page, limit, total });
 }
 
+// ── GET /users/me/liked-posts ─────────────
+
+export async function getLikedPosts(req: AuthRequest, res: Response): Promise<void> {
+  const userId = req.user!.userId;
+  const { page, limit, skip } = parsePagination(req.query, 10, 100);
+  const blockedIds = await getBlockedUserIds(userId);
+  const postWhere = {
+    status: 'Active' as const,
+    author: buildPostAuthorWhere(userId, blockedIds),
+  };
+
+  const [liked, total] = await Promise.all([
+    prisma.postLike.findMany({
+      where: { userId, post: postWhere },
+      include: {
+        post: {
+          include: {
+            author: { select: AUTHOR_SELECT },
+            images: true,
+            _count: {
+              select: {
+                likes: true,
+                comments: { where: { author: { accountStatus: 'Active' as const } } },
+                shares: true,
+              },
+            },
+          },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+      skip,
+      take: limit,
+    }),
+    prisma.postLike.count({ where: { userId, post: postWhere } }),
+  ]);
+
+  const formatted = await attachPostFlags(
+    liked.map((l) => formatPost(l.post)),
+    userId
+  );
+  paginatedResponse(res, formatted, { page, limit, total });
+}
+
 // ── GET /chats ────────────────────────────
 
 export async function getChats(req: AuthRequest, res: Response): Promise<void> {
   const userId = req.user!.userId;
+  const blockedIds = await getBlockedUserIds(userId);
+  const blockedSet = new Set(blockedIds);
 
   const messages = await prisma.message.findMany({
-    where: { OR: [{ senderId: userId }, { recipientId: userId }] },
+    where: {
+      OR: [{ senderId: userId }, { recipientId: userId }],
+      sender: { accountStatus: 'Active' },
+      recipient: { accountStatus: 'Active' },
+    },
     orderBy: { createdAt: 'desc' },
     include: {
       sender: { select: AUTHOR_SELECT },
@@ -261,7 +408,7 @@ export async function getChats(req: AuthRequest, res: Response): Promise<void> {
 
   for (const msg of messages) {
     const partnerId = msg.senderId === userId ? msg.recipientId : msg.senderId;
-    if (seen.has(partnerId)) continue;
+    if (seen.has(partnerId) || blockedSet.has(partnerId)) continue;
     seen.add(partnerId);
 
     const partner = msg.senderId === userId ? msg.recipient : msg.sender;
@@ -286,6 +433,14 @@ export async function getMessages(req: AuthRequest, res: Response): Promise<void
   const recipientId = parsePositiveInt(req.params.recipientId);
   if (!recipientId) {
     errorResponse(res, 'Invalid recipient ID', 400);
+    return;
+  }
+  const recipient = await prisma.user.findUnique({
+    where: { id: recipientId, accountStatus: 'Active' },
+    select: { id: true },
+  });
+  if (!recipient) {
+    errorResponse(res, 'Recipient not found', 404);
     return;
   }
   const { page, limit, skip } = parsePagination(req.query, 20, 100);
@@ -327,14 +482,39 @@ export async function sendMessage(req: AuthRequest, res: Response): Promise<void
     return;
   }
 
-  const recipient = await prisma.user.findUnique({ where: { id: recipientId, accountStatus: 'Active' }, select: { id: true } });
+  const recipient = await prisma.user.findUnique({
+    where: { id: recipientId, accountStatus: 'Active' },
+    select: { id: true },
+  });
   if (!recipient) {
     errorResponse(res, 'Recipient not found', 404);
     return;
   }
 
+  if (recipientId !== userId) {
+    if (await areUsersBlocked(userId, recipientId)) {
+      errorResponse(res, 'Không thể gửi tin nhắn cho người dùng này', 403);
+      return;
+    }
+    if (await isUserRestricted(recipientId, userId)) {
+      errorResponse(res, 'Bạn đã bị hạn chế gửi tin nhắn cho người dùng này', 403);
+      return;
+    }
+    const privacy = await getUserPrivacy(recipientId);
+    if (
+      privacy.messages === 'no_one' ||
+      !(await canAccessPrivacy(privacy.messages, recipientId, userId))
+    ) {
+      errorResponse(res, 'Người dùng này đang giới hạn người có thể nhắn tin', 403);
+      return;
+    }
+  }
+
+  const normalizedMediaUrl =
+    typeof mediaUrl === 'string' && mediaUrl.trim() ? toRelativeUploadPath(mediaUrl) : undefined;
+
   const message = await prisma.message.create({
-    data: { senderId: userId, recipientId, content, mediaUrl },
+    data: { senderId: userId, recipientId, content, mediaUrl: normalizedMediaUrl },
     include: { sender: { select: AUTHOR_SELECT } },
   });
 

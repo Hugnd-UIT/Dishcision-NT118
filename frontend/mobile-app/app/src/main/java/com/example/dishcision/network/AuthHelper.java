@@ -40,6 +40,7 @@ public class AuthHelper {
         String fullName = user != null && user.fullName != null && !user.fullName.isEmpty() ? user.fullName : fallbackName;
         String username = user != null && user.username != null ? user.username : "";
         String avatarUrl = user != null && user.avatarUrl != null ? user.avatarUrl : "";
+        String city = user != null && user.city != null ? user.city.trim() : "";
         boolean isGoogle = user != null ? user.isGoogleAccount : defaultGoogle;
 
         new TokenManager(context).saveAuthData(token, userId, email, fullName);
@@ -53,6 +54,10 @@ public class AuthHelper {
         if (fullName != null) editor.putString("user_name", fullName);
         if (!username.isEmpty()) editor.putString("user_username", username);
         if (!avatarUrl.isEmpty()) editor.putString("avatar_url", avatarUrl);
+        if (!city.isEmpty()) editor.putString("user_city", city);
+        if (userId > 0 && user != null && user.allergies != null) {
+            editor.putStringSet("user_allergies_" + userId, new java.util.HashSet<>(user.allergies));
+        }
         editor.putBoolean("is_google_login", isGoogle);
         editor.apply();
     }

@@ -140,9 +140,11 @@ public class EditProfileActivity extends AppCompatActivity {
         String extraUsername = intent.getStringExtra("USERNAME");
         String extraBio = intent.getStringExtra("BIO");
         String extraAvatar = intent.getStringExtra("AVATAR_URL");
+        String extraCity = intent.getStringExtra("CITY");
 
         SharedPreferences prefs = getSharedPreferences("DishcisionPrefs", MODE_PRIVATE);
-        initialCity = prefs.getString("user_city", "");
+        initialCity = extraCity != null ? extraCity.trim() : prefs.getString("user_city", "");
+        if (initialCity == null) initialCity = "";
         if (edtCity != null) {
             edtCity.setText(initialCity);
         }
@@ -191,6 +193,10 @@ public class EditProfileActivity extends AppCompatActivity {
                     initialBio = user.bio != null ? user.bio : "";
                     initialAvatarUrl = user.avatarUrl != null ? user.avatarUrl : "";
                     currentAvatarUrl = initialAvatarUrl;
+                    initialCity = user.city != null ? user.city.trim() : "";
+                    if (edtCity != null) {
+                        edtCity.setText(initialCity);
+                    }
 
                     populateFields(initialFullName, user.username, initialBio, initialAvatarUrl);
 
@@ -459,7 +465,7 @@ public class EditProfileActivity extends AppCompatActivity {
                         String rawUrl = (response.body().data.url != null && !response.body().data.url.isEmpty())
                                 ? response.body().data.url
                                 : response.body().data.fullUrl;
-                        currentAvatarUrl = ApiClient.normalizeMediaUrl(rawUrl);
+                        currentAvatarUrl = rawUrl != null ? rawUrl.trim() : "";
                         Toast.makeText(EditProfileActivity.this, "Tải ảnh đại diện lên thành công!", Toast.LENGTH_SHORT).show();
                     } else if (response.code() == 401) {
                         Toast.makeText(EditProfileActivity.this, "Phiên đăng nhập hết hạn, vui lòng đăng nhập lại!", Toast.LENGTH_LONG).show();
@@ -544,13 +550,11 @@ public class EditProfileActivity extends AppCompatActivity {
             return;
         }
 
-        SharedPreferences.Editor localPrefEditor = getSharedPreferences("DishcisionPrefs", MODE_PRIVATE).edit();
-        if (!city.isEmpty()) {
-            localPrefEditor.putString("user_city", city);
-        } else {
-            localPrefEditor.remove("user_city");
+        if (city.length() > 100) {
+            Toast.makeText(this, "Thành phố tối đa 100 ký tự!", Toast.LENGTH_SHORT).show();
+            if (edtCity != null) edtCity.requestFocus();
+            return;
         }
-        localPrefEditor.apply();
 
         isSaving = true;
         if (btnSave != null) {
@@ -562,6 +566,7 @@ public class EditProfileActivity extends AppCompatActivity {
         updatePayload.put("fullName", name);
         updatePayload.put("username", username);
         updatePayload.put("bio", bio);
+        updatePayload.put("city", city);
         if (!currentAvatarUrl.isEmpty()) {
             updatePayload.put("avatarUrl", currentAvatarUrl);
         }
@@ -584,6 +589,11 @@ public class EditProfileActivity extends AppCompatActivity {
                     SharedPreferences.Editor editor = getSharedPreferences("DishcisionPrefs", MODE_PRIVATE).edit();
                     editor.putString("user_name", name);
                     editor.putString("user_username", username);
+                    if (!city.isEmpty()) {
+                        editor.putString("user_city", city);
+                    } else {
+                        editor.remove("user_city");
+                    }
                     if (!currentAvatarUrl.isEmpty()) {
                         editor.putString("avatar_url", currentAvatarUrl);
                     }

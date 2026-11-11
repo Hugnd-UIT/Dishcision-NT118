@@ -54,6 +54,9 @@ public class UserProfileResponse {
         @SerializedName("bio")
         public String bio;
 
+        @SerializedName("city")
+        public String city;
+
         @SerializedName("role")
         public String role;
 
@@ -62,6 +65,12 @@ public class UserProfileResponse {
 
         @SerializedName("preferences")
         public List<String> preferences;
+
+        @SerializedName("allergies")
+        public List<String> allergies;
+
+        @SerializedName("profileRestricted")
+        public boolean profileRestricted;
 
         @SerializedName("postsCount")
         public int postsCount;

@@ -337,8 +337,12 @@ public class UserProfileActivity extends AppCompatActivity {
         if (tvFollowingCount != null) tvFollowingCount.setText(PostFeedHelper.formatCount(followingCount));
 
         if (tvBio != null) {
-            String bio = user.bio != null ? user.bio.trim() : "";
-            tvBio.setText(bio.isEmpty() ? "Chưa có tiểu sử giới thiệu." : bio);
+            if (user.profileRestricted) {
+                tvBio.setText("Thông tin cá nhân đang ở chế độ riêng tư.");
+            } else {
+                String bio = user.bio != null ? user.bio.trim() : "";
+                tvBio.setText(bio.isEmpty() ? "Chưa có tiểu sử giới thiệu." : bio);
+            }
         }
 
         if (imgAvatar != null) {
@@ -364,9 +368,13 @@ public class UserProfileActivity extends AppCompatActivity {
             }
         }
 
-        boolean showPref = user.preferences != null && !user.preferences.isEmpty();
+        boolean showCity = !user.profileRestricted && user.city != null && !user.city.trim().isEmpty();
+        boolean showPref = !user.profileRestricted && user.preferences != null && !user.preferences.isEmpty();
         if (tvLocationBadge != null) {
-            if (showPref) {
+            if (showCity) {
+                tvLocationBadge.setText("📍 " + user.city.trim());
+                tvLocationBadge.setVisibility(View.VISIBLE);
+            } else if (showPref) {
                 tvLocationBadge.setText("#" + user.preferences.get(0).replace("#", "").trim());
                 tvLocationBadge.setVisibility(View.VISIBLE);
             } else {
@@ -375,7 +383,7 @@ public class UserProfileActivity extends AppCompatActivity {
         }
 
         if (layoutBadgesRow != null) {
-            layoutBadgesRow.setVisibility(showRole || showPref ? View.VISIBLE : View.GONE);
+            layoutBadgesRow.setVisibility(showRole || showCity || showPref ? View.VISIBLE : View.GONE);
         }
 
         isFollowing = user.isFollowing;
@@ -471,6 +479,15 @@ public class UserProfileActivity extends AppCompatActivity {
                                     posts,
                                     "Người dùng chưa có bài viết nào",
                                     (post, pos) -> openUserPosts(post.postId, pos + 1)
+                            );
+                        } else if (response.code() == 403) {
+                            PostFeedHelper.renderPostGrid(
+                                    UserProfileActivity.this,
+                                    gridUserPostsContainer,
+                                    tvEmptyUserPosts,
+                                    null,
+                                    "Bài viết đang ở chế độ riêng tư",
+                                    null
                             );
                         } else if (gridUserPostsContainer != null && gridUserPostsContainer.getChildCount() == 0) {
                             PostFeedHelper.renderPostGrid(UserProfileActivity.this, gridUserPostsContainer, tvEmptyUserPosts, null, "Người dùng chưa có bài viết nào", null);

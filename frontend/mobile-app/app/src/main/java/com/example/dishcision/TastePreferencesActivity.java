@@ -115,12 +115,24 @@ public class TastePreferencesActivity extends AppCompatActivity {
         applyTasteSet(savedTastes);
 
         Set<String> savedAllergies = prefs.getStringSet(getAllergyPrefsKey(), null);
-        if (chkPeanuts != null) chkPeanuts.setChecked(savedAllergies != null && savedAllergies.contains("peanuts"));
-        if (chkShellfish != null) chkShellfish.setChecked(savedAllergies != null && savedAllergies.contains("shellfish"));
-        if (chkMilk != null) chkMilk.setChecked(savedAllergies != null && savedAllergies.contains("milk"));
-        if (chkEggs != null) chkEggs.setChecked(savedAllergies != null && savedAllergies.contains("eggs"));
-        if (chkGluten != null) chkGluten.setChecked(savedAllergies != null && savedAllergies.contains("gluten"));
-        if (chkSoy != null) chkSoy.setChecked(savedAllergies != null && savedAllergies.contains("soy"));
+        applyAllergySet(savedAllergies);
+    }
+
+    private void applyAllergySet(java.util.Collection<String> allergies) {
+        Set<String> normalized = new HashSet<>();
+        if (allergies != null) {
+            for (String item : allergies) {
+                if (item != null && !item.trim().isEmpty()) {
+                    normalized.add(item.trim().toLowerCase(java.util.Locale.ROOT));
+                }
+            }
+        }
+        if (chkPeanuts != null) chkPeanuts.setChecked(normalized.contains("peanuts"));
+        if (chkShellfish != null) chkShellfish.setChecked(normalized.contains("shellfish"));
+        if (chkMilk != null) chkMilk.setChecked(normalized.contains("milk"));
+        if (chkEggs != null) chkEggs.setChecked(normalized.contains("eggs"));
+        if (chkGluten != null) chkGluten.setChecked(normalized.contains("gluten"));
+        if (chkSoy != null) chkSoy.setChecked(normalized.contains("soy"));
     }
 
     private void applyTasteSet(Set<String> tastes) {
@@ -313,17 +325,24 @@ public class TastePreferencesActivity extends AppCompatActivity {
             @Override
             public void onResponse(@NonNull Call<UserPreferencesResponse> call, @NonNull Response<UserPreferencesResponse> response) {
                 if (isFinishing() || isDestroyed()) return;
-                if (response.isSuccessful() && response.body() != null && response.body().data != null) {
-                    Set<String> serverTastes = new LinkedHashSet<>();
-                    for (UserPreferencesResponse.PreferenceItem item : response.body().data) {
-                        if (item != null && item.name != null && !item.name.trim().isEmpty()) {
-                            serverTastes.add(item.name.trim());
+                if (response.isSuccessful() && response.body() != null) {
+                    SharedPreferences.Editor editor = getSharedPreferences("DishcisionPrefs", MODE_PRIVATE).edit();
+                    if (response.body().data != null) {
+                        Set<String> serverTastes = new LinkedHashSet<>();
+                        for (UserPreferencesResponse.PreferenceItem item : response.body().data) {
+                            if (item != null && item.name != null && !item.name.trim().isEmpty()) {
+                                serverTastes.add(item.name.trim());
+                            }
                         }
+                        editor.putStringSet("user_taste_preferences", serverTastes);
+                        applyTasteSet(serverTastes);
                     }
-                    getSharedPreferences("DishcisionPrefs", MODE_PRIVATE).edit()
-                            .putStringSet("user_taste_preferences", serverTastes)
-                            .apply();
-                    applyTasteSet(serverTastes);
+                    if (response.body().allergies != null) {
+                        Set<String> serverAllergies = new LinkedHashSet<>(response.body().allergies);
+                        editor.putStringSet(getAllergyPrefsKey(), serverAllergies);
+                        applyAllergySet(serverAllergies);
+                    }
+                    editor.apply();
                 }
             }
 
@@ -342,6 +361,7 @@ public class TastePreferencesActivity extends AppCompatActivity {
         List<String> tasteList = new ArrayList<>(newTastes);
         Map<String, Object> prefData = new HashMap<>();
         prefData.put("preferences", tasteList);
+        prefData.put("allergies", new ArrayList<>(newAllergies));
 
         int activeTasteCount = tasteList.size();
         int allergyCount = newAllergies.size();

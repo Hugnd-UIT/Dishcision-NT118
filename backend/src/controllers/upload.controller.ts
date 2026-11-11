@@ -1,6 +1,25 @@
 import { Request, Response } from 'express';
 import { successResponse, errorResponse } from '../utils/response';
 
+/** Converts local `/uploads/...` URLs (even if prefixed with a host) to host-agnostic `/uploads/...`. */
+export function toRelativeUploadPath(rawUrl: unknown): string | undefined {
+  if (typeof rawUrl !== 'string') return undefined;
+  const trimmed = rawUrl.trim();
+  if (!trimmed) return '';
+  if (trimmed.startsWith('/uploads/')) return trimmed;
+  if (/^https?:\/\//i.test(trimmed)) {
+    try {
+      const parsed = new URL(trimmed);
+      if (parsed.pathname.startsWith('/uploads/')) {
+        return parsed.pathname;
+      }
+    } catch {
+      return trimmed;
+    }
+  }
+  return trimmed;
+}
+
 export function handleUploadedFile(req: Request, file: Express.Multer.File) {
   const isVideo = file.mimetype.startsWith('video/');
   const folder = isVideo ? 'videos' : 'images';

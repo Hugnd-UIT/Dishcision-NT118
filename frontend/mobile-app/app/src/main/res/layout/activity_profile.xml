@@ -376,58 +376,182 @@
                 </LinearLayout>
             </LinearLayout>
 
-            <!-- My Posts Section Header (Voucher tab removed) -->
-            <LinearLayout
-                android:id="@+id/tabMyPosts"
+            <!-- Profile Post Tabs: My Posts | Saved | Liked -->
+            <HorizontalScrollView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="20dp"
-                android:clickable="true"
-                android:focusable="true"
-                android:foreground="?attr/selectableItemBackground"
-                android:orientation="vertical">
+                android:fillViewport="true"
+                android:scrollbars="none">
 
                 <LinearLayout
-                    android:layout_width="match_parent"
+                    android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:gravity="center_vertical"
                     android:orientation="horizontal">
 
-                    <ImageView
-                        android:layout_width="20dp"
-                        android:layout_height="20dp"
-                        android:contentDescription="Grid"
-                        android:src="@drawable/ic_grid"
-                        app:tint="#FF5A36" />
-
-                    <TextView
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_marginStart="8dp"
-                        android:layout_weight="1"
-                        android:text="Bài viết của tôi"
-                        android:textColor="#141B2B"
-                        android:textSize="16sp"
-                        android:textStyle="bold" />
-
-                    <TextView
-                        android:id="@+id/tvMyPostsBadge"
+                    <LinearLayout
+                        android:id="@+id/tabMyPosts"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:background="@drawable/bg_badge_tastemaker"
-                        android:paddingHorizontal="10dp"
-                        android:paddingVertical="4dp"
-                        android:text="Xem tất cả ›"
-                        android:textColor="#FF5A36"
-                        android:textSize="12sp"
-                        android:textStyle="bold" />
-                </LinearLayout>
+                        android:layout_weight="1"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:foreground="?attr/selectableItemBackground"
+                        android:gravity="center"
+                        android:minWidth="120dp"
+                        android:orientation="vertical"
+                        android:paddingHorizontal="10dp">
 
-                <View
-                    android:layout_width="match_parent"
-                    android:layout_height="2dp"
-                    android:layout_marginTop="10dp"
-                    android:background="#FF5A36" />
+                        <LinearLayout
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:gravity="center"
+                            android:orientation="horizontal"
+                            android:paddingVertical="8dp">
+
+                            <ImageView
+                                android:id="@+id/ivTabMyPosts"
+                                android:layout_width="16dp"
+                                android:layout_height="16dp"
+                                android:contentDescription="Bài viết của tôi"
+                                android:src="@drawable/ic_grid"
+                                app:tint="#FF5A36" />
+
+                            <TextView
+                                android:id="@+id/tvTabMyPosts"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginStart="6dp"
+                                android:maxLines="1"
+                                android:text="Bài viết của tôi"
+                                android:textColor="#141B2B"
+                                android:textSize="13sp"
+                                android:textStyle="bold" />
+                        </LinearLayout>
+
+                        <View
+                            android:id="@+id/indicatorMyPosts"
+                            android:layout_width="match_parent"
+                            android:layout_height="2dp"
+                            android:background="#FF5A36" />
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:id="@+id/tabSavedPosts"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:foreground="?attr/selectableItemBackground"
+                        android:gravity="center"
+                        android:minWidth="120dp"
+                        android:orientation="vertical"
+                        android:paddingHorizontal="10dp">
+
+                        <LinearLayout
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:gravity="center"
+                            android:orientation="horizontal"
+                            android:paddingVertical="8dp">
+
+                            <ImageView
+                                android:id="@+id/ivTabSavedPosts"
+                                android:layout_width="16dp"
+                                android:layout_height="16dp"
+                                android:contentDescription="Bài viết đã lưu"
+                                android:src="@drawable/ic_bookmark_outline"
+                                app:tint="#8E93A6" />
+
+                            <TextView
+                                android:id="@+id/tvTabSavedPosts"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginStart="6dp"
+                                android:maxLines="1"
+                                android:text="Bài viết đã lưu"
+                                android:textColor="#6B7280"
+                                android:textSize="13sp" />
+                        </LinearLayout>
+
+                        <View
+                            android:id="@+id/indicatorSavedPosts"
+                            android:layout_width="match_parent"
+                            android:layout_height="1dp"
+                            android:layout_marginTop="1dp"
+                            android:background="#E9EBF4" />
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:id="@+id/tabLikedPosts"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:foreground="?attr/selectableItemBackground"
+                        android:gravity="center"
+                        android:minWidth="126dp"
+                        android:orientation="vertical"
+                        android:paddingHorizontal="10dp">
+
+                        <LinearLayout
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:gravity="center"
+                            android:orientation="horizontal"
+                            android:paddingVertical="8dp">
+
+                            <ImageView
+                                android:id="@+id/ivTabLikedPosts"
+                                android:layout_width="16dp"
+                                android:layout_height="16dp"
+                                android:contentDescription="Bài viết yêu thích"
+                                android:src="@drawable/ic_heart_outline"
+                                app:tint="#8E93A6" />
+
+                            <TextView
+                                android:id="@+id/tvTabLikedPosts"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginStart="6dp"
+                                android:maxLines="1"
+                                android:text="Bài viết yêu thích"
+                                android:textColor="#6B7280"
+                                android:textSize="13sp" />
+                        </LinearLayout>
+
+                        <View
+                            android:id="@+id/indicatorLikedPosts"
+                            android:layout_width="match_parent"
+                            android:layout_height="1dp"
+                            android:layout_marginTop="1dp"
+                            android:background="#E9EBF4" />
+                    </LinearLayout>
+                </LinearLayout>
+            </HorizontalScrollView>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                android:gravity="end|center_vertical"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:id="@+id/tvMyPostsBadge"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:background="@drawable/bg_badge_tastemaker"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:paddingHorizontal="10dp"
+                    android:paddingVertical="4dp"
+                    android:text="Xem tất cả ›"
+                    android:textColor="#FF5A36"
+                    android:textSize="12sp"
+                    android:textStyle="bold" />
             </LinearLayout>
 
             <LinearLayout

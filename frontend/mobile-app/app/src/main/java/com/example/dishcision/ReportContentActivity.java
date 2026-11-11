@@ -61,6 +61,9 @@ public class ReportContentActivity extends AppCompatActivity {
         }
 
         initViews();
+        if (savedInstanceState == null && rgReasons != null) {
+            rgReasons.clearCheck();
+        }
         bindTargetContext();
         setupListeners();
     }
@@ -176,7 +179,17 @@ public class ReportContentActivity extends AppCompatActivity {
                     startActivity(intent);
                     finish();
                 } else {
-                    Toast.makeText(ReportContentActivity.this, "Gửi báo cáo thất bại (mã " + response.code() + ")", Toast.LENGTH_LONG).show();
+                    String msg = "Gửi báo cáo thất bại (mã " + response.code() + ")";
+                    try {
+                        if (response.errorBody() != null) {
+                            String raw = response.errorBody().string();
+                            com.google.gson.JsonObject obj = com.google.gson.JsonParser.parseString(raw).getAsJsonObject();
+                            if (obj.has("message") && !obj.get("message").getAsString().trim().isEmpty()) {
+                                msg = obj.get("message").getAsString().trim();
+                            }
+                        }
+                    } catch (Exception ignored) {}
+                    Toast.makeText(ReportContentActivity.this, msg, Toast.LENGTH_LONG).show();
                 }
             }
 

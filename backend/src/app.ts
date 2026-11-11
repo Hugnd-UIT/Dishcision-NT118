@@ -43,7 +43,7 @@ import {
 import { createReport } from './controllers/report.controller';
 import { getTicketDetail, createTicket } from './controllers/help.controller';
 import { authenticate } from './middlewares/auth.middleware';
-import { validate, verify2FASchema } from './middlewares/validate.middleware';
+import { validate, verify2FASchema, updatePrivacySchema } from './middlewares/validate.middleware';
 import { asyncHandler } from './utils/http';
 import { errorHandler } from './middlewares/error.middleware';
 import { notFound } from './middlewares/not-found.middleware';
@@ -116,7 +116,7 @@ app.post(`${API_PREFIX}/accounts/restrict`, authenticate, asyncHandler(restrictA
 app.post(`${API_PREFIX}/accounts/unrestrict`, authenticate, asyncHandler(unrestrictAccount));
 
 app.get(`${API_PREFIX}/privacy`, authenticate, asyncHandler(getPrivacySettings));
-app.post(`${API_PREFIX}/privacy/update`, authenticate, asyncHandler(updatePrivacySettings));
+app.post(`${API_PREFIX}/privacy/update`, authenticate, validate(updatePrivacySchema), asyncHandler(updatePrivacySettings));
 
 app.get(`${API_PREFIX}/sessions`, authenticate, asyncHandler(getSessions));
 app.post(`${API_PREFIX}/sessions/revoke`, authenticate, asyncHandler(revokeSession));

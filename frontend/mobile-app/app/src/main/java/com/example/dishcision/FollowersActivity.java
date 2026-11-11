@@ -61,6 +61,7 @@ public class FollowersActivity extends AppCompatActivity {
     private boolean isTabFollowers = true;
     private int followersCount = 0;
     private int followingCount = 0;
+    private String lastLoadError = null;
     private final List<FollowersListResponse.FollowItem> currentUsers = new ArrayList<>();
 
     @Override
@@ -242,6 +243,7 @@ public class FollowersActivity extends AppCompatActivity {
     }
 
     private void loadTabUsers() {
+        lastLoadError = null;
         if (progressBarFollowers != null) progressBarFollowers.setVisibility(View.VISIBLE);
         if (layoutEmptyState != null) layoutEmptyState.setVisibility(View.GONE);
         if (layoutUsersList != null) layoutUsersList.removeAllViews();
@@ -265,6 +267,7 @@ public class FollowersActivity extends AppCompatActivity {
                 if (progressBarFollowers != null) progressBarFollowers.setVisibility(View.GONE);
                 currentUsers.clear();
                 if (response.isSuccessful() && response.body() != null && response.body().data != null) {
+                    lastLoadError = null;
                     currentUsers.addAll(response.body().data);
                     if (isTabFollowers) {
                         followersCount = currentUsers.size();
@@ -273,6 +276,12 @@ public class FollowersActivity extends AppCompatActivity {
                         followingCount = currentUsers.size();
                         if (tvFollowingCountVal != null) tvFollowingCountVal.setText(PostFeedHelper.formatCount(followingCount));
                     }
+                } else if (response.code() == 403) {
+                    lastLoadError = isTabFollowers
+                            ? "Danh sách người theo dõi đang ở chế độ riêng tư"
+                            : "Danh sách đang theo dõi đang ở chế độ riêng tư";
+                } else {
+                    lastLoadError = "Không thể tải danh sách lúc này";
                 }
                 applyFilterAndRender();
             }
@@ -281,6 +290,7 @@ public class FollowersActivity extends AppCompatActivity {
             public void onFailure(@NonNull Call<FollowersListResponse> call, @NonNull Throwable t) {
                 if (isFinishing() || isDestroyed()) return;
                 if (progressBarFollowers != null) progressBarFollowers.setVisibility(View.GONE);
+                lastLoadError = "Lỗi kết nối máy chủ";
                 currentUsers.clear();
                 applyFilterAndRender();
             }
@@ -325,7 +335,11 @@ public class FollowersActivity extends AppCompatActivity {
         if (filtered.isEmpty()) {
             if (layoutEmptyState != null) {
                 layoutEmptyState.setVisibility(View.VISIBLE);
-                if (!query.isEmpty()) {
+                if (lastLoadError != null) {
+                    if (ivEmptyIcon != null) ivEmptyIcon.setImageResource(R.drawable.ic_person_outline);
+                    if (tvEmptyTitle != null) tvEmptyTitle.setText(lastLoadError);
+                    if (tvEmptySubtitle != null) tvEmptySubtitle.setText("Quyền riêng tư của tài khoản đang giới hạn quyền xem.");
+                } else if (!query.isEmpty()) {
                     if (ivEmptyIcon != null) ivEmptyIcon.setImageResource(R.drawable.ic_search);
                     if (tvEmptyTitle != null) tvEmptyTitle.setText("Không tìm thấy kết quả");
                     if (tvEmptySubtitle != null) tvEmptySubtitle.setText("Thử tìm kiếm với từ khóa khác");

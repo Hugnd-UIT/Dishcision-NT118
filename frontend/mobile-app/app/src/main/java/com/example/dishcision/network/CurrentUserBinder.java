@@ -21,6 +21,7 @@ public final class CurrentUserBinder {
     private static final String KEY_USERNAME = "user_username";
     private static final String KEY_EMAIL = "user_email";
     private static final String KEY_AVATAR = "avatar_url";
+    private static final String KEY_CITY = "user_city";
 
     private CurrentUserBinder() {}
 
@@ -59,6 +60,14 @@ public final class CurrentUserBinder {
                             editor.putString(KEY_AVATAR, user.avatarUrl);
                         } else {
                             editor.remove(KEY_AVATAR);
+                        }
+                        if (notEmpty(user.city)) {
+                            editor.putString(KEY_CITY, user.city.trim());
+                        } else {
+                            editor.remove(KEY_CITY);
+                        }
+                        if (user.userId > 0 && user.allergies != null) {
+                            editor.putStringSet("user_allergies_" + user.userId, new java.util.HashSet<>(user.allergies));
                         }
                         editor.putBoolean("is_google_login", user.isGoogleAccount);
                         editor.apply();

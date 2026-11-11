@@ -282,9 +282,9 @@ public class CreatePostActivity extends AppCompatActivity {
                         String rawUrl = (response.body().data.url != null && !response.body().data.url.isEmpty())
                                 ? response.body().data.url
                                 : response.body().data.fullUrl;
-                        String normalized = ApiClient.normalizeMediaUrl(rawUrl);
-                        if (!normalized.isEmpty()) {
-                            slotUrls[targetSlot] = normalized;
+                        String storedUrl = rawUrl != null ? rawUrl.trim() : "";
+                        if (!storedUrl.isEmpty()) {
+                            slotUrls[targetSlot] = storedUrl;
                             updateImagePreviewUI();
                             Toast.makeText(CreatePostActivity.this, "Tải ảnh lên thành công!", Toast.LENGTH_SHORT).show();
                             return;

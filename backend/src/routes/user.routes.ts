@@ -21,7 +21,7 @@ import {
 } from '../controllers/preference.controller';
 import { authenticate, optionalAuth } from '../middlewares/auth.middleware';
 import { asyncHandler } from '../utils/http';
-import { validate, updateProfileSchema } from '../middlewares/validate.middleware';
+import { validate, updateProfileSchema, updatePrivacySchema } from '../middlewares/validate.middleware';
 
 const router = Router();
 
@@ -35,7 +35,7 @@ router.put('/me/preferences', authenticate, asyncHandler(updateUserPreferences))
 
 // Privacy & Blocked / Restricted
 router.get('/me/privacy', authenticate, asyncHandler(getPrivacySettings));
-router.put('/me/privacy', authenticate, asyncHandler(updatePrivacySettings));
+router.put('/me/privacy', authenticate, validate(updatePrivacySchema), asyncHandler(updatePrivacySettings));
 router.get('/me/blocked', authenticate, asyncHandler(getBlockedAccounts));
 router.post('/me/block', authenticate, asyncHandler(blockAccount));
 router.post('/me/unblock', authenticate, asyncHandler(unblockAccount));

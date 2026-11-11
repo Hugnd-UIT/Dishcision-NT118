@@ -25,6 +25,7 @@ import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.RelativeLayout;
+import android.widget.ScrollView;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -32,6 +33,7 @@ import androidx.activity.result.ActivityResultLauncher;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.widget.PopupMenu;
+import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
 import com.google.android.material.card.MaterialCardView;
 
@@ -663,6 +665,8 @@ public final class PostFeedHelper {
         TextView tvCommentInputHeader = dialogView.findViewById(R.id.tvCommentInputHeader);
         View btnCloseComments = dialogView.findViewById(R.id.btnCloseComments);
         TextView btnSortComments = dialogView.findViewById(R.id.btnSortComments);
+        SwipeRefreshLayout swipeRefreshComments = dialogView.findViewById(R.id.swipeRefreshComments);
+        ScrollView scrollComments = dialogView.findViewById(R.id.scrollComments);
         LinearLayout containerCommentsList = dialogView.findViewById(R.id.containerCommentsList);
         EditText edtCommentInput = dialogView.findViewById(R.id.edtCommentInput);
         View btnSendComment = dialogView.findViewById(R.id.btnSendComment);
@@ -702,12 +706,18 @@ public final class PostFeedHelper {
         };
         updateInputHeader.run();
 
+        final Runnable clearReplyTarget = () -> {
+            replyParentId[0] = null;
+            if (tvCommentInputHeader != null) {
+                tvCommentInputHeader.setTag(null);
+            }
+            updateInputHeader.run();
+        };
+
         if (tvCommentInputHeader != null) {
             tvCommentInputHeader.setOnClickListener(v -> {
                 if (replyParentId[0] != null) {
-                    replyParentId[0] = null;
-                    tvCommentInputHeader.setTag(null);
-                    updateInputHeader.run();
+                    clearReplyTarget.run();
                 }
             });
         }
@@ -734,31 +744,80 @@ public final class PostFeedHelper {
 
         final List<CommentsListResponse.CommentItem> loadedComments = new ArrayList<>();
         final boolean[] newestFirst = {true};
+        final int[] commentLoadSeq = {0};
+
+        final ReplyCallback replyCallback = (parentCommentId, authorDisplay) -> {
+            replyParentId[0] = parentCommentId;
+            if (tvCommentInputHeader != null) {
+                tvCommentInputHeader.setTag(authorDisplay);
+            }
+            updateInputHeader.run();
+            if (edtCommentInput != null) edtCommentInput.requestFocus();
+        };
+
+        final CommentDeleteCallback[] deleteCallbackHolder = new CommentDeleteCallback[1];
+        deleteCallbackHolder[0] = deletedCommentId -> {
+            if (replyParentId[0] != null && replyParentId[0] == deletedCommentId) {
+                clearReplyTarget.run();
+            }
+            loadPostComments(
+                    activity,
+                    post,
+                    loadedComments,
+                    containerCommentsList,
+                    swipeRefreshComments,
+                    tvCommentsTitle,
+                    tvCommentCount,
+                    newestFirst,
+                    commentLoadSeq,
+                    false,
+                    replyCallback,
+                    deleteCallbackHolder[0]
+            );
+        };
 
         final Runnable renderList = () -> renderCommentsList(
                 activity,
-                post,
                 loadedComments,
                 newestFirst[0],
                 containerCommentsList,
-                tvCommentsTitle,
-                tvCommentCount,
-                (parentCommentId, authorDisplay) -> {
-                    replyParentId[0] = parentCommentId;
-                    if (tvCommentInputHeader != null) {
-                        tvCommentInputHeader.setTag(authorDisplay);
-                    }
-                    updateInputHeader.run();
-                    if (edtCommentInput != null) edtCommentInput.requestFocus();
-                },
-                () -> loadPostComments(activity, post, loadedComments, () -> {
-                    if (containerCommentsList != null && tvCommentsTitle != null) {
-                        containerCommentsList.post(() -> {});
-                    }
-                }, containerCommentsList, tvCommentsTitle, tvCommentCount, newestFirst, replyParentId, tvCommentInputHeader, updateInputHeader, edtCommentInput)
+                replyCallback,
+                deleteCallbackHolder[0]
         );
 
-        loadPostComments(activity, post, loadedComments, renderList, containerCommentsList, tvCommentsTitle, tvCommentCount, newestFirst, replyParentId, tvCommentInputHeader, updateInputHeader, edtCommentInput);
+        if (swipeRefreshComments != null) {
+            swipeRefreshComments.setColorSchemeColors(0xFFFF5A36, 0xFF141B2B);
+            swipeRefreshComments.setOnChildScrollUpCallback((parent, child) -> scrollComments != null && scrollComments.canScrollVertically(-1));
+            swipeRefreshComments.setOnRefreshListener(() -> loadPostComments(
+                    activity,
+                    post,
+                    loadedComments,
+                    containerCommentsList,
+                    swipeRefreshComments,
+                    tvCommentsTitle,
+                    tvCommentCount,
+                    newestFirst,
+                    commentLoadSeq,
+                    true,
+                    replyCallback,
+                    deleteCallbackHolder[0]
+            ));
+        }
+
+        loadPostComments(
+                activity,
+                post,
+                loadedComments,
+                containerCommentsList,
+                swipeRefreshComments,
+                tvCommentsTitle,
+                tvCommentCount,
+                newestFirst,
+                commentLoadSeq,
+                false,
+                replyCallback,
+                deleteCallbackHolder[0]
+        );
 
         if (btnCloseComments != null) {
             btnCloseComments.setOnClickListener(v -> bottomSheetDialog.dismiss());
@@ -823,12 +882,24 @@ public final class PostFeedHelper {
                                 if (response.isSuccessful() && response.body() != null && response.body().success) {
                                     if (edtCommentInput != null) edtCommentInput.setText("");
                                     if (layoutEmojiBar != null) layoutEmojiBar.setVisibility(View.GONE);
-                                    replyParentId[0] = null;
-                                    if (tvCommentInputHeader != null) tvCommentInputHeader.setTag(null);
-                                    updateInputHeader.run();
-                                    loadPostComments(activity, post, loadedComments, renderList, containerCommentsList, tvCommentsTitle, tvCommentCount, newestFirst, replyParentId, tvCommentInputHeader, updateInputHeader, edtCommentInput);
+                                    clearReplyTarget.run();
+                                    loadPostComments(
+                                            activity,
+                                            post,
+                                            loadedComments,
+                                            containerCommentsList,
+                                            swipeRefreshComments,
+                                            tvCommentsTitle,
+                                            tvCommentCount,
+                                            newestFirst,
+                                            commentLoadSeq,
+                                            false,
+                                            replyCallback,
+                                            deleteCallbackHolder[0]
+                                    );
                                 } else {
-                                    Toast.makeText(activity, "Gửi bình luận thất bại (mã " + response.code() + ")", Toast.LENGTH_SHORT).show();
+                                    String errMsg = extractErrorMessage(response, "Gửi bình luận thất bại (mã " + response.code() + ")");
+                                    Toast.makeText(activity, errMsg, Toast.LENGTH_LONG).show();
                                 }
                             }
 
@@ -851,91 +922,99 @@ public final class PostFeedHelper {
         void onReply(int parentCommentId, String authorDisplay);
     }
 
+    private interface CommentDeleteCallback {
+        void onCommentDeleted(int commentId);
+    }
+
     private static void loadPostComments(
             Activity activity,
             FeedPostsResponse.PostItem post,
             List<CommentsListResponse.CommentItem> loadedComments,
-            Runnable renderCallback,
             LinearLayout container,
+            SwipeRefreshLayout swipeRefresh,
             TextView tvTitle,
             TextView tvCommentCount,
             boolean[] newestFirst,
-            Integer[] replyParentId,
-            TextView tvInputHeader,
-            Runnable updateInputHeader,
-            EditText edtInput
+            int[] loadSeqHolder,
+            boolean isPullToRefresh,
+            ReplyCallback replyCallback,
+            CommentDeleteCallback deleteCallback
     ) {
-        if (container == null || post == null) return;
-        container.removeAllViews();
+        if (container == null || post == null) {
+            if (swipeRefresh != null) swipeRefresh.setRefreshing(false);
+            return;
+        }
+        final int seq = ++loadSeqHolder[0];
+        if (!isPullToRefresh || container.getChildCount() == 0) {
+            container.removeAllViews();
+            TextView tvLoading = new TextView(activity);
+            tvLoading.setText("Đang tải bình luận...");
+            tvLoading.setTextColor(Color.parseColor("#9E8A83"));
+            tvLoading.setPadding(0, dpToPx(activity, 8), 0, dpToPx(activity, 8));
+            container.addView(tvLoading);
+        }
 
-        TextView tvLoading = new TextView(activity);
-        tvLoading.setText("Đang tải bình luận...");
-        tvLoading.setTextColor(Color.parseColor("#9E8A83"));
-        tvLoading.setPadding(0, dpToPx(activity, 8), 0, dpToPx(activity, 8));
-        container.addView(tvLoading);
+        String authHeader = ApiClient.getAuthHeader(activity);
+        ApiClient.getApiService().getPostComments(authHeader.isEmpty() ? null : authHeader, post.postId)
+                .enqueue(new Callback<CommentsListResponse>() {
+                    @Override
+                    public void onResponse(@NonNull Call<CommentsListResponse> call, @NonNull Response<CommentsListResponse> response) {
+                        if (activity.isFinishing() || activity.isDestroyed() || seq != loadSeqHolder[0]) return;
+                        if (swipeRefresh != null) swipeRefresh.setRefreshing(false);
+                        if (response.isSuccessful() && response.body() != null && response.body().data != null) {
+                            loadedComments.clear();
+                            loadedComments.addAll(response.body().data);
+                            int totalComments = 0;
+                            for (CommentsListResponse.CommentItem c : loadedComments) {
+                                totalComments += 1 + (c.replies != null ? c.replies.size() : 0);
+                            }
+                            post.commentsCount = totalComments;
+                            if (tvTitle != null) tvTitle.setText("Bình luận (" + totalComments + ")");
+                            if (tvCommentCount != null) tvCommentCount.setText(formatCount(totalComments) + " Bình luận");
 
-        ApiClient.getApiService().getPostComments(post.postId).enqueue(new Callback<CommentsListResponse>() {
-            @Override
-            public void onResponse(@NonNull Call<CommentsListResponse> call, @NonNull Response<CommentsListResponse> response) {
-                if (activity.isFinishing()) return;
-                loadedComments.clear();
-                if (response.isSuccessful() && response.body() != null && response.body().data != null) {
-                    loadedComments.addAll(response.body().data);
-                    int totalComments = 0;
-                    for (CommentsListResponse.CommentItem c : loadedComments) {
-                        totalComments += 1 + (c.replies != null ? c.replies.size() : 0);
+                            renderCommentsList(
+                                    activity,
+                                    loadedComments,
+                                    newestFirst[0],
+                                    container,
+                                    replyCallback,
+                                    deleteCallback
+                            );
+                        } else if (!isPullToRefresh || loadedComments.isEmpty()) {
+                            container.removeAllViews();
+                            TextView tvErr = new TextView(activity);
+                            tvErr.setText("Không thể tải bình luận.");
+                            tvErr.setTextColor(Color.parseColor("#E53935"));
+                            container.addView(tvErr);
+                        } else {
+                            Toast.makeText(activity, "Không thể làm mới bình luận", Toast.LENGTH_SHORT).show();
+                        }
                     }
-                    post.commentsCount = totalComments;
-                    if (tvTitle != null) tvTitle.setText("Bình luận (" + totalComments + ")");
-                    if (tvCommentCount != null) tvCommentCount.setText(formatCount(totalComments) + " Bình luận");
 
-                    renderCommentsList(
-                            activity,
-                            post,
-                            loadedComments,
-                            newestFirst[0],
-                            container,
-                            tvTitle,
-                            tvCommentCount,
-                            (parentId, authorDisplay) -> {
-                                replyParentId[0] = parentId;
-                                if (tvInputHeader != null) tvInputHeader.setTag(authorDisplay);
-                                updateInputHeader.run();
-                                if (edtInput != null) edtInput.requestFocus();
-                            },
-                            () -> loadPostComments(activity, post, loadedComments, renderCallback, container, tvTitle, tvCommentCount, newestFirst, replyParentId, tvInputHeader, updateInputHeader, edtInput)
-                    );
-                } else {
-                    container.removeAllViews();
-                    TextView tvErr = new TextView(activity);
-                    tvErr.setText("Không thể tải bình luận.");
-                    tvErr.setTextColor(Color.parseColor("#E53935"));
-                    container.addView(tvErr);
-                }
-            }
-
-            @Override
-            public void onFailure(@NonNull Call<CommentsListResponse> call, @NonNull Throwable t) {
-                if (activity.isFinishing()) return;
-                container.removeAllViews();
-                TextView tvErr = new TextView(activity);
-                tvErr.setText("Lỗi kết nối khi tải bình luận.");
-                tvErr.setTextColor(Color.parseColor("#E53935"));
-                container.addView(tvErr);
-            }
-        });
+                    @Override
+                    public void onFailure(@NonNull Call<CommentsListResponse> call, @NonNull Throwable t) {
+                        if (activity.isFinishing() || activity.isDestroyed() || seq != loadSeqHolder[0]) return;
+                        if (swipeRefresh != null) swipeRefresh.setRefreshing(false);
+                        if (!isPullToRefresh || loadedComments.isEmpty()) {
+                            container.removeAllViews();
+                            TextView tvErr = new TextView(activity);
+                            tvErr.setText("Lỗi kết nối khi tải bình luận. Vuốt xuống để thử lại.");
+                            tvErr.setTextColor(Color.parseColor("#E53935"));
+                            container.addView(tvErr);
+                        } else {
+                            Toast.makeText(activity, "Lỗi kết nối khi làm mới bình luận", Toast.LENGTH_SHORT).show();
+                        }
+                    }
+                });
     }
 
     private static void renderCommentsList(
             Activity activity,
-            FeedPostsResponse.PostItem post,
             List<CommentsListResponse.CommentItem> sourceComments,
             boolean newestFirst,
             LinearLayout container,
-            TextView tvTitle,
-            TextView tvCommentCount,
             ReplyCallback replyCallback,
-            Runnable reloadCallback
+            CommentDeleteCallback deleteCallback
     ) {
         if (container == null) return;
         container.removeAllViews();
@@ -956,12 +1035,12 @@ public final class PostFeedHelper {
         }
 
         for (CommentsListResponse.CommentItem comment : ordered) {
-            View row = buildCommentRow(activity, comment, comment.commentId, false, currentUserId, replyCallback, reloadCallback);
+            View row = buildCommentRow(activity, comment, comment.commentId, false, currentUserId, replyCallback, deleteCallback);
             container.addView(row);
 
             if (comment.replies != null && !comment.replies.isEmpty()) {
                 for (CommentsListResponse.CommentItem reply : comment.replies) {
-                    View replyRow = buildCommentRow(activity, reply, comment.commentId, true, currentUserId, replyCallback, reloadCallback);
+                    View replyRow = buildCommentRow(activity, reply, comment.commentId, true, currentUserId, replyCallback, deleteCallback);
                     container.addView(replyRow);
                 }
             }
@@ -975,7 +1054,7 @@ public final class PostFeedHelper {
             boolean isReply,
             int currentUserId,
             ReplyCallback replyCallback,
-            Runnable reloadCallback
+            CommentDeleteCallback deleteCallback
     ) {
         LinearLayout row = new LinearLayout(activity);
         row.setOrientation(LinearLayout.VERTICAL);
@@ -1031,9 +1110,14 @@ public final class PostFeedHelper {
             lpDelete.addRule(RelativeLayout.CENTER_VERTICAL);
             headerRow.addView(tvDelete, lpDelete);
 
+            int replyCount = !isReply && comment.replies != null ? comment.replies.size() : 0;
+            String confirmMessage = replyCount > 0
+                    ? "Bạn có chắc chắn muốn xóa bình luận này? " + replyCount + " phản hồi bên dưới cũng sẽ bị xóa."
+                    : "Bạn có chắc chắn muốn xóa bình luận này?";
+
             tvDelete.setOnClickListener(v -> new AlertDialog.Builder(activity)
                     .setTitle("Xóa bình luận")
-                    .setMessage("Bạn có chắc chắn muốn xóa bình luận này?")
+                    .setMessage(confirmMessage)
                     .setPositiveButton("Xóa", (dialog, which) -> {
                         String authHeader = ApiClient.getAuthHeader(activity);
                         ApiClient.getApiService().deleteComment(authHeader, comment.commentId).enqueue(new Callback<Object>() {
@@ -1042,9 +1126,9 @@ public final class PostFeedHelper {
                                 if (activity.isFinishing()) return;
                                 if (r.isSuccessful()) {
                                     Toast.makeText(activity, "Đã xóa bình luận!", Toast.LENGTH_SHORT).show();
-                                    reloadCallback.run();
+                                    if (deleteCallback != null) deleteCallback.onCommentDeleted(comment.commentId);
                                 } else {
-                                    Toast.makeText(activity, "Không thể xóa (mã " + r.code() + ")", Toast.LENGTH_SHORT).show();
+                                    Toast.makeText(activity, extractErrorMessage(r, "Không thể xóa (mã " + r.code() + ")"), Toast.LENGTH_SHORT).show();
                                 }
                             }
 
@@ -1543,6 +1627,18 @@ public final class PostFeedHelper {
         if (clipboard != null) {
             clipboard.setPrimaryClip(ClipData.newPlainText(label, text));
         }
+    }
+
+    private static String extractErrorMessage(Response<?> response, String fallback) {
+        if (response == null || response.errorBody() == null) return fallback;
+        try {
+            String raw = response.errorBody().string();
+            com.google.gson.JsonObject obj = com.google.gson.JsonParser.parseString(raw).getAsJsonObject();
+            if (obj.has("message") && !obj.get("message").getAsString().trim().isEmpty()) {
+                return obj.get("message").getAsString().trim();
+            }
+        } catch (Exception ignored) {}
+        return fallback;
     }
 
     private static boolean isEmpty(String s) {

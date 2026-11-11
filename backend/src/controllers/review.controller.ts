@@ -1,8 +1,10 @@
-import { Request, Response } from 'express';
+import { Response } from 'express';
 import { prisma } from '../config/prisma';
 import { successResponse, paginatedResponse, errorResponse } from '../utils/response';
 import { AuthRequest } from '../middlewares/auth.middleware';
 import { formatUser } from './user.controller';
+import { toRelativeUploadPath } from './upload.controller';
+import { getBlockedUserIds } from '../utils/privacy';
 
 function formatReview(review: any) {
   const { id, author, ...rest } = review;
@@ -15,18 +17,31 @@ function formatReview(review: any) {
 
 const AUTHOR_SELECT = {
   id: true, username: true, fullName: true, avatarUrl: true,
-  bio: true, role: true, _count: { select: { followers: true, following: true } },
+  bio: true, city: true, role: true,
+  _count: {
+    select: {
+      followers: true,
+      following: true,
+      posts: { where: { status: 'Active' as const } },
+    },
+  },
 };
 
 // ── GET /reviews ──────────────────────────
 
-export async function getReviews(req: Request, res: Response): Promise<void> {
+export async function getReviews(req: AuthRequest, res: Response): Promise<void> {
   const { restaurantName, rating, authorId, page = '1', limit = '10' } = req.query;
   const p = parseInt(page as string);
   const l = parseInt(limit as string);
   const skip = (p - 1) * l;
+  const blockedIds = await getBlockedUserIds(req.user?.userId);
 
-  const where: any = {};
+  const where: any = {
+    author: {
+      accountStatus: 'Active',
+      ...(blockedIds.length > 0 ? { id: { notIn: blockedIds } } : {}),
+    },
+  };
   if (restaurantName) where.restaurantName = { contains: restaurantName as string, mode: 'insensitive' };
   if (rating) where.rating = parseInt(rating as string);
   if (authorId) {
@@ -62,7 +77,12 @@ export async function createReview(req: AuthRequest, res: Response): Promise<voi
       content,
       tags: tags || [],
       images: images
-        ? { create: images.map((img: any) => ({ imageUrl: img.imageUrl, displayOrder: img.displayOrder ?? 0 })) }
+        ? {
+            create: images.map((img: any) => ({
+              imageUrl: toRelativeUploadPath(img.imageUrl) || img.imageUrl,
+              displayOrder: img.displayOrder ?? 0,
+            })),
+          }
         : undefined,
     },
     include: { author: { select: AUTHOR_SELECT }, images: true },

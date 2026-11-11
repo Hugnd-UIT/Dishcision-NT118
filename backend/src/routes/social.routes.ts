@@ -7,6 +7,7 @@ import {
   savePost,
   unsavePost,
   getSavedPosts,
+  getLikedPosts,
   getChats,
   getMessages,
   sendMessage,
@@ -23,8 +24,9 @@ router.get('/users/:userId/following', authenticate, asyncHandler(getFollowing))
 router.post('/users/:userId/follow', authenticate, asyncHandler(followUser));
 router.delete('/users/:userId/follow', authenticate, asyncHandler(unfollowUser));
 
-// Bookmarks
+// Bookmarks & Liked Posts
 router.get('/users/me/saved-posts', authenticate, asyncHandler(getSavedPosts));
+router.get('/users/me/liked-posts', authenticate, asyncHandler(getLikedPosts));
 router.post('/posts/:postId/save', authenticate, asyncHandler(savePost));
 router.delete('/posts/:postId/save', authenticate, asyncHandler(unsavePost));
 
