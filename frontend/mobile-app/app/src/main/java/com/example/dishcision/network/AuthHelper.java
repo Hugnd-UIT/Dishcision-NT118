@@ -3,10 +3,15 @@ package com.example.dishcision.network;
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
+import android.os.Handler;
+import android.os.Looper;
 import android.widget.Toast;
 import com.example.dishcision.LoginActivity;
 import com.google.android.gms.auth.api.signin.GoogleSignIn;
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions;
+
+import java.util.HashSet;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import retrofit2.Call;
 import retrofit2.Callback;
@@ -15,11 +20,12 @@ import retrofit2.Response;
 public class AuthHelper {
 
     public static final int OTP_RESEND_COOLDOWN_SECONDS = 60;
+    private static final AtomicBoolean unauthorizedRedirectInProgress = new AtomicBoolean(false);
 
     /** Per-account values cached in DishcisionPrefs; device-level settings (notifications…) are kept. */
     private static final String[] USER_CACHE_KEYS = {
             "user_id", "user_name", "user_username", "user_email", "avatar_url",
-            "user_city", "is_google_login", "user_taste_preferences"
+            "user_bio", "user_city", "is_google_login", "user_taste_preferences"
     };
 
     public static int getCurrentUserId(Context context) {
@@ -40,9 +46,11 @@ public class AuthHelper {
         String fullName = user != null && user.fullName != null && !user.fullName.isEmpty() ? user.fullName : fallbackName;
         String username = user != null && user.username != null ? user.username : "";
         String avatarUrl = user != null && user.avatarUrl != null ? user.avatarUrl : "";
+        String bio = user != null && user.bio != null ? user.bio.trim() : "";
         String city = user != null && user.city != null ? user.city.trim() : "";
         boolean isGoogle = user != null ? user.isGoogleAccount : defaultGoogle;
 
+        unauthorizedRedirectInProgress.set(false);
         new TokenManager(context).saveAuthData(token, userId, email, fullName);
 
         android.content.SharedPreferences.Editor editor =
@@ -54,9 +62,13 @@ public class AuthHelper {
         if (fullName != null) editor.putString("user_name", fullName);
         if (!username.isEmpty()) editor.putString("user_username", username);
         if (!avatarUrl.isEmpty()) editor.putString("avatar_url", avatarUrl);
+        if (!bio.isEmpty()) editor.putString("user_bio", bio);
         if (!city.isEmpty()) editor.putString("user_city", city);
+        if (user != null && user.preferences != null) {
+            editor.putStringSet("user_taste_preferences", new HashSet<>(user.preferences));
+        }
         if (userId > 0 && user != null && user.allergies != null) {
-            editor.putStringSet("user_allergies_" + userId, new java.util.HashSet<>(user.allergies));
+            editor.putStringSet("user_allergies_" + userId, new HashSet<>(user.allergies));
         }
         editor.putBoolean("is_google_login", isGoogle);
         editor.apply();
@@ -84,13 +96,14 @@ public class AuthHelper {
     }
 
     /** Clears tokens, the Google session and cached profile data without calling the backend. */
-    public static void clearLocalSession(Activity activity) {
+    public static void clearLocalSession(Context context) {
+        if (context == null) return;
         // 2. Clear TokenManager tokens
-        new TokenManager(activity).clearAuth();
+        new TokenManager(context).clearAuth();
 
         // 3. Clear cached profile of this account
         android.content.SharedPreferences.Editor editor =
-                activity.getSharedPreferences("DishcisionPrefs", Context.MODE_PRIVATE).edit();
+                context.getSharedPreferences("DishcisionPrefs", Context.MODE_PRIVATE).edit();
         for (String key : USER_CACHE_KEYS) editor.remove(key);
         editor.remove("access_token");
         editor.apply();
@@ -98,22 +111,46 @@ public class AuthHelper {
         // Clear Google Sign-In session
         try {
             GoogleSignInOptions gso = new GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN).build();
-            GoogleSignIn.getClient(activity, gso).signOut();
+            GoogleSignIn.getClient(context, gso).signOut();
         } catch (Exception ignored) {}
     }
 
     /** Clears revoked/expired session data and returns user to LoginActivity once. */
     public static void handleUnauthorized(Activity activity) {
-        if (activity == null || activity.isFinishing() || activity.isDestroyed()) return;
-        TokenManager tm = new TokenManager(activity);
+        handleUnauthorized((Context) activity, null);
+    }
+
+    public static void handleUnauthorized(Context context, String customMessage) {
+        if (context == null) return;
+        if (context instanceof Activity) {
+            Activity activity = (Activity) context;
+            if (activity.isFinishing() || activity.isDestroyed()) return;
+        }
+        TokenManager tm = new TokenManager(context);
         boolean hadToken = tm.getToken() != null;
-        clearLocalSession(activity);
         if (!hadToken) return;
-        Toast.makeText(activity, "Phiên đăng nhập đã hết hạn hoặc bị thu hồi. Vui lòng đăng nhập lại.", Toast.LENGTH_LONG).show();
-        Intent intent = new Intent(activity, LoginActivity.class);
-        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-        activity.startActivity(intent);
-        activity.finish();
+        if (!unauthorizedRedirectInProgress.compareAndSet(false, true)) return;
+
+        clearLocalSession(context);
+        final String displayMessage = (customMessage != null && !customMessage.trim().isEmpty())
+                ? customMessage.trim()
+                : "Phiên đăng nhập đã hết hạn hoặc được đăng nhập trên thiết bị khác. Vui lòng đăng nhập lại.";
+
+        Runnable redirectTask = () -> {
+            Toast.makeText(context.getApplicationContext(), displayMessage, Toast.LENGTH_LONG).show();
+            Intent intent = new Intent(context, LoginActivity.class);
+            intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+            context.startActivity(intent);
+            if (context instanceof Activity) {
+                ((Activity) context).finish();
+            }
+        };
+
+        if (Looper.myLooper() == Looper.getMainLooper()) {
+            redirectTask.run();
+        } else {
+            new Handler(Looper.getMainLooper()).post(redirectTask);
+        }
     }
 
     /** Validates password policy matching backend rules; returns null if valid, otherwise error text. */

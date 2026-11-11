@@ -14,6 +14,7 @@ import android.view.Gravity;
 import android.view.View;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
+import android.widget.ScrollView;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -25,6 +26,7 @@ import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 import androidx.core.widget.ImageViewCompat;
+import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
 import com.example.dishcision.network.ApiClient;
 import com.example.dishcision.network.AuthHelper;
@@ -90,6 +92,8 @@ public class ProfileActivity extends AppCompatActivity {
     private View indicatorLikedPosts;
     private TextView tvMyPostsBadge;
 
+    private SwipeRefreshLayout swipeRefreshProfile;
+    private ScrollView scrollProfile;
     private LinearLayout gridPostsContainer;
     private TextView tvEmptyPosts;
 
@@ -104,6 +108,7 @@ public class ProfileActivity extends AppCompatActivity {
     private boolean skipFirstResumeFetch = true;
     private int activePostTab = TAB_MY_POSTS;
     private int postFetchSeq = 0;
+    private int refreshPendingCalls = 0;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -123,8 +128,7 @@ public class ProfileActivity extends AppCompatActivity {
         setupListeners();
         updateTabUi(activePostTab);
         loadLocalProfileDetails();
-        fetchProfileFromApi();
-        fetchActiveTabPosts();
+        refreshProfileAndPosts(false);
     }
 
     @Override
@@ -135,8 +139,16 @@ public class ProfileActivity extends AppCompatActivity {
             return;
         }
         loadLocalProfileDetails();
-        fetchProfileFromApi();
-        fetchActiveTabPosts();
+        refreshProfileAndPosts(false);
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+        refreshPendingCalls = 0;
+        if (swipeRefreshProfile != null) {
+            swipeRefreshProfile.setRefreshing(false);
+        }
     }
 
     private void initViews() {
@@ -175,6 +187,8 @@ public class ProfileActivity extends AppCompatActivity {
         indicatorLikedPosts = findViewById(R.id.indicatorLikedPosts);
         tvMyPostsBadge = findViewById(R.id.tvMyPostsBadge);
 
+        swipeRefreshProfile = findViewById(R.id.swipeRefreshProfile);
+        scrollProfile = findViewById(R.id.scrollProfile);
         gridPostsContainer = findViewById(R.id.gridPostsContainer);
         tvEmptyPosts = findViewById(R.id.tvEmptyPosts);
     }
@@ -184,7 +198,9 @@ public class ProfileActivity extends AppCompatActivity {
         String savedName = prefs.getString("user_name", tokenManager.getUserName());
         String savedUsername = prefs.getString("user_username", "");
         String savedAvatar = prefs.getString("avatar_url", "");
+        String savedBio = prefs.getString("user_bio", "");
         String savedCity = prefs.getString("user_city", "");
+        currentBio = savedBio != null ? savedBio.trim() : "";
         currentCity = savedCity != null ? savedCity.trim() : "";
 
         if (savedName != null && !savedName.trim().isEmpty()) {
@@ -203,6 +219,9 @@ public class ProfileActivity extends AppCompatActivity {
         }
         if (tvLocation != null) {
             tvLocation.setText(!currentCity.isEmpty() ? currentCity : "Chưa cập nhật vị trí");
+        }
+        if (tvBio != null) {
+            tvBio.setText(currentBio.isEmpty() ? "Chưa có tiểu sử giới thiệu." : currentBio);
         }
 
         Set<String> savedTastes = prefs.getStringSet("user_taste_preferences", null);
@@ -310,7 +329,33 @@ public class ProfileActivity extends AppCompatActivity {
             colFollowing.setOnClickListener(v -> openFollowersScreen("following"));
         }
 
+        if (swipeRefreshProfile != null) {
+            swipeRefreshProfile.setColorSchemeColors(0xFFFF5A36, 0xFF141B2B);
+            swipeRefreshProfile.setOnChildScrollUpCallback((parent, child) -> scrollProfile != null && scrollProfile.canScrollVertically(-1));
+            swipeRefreshProfile.setOnRefreshListener(() -> refreshProfileAndPosts(true));
+        }
+
         BottomNavHelper.bind(this, BottomNavHelper.TAB_PROFILE);
+    }
+
+    private void refreshProfileAndPosts(boolean showSpinner) {
+        if (showSpinner && swipeRefreshProfile != null) {
+            swipeRefreshProfile.setRefreshing(true);
+            refreshPendingCalls = 2;
+        } else {
+            refreshPendingCalls = 0;
+        }
+        fetchProfileFromApi();
+        fetchActiveTabPosts();
+    }
+
+    private void completeRefreshCall() {
+        if (refreshPendingCalls > 0) {
+            refreshPendingCalls--;
+        }
+        if (refreshPendingCalls == 0 && swipeRefreshProfile != null) {
+            swipeRefreshProfile.setRefreshing(false);
+        }
     }
 
     private void openFollowersScreen(String activeTab) {
@@ -326,11 +371,15 @@ public class ProfileActivity extends AppCompatActivity {
 
     private void fetchProfileFromApi() {
         String authHeader = ApiClient.getAuthHeader(this);
-        if (authHeader.isEmpty()) return;
+        if (authHeader.isEmpty()) {
+            completeRefreshCall();
+            return;
+        }
 
         ApiClient.getApiService().getMyProfile(authHeader).enqueue(new Callback<UserProfileResponse>() {
             @Override
             public void onResponse(@NonNull Call<UserProfileResponse> call, @NonNull Response<UserProfileResponse> response) {
+                completeRefreshCall();
                 if (isFinishing() || isDestroyed()) return;
                 if (response.isSuccessful() && response.body() != null && response.body().getData() != null) {
                     UserProfileResponse.UserData user = response.body().getData();
@@ -349,6 +398,8 @@ public class ProfileActivity extends AppCompatActivity {
                     if (user.email != null && !user.email.isEmpty()) editor.putString("user_email", user.email);
                     if (!currentAvatarUrl.isEmpty()) editor.putString("avatar_url", currentAvatarUrl);
                     else editor.remove("avatar_url");
+                    if (!currentBio.isEmpty()) editor.putString("user_bio", currentBio);
+                    else editor.remove("user_bio");
                     if (!currentCity.isEmpty()) editor.putString("user_city", currentCity);
                     else editor.remove("user_city");
                     editor.putBoolean("is_google_login", user.isGoogleAccount);
@@ -410,17 +461,14 @@ public class ProfileActivity extends AppCompatActivity {
                         renderTasteTags(user.preferences);
                     }
                 } else if (response.code() == 401) {
-                    Toast.makeText(ProfileActivity.this, "Phiên đăng nhập hết hạn, vui lòng đăng nhập lại", Toast.LENGTH_LONG).show();
-                    AuthHelper.clearLocalSession(ProfileActivity.this);
-                    Intent intent = new Intent(ProfileActivity.this, LoginActivity.class);
-                    intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-                    startActivity(intent);
-                    finish();
+                    AuthHelper.handleUnauthorized(ProfileActivity.this, null);
                 }
             }
 
             @Override
-            public void onFailure(@NonNull Call<UserProfileResponse> call, @NonNull Throwable t) {}
+            public void onFailure(@NonNull Call<UserProfileResponse> call, @NonNull Throwable t) {
+                completeRefreshCall();
+            }
         });
     }
 
@@ -486,7 +534,10 @@ public class ProfileActivity extends AppCompatActivity {
 
     private void fetchActiveTabPosts() {
         String authHeader = ApiClient.getAuthHeader(this);
-        if (authHeader.isEmpty()) return;
+        if (authHeader.isEmpty()) {
+            completeRefreshCall();
+            return;
+        }
 
         final int seq = ++postFetchSeq;
         final int targetTab = activePostTab;
@@ -503,6 +554,7 @@ public class ProfileActivity extends AppCompatActivity {
         call.enqueue(new Callback<FeedPostsResponse>() {
             @Override
             public void onResponse(@NonNull Call<FeedPostsResponse> call, @NonNull Response<FeedPostsResponse> response) {
+                completeRefreshCall();
                 if (isFinishing() || isDestroyed() || seq != postFetchSeq) return;
                 if (response.isSuccessful() && response.body() != null) {
                     List<FeedPostsResponse.PostItem> posts = response.body().getData();
@@ -527,6 +579,7 @@ public class ProfileActivity extends AppCompatActivity {
 
             @Override
             public void onFailure(@NonNull Call<FeedPostsResponse> call, @NonNull Throwable t) {
+                completeRefreshCall();
                 if (isFinishing() || isDestroyed() || seq != postFetchSeq) return;
                 if (gridPostsContainer != null && gridPostsContainer.getChildCount() == 0) {
                     PostFeedHelper.renderPostGrid(ProfileActivity.this, gridPostsContainer, tvEmptyPosts, null, emptyMessage, null);

@@ -185,6 +185,14 @@ public class HomeActivity extends AppCompatActivity {
         if (btnOpenSidebar != null && drawerLayout != null) {
             btnOpenSidebar.setOnClickListener(v -> drawerLayout.openDrawer(GravityCompat.START));
         }
+        if (drawerLayout != null) {
+            drawerLayout.addDrawerListener(new DrawerLayout.SimpleDrawerListener() {
+                @Override
+                public void onDrawerOpened(@NonNull View drawerView) {
+                    CurrentUserBinder.bind(HomeActivity.this, imgSidebarAvatar, tvSidebarUserName, tvSidebarUserHandle);
+                }
+            });
+        }
 
         if (btnNotification != null) {
             btnNotification.setOnClickListener(v -> startActivity(new Intent(HomeActivity.this, NotificationsActivity.class)));

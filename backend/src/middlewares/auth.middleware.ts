@@ -38,10 +38,19 @@ export async function authenticate(req: AuthRequest, res: Response, next: NextFu
 
   try {
     const tokenHash = hashToken(token);
-    const [blacklistedToken, blacklistedHash] = await redis.mget(
+    const [blacklistedToken, blacklistedHash, replacedSession] = await redis.mget(
       `blacklist:${token}`,
-      `blacklist_hash:${tokenHash}`
+      `blacklist_hash:${tokenHash}`,
+      `session_replaced:${tokenHash}`
     );
+    if (replacedSession) {
+      res.status(401).json({
+        success: false,
+        message: 'Tài khoản đã được đăng nhập trên thiết bị khác. Vui lòng đăng nhập lại.',
+        code: 'SESSION_REPLACED',
+      });
+      return;
+    }
     if (blacklistedToken || blacklistedHash) {
       errorResponse(res, 'Token has been revoked', 401);
       return;

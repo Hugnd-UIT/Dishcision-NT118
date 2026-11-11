@@ -1,4 +1,5 @@
 import bcrypt from 'bcryptjs';
+import crypto from 'crypto';
 import jwt from 'jsonwebtoken';
 
 const SALT_ROUNDS = 12;
@@ -16,11 +17,17 @@ export async function comparePassword(password: string, hash: string): Promise<b
 }
 
 export function generateAccessToken(payload: { userId: number; role: string }): string {
-  return jwt.sign(payload, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN } as jwt.SignOptions);
+  return jwt.sign(payload, JWT_SECRET, {
+    expiresIn: JWT_EXPIRES_IN,
+    jwtid: crypto.randomUUID(),
+  } as jwt.SignOptions);
 }
 
 export function generateRefreshToken(payload: { userId: number }): string {
-  return jwt.sign(payload, JWT_REFRESH_SECRET, { expiresIn: JWT_REFRESH_EXPIRES_IN } as jwt.SignOptions);
+  return jwt.sign(payload, JWT_REFRESH_SECRET, {
+    expiresIn: JWT_REFRESH_EXPIRES_IN,
+    jwtid: crypto.randomUUID(),
+  } as jwt.SignOptions);
 }
 
 export function verifyAccessToken(token: string): { userId: number; role: string } {

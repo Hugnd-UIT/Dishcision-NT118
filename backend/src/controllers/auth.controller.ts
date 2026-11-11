@@ -16,7 +16,10 @@ const USER_PUBLIC_SELECT = {
 };
 
 function formatUser(user: any) {
-  const { _count } = user;
+  const { _count, preferences } = user;
+  const prefNames = preferences
+    ? preferences.map((up: any) => (up.preference ? up.preference.name : up.name || up)).filter(Boolean)
+    : undefined;
   return {
     userId: user.id,
     username: user.username,
@@ -25,6 +28,7 @@ function formatUser(user: any) {
     bio: user.bio,
     city: user.city ?? null,
     allergies: Array.isArray(user.allergies) ? user.allergies : [],
+    ...(prefNames ? { preferences: prefNames } : {}),
     role: user.role,
     isGoogleAccount: typeof user.passwordHash === 'string' ? user.passwordHash === '' : undefined,
     followersCount: _count?.followers ?? 0,
@@ -36,11 +40,15 @@ function hashToken(token: string): string {
   return crypto.createHash('sha256').update(token).digest('hex');
 }
 
-async function blacklistSessionHashes(hashes: Array<string | null | undefined>): Promise<void> {
+async function blacklistSessionHashes(hashes: Array<string | null | undefined>, markReplaced = false): Promise<void> {
   const uniqueHashes = Array.from(new Set(hashes.filter((h): h is string => Boolean(h && h.trim()))));
   if (uniqueHashes.length === 0) return;
   const ttl = getExpiresIn();
-  await Promise.all(uniqueHashes.map((h) => redis.set(`blacklist_hash:${h}`, '1', 'EX', ttl)));
+  const tasks = uniqueHashes.map((h) => redis.set(`blacklist_hash:${h}`, '1', 'EX', ttl));
+  if (markReplaced) {
+    tasks.push(...uniqueHashes.map((h) => redis.set(`session_replaced:${h}`, '1', 'EX', ttl)));
+  }
+  await Promise.all(tasks);
 }
 
 function extractDeviceName(req: Request): string {
@@ -172,11 +180,33 @@ async function sendOtpEmail(email: string, otp: string, purpose: OtpEmailPurpose
 }
 
 async function issueAuthSession(user: any, req: Request, res: Response, message: string): Promise<void> {
+  const existingSessions = await prisma.userSession.findMany({
+    where: { userId: user.id },
+    select: { tokenHash: true },
+  });
+
   const accessToken = generateAccessToken({ userId: user.id, role: user.role });
   const refreshToken = generateRefreshToken({ userId: user.id });
+  const tokenHash = hashToken(accessToken);
+
+  const hashesToRevoke = existingSessions
+    .map((s) => s.tokenHash)
+    .filter((h): h is string => Boolean(h && h !== tokenHash));
+
   await Promise.all([
-    prisma.user.update({ where: { id: user.id }, data: { refreshToken } }),
-    recordSession(user.id, req, accessToken),
+    prisma.$transaction([
+      prisma.userSession.deleteMany({ where: { userId: user.id } }),
+      prisma.userSession.create({
+        data: {
+          userId: user.id,
+          deviceName: extractDeviceName(req),
+          location: extractLocation(req),
+          tokenHash,
+        },
+      }),
+      prisma.user.update({ where: { id: user.id }, data: { refreshToken } }),
+    ]),
+    blacklistSessionHashes(hashesToRevoke, true),
   ]);
 
   res.status(200).json({
@@ -306,7 +336,10 @@ export async function login(req: Request, res: Response): Promise<void> {
         { username: loginIdentifier },
       ],
     },
-    include: { _count: { select: { followers: true, following: true } } },
+    include: {
+      _count: { select: { followers: true, following: true } },
+      preferences: { include: { preference: true } },
+    },
   });
 
   if (!user || !user.passwordHash || !(await comparePassword(password, user.passwordHash))) {
@@ -370,7 +403,10 @@ export async function verifyLogin2FA(req: Request, res: Response): Promise<void>
 
   const user = await prisma.user.findUnique({
     where: { id: stored.userId },
-    include: { _count: { select: { followers: true, following: true } } },
+    include: {
+      _count: { select: { followers: true, following: true } },
+      preferences: { include: { preference: true } },
+    },
   });
 
   if (!user) {
@@ -454,7 +490,10 @@ export async function googleAuth(req: Request, res: Response): Promise<void> {
 
   let user = await prisma.user.findFirst({
     where: { email: { equals: normalizedEmail, mode: 'insensitive' } },
-    include: { _count: { select: { followers: true, following: true } } },
+    include: {
+      _count: { select: { followers: true, following: true } },
+      preferences: { include: { preference: true } },
+    },
   });
 
   if (!user) {
@@ -471,13 +510,19 @@ export async function googleAuth(req: Request, res: Response): Promise<void> {
         role: 'User',
         accountStatus: 'Active',
       },
-      include: { _count: { select: { followers: true, following: true } } },
+      include: {
+        _count: { select: { followers: true, following: true } },
+        preferences: { include: { preference: true } },
+      },
     });
   } else if ((!user.avatarUrl || user.avatarUrl === DEFAULT_AVATAR_URL) && cleanGoogleAvatar) {
     user = await prisma.user.update({
       where: { id: user.id },
       data: { avatarUrl: cleanGoogleAvatar },
-      include: { _count: { select: { followers: true, following: true } } },
+      include: {
+        _count: { select: { followers: true, following: true } },
+        preferences: { include: { preference: true } },
+      },
     });
   }
 
@@ -928,4 +973,8 @@ export async function revokeSession(req: AuthRequest, res: Response): Promise<vo
     data: formatSessions(remaining, currentHash),
     message: 'Đã đăng xuất phiên đăng nhập thành công',
   });
+}
+
+export async function getSessionStatus(_req: AuthRequest, res: Response): Promise<void> {
+  successResponse(res, { active: true });
 }

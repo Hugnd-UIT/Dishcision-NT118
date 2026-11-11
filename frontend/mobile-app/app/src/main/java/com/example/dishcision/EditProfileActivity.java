@@ -28,17 +28,17 @@ import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 
 import com.example.dishcision.network.ApiClient;
-import com.example.dishcision.network.AuthResponse;
+import com.example.dishcision.network.AuthHelper;
 import com.example.dishcision.network.ImageLoader;
 import com.example.dishcision.network.ImageOrientationHelper;
+import com.example.dishcision.network.ProfileSyncHelper;
 import com.example.dishcision.network.TokenManager;
 import com.example.dishcision.network.UploadResponse;
 import com.example.dishcision.network.UserProfileResponse;
 
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -67,12 +67,19 @@ public class EditProfileActivity extends AppCompatActivity {
 
     private TokenManager tokenManager;
 
-    private String initialFullName = "";
-    private String initialUsername = "";
-    private String initialBio = "";
-    private String initialAvatarUrl = "";
+    private ProfileSyncHelper.ProfileState baselineState =
+            new ProfileSyncHelper.ProfileState("", "", "", "", "", null);
+    private final Set<String> workingPreferences = new LinkedHashSet<>();
     private String currentAvatarUrl = "";
-    private String initialCity = "";
+
+    private boolean isPopulatingFields = false;
+    private boolean isNameEdited = false;
+    private boolean isUsernameEdited = false;
+    private boolean isBioEdited = false;
+    private boolean isCityEdited = false;
+    private boolean isAvatarEdited = false;
+    private boolean isPreferencesEdited = false;
+    private boolean skipFirstResumeFetch = true;
 
     private ActivityResultLauncher<String> imagePickerLauncher;
     private boolean isUploadingAvatar = false;
@@ -102,7 +109,13 @@ public class EditProfileActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
-        loadAndRenderPreferences();
+        if (skipFirstResumeFetch) {
+            skipFirstResumeFetch = false;
+            return;
+        }
+        if (!isSaving && !isUploadingAvatar) {
+            fetchExistingProfile();
+        }
     }
 
     private void initViews() {
@@ -135,76 +148,89 @@ public class EditProfileActivity extends AppCompatActivity {
 
     private void setupDataFromIntentOrApi() {
         Intent intent = getIntent();
-        String extraFullName = intent.getStringExtra("FULL_NAME");
-        String extraUsername = intent.getStringExtra("USERNAME");
-        String extraBio = intent.getStringExtra("BIO");
-        String extraAvatar = intent.getStringExtra("AVATAR_URL");
-        String extraCity = intent.getStringExtra("CITY");
-
         SharedPreferences prefs = getSharedPreferences("DishcisionPrefs", MODE_PRIVATE);
-        initialCity = extraCity != null ? extraCity.trim() : prefs.getString("user_city", "");
-        if (initialCity == null) initialCity = "";
-        if (edtCity != null) {
-            edtCity.setText(initialCity);
-        }
 
-        if (extraFullName != null && !extraFullName.isEmpty()) {
-            initialFullName = extraFullName;
-            initialBio = extraBio != null ? extraBio : "";
-            initialAvatarUrl = extraAvatar != null ? extraAvatar : "";
-            currentAvatarUrl = initialAvatarUrl;
+        String fullName = intent.hasExtra("FULL_NAME")
+                ? intent.getStringExtra("FULL_NAME")
+                : prefs.getString("user_name", tokenManager.getUserName());
+        String username = intent.hasExtra("USERNAME")
+                ? intent.getStringExtra("USERNAME")
+                : prefs.getString("user_username", "");
+        String bio = intent.hasExtra("BIO")
+                ? intent.getStringExtra("BIO")
+                : prefs.getString("user_bio", "");
+        String avatarUrl = intent.hasExtra("AVATAR_URL")
+                ? intent.getStringExtra("AVATAR_URL")
+                : prefs.getString("avatar_url", "");
+        String city = intent.hasExtra("CITY")
+                ? intent.getStringExtra("CITY")
+                : prefs.getString("user_city", "");
+        Set<String> savedPrefs = prefs.getStringSet("user_taste_preferences", null);
 
-            populateFields(extraFullName, extraUsername != null ? extraUsername : "", initialBio, initialAvatarUrl);
-        } else {
-            fetchExistingProfile();
+        baselineState = new ProfileSyncHelper.ProfileState(fullName, username, bio, city, avatarUrl, savedPrefs);
+        currentAvatarUrl = baselineState.avatarUrl;
+        workingPreferences.clear();
+        workingPreferences.addAll(baselineState.preferences);
+
+        applyStateToUi(baselineState);
+        fetchExistingProfile();
+    }
+
+    private void applyStateToUi(ProfileSyncHelper.ProfileState state) {
+        isPopulatingFields = true;
+        try {
+            if (!isNameEdited && edtDisplayName != null) {
+                edtDisplayName.setText(state.fullName);
+            }
+            if (!isUsernameEdited && edtUsername != null) {
+                edtUsername.setText(state.username);
+                updateProfileUrlPreview(state.username);
+            }
+            if (!isBioEdited && edtBio != null) {
+                edtBio.setText(state.bio);
+                updateBioCount(state.bio.length());
+            }
+            if (!isCityEdited && edtCity != null) {
+                edtCity.setText(state.city);
+            }
+            if (!isAvatarEdited) {
+                currentAvatarUrl = state.avatarUrl;
+                if (imgAvatar != null) {
+                    ImageLoader.loadAvatar(imgAvatar, currentAvatarUrl);
+                }
+            }
+            if (!isPreferencesEdited) {
+                workingPreferences.clear();
+                workingPreferences.addAll(state.preferences);
+                renderPreferences();
+            }
+        } finally {
+            isPopulatingFields = false;
         }
     }
 
-    private void populateFields(String fullName, String username, String bio, String avatarUrl) {
-        if (edtDisplayName != null) {
-            edtDisplayName.setText(fullName);
-        }
-        initialUsername = username != null ? username.replace("@", "").trim() : "";
-        if (edtUsername != null) {
-            edtUsername.setText(initialUsername);
-            if (tvProfileUrl != null) {
-                tvProfileUrl.setText("dishcision.com/@" + (initialUsername.isEmpty() ? "user" : initialUsername));
-            }
-        }
-        if (edtBio != null) {
-            edtBio.setText(bio);
-        }
-        updateBioCount(bio != null ? bio.length() : 0);
-
-        if (imgAvatar != null) {
-            ImageLoader.loadAvatar(imgAvatar, avatarUrl);
+    private void updateProfileUrlPreview(String rawUsername) {
+        String clean = ProfileSyncHelper.normalizeUsername(rawUsername);
+        if (tvProfileUrl != null) {
+            tvProfileUrl.setText("dishcision.com/@" + (clean.isEmpty() ? "user" : clean));
         }
     }
 
     private void fetchExistingProfile() {
         String authHeader = ApiClient.getAuthHeader(this);
+        if (authHeader.isEmpty()) return;
         ApiClient.getApiService().getMyProfile(authHeader).enqueue(new Callback<UserProfileResponse>() {
             @Override
             public void onResponse(Call<UserProfileResponse> call, Response<UserProfileResponse> response) {
+                if (isFinishing() || isDestroyed()) return;
                 if (response.isSuccessful() && response.body() != null && response.body().getData() != null) {
                     UserProfileResponse.UserData user = response.body().getData();
-                    initialFullName = user.fullName != null ? user.fullName : "";
-                    initialBio = user.bio != null ? user.bio : "";
-                    initialAvatarUrl = user.avatarUrl != null ? user.avatarUrl : "";
-                    currentAvatarUrl = initialAvatarUrl;
-                    initialCity = user.city != null ? user.city.trim() : "";
-                    if (edtCity != null) {
-                        edtCity.setText(initialCity);
-                    }
-
-                    populateFields(initialFullName, user.username, initialBio, initialAvatarUrl);
-
-                    if (user.preferences != null && !user.preferences.isEmpty()) {
-                        getSharedPreferences("DishcisionPrefs", MODE_PRIVATE).edit()
-                                .putStringSet("user_taste_preferences", new HashSet<>(user.preferences))
-                                .apply();
-                        loadAndRenderPreferences();
-                    }
+                    ProfileSyncHelper.ProfileState serverState = ProfileSyncHelper.fromUserData(user);
+                    baselineState = serverState;
+                    persistUserToPrefs(user, serverState);
+                    applyStateToUi(serverState);
+                } else if (response.code() == 401) {
+                    AuthHelper.handleUnauthorized(EditProfileActivity.this, null);
                 }
             }
 
@@ -213,14 +239,11 @@ public class EditProfileActivity extends AppCompatActivity {
         });
     }
 
-    private void loadAndRenderPreferences() {
+    private void renderPreferences() {
         if (layoutPreferenceChipsContainer == null) return;
         layoutPreferenceChipsContainer.removeAllViews();
 
-        SharedPreferences prefs = getSharedPreferences("DishcisionPrefs", MODE_PRIVATE);
-        Set<String> savedSet = prefs.getStringSet("user_taste_preferences", null);
-
-        List<String> list = (savedSet != null) ? new ArrayList<>(savedSet) : new ArrayList<>();
+        List<String> list = new ArrayList<>(workingPreferences);
 
         if (list.isEmpty()) {
             TextView emptyTv = new TextView(this);
@@ -259,14 +282,10 @@ public class EditProfileActivity extends AppCompatActivity {
     }
 
     private void removeTastePreference(String tasteName) {
-        SharedPreferences prefs = getSharedPreferences("DishcisionPrefs", MODE_PRIVATE);
-        Set<String> savedSet = prefs.getStringSet("user_taste_preferences", null);
-        if (savedSet != null) {
-            Set<String> newSet = new HashSet<>(savedSet);
-            newSet.remove(tasteName);
-            prefs.edit().putStringSet("user_taste_preferences", newSet).apply();
-            loadAndRenderPreferences();
-            Toast.makeText(this, "Đã xóa khẩu vị: " + tasteName, Toast.LENGTH_SHORT).show();
+        if (workingPreferences.remove(tasteName)) {
+            isPreferencesEdited = true;
+            renderPreferences();
+            Toast.makeText(this, "Đã xóa khẩu vị: " + tasteName + " (nhấn Lưu để áp dụng)", Toast.LENGTH_SHORT).show();
         }
     }
 
@@ -298,6 +317,16 @@ public class EditProfileActivity extends AppCompatActivity {
             });
         }
 
+        if (edtDisplayName != null) {
+            edtDisplayName.addTextChangedListener(new TextWatcher() {
+                @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+                @Override public void onTextChanged(CharSequence s, int start, int before, int count) {}
+                @Override public void afterTextChanged(Editable s) {
+                    if (!isPopulatingFields) isNameEdited = true;
+                }
+            });
+        }
+
         if (edtUsername != null) {
             edtUsername.addTextChangedListener(new TextWatcher() {
                 @Override
@@ -305,14 +334,13 @@ public class EditProfileActivity extends AppCompatActivity {
 
                 @Override
                 public void onTextChanged(CharSequence s, int start, int before, int count) {
-                    String clean = s != null ? s.toString().trim().replace("@", "") : "";
-                    if (tvProfileUrl != null) {
-                        tvProfileUrl.setText("dishcision.com/@" + (clean.isEmpty() ? "user" : clean));
-                    }
+                    updateProfileUrlPreview(s != null ? s.toString() : "");
                 }
 
                 @Override
-                public void afterTextChanged(Editable s) {}
+                public void afterTextChanged(Editable s) {
+                    if (!isPopulatingFields) isUsernameEdited = true;
+                }
             });
         }
 
@@ -327,7 +355,19 @@ public class EditProfileActivity extends AppCompatActivity {
                 }
 
                 @Override
-                public void afterTextChanged(Editable s) {}
+                public void afterTextChanged(Editable s) {
+                    if (!isPopulatingFields) isBioEdited = true;
+                }
+            });
+        }
+
+        if (edtCity != null) {
+            edtCity.addTextChangedListener(new TextWatcher() {
+                @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+                @Override public void onTextChanged(CharSequence s, int start, int before, int count) {}
+                @Override public void afterTextChanged(Editable s) {
+                    if (!isPopulatingFields) isCityEdited = true;
+                }
             });
         }
 
@@ -356,7 +396,7 @@ public class EditProfileActivity extends AppCompatActivity {
                 .setPositiveButton("Thêm ngay", (dialog, which) -> {
                     String taste = input.getText().toString().trim();
                     if (!taste.isEmpty()) {
-                        addCustomTastePreference("✨ " + taste);
+                        addCustomTastePreference(taste.startsWith("✨") ? taste : "✨ " + taste);
                     }
                 })
                 .setNegativeButton("Hủy", null)
@@ -364,13 +404,11 @@ public class EditProfileActivity extends AppCompatActivity {
     }
 
     private void addCustomTastePreference(String tasteName) {
-        SharedPreferences prefs = getSharedPreferences("DishcisionPrefs", MODE_PRIVATE);
-        Set<String> savedSet = prefs.getStringSet("user_taste_preferences", null);
-        Set<String> newSet = savedSet != null ? new HashSet<>(savedSet) : new HashSet<>();
-        newSet.add(tasteName);
-        prefs.edit().putStringSet("user_taste_preferences", newSet).apply();
-        loadAndRenderPreferences();
-        Toast.makeText(this, "Đã thêm khẩu vị: " + tasteName, Toast.LENGTH_SHORT).show();
+        if (workingPreferences.add(tasteName)) {
+            isPreferencesEdited = true;
+            renderPreferences();
+            Toast.makeText(this, "Đã thêm khẩu vị: " + tasteName + " (nhấn Lưu để áp dụng)", Toast.LENGTH_SHORT).show();
+        }
     }
 
     private void updateBioCount(int length) {
@@ -393,18 +431,16 @@ public class EditProfileActivity extends AppCompatActivity {
         });
     }
 
-    private boolean isFormModified() {
-        String currentName = edtDisplayName != null ? edtDisplayName.getText().toString().trim() : "";
-        String currentUsername = edtUsername != null ? edtUsername.getText().toString().trim().replace("@", "") : "";
-        String currentBioText = edtBio != null ? edtBio.getText().toString().trim() : "";
-        String currentCity = edtCity != null ? edtCity.getText().toString().trim() : "";
-        boolean avatarModified = !currentAvatarUrl.equals(initialAvatarUrl);
+    private ProfileSyncHelper.ProfileState readCurrentStateFromForm() {
+        String name = edtDisplayName != null ? edtDisplayName.getText().toString() : "";
+        String username = edtUsername != null ? edtUsername.getText().toString() : "";
+        String bio = edtBio != null ? edtBio.getText().toString() : "";
+        String city = edtCity != null ? edtCity.getText().toString() : "";
+        return new ProfileSyncHelper.ProfileState(name, username, bio, city, currentAvatarUrl, workingPreferences);
+    }
 
-        return !currentName.equals(initialFullName)
-                || !currentUsername.equals(initialUsername)
-                || !currentBioText.equals(initialBio)
-                || !currentCity.equals(initialCity)
-                || avatarModified;
+    private boolean isFormModified() {
+        return !ProfileSyncHelper.buildProfileDiffPayload(baselineState, readCurrentStateFromForm()).isEmpty();
     }
 
     private void handleCancelAttempt() {
@@ -465,9 +501,10 @@ public class EditProfileActivity extends AppCompatActivity {
                                             ? response.body().data.url
                                             : response.body().data.fullUrl;
                                     currentAvatarUrl = rawUrl != null ? rawUrl.trim() : "";
+                                    isAvatarEdited = !currentAvatarUrl.equals(baselineState.avatarUrl);
                                     Toast.makeText(EditProfileActivity.this, "Tải ảnh đại diện lên thành công!", Toast.LENGTH_SHORT).show();
                                 } else if (response.code() == 401) {
-                                    Toast.makeText(EditProfileActivity.this, "Phiên đăng nhập hết hạn, vui lòng đăng nhập lại!", Toast.LENGTH_LONG).show();
+                                    AuthHelper.handleUnauthorized(EditProfileActivity.this, null);
                                 } else {
                                     Toast.makeText(EditProfileActivity.this, "Không thể tải ảnh: Mã phản hồi " + response.code(), Toast.LENGTH_SHORT).show();
                                 }
@@ -560,29 +597,25 @@ public class EditProfileActivity extends AppCompatActivity {
             return;
         }
 
+        ProfileSyncHelper.ProfileState currentState = readCurrentStateFromForm();
+        Map<String, Object> updatePayload = ProfileSyncHelper.buildProfileDiffPayload(baselineState, currentState);
+        if (updatePayload.isEmpty()) {
+            Toast.makeText(this, "Không có thay đổi mới cần lưu.", Toast.LENGTH_SHORT).show();
+            setResult(RESULT_OK);
+            finish();
+            return;
+        }
+
         isSaving = true;
         if (btnSave != null) {
             btnSave.setEnabled(false);
             btnSave.setText("Đang lưu...");
         }
 
-        Map<String, Object> updatePayload = new HashMap<>();
-        updatePayload.put("fullName", name);
-        updatePayload.put("username", username);
-        updatePayload.put("bio", bio);
-        updatePayload.put("city", city);
-        if (!currentAvatarUrl.isEmpty()) {
-            updatePayload.put("avatarUrl", currentAvatarUrl);
-        }
-        Set<String> currentPrefs = getSharedPreferences("DishcisionPrefs", MODE_PRIVATE).getStringSet("user_taste_preferences", null);
-        if (currentPrefs != null) {
-            updatePayload.put("preferences", new ArrayList<>(currentPrefs));
-        }
-
         String authHeader = ApiClient.getAuthHeader(this);
-        ApiClient.getApiService().updateMyProfile(authHeader, updatePayload).enqueue(new Callback<AuthResponse>() {
+        ApiClient.getApiService().updateMyProfile(authHeader, updatePayload).enqueue(new Callback<UserProfileResponse>() {
             @Override
-            public void onResponse(Call<AuthResponse> call, Response<AuthResponse> response) {
+            public void onResponse(Call<UserProfileResponse> call, Response<UserProfileResponse> response) {
                 isSaving = false;
                 if (btnSave != null) {
                     btnSave.setEnabled(true);
@@ -590,35 +623,17 @@ public class EditProfileActivity extends AppCompatActivity {
                 }
 
                 if (response.isSuccessful()) {
-                    SharedPreferences.Editor editor = getSharedPreferences("DishcisionPrefs", MODE_PRIVATE).edit();
-                    editor.putString("user_name", name);
-                    editor.putString("user_username", username);
-                    if (!city.isEmpty()) {
-                        editor.putString("user_city", city);
-                    } else {
-                        editor.remove("user_city");
-                    }
-                    if (!currentAvatarUrl.isEmpty()) {
-                        editor.putString("avatar_url", currentAvatarUrl);
-                    }
-                    editor.apply();
-                    tokenManager.saveAuthData(null, 0, null, name);
+                    UserProfileResponse.UserData savedUser = response.body() != null ? response.body().getData() : null;
+                    ProfileSyncHelper.ProfileState authoritativeState = savedUser != null
+                            ? ProfileSyncHelper.fromUserData(savedUser)
+                            : currentState;
+                    baselineState = authoritativeState;
+                    persistUserToPrefs(savedUser, authoritativeState);
                     Toast.makeText(EditProfileActivity.this, "Đã lưu thay đổi hồ sơ thành công!", Toast.LENGTH_SHORT).show();
                     setResult(RESULT_OK);
                     finish();
                 } else if (response.code() == 401) {
-                    new AlertDialog.Builder(EditProfileActivity.this)
-                            .setTitle("Phiên đăng nhập hết hạn")
-                            .setMessage("Phiên đăng nhập của bạn đã hết hạn (401: Token expired). Vui lòng đăng nhập lại tài khoản để lưu thay đổi.")
-                            .setPositiveButton("Đăng nhập lại", (dialog, which) -> {
-                                tokenManager.clearAuth();
-                                Intent intent = new Intent(EditProfileActivity.this, LoginActivity.class);
-                                intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-                                startActivity(intent);
-                                finish();
-                            })
-                            .setNegativeButton("Đóng", (dialog, which) -> dialog.dismiss())
-                            .show();
+                    AuthHelper.handleUnauthorized(EditProfileActivity.this, null);
                 } else {
                     String errorMsg = "Mã lỗi: " + response.code();
                     try {
@@ -637,7 +652,7 @@ public class EditProfileActivity extends AppCompatActivity {
             }
 
             @Override
-            public void onFailure(Call<AuthResponse> call, Throwable t) {
+            public void onFailure(Call<UserProfileResponse> call, Throwable t) {
                 isSaving = false;
                 if (btnSave != null) {
                     btnSave.setEnabled(true);
@@ -646,5 +661,36 @@ public class EditProfileActivity extends AppCompatActivity {
                 Toast.makeText(EditProfileActivity.this, "Lỗi kết nối máy chủ: " + t.getMessage(), Toast.LENGTH_LONG).show();
             }
         });
+    }
+
+    private void persistUserToPrefs(UserProfileResponse.UserData savedUser, ProfileSyncHelper.ProfileState state) {
+        SharedPreferences.Editor editor = getSharedPreferences("DishcisionPrefs", MODE_PRIVATE).edit();
+        if (!state.fullName.isEmpty()) editor.putString("user_name", state.fullName);
+        if (!state.username.isEmpty()) editor.putString("user_username", state.username);
+        if (!state.bio.isEmpty()) editor.putString("user_bio", state.bio);
+        else editor.remove("user_bio");
+        if (!state.city.isEmpty()) editor.putString("user_city", state.city);
+        else editor.remove("user_city");
+        if (!state.avatarUrl.isEmpty()) editor.putString("avatar_url", state.avatarUrl);
+        else editor.remove("avatar_url");
+        editor.putStringSet("user_taste_preferences", new HashSet<>(state.preferences));
+
+        int uid = savedUser != null ? savedUser.userId : AuthHelper.getCurrentUserId(this);
+        if (uid > 0) {
+            editor.putInt("user_id", uid);
+            if (savedUser != null && savedUser.allergies != null) {
+                editor.putStringSet("user_allergies_" + uid, new HashSet<>(savedUser.allergies));
+            }
+        }
+        if (savedUser != null) {
+            if (savedUser.email != null && !savedUser.email.isEmpty()) {
+                editor.putString("user_email", savedUser.email);
+            }
+            editor.putBoolean("is_google_login", savedUser.isGoogleAccount);
+        }
+        editor.apply();
+
+        String email = savedUser != null ? savedUser.email : null;
+        tokenManager.saveAuthData(null, uid, email, state.fullName);
     }
 }

@@ -16,6 +16,7 @@ import {
   disable2FA,
   getSessions,
   revokeSession,
+  getSessionStatus,
 } from '../controllers/auth.controller';
 import { authenticate } from '../middlewares/auth.middleware';
 import { asyncHandler } from '../utils/http';
@@ -55,5 +56,6 @@ router.post('/2fa/disable', authenticate, asyncHandler(disable2FA));
 // Active Sessions
 router.get('/sessions', authenticate, asyncHandler(getSessions));
 router.post('/sessions/revoke', authenticate, asyncHandler(revokeSession));
+router.get('/session-status', authenticate, asyncHandler(getSessionStatus));
 
 export default router;

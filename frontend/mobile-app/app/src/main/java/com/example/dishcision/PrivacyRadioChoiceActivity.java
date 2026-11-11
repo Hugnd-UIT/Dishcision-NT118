@@ -19,6 +19,9 @@ import androidx.core.view.WindowInsetsCompat;
 import com.example.dishcision.network.ApiClient;
 import com.example.dishcision.network.PrivacySettingsModel;
 import com.example.dishcision.network.PrivacySettingsResponse;
+import com.example.dishcision.network.ProfileSyncHelper;
+
+import java.util.Map;
 
 import retrofit2.Call;
 import retrofit2.Callback;
@@ -209,7 +212,7 @@ public class PrivacyRadioChoiceActivity extends AppCompatActivity {
 
         String selectedVal = getValueFromCheckedId(checkedId);
         updateModelValue(settingKey, selectedVal);
-        savePrivacyToBackend();
+        savePrivacyToBackend(selectedVal);
     }
 
     private String getValueFromCheckedId(int checkedId) {
@@ -293,13 +296,18 @@ public class PrivacyRadioChoiceActivity extends AppCompatActivity {
         else if ("comments".equals(key)) currentPrivacy.setComments(val);
     }
 
-    private void savePrivacyToBackend() {
-        ApiClient.getApiService().updatePrivacySettings(ApiClient.getAuthHeader(this), currentPrivacy).enqueue(new Callback<PrivacySettingsResponse>() {
+    private void savePrivacyToBackend(String selectedVal) {
+        Map<String, String> payload = ProfileSyncHelper.buildPrivacySingleFieldPayload(settingKey, selectedVal);
+        ApiClient.getApiService().updatePrivacySettingsPartial(ApiClient.getAuthHeader(this), payload).enqueue(new Callback<PrivacySettingsResponse>() {
             @Override
             public void onResponse(@NonNull Call<PrivacySettingsResponse> call, @NonNull Response<PrivacySettingsResponse> response) {
+                if (isFinishing() || isDestroyed()) return;
                 if (response.isSuccessful()) {
+                    if (response.body() != null && response.body().getData() != null) {
+                        currentPrivacy = response.body().getData();
+                    }
                     Toast.makeText(PrivacyRadioChoiceActivity.this, "Đã lưu thay đổi", Toast.LENGTH_SHORT).show();
-                } else {
+                } else if (response.code() != 401) {
                     Toast.makeText(PrivacyRadioChoiceActivity.this, "Không thể lưu thay đổi lúc này", Toast.LENGTH_SHORT).show();
                     fetchCurrentSettingFromBackend();
                 }
@@ -307,6 +315,7 @@ public class PrivacyRadioChoiceActivity extends AppCompatActivity {
 
             @Override
             public void onFailure(@NonNull Call<PrivacySettingsResponse> call, @NonNull Throwable t) {
+                if (isFinishing() || isDestroyed()) return;
                 Toast.makeText(PrivacyRadioChoiceActivity.this, "Lỗi kết nối mạng, chưa thể lưu thay đổi", Toast.LENGTH_SHORT).show();
                 fetchCurrentSettingFromBackend();
             }

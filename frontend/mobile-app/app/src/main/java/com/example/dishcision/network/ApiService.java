@@ -52,10 +52,13 @@ public interface ApiService {
     Call<UserProfileResponse> getMyProfile(@Header("Authorization") String authHeader);
 
     @PUT("users/me")
-    Call<AuthResponse> updateMyProfile(
+    Call<UserProfileResponse> updateMyProfile(
             @Header("Authorization") String authHeader,
             @Body Object profileData
     );
+
+    @GET("auth/session-status")
+    Call<Object> checkSessionStatus(@Header("Authorization") String authHeader);
 
     @GET("users/{userId}")
     Call<UserProfileResponse> getUserProfile(
@@ -292,6 +295,12 @@ public interface ApiService {
 
     @PUT("users/me/privacy")
     Call<PrivacySettingsResponse> updatePrivacySettings(@Header("Authorization") String authHeader, @Body PrivacySettingsModel request);
+
+    @PUT("users/me/privacy")
+    Call<PrivacySettingsResponse> updatePrivacySettingsPartial(
+            @Header("Authorization") String authHeader,
+            @Body java.util.Map<String, String> request
+    );
 
     @Multipart
     @POST("upload")

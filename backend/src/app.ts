@@ -67,6 +67,13 @@ app.use(rateLimit({
   max: 500,
   standardHeaders: true,
   legacyHeaders: false,
+  skip: (req) => req.method === 'GET' && req.path === '/api/v1/auth/session-status',
+}));
+app.use('/api/v1/auth/session-status', rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 3000,
+  standardHeaders: true,
+  legacyHeaders: false,
 }));
 
 // ── Body Parsing ──────────────────────────

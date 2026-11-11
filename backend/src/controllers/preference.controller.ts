@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import { prisma } from '../config/prisma';
-import { getCache, setCache, delCache, CACHE_TTL } from '../config/redis';
+import { getCache, setCache, delCache, delCacheByPattern, CACHE_TTL } from '../config/redis';
 import { successResponse, errorResponse } from '../utils/response';
 import { AuthRequest } from '../middlewares/auth.middleware';
 
@@ -83,6 +83,7 @@ export async function updateUserPreferences(req: AuthRequest, res: Response): Pr
     });
   }
 
+  let createdNewPreference = false;
   if (Array.isArray(preferenceIds) || Array.isArray(preferences)) {
     let finalIds: number[] = [];
     if (Array.isArray(preferenceIds)) {
@@ -95,6 +96,7 @@ export async function updateUserPreferences(req: AuthRequest, res: Response): Pr
         let pref = await prisma.foodPreference.findFirst({ where: { name: cleanName } });
         if (!pref) {
           pref = await prisma.foodPreference.create({ data: { name: cleanName } });
+          createdNewPreference = true;
         }
         finalIds.push(pref.id);
       }
@@ -109,7 +111,15 @@ export async function updateUserPreferences(req: AuthRequest, res: Response): Pr
     }
   }
 
-  await delCache(`user:${userId}`);
+  const invalidations: Promise<unknown>[] = [
+    delCache(`user:${userId}`),
+    delCacheByPattern('newsfeed:*'),
+    delCacheByPattern('post:*'),
+  ];
+  if (createdNewPreference) {
+    invalidations.push(delCache('preferences:all'));
+  }
+  await Promise.all(invalidations);
   const currentUser = savedAllergies === undefined
     ? await prisma.user.findUnique({ where: { id: userId }, select: { allergies: true } })
     : null;

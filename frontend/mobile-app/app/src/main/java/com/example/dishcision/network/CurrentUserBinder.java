@@ -61,10 +61,18 @@ public final class CurrentUserBinder {
                         } else {
                             editor.remove(KEY_AVATAR);
                         }
+                        if (notEmpty(user.bio)) {
+                            editor.putString("user_bio", user.bio.trim());
+                        } else {
+                            editor.remove("user_bio");
+                        }
                         if (notEmpty(user.city)) {
                             editor.putString(KEY_CITY, user.city.trim());
                         } else {
                             editor.remove(KEY_CITY);
+                        }
+                        if (user.preferences != null) {
+                            editor.putStringSet("user_taste_preferences", new java.util.HashSet<>(user.preferences));
                         }
                         if (user.userId > 0 && user.allergies != null) {
                             editor.putStringSet("user_allergies_" + user.userId, new java.util.HashSet<>(user.allergies));

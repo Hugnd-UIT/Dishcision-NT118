@@ -1,9 +1,11 @@
 package com.example.dishcision.network;
 
+import android.app.Activity;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.content.pm.ApplicationInfo;
 import java.io.IOException;
+import java.lang.ref.WeakReference;
 import java.util.concurrent.TimeUnit;
 
 import okhttp3.Interceptor;
@@ -21,9 +23,12 @@ public class ApiClient {
     private static String baseUrl = DEFAULT_BASE_URL;
     private static Retrofit retrofit = null;
     private static boolean isDebugBuild = false;
+    private static Context appContext = null;
+    private static WeakReference<Activity> currentActivityRef = new WeakReference<>(null);
 
     public static void init(Context context) {
         if (context != null) {
+            appContext = context.getApplicationContext();
             captureAppFlags(context);
             SharedPreferences prefs = context.getSharedPreferences("DishcisionPrefs", Context.MODE_PRIVATE);
             String savedUrl = prefs.getString("custom_base_url", null);
@@ -31,6 +36,18 @@ public class ApiClient {
                 setBaseUrl(savedUrl);
             }
         }
+    }
+
+    public static void setCurrentActivity(Activity activity) {
+        currentActivityRef = new WeakReference<>(activity);
+    }
+
+    private static Context resolveRedirectContext() {
+        Activity current = currentActivityRef.get();
+        if (current != null && !current.isFinishing() && !current.isDestroyed()) {
+            return current;
+        }
+        return appContext;
     }
 
     private static void captureAppFlags(Context context) {
@@ -121,7 +138,24 @@ public class ApiClient {
                                     .header("Connection", "close")
                                     .header("Accept-Encoding", "identity")
                                     .build();
-                            return chain.proceed(request);
+                            Response response = chain.proceed(request);
+                            if (response.code() == 401) {
+                                String authHeader = request.header("Authorization");
+                                String path = request.url().encodedPath();
+                                String rawBody = "";
+                                try {
+                                    rawBody = response.peekBody(4096).string();
+                                } catch (Exception ignored) {}
+                                String errCode = ProfileSyncHelper.extractJsonField(rawBody, "code");
+                                String errMsg = ProfileSyncHelper.extractJsonField(rawBody, "message");
+                                if (ProfileSyncHelper.shouldTriggerGlobalLogoutOn401(path, authHeader, errCode, errMsg)) {
+                                    Context ctx = resolveRedirectContext();
+                                    if (ctx != null) {
+                                        AuthHelper.handleUnauthorized(ctx, errMsg);
+                                    }
+                                }
+                            }
+                            return response;
                         }
                     })
                     .retryOnConnectionFailure(true)

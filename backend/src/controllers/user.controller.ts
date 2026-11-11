@@ -118,6 +118,7 @@ export async function updateMe(req: AuthRequest, res: Response): Promise<void> {
     }
   }
 
+  let createdNewPreference = false;
   if (Array.isArray(preferences)) {
     const prefIds: number[] = [];
     for (const pName of preferences) {
@@ -127,6 +128,7 @@ export async function updateMe(req: AuthRequest, res: Response): Promise<void> {
       let pref = await prisma.foodPreference.findFirst({ where: { name: cleanName } });
       if (!pref) {
         pref = await prisma.foodPreference.create({ data: { name: cleanName } });
+        createdNewPreference = true;
       }
       prefIds.push(pref.id);
     }
@@ -175,7 +177,16 @@ export async function updateMe(req: AuthRequest, res: Response): Promise<void> {
     },
   });
 
-  await delCache(`user:${userId}`);
+  const invalidations: Promise<unknown>[] = [
+    delCache(`user:${userId}`),
+    delCacheByPattern('newsfeed:*'),
+    delCacheByPattern('post:*'),
+    delCache('search:trending'),
+  ];
+  if (createdNewPreference) {
+    invalidations.push(delCache('preferences:all'));
+  }
+  await Promise.all(invalidations);
   successResponse(res, formatUserPrivate(user), 'Profile updated');
 }
 
