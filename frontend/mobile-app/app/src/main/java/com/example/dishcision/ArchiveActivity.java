@@ -385,9 +385,13 @@ public class ArchiveActivity extends AppCompatActivity {
             btnOpen.setLayoutParams(btnLp);
             btnOpen.setOnClickListener(v -> {
                 Intent intent = new Intent(ArchiveActivity.this, StoryActivity.class);
+                intent.putExtra(StoryActivity.EXTRA_STORY_ID, story.id);
+                intent.putExtra(StoryActivity.EXTRA_USER_ID, story.userId);
+                String storeOrAuthorName = story.userFullName != null && !story.userFullName.isEmpty() ? story.userFullName : story.username;
+                intent.putExtra(StoryActivity.EXTRA_STORE_NAME, storeOrAuthorName);
                 intent.putExtra("STORY_ID", story.id);
                 intent.putExtra("USER_ID", story.userId);
-                intent.putExtra("STORE_NAME", story.userFullName != null && !story.userFullName.isEmpty() ? story.userFullName : story.username);
+                intent.putExtra("STORE_NAME", storeOrAuthorName);
                 intent.putExtra("STORY_CAPTION", story.caption);
                 intent.putExtra("MEDIA_URL", story.mediaUrl);
                 intent.putExtra("AVATAR_URL", story.userAvatar);

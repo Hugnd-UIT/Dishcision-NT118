@@ -134,10 +134,25 @@ public class ApiClient {
                     .addInterceptor(new Interceptor() {
                         @Override
                         public Response intercept(Chain chain) throws IOException {
-                            Request request = chain.request().newBuilder()
+                            Request original = chain.request();
+                            Request.Builder builder = original.newBuilder()
                                     .header("Connection", "close")
-                                    .header("Accept-Encoding", "identity")
-                                    .build();
+                                    .header("Accept-Encoding", "identity");
+
+                            if (original.header("Authorization") == null) {
+                                Context ctx = resolveRedirectContext();
+                                if (ctx != null) {
+                                    TokenManager tm = new TokenManager(ctx);
+                                    if (tm.isLoggedIn()) {
+                                        String token = tm.getFormattedToken();
+                                        if (token != null && !token.trim().isEmpty()) {
+                                            builder.header("Authorization", token);
+                                        }
+                                    }
+                                }
+                            }
+
+                            Request request = builder.build();
                             Response response = chain.proceed(request);
                             if (response.code() == 401) {
                                 String authHeader = request.header("Authorization");

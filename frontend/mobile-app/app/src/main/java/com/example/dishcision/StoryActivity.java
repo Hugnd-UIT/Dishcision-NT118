@@ -82,8 +82,17 @@ public class StoryActivity extends AppCompatActivity {
         currentLoggedInUserId = tm.getUserId();
 
         filterUserId = getIntent().getIntExtra(EXTRA_USER_ID, -1);
+        if (filterUserId <= 0 && getIntent().hasExtra("USER_ID")) {
+            filterUserId = getIntent().getIntExtra("USER_ID", -1);
+        }
         filterStoreName = getIntent().getStringExtra(EXTRA_STORE_NAME);
+        if (TextUtils.isEmpty(filterStoreName) && getIntent().hasExtra("STORE_NAME")) {
+            filterStoreName = getIntent().getStringExtra("STORE_NAME");
+        }
         targetStoryId = getIntent().getIntExtra(EXTRA_STORY_ID, -1);
+        if (targetStoryId <= 0 && getIntent().hasExtra("STORY_ID")) {
+            targetStoryId = getIntent().getIntExtra("STORY_ID", -1);
+        }
 
         initViews();
         setupListeners();
@@ -116,7 +125,15 @@ public class StoryActivity extends AppCompatActivity {
         ApiClient.getApiService().getStories(userIdParam, storeNameParam).enqueue(new Callback<StoriesResponse>() {
             @Override
             public void onResponse(@NonNull Call<StoriesResponse> call, @NonNull Response<StoriesResponse> response) {
-                if (!response.isSuccessful() || response.body() == null || response.body().data == null || response.body().data.isEmpty()) {
+                if (isFinishing() || isDestroyed()) return;
+
+                if (!response.isSuccessful()) {
+                    Toast.makeText(StoryActivity.this, "Không thể tải story (mã " + response.code() + ")", Toast.LENGTH_SHORT).show();
+                    finish();
+                    return;
+                }
+
+                if (response.body() == null || response.body().data == null || response.body().data.isEmpty()) {
                     Toast.makeText(StoryActivity.this, "Chưa có story nào để hiển thị", Toast.LENGTH_SHORT).show();
                     finish();
                     return;
@@ -140,6 +157,7 @@ public class StoryActivity extends AppCompatActivity {
 
             @Override
             public void onFailure(@NonNull Call<StoriesResponse> call, @NonNull Throwable t) {
+                if (isFinishing() || isDestroyed()) return;
                 Toast.makeText(StoryActivity.this, "Không thể tải story: " + t.getMessage(), Toast.LENGTH_SHORT).show();
                 finish();
             }
