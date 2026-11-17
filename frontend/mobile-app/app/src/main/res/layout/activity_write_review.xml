@@ -125,7 +125,7 @@
                     android:focusable="true"
                     android:foreground="?attr/selectableItemBackground"
                     android:padding="4dp"
-                    android:text="Chọn / đổi quán ăn"
+                    android:text="Đổi quán"
                     android:textColor="#FF5A36"
                     android:textSize="12sp"
                     android:textStyle="bold" />
@@ -405,7 +405,6 @@
                 android:layout_width="match_parent"
                 android:layout_height="50dp"
                 android:layout_marginTop="20dp"
-                android:layout_marginBottom="20dp"
                 android:background="@drawable/bg_button_orange"
                 android:clickable="true"
                 android:focusable="true"
@@ -430,6 +429,16 @@
                     android:textSize="16sp"
                     android:textStyle="bold" />
             </LinearLayout>
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:layout_marginBottom="20dp"
+                android:gravity="center"
+                android:text="Bản nháp tự lưu • Chưa đăng"
+                android:textColor="#8E7570"
+                android:textSize="11sp" />
         </LinearLayout>
     </ScrollView>
 </LinearLayout>

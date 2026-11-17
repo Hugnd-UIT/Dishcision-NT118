@@ -26,7 +26,12 @@ import com.example.dishcision.network.ActivityLogResponse;
 import com.example.dishcision.network.ApiClient;
 import com.example.dishcision.network.CurrentUserBinder;
 
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
+import java.util.Locale;
+import java.util.TimeZone;
 
 import retrofit2.Call;
 import retrofit2.Callback;
@@ -181,90 +186,154 @@ public class ActivityLogActivity extends AppCompatActivity {
         }
         if (tvActivityLogEmpty != null) tvActivityLogEmpty.setVisibility(View.GONE);
 
-        for (ActivityLogResponse.ActivityItem item : items) {
-            LinearLayout card = new LinearLayout(this);
-            LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
-                    LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
-            lp.bottomMargin = dp(10);
-            card.setLayoutParams(lp);
-            card.setBackgroundResource(R.drawable.bg_card_white);
-            card.setGravity(Gravity.CENTER_VERTICAL);
-            card.setOrientation(LinearLayout.HORIZONTAL);
-            int pad = dp(14);
-            card.setPadding(pad, pad, pad, pad);
-
-            ImageView icon = new ImageView(this);
-            icon.setLayoutParams(new LinearLayout.LayoutParams(dp(42), dp(42)));
-            icon.setBackgroundResource(R.drawable.bg_icon_circle_light);
-            int iconPad = dp(10);
-            icon.setPadding(iconPad, iconPad, iconPad, iconPad);
-            icon.setColorFilter(Color.parseColor("#505568"));
-            if ("comment".equals(item.type)) {
-                icon.setImageResource(R.drawable.ic_comment);
-            } else if ("like".equals(item.type)) {
-                icon.setImageResource(R.drawable.ic_heart_outline);
-            } else if ("review".equals(item.type)) {
-                icon.setImageResource(R.drawable.ic_thumb_up);
-            } else if ("save".equals(item.type)) {
-                icon.setImageResource(R.drawable.ic_bookmark);
-            } else {
-                icon.setImageResource(R.drawable.ic_image);
+        String[] sectionTitles = {"Bài viết", "Bình luận", "Tương tác"};
+        for (int s = 0; s < sectionTitles.length; s++) {
+            List<ActivityLogResponse.ActivityItem> group = new ArrayList<>();
+            for (ActivityLogResponse.ActivityItem item : items) {
+                if (sectionOf(item.type) == s) group.add(item);
             }
-
-            LinearLayout body = new LinearLayout(this);
-            LinearLayout.LayoutParams bodyLp = new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f);
-            bodyLp.setMarginStart(dp(12));
-            body.setLayoutParams(bodyLp);
-            body.setOrientation(LinearLayout.VERTICAL);
-
-            TextView tvTitle = new TextView(this);
-            tvTitle.setText(item.title != null ? item.title : "");
-            tvTitle.setTextColor(Color.parseColor("#141B2B"));
-            tvTitle.setTextSize(TypedValue.COMPLEX_UNIT_SP, 14);
-            tvTitle.setTypeface(null, Typeface.BOLD);
-
-            body.addView(tvTitle);
-
-            if (item.snippet != null && !item.snippet.trim().isEmpty()) {
-                TextView tvSnippet = new TextView(this);
-                LinearLayout.LayoutParams sLp = new LinearLayout.LayoutParams(
-                        LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
-                sLp.topMargin = dp(2);
-                tvSnippet.setLayoutParams(sLp);
-                tvSnippet.setText(item.snippet.trim());
-                tvSnippet.setMaxLines(2);
-                tvSnippet.setEllipsize(android.text.TextUtils.TruncateAt.END);
-                tvSnippet.setTextColor(Color.parseColor("#505568"));
-                tvSnippet.setTextSize(TypedValue.COMPLEX_UNIT_SP, 13);
-                body.addView(tvSnippet);
-            }
-
-            TextView tvTime = new TextView(this);
-            LinearLayout.LayoutParams tLp = new LinearLayout.LayoutParams(
-                    LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT);
-            tLp.topMargin = dp(4);
-            tvTime.setLayoutParams(tLp);
-            tvTime.setText(MyPostsActivity.formatTime(item.createdAt));
-            tvTime.setTextColor(Color.parseColor("#8E7570"));
-            tvTime.setTextSize(TypedValue.COMPLEX_UNIT_SP, 12);
-            body.addView(tvTime);
-
-            card.addView(icon);
-            card.addView(body);
-
-            card.setOnClickListener(v -> {
-                if ("review".equals(item.type)) {
-                    startActivity(new Intent(ActivityLogActivity.this, MyReviewsActivity.class));
-                } else if ("save".equals(item.type)) {
-                    startActivity(new Intent(ActivityLogActivity.this, FavoriteDishesActivity.class));
-                } else if ("post".equals(item.type)) {
-                    startActivity(new Intent(ActivityLogActivity.this, MyPostsActivity.class));
-                }
-            });
-
-            containerActivityLog.addView(card);
+            if (group.isEmpty()) continue;
+            addSectionTitle(sectionTitles[s]);
+            for (ActivityLogResponse.ActivityItem item : group) addCard(item);
         }
     }
+
+    // 0 = bài viết, 1 = bình luận, 2 = tương tác (thích, đánh giá, lưu)
+    private static int sectionOf(String type) {
+        if ("post".equals(type)) return 0;
+        if ("comment".equals(type)) return 1;
+        return 2;
+    }
+
+    private void addSectionTitle(String text) {
+        TextView tv = new TextView(this);
+        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+        lp.topMargin = dp(8);
+        lp.bottomMargin = dp(10);
+        tv.setLayoutParams(lp);
+        tv.setText(text);
+        tv.setTextColor(Color.parseColor("#141B2B"));
+        tv.setTextSize(TypedValue.COMPLEX_UNIT_SP, 16);
+        tv.setTypeface(null, Typeface.BOLD);
+        containerActivityLog.addView(tv);
+    }
+
+    private void openItem(ActivityLogResponse.ActivityItem item) {
+        if ("review".equals(item.type)) {
+            startActivity(new Intent(this, MyReviewsActivity.class));
+        } else if ("save".equals(item.type)) {
+            startActivity(new Intent(this, FavoriteDishesActivity.class));
+        } else if ("post".equals(item.type)) {
+            startActivity(new Intent(this, MyPostsActivity.class));
+        }
+    }
+
+    // Hiển thị dd/MM/yyyy · HH:mm theo giờ máy, giống thiết kế.
+    public static String formatDateTime(String iso) {
+        if (iso == null || iso.trim().isEmpty()) return "";
+        try {
+            SimpleDateFormat in = new SimpleDateFormat(
+                    iso.contains(".") ? "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'" : "yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.US);
+            in.setTimeZone(TimeZone.getTimeZone("UTC"));
+            Date d = in.parse(iso);
+            return d == null ? "" : new SimpleDateFormat("dd/MM/yyyy · HH:mm", Locale.getDefault()).format(d);
+        } catch (Exception e) {
+            return MyPostsActivity.formatTime(iso);
+        }
+    }
+
+    private void addCard(ActivityLogResponse.ActivityItem item) {
+        LinearLayout card = new LinearLayout(this);
+        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+        lp.bottomMargin = dp(10);
+        card.setLayoutParams(lp);
+        card.setBackgroundResource(R.drawable.bg_card_white);
+        card.setGravity(Gravity.CENTER_VERTICAL);
+        card.setOrientation(LinearLayout.HORIZONTAL);
+        int pad = dp(14);
+        card.setPadding(pad, pad, pad, pad);
+
+        ImageView icon = new ImageView(this);
+        icon.setLayoutParams(new LinearLayout.LayoutParams(dp(42), dp(42)));
+        icon.setBackgroundResource(R.drawable.bg_icon_circle_light);
+        int iconPad = dp(10);
+        icon.setPadding(iconPad, iconPad, iconPad, iconPad);
+        icon.setColorFilter(Color.parseColor("#505568"));
+        if ("comment".equals(item.type)) {
+            icon.setImageResource(R.drawable.ic_comment);
+        } else if ("like".equals(item.type)) {
+            icon.setImageResource(R.drawable.ic_heart_outline);
+        } else if ("review".equals(item.type)) {
+            icon.setImageResource(R.drawable.ic_thumb_up);
+        } else if ("save".equals(item.type)) {
+            icon.setImageResource(R.drawable.ic_bookmark);
+        } else {
+            icon.setImageResource(R.drawable.ic_image);
+        }
+
+        LinearLayout body = new LinearLayout(this);
+        LinearLayout.LayoutParams bodyLp = new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f);
+        bodyLp.setMarginStart(dp(12));
+        body.setLayoutParams(bodyLp);
+        body.setOrientation(LinearLayout.VERTICAL);
+
+        TextView tvTitle = new TextView(this);
+        tvTitle.setText(item.title != null ? item.title : "");
+        tvTitle.setTextColor(Color.parseColor("#141B2B"));
+        tvTitle.setTextSize(TypedValue.COMPLEX_UNIT_SP, 14);
+        tvTitle.setTypeface(null, Typeface.BOLD);
+        body.addView(tvTitle);
+
+        if (item.snippet != null && !item.snippet.trim().isEmpty()) {
+            TextView tvSnippet = new TextView(this);
+            LinearLayout.LayoutParams sLp = new LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+            sLp.topMargin = dp(2);
+            tvSnippet.setLayoutParams(sLp);
+            tvSnippet.setText(item.snippet.trim());
+            tvSnippet.setMaxLines(2);
+            tvSnippet.setEllipsize(android.text.TextUtils.TruncateAt.END);
+            tvSnippet.setTextColor(Color.parseColor("#505568"));
+            tvSnippet.setTextSize(TypedValue.COMPLEX_UNIT_SP, 13);
+            body.addView(tvSnippet);
+        }
+
+        TextView tvTime = new TextView(this);
+        LinearLayout.LayoutParams tLp = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+        tLp.topMargin = dp(4);
+        tvTime.setLayoutParams(tLp);
+        tvTime.setText(formatDateTime(item.createdAt));
+        tvTime.setTextColor(Color.parseColor("#8E7570"));
+        tvTime.setTextSize(TypedValue.COMPLEX_UNIT_SP, 12);
+        body.addView(tvTime);
+
+        ImageView more = new ImageView(this);
+        more.setLayoutParams(new LinearLayout.LayoutParams(dp(28), dp(28)));
+        more.setPadding(dp(2), dp(2), dp(2), dp(2));
+        more.setImageResource(R.drawable.ic_more_vert);
+        more.setColorFilter(Color.parseColor("#505568"));
+        more.setBackgroundResource(android.R.drawable.list_selector_background);
+        more.setContentDescription("Tùy chọn");
+        more.setOnClickListener(v -> {
+            PopupMenu popup = new PopupMenu(this, more);
+            popup.getMenu().add(0, 1, 0, "Xem chi tiết");
+            popup.setOnMenuItemClickListener(m -> {
+                openItem(item);
+                return true;
+            });
+            popup.show();
+        });
+
+        card.addView(icon);
+        card.addView(body);
+        card.addView(more);
+        card.setOnClickListener(v -> openItem(item));
+        containerActivityLog.addView(card);
+    }
+
 
     private int dp(int value) {
         return (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, value, getResources().getDisplayMetrics());

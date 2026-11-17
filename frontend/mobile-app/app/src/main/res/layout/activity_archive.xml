@@ -145,6 +145,7 @@
                     app:tint="#505568" />
 
                 <TextView
+                    android:id="@+id/tvArchiveInfo"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_marginStart="10dp"
@@ -154,15 +155,35 @@
                     android:textSize="12sp" />
             </LinearLayout>
 
-            <TextView
-                android:id="@+id/tvArchiveSectionTitle"
-                android:layout_width="wrap_content"
+            <LinearLayout
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="20dp"
-                android:text="Bài viết đã lưu trữ"
-                android:textColor="#141B2B"
-                android:textSize="16sp"
-                android:textStyle="bold" />
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:id="@+id/tvArchiveSectionTitle"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Bài viết đã lưu trữ"
+                    android:textColor="#141B2B"
+                    android:textSize="16sp"
+                    android:textStyle="bold" />
+
+                <ImageView
+                    android:id="@+id/btnArchiveSort"
+                    android:layout_width="32dp"
+                    android:layout_height="32dp"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:clickable="true"
+                    android:contentDescription="Sắp xếp"
+                    android:focusable="true"
+                    android:padding="6dp"
+                    android:src="@drawable/ic_sort"
+                    app:tint="#505568" />
+            </LinearLayout>
 
             <ProgressBar
                 android:id="@+id/progressBarArchive"
@@ -191,6 +212,15 @@
                 android:textColor="#8E7570"
                 android:textSize="13sp"
                 android:visibility="gone" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:gravity="center"
+                android:text="Mọi nội dung lưu trữ đều là riêng tư. Bạn có thể khôi phục về hồ sơ bất cứ lúc nào."
+                android:textColor="#8E7570"
+                android:textSize="12sp" />
         </LinearLayout>
     </ScrollView>
 </LinearLayout>

@@ -386,21 +386,6 @@
                         android:textStyle="bold" />
 
                     <TextView
-                        android:id="@+id/chipWithPhotos"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginStart="8dp"
-                        android:background="@drawable/bg_chip_inactive"
-                        android:clickable="true"
-                        android:focusable="true"
-                        android:foreground="?attr/selectableItemBackground"
-                        android:paddingHorizontal="16dp"
-                        android:paddingVertical="8dp"
-                        android:text="Có ảnh (0)"
-                        android:textColor="#141B2B"
-                        android:textSize="13sp" />
-
-                    <TextView
                         android:id="@+id/chipFiveStar"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
@@ -412,6 +397,21 @@
                         android:paddingHorizontal="16dp"
                         android:paddingVertical="8dp"
                         android:text="5 sao (0)"
+                        android:textColor="#141B2B"
+                        android:textSize="13sp" />
+
+                    <TextView
+                        android:id="@+id/chipWithPhotos"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="8dp"
+                        android:background="@drawable/bg_chip_inactive"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:foreground="?attr/selectableItemBackground"
+                        android:paddingHorizontal="16dp"
+                        android:paddingVertical="8dp"
+                        android:text="Có ảnh (0)"
                         android:textColor="#141B2B"
                         android:textSize="13sp" />
 

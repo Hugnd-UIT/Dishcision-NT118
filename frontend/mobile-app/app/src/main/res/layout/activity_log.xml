@@ -242,6 +242,14 @@
                     app:tint="#505568" />
             </LinearLayout>
 
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:text="Hoạt động gần đây của bạn (tối đa 60 mục mới nhất)."
+                android:textColor="#8E7570"
+                android:textSize="12sp" />
+
             <ProgressBar
                 android:id="@+id/progressBarActivityLog"
                 android:layout_width="28dp"
@@ -255,7 +263,7 @@
                 android:id="@+id/containerActivityLog"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="16dp"
+                android:layout_marginTop="12dp"
                 android:orientation="vertical" />
 
             <TextView

@@ -77,6 +77,10 @@ public class PinnedMessagesActivity extends AppCompatActivity {
         layoutPinnedContainer = findViewById(R.id.layoutPinnedContainer);
 
         if (tvContactName != null) tvContactName.setText(partnerName);
+        TextView tvPinnedIntro = findViewById(R.id.tvPinnedIntro);
+        if (tvPinnedIntro != null) {
+            tvPinnedIntro.setText("Những tin nhắn được ghim trong cuộc trò chuyện với " + partnerName + ".");
+        }
         String avatarUrl = getIntent().getStringExtra("AVATAR_URL");
         if (imgAvatar != null && avatarUrl != null && !avatarUrl.trim().isEmpty()) {
             ImageLoader.loadAvatar(imgAvatar, avatarUrl);

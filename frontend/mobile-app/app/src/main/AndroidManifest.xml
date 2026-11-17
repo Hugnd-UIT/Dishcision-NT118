@@ -355,6 +355,11 @@
             android:windowSoftInputMode="adjustResize" />
 
         <activity
+            android:name=".PostDetailActivity"
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize" />
+
+        <activity
             android:name=".SubmitHelpRequestActivity"
             android:exported="false"
             android:windowSoftInputMode="adjustResize" />

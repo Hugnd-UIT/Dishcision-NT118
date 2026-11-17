@@ -749,7 +749,8 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:checked="true"
-                        app:thumbTint="#FF5A36" />
+                        app:thumbTint="@color/switch_thumb"
+                    app:trackTint="@color/switch_track" />
                 </LinearLayout>
 
                 <View
@@ -788,7 +789,8 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:checked="false"
-                        app:thumbTint="#8E7570" />
+                        app:thumbTint="@color/switch_thumb"
+                    app:trackTint="@color/switch_track" />
                 </LinearLayout>
 
                 <View

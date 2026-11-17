@@ -55,12 +55,6 @@ public class ChatNicknamesActivity extends AppCompatActivity {
         String extraName = getIntent().getStringExtra("CHAT_NAME");
         partnerName = extraName != null && !extraName.trim().isEmpty() ? extraName.trim() : "Đối phương";
 
-        SharedPreferences prefs = getSharedPreferences("DishcisionPrefs", MODE_PRIVATE);
-        String savedSelfName = prefs.getString("user_name", "");
-        if (savedSelfName != null && !savedSelfName.trim().isEmpty()) {
-            selfName = savedSelfName.trim();
-        }
-
         initViews();
         bindData();
         setupListeners();
@@ -125,7 +119,7 @@ public class ChatNicknamesActivity extends AppCompatActivity {
                 : ChatPrefsHelper.getSelfNickname(this, targetUserId);
 
         if (tvFormTitle != null) {
-            tvFormTitle.setText("Đặt biệt danh cho " + targetLabel);
+            tvFormTitle.setText((currentVal.isEmpty() ? "Thêm" : "Sửa") + " biệt danh cho " + targetLabel);
         }
         if (edtNicknameInput != null) {
             edtNicknameInput.setText(currentVal);
@@ -154,16 +148,9 @@ public class ChatNicknamesActivity extends AppCompatActivity {
             });
         }
 
+        // "Hủy" bỏ phần đang nhập, trả ô về biệt danh đã lưu. Muốn xóa biệt danh: để trống rồi Xác nhận.
         if (btnCancelNickname != null) {
-            btnCancelNickname.setOnClickListener(v -> {
-                if (editingPartner) {
-                    ChatPrefsHelper.setPartnerNickname(this, targetUserId, "");
-                } else {
-                    ChatPrefsHelper.setSelfNickname(this, targetUserId, "");
-                }
-                bindData();
-                Toast.makeText(this, "Đã xóa biệt danh", Toast.LENGTH_SHORT).show();
-            });
+            btnCancelNickname.setOnClickListener(v -> selectEditingTarget(editingPartner));
         }
 
         if (btnConfirmNickname != null) {

@@ -1,6 +1,7 @@
 package com.example.dishcision;
 
 import android.app.AlertDialog;
+import android.content.SharedPreferences;
 import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.Color;
@@ -76,6 +77,8 @@ public class WriteReviewActivity extends AppCompatActivity {
     private String uploadedPhotoUrl = null;
     private boolean isUploadingPhoto = false;
     private boolean isSubmitting = false;
+    private boolean submitted = false;
+    private static final String DRAFT_PREFS = "review_draft";
 
     private ActivityResultLauncher<String> imagePickerLauncher;
 
@@ -94,10 +97,49 @@ public class WriteReviewActivity extends AppCompatActivity {
         ApiClient.init(this);
         initViews();
         prefillIntentData();
+        restoreDraft();
         setupImagePicker();
         updateStarRating(currentRating);
         updateExperienceChips();
         setupListeners();
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        if (!submitted) saveDraft();
+    }
+
+    // Bản nháp chỉ lưu trên máy (SharedPreferences), xóa khi đăng thành công.
+    private void saveDraft() {
+        String dishes = edtDishesTried != null ? edtDishesTried.getText().toString() : "";
+        String content = edtReviewContent != null ? edtReviewContent.getText().toString() : "";
+        SharedPreferences.Editor e = getSharedPreferences(DRAFT_PREFS, MODE_PRIVATE).edit();
+        if (dishes.trim().isEmpty() && content.trim().isEmpty() && selectedRestaurantName.isEmpty()) {
+            e.clear();
+        } else {
+            e.putString("name", selectedRestaurantName)
+                    .putString("location", selectedRestaurantLocation)
+                    .putInt("rating", currentRating)
+                    .putBoolean("dineIn", isDineIn)
+                    .putString("dishes", dishes)
+                    .putString("content", content);
+        }
+        e.apply();
+    }
+
+    private void restoreDraft() {
+        SharedPreferences sp = getSharedPreferences(DRAFT_PREFS, MODE_PRIVATE);
+        String savedName = sp.getString("name", "");
+        // Mở từ trang một quán cụ thể thì chỉ dùng lại bản nháp của đúng quán đó
+        if (!selectedRestaurantName.isEmpty() && !selectedRestaurantName.equals(savedName)) return;
+        selectedRestaurantName = savedName;
+        selectedRestaurantLocation = sp.getString("location", "");
+        currentRating = sp.getInt("rating", currentRating);
+        isDineIn = sp.getBoolean("dineIn", true);
+        if (edtDishesTried != null) edtDishesTried.setText(sp.getString("dishes", ""));
+        if (edtReviewContent != null) edtReviewContent.setText(sp.getString("content", ""));
+        updateRestaurantDisplay();
     }
 
     private void initViews() {
@@ -254,21 +296,24 @@ public class WriteReviewActivity extends AppCompatActivity {
         if (!selectedRestaurantLocation.isEmpty()) edtAddress.setText(selectedRestaurantLocation);
         box.addView(edtAddress);
 
-        new AlertDialog.Builder(this)
+        AlertDialog dialog = new AlertDialog.Builder(this)
                 .setTitle("Nhập thông tin quán")
                 .setView(box)
                 .setNegativeButton("Hủy", null)
-                .setPositiveButton("Xác nhận", (d, w) -> {
-                    String name = edtName.getText().toString().trim();
-                    if (name.isEmpty()) {
-                        Toast.makeText(this, "Vui lòng nhập tên quán", Toast.LENGTH_SHORT).show();
-                        return;
-                    }
-                    selectedRestaurantName = name;
-                    selectedRestaurantLocation = edtAddress.getText().toString().trim();
-                    updateRestaurantDisplay();
-                })
+                .setPositiveButton("Xác nhận", null)
                 .show();
+        // Gán listener sau show() để tên rỗng không làm đóng hộp thoại
+        dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(v -> {
+            String name = edtName.getText().toString().trim();
+            if (name.isEmpty()) {
+                edtName.setError("Vui lòng nhập tên quán");
+                return;
+            }
+            selectedRestaurantName = name;
+            selectedRestaurantLocation = edtAddress.getText().toString().trim();
+            updateRestaurantDisplay();
+            dialog.dismiss();
+        });
     }
 
     private void setupStarListeners() {
@@ -474,6 +519,8 @@ public class WriteReviewActivity extends AppCompatActivity {
                 if (tvSubmitReviewLabel != null) tvSubmitReviewLabel.setText("Đăng đánh giá");
 
                 if (response.isSuccessful()) {
+                    submitted = true;
+                    getSharedPreferences(DRAFT_PREFS, MODE_PRIVATE).edit().clear().apply();
                     Toast.makeText(WriteReviewActivity.this, "Đã gửi đánh giá thành công!", Toast.LENGTH_SHORT).show();
                     setResult(RESULT_OK);
                     finish();

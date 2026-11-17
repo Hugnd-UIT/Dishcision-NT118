@@ -171,6 +171,12 @@ public interface ApiService {
             @Body CreatePostRequest request
     );
 
+    @GET("posts/{postId}")
+    Call<CreatePostResponse> getPostById(
+            @Header("Authorization") String authHeader,
+            @Path("postId") int postId
+    );
+
     @PUT("posts/{postId}")
     Call<CreatePostResponse> updatePost(
             @Header("Authorization") String authHeader,
@@ -242,6 +248,7 @@ public interface ApiService {
 
     @GET("reviews")
     Call<ReviewsResponse> getReviews(
+            @Header("Authorization") String authHeader,
             @Query("restaurantName") String restaurantName,
             @Query("rating") Integer rating,
             @Query("authorId") String authorId

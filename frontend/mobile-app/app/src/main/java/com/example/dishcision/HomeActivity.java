@@ -29,6 +29,7 @@ import androidx.core.graphics.Insets;
 import androidx.core.view.GravityCompat;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
+import androidx.activity.OnBackPressedCallback;
 import androidx.drawerlayout.widget.DrawerLayout;
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
@@ -182,6 +183,19 @@ public class HomeActivity extends AppCompatActivity {
     }
 
     private void setupListeners() {
+        // Back khi sidebar đang mở thì chỉ đóng sidebar, không thoát app
+        getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
+            @Override
+            public void handleOnBackPressed() {
+                if (drawerLayout != null && drawerLayout.isDrawerOpen(GravityCompat.START)) {
+                    drawerLayout.closeDrawer(GravityCompat.START);
+                } else {
+                    setEnabled(false);
+                    getOnBackPressedDispatcher().onBackPressed();
+                }
+            }
+        });
+
         if (btnOpenSidebar != null && drawerLayout != null) {
             btnOpenSidebar.setOnClickListener(v -> drawerLayout.openDrawer(GravityCompat.START));
         }
@@ -267,14 +281,6 @@ public class HomeActivity extends AppCompatActivity {
             menuReviews.setOnClickListener(v -> {
                 if (drawerLayout != null) drawerLayout.closeDrawer(GravityCompat.START);
                 startActivity(new Intent(HomeActivity.this, MyReviewsActivity.class));
-            });
-        }
-
-        LinearLayout menuMyPosts = findViewById(R.id.menuMyPosts);
-        if (menuMyPosts != null) {
-            menuMyPosts.setOnClickListener(v -> {
-                if (drawerLayout != null) drawerLayout.closeDrawer(GravityCompat.START);
-                startActivity(new Intent(HomeActivity.this, MyPostsActivity.class));
             });
         }
 

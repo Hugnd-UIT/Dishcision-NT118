@@ -226,7 +226,7 @@ public class NotificationsActivity extends AppCompatActivity {
         textCol.setOrientation(LinearLayout.VERTICAL);
 
         TextView tvMessage = new TextView(this);
-        tvMessage.setText(item.message != null ? item.message : "");
+        tvMessage.setText(localizeMessage(item.message));
         tvMessage.setTextColor(Color.parseColor("#141B2B"));
         tvMessage.setTextSize(14f);
         tvMessage.setLineSpacing(0f, 1.15f);
@@ -286,8 +286,9 @@ public class NotificationsActivity extends AppCompatActivity {
         if ("Follow".equals(item.type)) {
             startActivity(new Intent(this, FriendsActivity.class));
         } else if (item.relatedPostId != null && item.relatedPostId > 0) {
-            Intent intent = new Intent(this, HomeActivity.class);
-            intent.putExtra("POST_ID", item.relatedPostId);
+            // Chỉ mở đúng bài viết liên quan, không quay về bảng tin
+            Intent intent = new Intent(this, PostDetailActivity.class);
+            intent.putExtra(PostDetailActivity.EXTRA_POST_ID, item.relatedPostId);
             startActivity(intent);
         } else if (!TextUtils.isEmpty(item.message)) {
             new AlertDialog.Builder(this)
@@ -331,9 +332,22 @@ public class NotificationsActivity extends AppCompatActivity {
 
     private String formatDate(String iso) {
         if (TextUtils.isEmpty(iso)) return "";
-        if (iso.length() >= 16) return iso.substring(0, 10) + " " + iso.substring(11, 16);
-        if (iso.length() >= 10) return iso.substring(0, 10);
-        return iso;
+        // "5 ngày trước", "Vừa xong"... giống các màn khác
+        return MyPostsActivity.formatTime(iso);
+    }
+
+    // Backend tạo thông báo bằng tiếng Anh; chuyển các mẫu đã biết sang tiếng Việt, mẫu lạ giữ nguyên.
+    private static String localizeMessage(String msg) {
+        if (msg == null) return "";
+        String[][] patterns = {
+                {" commented on your post", " đã bình luận bài viết của bạn"},
+                {" liked your post", " đã thích bài viết của bạn"},
+                {" started following you", " đã bắt đầu theo dõi bạn"},
+        };
+        for (String[] p : patterns) {
+            if (msg.endsWith(p[0])) return msg.substring(0, msg.length() - p[0].length()) + p[1];
+        }
+        return msg;
     }
 
     private int dpToPx(int dp) {

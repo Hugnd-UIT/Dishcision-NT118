@@ -208,7 +208,8 @@ public class MyReviewsActivity extends AppCompatActivity {
                 : null;
         String storeParam = !TextUtils.isEmpty(restaurantNameFilter) ? restaurantNameFilter : null;
 
-        ApiClient.getApiService().getReviews(storeParam, null, authorIdParam)
+        // Backend yêu cầu đăng nhập cho GET /reviews (commit "Require authentication on all non-auth API endpoints")
+        ApiClient.getApiService().getReviews(ApiClient.getAuthHeader(this), storeParam, null, authorIdParam)
                 .enqueue(new Callback<ReviewsResponse>() {
                     @Override
                     public void onResponse(@NonNull Call<ReviewsResponse> call, @NonNull Response<ReviewsResponse> response) {
@@ -345,14 +346,15 @@ public class MyReviewsActivity extends AppCompatActivity {
         tvStore.setTypeface(null, Typeface.BOLD);
         titleCol.addView(tvStore);
 
+        // Trang cá nhân: "Ăn tại quán • 2 ngày trước"; trang quán: thêm tên người đánh giá
         String meta = "";
-        if (item.author != null && !TextUtils.isEmpty(item.author.fullName)) {
-            meta = item.author.fullName;
+        if (!TextUtils.isEmpty(restaurantNameFilter)) {
+            if (item.author != null && !TextUtils.isEmpty(item.author.fullName)) meta = item.author.fullName;
+        } else if (item.tags != null && !item.tags.isEmpty() && isExperienceTag(item.tags.get(0))) {
+            meta = item.tags.get(0);
         }
-        String formattedDate = formatDate(item.createdAt);
-        if (!formattedDate.isEmpty()) {
-            meta = meta.isEmpty() ? formattedDate : meta + " • " + formattedDate;
-        }
+        String when = MyPostsActivity.formatTime(item.createdAt);
+        meta = meta.isEmpty() ? when : meta + " • " + when;
         if (!meta.isEmpty()) {
             TextView tvMeta = new TextView(this);
             tvMeta.setText(meta);
@@ -387,7 +389,14 @@ public class MyReviewsActivity extends AppCompatActivity {
 
         card.addView(header);
 
-        if (item.tags != null && !item.tags.isEmpty()) {
+        // Chip món đã thử (bỏ tag trải nghiệm vì đã hiện ở dòng meta)
+        List<String> dishTags = new ArrayList<>();
+        if (item.tags != null) {
+            for (String t : item.tags) {
+                if (!TextUtils.isEmpty(t) && !isExperienceTag(t)) dishTags.add(t);
+            }
+        }
+        if (!dishTags.isEmpty()) {
             LinearLayout tagsRow = new LinearLayout(this);
             LinearLayout.LayoutParams tagsParams = new LinearLayout.LayoutParams(
                     LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
@@ -395,7 +404,7 @@ public class MyReviewsActivity extends AppCompatActivity {
             tagsRow.setLayoutParams(tagsParams);
             tagsRow.setOrientation(LinearLayout.HORIZONTAL);
 
-            int maxTags = Math.min(item.tags.size(), 3);
+            int maxTags = Math.min(dishTags.size(), 3);
             for (int i = 0; i < maxTags; i++) {
                 TextView tagView = new TextView(this);
                 LinearLayout.LayoutParams tagLp = new LinearLayout.LayoutParams(
@@ -404,7 +413,9 @@ public class MyReviewsActivity extends AppCompatActivity {
                 tagView.setLayoutParams(tagLp);
                 tagView.setBackgroundResource(R.drawable.bg_chip_preference);
                 tagView.setPadding(dpToPx(10), dpToPx(5), dpToPx(10), dpToPx(5));
-                tagView.setText(item.tags.get(i));
+                tagView.setText(dishTags.get(i));
+                tagView.setMaxLines(1);
+                tagView.setEllipsize(TextUtils.TruncateAt.END);
                 tagView.setTextColor(Color.parseColor("#141B2B"));
                 tagView.setTextSize(12f);
                 tagsRow.addView(tagView);
@@ -481,10 +492,9 @@ public class MyReviewsActivity extends AppCompatActivity {
         });
     }
 
-    private String formatDate(String iso) {
-        if (TextUtils.isEmpty(iso)) return "";
-        if (iso.length() >= 10) return iso.substring(0, 10);
-        return iso;
+    // Hai tag này do WriteReviewActivity tự thêm ở đầu danh sách tags
+    private static boolean isExperienceTag(String tag) {
+        return "Ăn tại quán".equals(tag) || "Mang về".equals(tag);
     }
 
     private String safeStr(String s) {

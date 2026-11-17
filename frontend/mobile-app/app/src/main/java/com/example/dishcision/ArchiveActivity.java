@@ -17,6 +17,7 @@ import androidx.activity.EdgeToEdge;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.widget.PopupMenu;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
@@ -32,6 +33,7 @@ import com.example.dishcision.network.UpdatePostRequest;
 import com.example.dishcision.network.UserProfileResponse;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import retrofit2.Call;
@@ -50,8 +52,13 @@ public class ArchiveActivity extends AppCompatActivity {
     private LinearLayout containerArchiveList;
     private TextView tvArchiveEmpty;
 
+    private ImageView btnArchiveSort;
+
     private boolean showingStories = false;
+    private boolean newestFirst = true;
     private int currentUserId = 0;
+    private List<FeedPostsResponse.PostItem> lastPosts;
+    private List<StoryModel> lastStories;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -88,6 +95,7 @@ public class ArchiveActivity extends AppCompatActivity {
         progressBarArchive = findViewById(R.id.progressBarArchive);
         containerArchiveList = findViewById(R.id.containerArchiveList);
         tvArchiveEmpty = findViewById(R.id.tvArchiveEmpty);
+        btnArchiveSort = findViewById(R.id.btnArchiveSort);
     }
 
     private void setupListeners() {
@@ -99,6 +107,23 @@ public class ArchiveActivity extends AppCompatActivity {
         }
         if (tabArchivedStory != null) {
             tabArchivedStory.setOnClickListener(v -> selectTab(true));
+        }
+        if (btnArchiveSort != null) {
+            btnArchiveSort.setOnClickListener(v -> {
+                PopupMenu popup = new PopupMenu(this, btnArchiveSort);
+                popup.getMenu().add(0, 1, 0, "Mới nhất trước");
+                popup.getMenu().add(0, 2, 1, "Cũ nhất trước");
+                popup.setOnMenuItemClickListener(item -> {
+                    newestFirst = item.getItemId() == 1;
+                    if (showingStories) {
+                        if (lastStories != null) renderArchivedStories(lastStories);
+                    } else if (lastPosts != null) {
+                        renderArchivedPosts(lastPosts);
+                    }
+                    return true;
+                });
+                popup.show();
+            });
         }
     }
 
@@ -126,6 +151,12 @@ public class ArchiveActivity extends AppCompatActivity {
 
         if (tvArchiveSectionTitle != null) {
             tvArchiveSectionTitle.setText(stories ? "Story của bạn" : "Bài viết đã lưu trữ");
+        }
+        TextView tvInfo = findViewById(R.id.tvArchiveInfo);
+        if (tvInfo != null) {
+            tvInfo.setText(stories
+                    ? "Story của bạn được giữ riêng tại đây. Bạn có thể xem lại bất kỳ lúc nào."
+                    : "Bài viết được lưu trữ sẽ ẩn khỏi trang cá nhân và có thể khôi phục bất kỳ lúc nào.");
         }
         loadActiveTab();
     }
@@ -245,10 +276,18 @@ public class ArchiveActivity extends AppCompatActivity {
     private void renderArchivedPosts(List<FeedPostsResponse.PostItem> posts) {
         if (containerArchiveList == null) return;
         containerArchiveList.removeAllViews();
+        lastPosts = posts;
         if (posts == null || posts.isEmpty()) {
             renderEmpty("Chưa có bài viết nào được lưu trữ.");
             return;
         }
+        // createdAt là chuỗi ISO nên so sánh chuỗi cũng đúng thứ tự thời gian
+        posts = new ArrayList<>(posts);
+        Collections.sort(posts, (a, b) -> {
+            String x = a.createdAt == null ? "" : a.createdAt;
+            String y = b.createdAt == null ? "" : b.createdAt;
+            return newestFirst ? y.compareTo(x) : x.compareTo(y);
+        });
         if (tvArchiveEmpty != null) tvArchiveEmpty.setVisibility(View.GONE);
         containerArchiveList.setVisibility(View.VISIBLE);
 
@@ -291,8 +330,8 @@ public class ArchiveActivity extends AppCompatActivity {
             dateLp.topMargin = dp(4);
             tvDate.setLayoutParams(dateLp);
             String loc = PostFeedHelper.decodeLocationDisplay(post.locationUrl);
-            String dateStr = MyPostsActivity.formatTime(post.createdAt);
-            tvDate.setText(loc.isEmpty() ? "Đã lưu trữ · " + dateStr : "Đã lưu trữ · " + loc + " · " + dateStr);
+            String dateStr = ActivityLogActivity.formatDateTime(post.createdAt);
+            tvDate.setText(loc.isEmpty() ? "Lưu trữ · " + dateStr : "Lưu trữ · " + loc + " · " + dateStr);
             tvDate.setTextColor(Color.parseColor("#6B7280"));
             tvDate.setTextSize(TypedValue.COMPLEX_UNIT_SP, 12);
 
@@ -330,10 +369,17 @@ public class ArchiveActivity extends AppCompatActivity {
     private void renderArchivedStories(List<StoryModel> stories) {
         if (containerArchiveList == null) return;
         containerArchiveList.removeAllViews();
+        lastStories = stories;
         if (stories == null || stories.isEmpty()) {
             renderEmpty("Bạn chưa có Story nào trong kho lưu trữ.");
             return;
         }
+        stories = new ArrayList<>(stories);
+        Collections.sort(stories, (a, b) -> {
+            String x = a.createdAt == null ? "" : a.createdAt;
+            String y = b.createdAt == null ? "" : b.createdAt;
+            return newestFirst ? y.compareTo(x) : x.compareTo(y);
+        });
         if (tvArchiveEmpty != null) tvArchiveEmpty.setVisibility(View.GONE);
         containerArchiveList.setVisibility(View.VISIBLE);
 
