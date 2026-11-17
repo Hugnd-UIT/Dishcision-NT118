@@ -1,24 +1,33 @@
 package com.example.dishcision;
 
 import android.content.Intent;
+import android.database.Cursor;
+import android.graphics.Bitmap;
 import android.graphics.Color;
 import android.graphics.Typeface;
+import android.net.Uri;
 import android.os.Bundle;
+import android.provider.OpenableColumns;
 import android.text.Editable;
 import android.text.TextUtils;
 import android.text.TextWatcher;
 import android.view.Gravity;
 import android.view.View;
 import android.widget.EditText;
+import android.widget.FrameLayout;
 import android.widget.HorizontalScrollView;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
+import android.widget.ProgressBar;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.activity.EdgeToEdge;
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.ContextCompat;
 import androidx.core.graphics.Insets;
@@ -27,8 +36,14 @@ import androidx.core.view.WindowInsetsCompat;
 
 import com.example.dishcision.network.ApiClient;
 import com.example.dishcision.network.AuthResponse;
+import com.example.dishcision.network.CreateStoryRequest;
+import com.example.dishcision.network.CreateStoryResponse;
 import com.example.dishcision.network.FollowingRestaurantsResponse;
 import com.example.dishcision.network.ImageLoader;
+import com.example.dishcision.network.ImageOrientationHelper;
+import com.example.dishcision.network.TokenManager;
+import com.example.dishcision.network.UploadResponse;
+import com.google.android.material.bottomsheet.BottomSheetDialog;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -36,6 +51,9 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
+import okhttp3.MediaType;
+import okhttp3.MultipartBody;
+import okhttp3.RequestBody;
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
@@ -61,6 +79,13 @@ public class FavoriteRestaurantsActivity extends AppCompatActivity {
     private final List<FollowingRestaurantsResponse.StoreItem> loadedStores = new ArrayList<>();
     private final List<FollowingRestaurantsResponse.StoryItem> loadedStories = new ArrayList<>();
 
+    private ActivityResultLauncher<String> storyImagePickerLauncher;
+    private Uri currentPickedStoryUri = null;
+    private String currentSelectedMusic = "";
+    private ImageView popupImgStoryPreview;
+    private LinearLayout popupLayoutNoImage;
+    private TextView popupBtnChangePhoto;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -76,6 +101,7 @@ public class FavoriteRestaurantsActivity extends AppCompatActivity {
         ApiClient.init(this);
         initViews();
         setupListeners();
+        setupStoryPicker();
     }
 
     @Override
@@ -203,6 +229,270 @@ public class FavoriteRestaurantsActivity extends AppCompatActivity {
         });
     }
 
+    private void setupStoryPicker() {
+        storyImagePickerLauncher = registerForActivityResult(
+                new ActivityResultContracts.GetContent(),
+                uri -> {
+                    if (uri != null) {
+                        currentPickedStoryUri = uri;
+                        updateStoryPopupImagePreview();
+                    }
+                }
+        );
+    }
+
+    private void updateStoryPopupImagePreview() {
+        if (currentPickedStoryUri == null) return;
+        if (popupImgStoryPreview != null) {
+            popupImgStoryPreview.setVisibility(View.VISIBLE);
+            ImageOrientationHelper.loadLocalUri(this, popupImgStoryPreview, currentPickedStoryUri, 1200);
+        }
+        if (popupLayoutNoImage != null) {
+            popupLayoutNoImage.setVisibility(View.GONE);
+        }
+        if (popupBtnChangePhoto != null) {
+            popupBtnChangePhoto.setVisibility(View.VISIBLE);
+        }
+    }
+
+    private void showCreateStoryPopup() {
+        String authHeader = ApiClient.getAuthHeader(this);
+        if (authHeader.isEmpty()) {
+            Toast.makeText(this, "Vui lòng đăng nhập để đăng story", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        BottomSheetDialog dialog = new BottomSheetDialog(this);
+        View sheetView = getLayoutInflater().inflate(R.layout.layout_dialog_create_story, null);
+        dialog.setContentView(sheetView);
+
+        currentPickedStoryUri = null;
+        currentSelectedMusic = "";
+
+        ImageView btnClose = sheetView.findViewById(R.id.btnCloseCreateStory);
+        FrameLayout containerImage = sheetView.findViewById(R.id.containerStoryImage);
+        popupLayoutNoImage = sheetView.findViewById(R.id.layoutNoImage);
+        popupImgStoryPreview = sheetView.findViewById(R.id.imgPickedStory);
+        popupBtnChangePhoto = sheetView.findViewById(R.id.btnChangePhoto);
+
+        View btnSelectMusic = sheetView.findViewById(R.id.btnSelectMusic);
+        TextView tvSelectedMusic = sheetView.findViewById(R.id.tvSelectedMusic);
+        EditText edtCaption = sheetView.findViewById(R.id.edtPopupStoryCaption);
+
+        View btnSubmit = sheetView.findViewById(R.id.btnSubmitStoryPopup);
+        ProgressBar pbSubmit = sheetView.findViewById(R.id.pbSubmitStory);
+        TextView tvSubmitLabel = sheetView.findViewById(R.id.tvSubmitStoryLabel);
+
+        if (btnClose != null) {
+            btnClose.setOnClickListener(v -> dialog.dismiss());
+        }
+
+        View.OnClickListener pickClick = v -> {
+            if (storyImagePickerLauncher != null) {
+                storyImagePickerLauncher.launch("image/*");
+            }
+        };
+        if (containerImage != null) containerImage.setOnClickListener(pickClick);
+        if (popupBtnChangePhoto != null) popupBtnChangePhoto.setOnClickListener(pickClick);
+
+        if (btnSelectMusic != null) {
+            btnSelectMusic.setOnClickListener(v -> showMusicPickerDialog(tvSelectedMusic));
+        }
+
+        if (btnSubmit != null) {
+            btnSubmit.setOnClickListener(v -> {
+                if (currentPickedStoryUri == null) {
+                    Toast.makeText(this, "Vui lòng chọn ảnh cho story", Toast.LENGTH_SHORT).show();
+                    return;
+                }
+
+                String rawCaption = edtCaption != null ? edtCaption.getText().toString().trim() : "";
+                String finalCaption = rawCaption;
+                if (!TextUtils.isEmpty(currentSelectedMusic) && !currentSelectedMusic.startsWith("🚫")) {
+                    if (finalCaption.isEmpty()) {
+                        finalCaption = currentSelectedMusic;
+                    } else {
+                        finalCaption = finalCaption + "\n" + currentSelectedMusic;
+                    }
+                }
+
+                publishStoryFromPopup(authHeader, currentPickedStoryUri, finalCaption, btnSubmit, pbSubmit, tvSubmitLabel, dialog);
+            });
+        }
+
+        dialog.show();
+    }
+
+    private void showMusicPickerDialog(TextView tvSelectedMusic) {
+        final String[] songs = new String[]{
+                "🚫 Không dùng nhạc",
+                "🎵 Nấu Ăn Cho Em - Đen Vâu",
+                "🎵 Bật Tình Yêu Lên - Tăng Duy Tân x Hòa Minzy",
+                "🎵 See Tình - Hoàng Thùy Linh",
+                "🎵 Cắt Đôi Nỗi Sầu - Tăng Duy Tân",
+                "🎵 Đi Về Nhà - Đen Vâu x JustaTee",
+                "🎵 Yêu Em Rất Nhiều - Hoàng Tôn",
+                "🎵 Vũ Trụ Có Anh - Phương Mỹ Chi",
+                "🎵 Chill Lofi & Acoustic Cafe",
+                "🎵 Foodie Vibes Guitar",
+                "✏️ Nhập tên bài hát khác..."
+        };
+
+        new AlertDialog.Builder(this)
+                .setTitle("Chọn nhạc nền cho Story")
+                .setItems(songs, (d, which) -> {
+                    if (which == 0) {
+                        currentSelectedMusic = "";
+                        if (tvSelectedMusic != null) {
+                            tvSelectedMusic.setText("Chọn bài hát cho story (tùy chọn)...");
+                            tvSelectedMusic.setTextColor(ContextCompat.getColor(this, R.color.text_gray));
+                        }
+                    } else if (which == songs.length - 1) {
+                        showCustomMusicInputDialog(tvSelectedMusic);
+                    } else {
+                        currentSelectedMusic = songs[which];
+                        if (tvSelectedMusic != null) {
+                            tvSelectedMusic.setText(currentSelectedMusic);
+                            tvSelectedMusic.setTextColor(ContextCompat.getColor(this, R.color.primary));
+                        }
+                    }
+                })
+                .setNegativeButton("Hủy", null)
+                .show();
+    }
+
+    private void showCustomMusicInputDialog(TextView tvSelectedMusic) {
+        final EditText input = new EditText(this);
+        input.setHint("Ví dụ: 🎵 Bài Ca Món Ngon - Ca Sĩ...");
+        input.setPadding(dpToPx(16), dpToPx(12), dpToPx(16), dpToPx(12));
+
+        new AlertDialog.Builder(this)
+                .setTitle("Nhập tên bài hát")
+                .setView(input)
+                .setPositiveButton("Xác nhận", (dialog, which) -> {
+                    String song = input.getText().toString().trim();
+                    if (!song.isEmpty()) {
+                        if (!song.startsWith("🎵")) {
+                            song = "🎵 " + song;
+                        }
+                        currentSelectedMusic = song;
+                        if (tvSelectedMusic != null) {
+                            tvSelectedMusic.setText(currentSelectedMusic);
+                            tvSelectedMusic.setTextColor(ContextCompat.getColor(this, R.color.primary));
+                        }
+                    }
+                })
+                .setNegativeButton("Hủy", null)
+                .show();
+    }
+
+    private void publishStoryFromPopup(String authHeader, Uri targetUri, String caption,
+                                      View btnSubmit, ProgressBar pbSubmit, TextView tvSubmitLabel,
+                                      BottomSheetDialog dialog) {
+        if (pbSubmit != null) pbSubmit.setVisibility(View.VISIBLE);
+        if (tvSubmitLabel != null) tvSubmitLabel.setText("Đang tải ảnh...");
+        if (btnSubmit != null) btnSubmit.setEnabled(false);
+
+        final String displayName = resolveFileName(targetUri);
+
+        ImageOrientationHelper.prepareUploadAsync(
+                this,
+                targetUri,
+                "story_upload_",
+                0,
+                new ImageOrientationHelper.PrepareUploadCallback() {
+                    @Override
+                    public void onReady(ImageOrientationHelper.PreparedImage prepared, Bitmap previewBitmap) {
+                        if (isFinishing() || isDestroyed()) {
+                            ImageOrientationHelper.deleteQuietly(prepared.file);
+                            return;
+                        }
+
+                        String fileName = ImageOrientationHelper.ensureExtensionMatchesMime(displayName, prepared.mimeType);
+                        RequestBody requestFile = RequestBody.create(MediaType.parse(prepared.mimeType), prepared.file);
+                        MultipartBody.Part filePart = MultipartBody.Part.createFormData("file", fileName, requestFile);
+
+                        ApiClient.getApiService().uploadSingleImage(authHeader, filePart).enqueue(new Callback<UploadResponse>() {
+                            @Override
+                            public void onResponse(@NonNull Call<UploadResponse> call, @NonNull Response<UploadResponse> response) {
+                                ImageOrientationHelper.deleteQuietly(prepared.file);
+                                if (response.isSuccessful() && response.body() != null && response.body().data != null) {
+                                    String uploadedUrl = !TextUtils.isEmpty(response.body().data.url)
+                                            ? response.body().data.url
+                                            : response.body().data.fullUrl;
+                                    if (!TextUtils.isEmpty(uploadedUrl)) {
+                                        createStoryFromPopup(authHeader, uploadedUrl, caption, btnSubmit, pbSubmit, tvSubmitLabel, dialog);
+                                        return;
+                                    }
+                                }
+                                resetPopupSubmit(btnSubmit, pbSubmit, tvSubmitLabel);
+                                Toast.makeText(FavoriteRestaurantsActivity.this, "Tải ảnh thất bại (mã " + response.code() + ")", Toast.LENGTH_SHORT).show();
+                            }
+
+                            @Override
+                            public void onFailure(@NonNull Call<UploadResponse> call, @NonNull Throwable t) {
+                                ImageOrientationHelper.deleteQuietly(prepared.file);
+                                resetPopupSubmit(btnSubmit, pbSubmit, tvSubmitLabel);
+                                Toast.makeText(FavoriteRestaurantsActivity.this, "Lỗi tải ảnh: " + t.getMessage(), Toast.LENGTH_SHORT).show();
+                            }
+                        });
+                    }
+
+                    @Override
+                    public void onError(Exception error) {
+                        resetPopupSubmit(btnSubmit, pbSubmit, tvSubmitLabel);
+                        Toast.makeText(FavoriteRestaurantsActivity.this, "Không thể xử lý ảnh đã chọn", Toast.LENGTH_SHORT).show();
+                    }
+                }
+        );
+    }
+
+    private void createStoryFromPopup(String authHeader, String mediaUrl, String caption,
+                                      View btnSubmit, ProgressBar pbSubmit, TextView tvSubmitLabel,
+                                      BottomSheetDialog dialog) {
+        if (tvSubmitLabel != null) tvSubmitLabel.setText("Đang đăng story...");
+
+        ApiClient.getApiService().createStory(authHeader, new CreateStoryRequest(mediaUrl, caption))
+                .enqueue(new Callback<CreateStoryResponse>() {
+                    @Override
+                    public void onResponse(@NonNull Call<CreateStoryResponse> call, @NonNull Response<CreateStoryResponse> response) {
+                        resetPopupSubmit(btnSubmit, pbSubmit, tvSubmitLabel);
+                        if (response.isSuccessful() && response.body() != null) {
+                            Toast.makeText(FavoriteRestaurantsActivity.this, "Đăng story thành công!", Toast.LENGTH_SHORT).show();
+                            if (dialog != null && dialog.isShowing()) {
+                                dialog.dismiss();
+                            }
+                            fetchRestaurantsFromBackend();
+                        } else {
+                            Toast.makeText(FavoriteRestaurantsActivity.this, "Đăng story thất bại (mã " + response.code() + ")", Toast.LENGTH_SHORT).show();
+                        }
+                    }
+
+                    @Override
+                    public void onFailure(@NonNull Call<CreateStoryResponse> call, @NonNull Throwable t) {
+                        resetPopupSubmit(btnSubmit, pbSubmit, tvSubmitLabel);
+                        Toast.makeText(FavoriteRestaurantsActivity.this, "Lỗi kết nối: " + t.getMessage(), Toast.LENGTH_SHORT).show();
+                    }
+                });
+    }
+
+    private void resetPopupSubmit(View btnSubmit, ProgressBar pbSubmit, TextView tvSubmitLabel) {
+        if (pbSubmit != null) pbSubmit.setVisibility(View.GONE);
+        if (tvSubmitLabel != null) tvSubmitLabel.setText("Đăng Story");
+        if (btnSubmit != null) btnSubmit.setEnabled(true);
+    }
+
+    private String resolveFileName(Uri uri) {
+        String result = null;
+        try (Cursor cursor = getContentResolver().query(uri, null, null, null, null)) {
+            if (cursor != null && cursor.moveToFirst()) {
+                int idx = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME);
+                if (idx >= 0) result = cursor.getString(idx);
+            }
+        } catch (Exception ignored) {}
+        return (result != null && !result.trim().isEmpty()) ? result.trim() : "story.jpg";
+    }
+
     private void renderStories() {
         if (layoutStoriesContainer == null) return;
         layoutStoriesContainer.removeAllViews();
@@ -214,21 +504,73 @@ public class FavoriteRestaurantsActivity extends AppCompatActivity {
             }
         }
 
-        if (distinctByStore.isEmpty()) {
-            if (tvStoriesHeader != null) tvStoriesHeader.setVisibility(View.GONE);
-            if (scrollStories != null) scrollStories.setVisibility(View.GONE);
-            return;
-        }
-
+        // Luôn hiển thị thanh story để người dùng có thể bấm "Thêm story"
         if (tvStoriesHeader != null) tvStoriesHeader.setVisibility(View.VISIBLE);
         if (scrollStories != null) scrollStories.setVisibility(View.VISIBLE);
 
-        boolean first = true;
+        int pad = dpToPx(3);
+
+        // 1. NÚT THÊM STORY (Nằm đầu tiên, cạnh các story)
+        LinearLayout addCol = new LinearLayout(this);
+        LinearLayout.LayoutParams addColParams = new LinearLayout.LayoutParams(dpToPx(72), LinearLayout.LayoutParams.WRAP_CONTENT);
+        addCol.setLayoutParams(addColParams);
+        addCol.setOrientation(LinearLayout.VERTICAL);
+        addCol.setGravity(Gravity.CENTER_HORIZONTAL);
+        addCol.setClickable(true);
+        addCol.setFocusable(true);
+
+        RelativeLayout addRing = new RelativeLayout(this);
+        addRing.setLayoutParams(new LinearLayout.LayoutParams(dpToPx(60), dpToPx(60)));
+        addRing.setBackgroundResource(R.drawable.bg_add_story_ring);
+        addRing.setPadding(pad, pad, pad, pad);
+
+        ImageView addAvatar = new ImageView(this);
+        addAvatar.setLayoutParams(new RelativeLayout.LayoutParams(
+                RelativeLayout.LayoutParams.MATCH_PARENT, RelativeLayout.LayoutParams.MATCH_PARENT));
+        addAvatar.setScaleType(ImageView.ScaleType.CENTER_CROP);
+        addAvatar.setImageResource(R.drawable.ic_profile);
+        addRing.addView(addAvatar);
+
+        // Huy hiệu (+) ở góc dưới phải của avatar
+        int badgeSize = dpToPx(20);
+        RelativeLayout.LayoutParams badgeParams = new RelativeLayout.LayoutParams(badgeSize, badgeSize);
+        badgeParams.addRule(RelativeLayout.ALIGN_PARENT_BOTTOM);
+        badgeParams.addRule(RelativeLayout.ALIGN_PARENT_END);
+        FrameLayout badgeContainer = new FrameLayout(this);
+        badgeContainer.setLayoutParams(badgeParams);
+        badgeContainer.setBackgroundResource(R.drawable.bg_add_story_badge);
+
+        ImageView plusIcon = new ImageView(this);
+        FrameLayout.LayoutParams iconParams = new FrameLayout.LayoutParams(dpToPx(12), dpToPx(12));
+        iconParams.gravity = Gravity.CENTER;
+        plusIcon.setLayoutParams(iconParams);
+        plusIcon.setImageResource(R.drawable.ic_add);
+        plusIcon.setColorFilter(ContextCompat.getColor(this, R.color.white));
+        badgeContainer.addView(plusIcon);
+        addRing.addView(badgeContainer);
+
+        TextView tvAddLabel = new TextView(this);
+        LinearLayout.LayoutParams addLabelParams = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+        addLabelParams.topMargin = dpToPx(6);
+        tvAddLabel.setLayoutParams(addLabelParams);
+        tvAddLabel.setMaxLines(1);
+        tvAddLabel.setEllipsize(TextUtils.TruncateAt.END);
+        tvAddLabel.setText("Thêm story");
+        tvAddLabel.setTextColor(ContextCompat.getColor(this, R.color.text_dark));
+        tvAddLabel.setTextSize(12f);
+        tvAddLabel.setTypeface(null, Typeface.BOLD);
+
+        addCol.addView(addRing);
+        addCol.addView(tvAddLabel);
+        addCol.setOnClickListener(v -> showCreateStoryPopup());
+        layoutStoriesContainer.addView(addCol);
+
+        // 2. CÁC STORY HIỆN CÓ CỦA CÁC QUÁN
         for (FollowingRestaurantsResponse.StoryItem st : distinctByStore.values()) {
             LinearLayout col = new LinearLayout(this);
             LinearLayout.LayoutParams colParams = new LinearLayout.LayoutParams(dpToPx(72), LinearLayout.LayoutParams.WRAP_CONTENT);
-            if (!first) colParams.setMarginStart(dpToPx(10));
-            first = false;
+            colParams.setMarginStart(dpToPx(10));
             col.setLayoutParams(colParams);
             col.setOrientation(LinearLayout.VERTICAL);
             col.setGravity(Gravity.CENTER_HORIZONTAL);
@@ -238,7 +580,6 @@ public class FavoriteRestaurantsActivity extends AppCompatActivity {
             RelativeLayout ring = new RelativeLayout(this);
             ring.setLayoutParams(new LinearLayout.LayoutParams(dpToPx(60), dpToPx(60)));
             ring.setBackgroundResource(R.drawable.bg_story_ring);
-            int pad = dpToPx(3);
             ring.setPadding(pad, pad, pad, pad);
 
             ImageView avatar = new ImageView(this);
