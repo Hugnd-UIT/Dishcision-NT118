@@ -36,10 +36,14 @@
             android:src="@drawable/bg_avatar_circle" />
 
         <LinearLayout
+            android:id="@+id/layoutChatName"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_marginStart="10dp"
             android:layout_weight="1"
+            android:background="?attr/selectableItemBackground"
+            android:clickable="true"
+            android:focusable="true"
             android:orientation="vertical">
 
             <TextView
@@ -71,23 +75,10 @@
             android:layout_height="22dp"
             android:background="?attr/selectableItemBackgroundBorderless"
             android:clickable="true"
-            android:contentDescription="Info"
+            android:contentDescription="Tùy chọn"
             android:focusable="true"
-            android:src="@drawable/ic_info"
+            android:src="@drawable/ic_more_vert"
             app:tint="#141B2B" />
-
-        <ImageView
-            android:id="@+id/btnProfileUser"
-            android:layout_width="32dp"
-            android:layout_height="32dp"
-            android:layout_marginStart="12dp"
-            android:background="@drawable/bg_badge_utensils_red"
-            android:clickable="true"
-            android:contentDescription="Profile User"
-            android:focusable="true"
-            android:padding="6dp"
-            android:src="@drawable/ic_user"
-            app:tint="#FFFFFF" />
     </LinearLayout>
 
     <!-- Scrollable Chat Content -->

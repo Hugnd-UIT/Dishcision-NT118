@@ -9,7 +9,11 @@ import android.graphics.Bitmap;
 import android.graphics.Color;
 import android.graphics.Typeface;
 import android.graphics.drawable.GradientDrawable;
+import android.content.ActivityNotFoundException;
 import android.net.Uri;
+import androidx.core.content.FileProvider;
+import java.io.File;
+import java.io.IOException;
 import android.os.Bundle;
 import android.text.util.Linkify;
 import android.util.TypedValue;
@@ -66,7 +70,7 @@ public class ChatActivity extends AppCompatActivity {
     private TextView tvChatTitle;
     private TextView tvChatSubtitle;
     private ImageView btnInfo;
-    private ImageView btnProfileUser;
+    private View layoutChatName;
     private ScrollView scrollChatHistory;
     private ProgressBar progressChat;
     private TextView tvEmptyChat;
@@ -90,6 +94,8 @@ public class ChatActivity extends AppCompatActivity {
     private boolean isSending = false;
 
     private ActivityResultLauncher<String> imagePickerLauncher;
+    private ActivityResultLauncher<Uri> cameraLauncher;
+    private Uri cameraPhotoUri;
     private ActivityResultLauncher<Intent> detailLauncher;
 
     @Override
@@ -99,7 +105,8 @@ public class ChatActivity extends AppCompatActivity {
         setContentView(R.layout.activity_chat);
 
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(android.R.id.content), (v, insets) -> {
-            Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
+            // ime(): edge-to-edge ignores adjustResize, so lift the input row above the keyboard here.
+            Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars() | WindowInsetsCompat.Type.ime());
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
             return insets;
         });
@@ -121,6 +128,14 @@ public class ChatActivity extends AppCompatActivity {
                 uri -> {
                     if (uri != null) {
                         uploadAndSendImage(uri);
+                    }
+                }
+        );
+        cameraLauncher = registerForActivityResult(
+                new ActivityResultContracts.TakePicture(),
+                saved -> {
+                    if (saved && cameraPhotoUri != null) {
+                        uploadAndSendImage(cameraPhotoUri);
                     }
                 }
         );
@@ -153,7 +168,7 @@ public class ChatActivity extends AppCompatActivity {
         tvChatTitle = findViewById(R.id.tvChatTitle);
         tvChatSubtitle = findViewById(R.id.tvChatSubtitle);
         btnInfo = findViewById(R.id.btnInfo);
-        btnProfileUser = findViewById(R.id.btnProfileUser);
+        layoutChatName = findViewById(R.id.layoutChatName);
         scrollChatHistory = findViewById(R.id.scrollChatHistory);
         progressChat = findViewById(R.id.progressChat);
         tvEmptyChat = findViewById(R.id.tvEmptyChat);
@@ -235,24 +250,16 @@ public class ChatActivity extends AppCompatActivity {
             btnBack.setOnClickListener(v -> finish());
         }
 
-        if (btnInfo != null) {
-            btnInfo.setOnClickListener(v -> {
-                Intent intent = new Intent(ChatActivity.this, ChatDetailActivity.class);
-                intent.putExtra("USER_ID", targetUserId);
-                intent.putExtra("CHAT_NAME", partnerName);
-                intent.putExtra("AVATAR_URL", partnerAvatarUrl);
-                intent.putExtra("USER_ROLE", partnerRole);
-                detailLauncher.launch(intent);
-            });
-        }
-
-        if (btnProfileUser != null) {
-            btnProfileUser.setOnClickListener(v -> {
-                Intent intent = new Intent(ChatActivity.this, UserProfileActivity.class);
-                intent.putExtra("USER_ID", targetUserId);
-                startActivity(intent);
-            });
-        }
+        View.OnClickListener openDetail = v -> {
+            Intent intent = new Intent(ChatActivity.this, ChatDetailActivity.class);
+            intent.putExtra("USER_ID", targetUserId);
+            intent.putExtra("CHAT_NAME", partnerName);
+            intent.putExtra("AVATAR_URL", partnerAvatarUrl);
+            intent.putExtra("USER_ROLE", partnerRole);
+            detailLauncher.launch(intent);
+        };
+        if (btnInfo != null) btnInfo.setOnClickListener(openDetail);
+        if (layoutChatName != null) layoutChatName.setOnClickListener(openDetail);
 
         View.OnClickListener pickImageClick = v -> {
             if (isUploadingImage) {
@@ -261,7 +268,23 @@ public class ChatActivity extends AppCompatActivity {
             }
             imagePickerLauncher.launch("image/*");
         };
-        if (btnCamera != null) btnCamera.setOnClickListener(pickImageClick);
+        if (btnCamera != null) {
+            btnCamera.setOnClickListener(v -> {
+                if (isUploadingImage) {
+                    Toast.makeText(this, "Đang tải ảnh lên, vui lòng đợi...", Toast.LENGTH_SHORT).show();
+                    return;
+                }
+                try {
+                    File dir = new File(getCacheDir(), "camera");
+                    if (!dir.exists() && !dir.mkdirs()) throw new IOException("mkdirs failed");
+                    File photo = File.createTempFile("chat_cam_", ".jpg", dir);
+                    cameraPhotoUri = FileProvider.getUriForFile(this, getPackageName() + ".fileprovider", photo);
+                    cameraLauncher.launch(cameraPhotoUri);
+                } catch (IOException | ActivityNotFoundException e) {
+                    Toast.makeText(this, "Không mở được máy ảnh", Toast.LENGTH_SHORT).show();
+                }
+            });
+        }
         if (btnAttachImage != null) btnAttachImage.setOnClickListener(pickImageClick);
 
         if (btnQuickEmoji != null) {
@@ -395,6 +418,8 @@ public class ChatActivity extends AppCompatActivity {
             if (msg.content != null && !msg.content.trim().isEmpty()) {
                 TextView tvBody = new TextView(this);
                 tvBody.setMaxWidth(dpToPx(255));
+                tvBody.setLayoutParams(new LinearLayout.LayoutParams(
+                        LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT));
                 tvBody.setLineSpacing(dpToPx(2), 1.0f);
                 tvBody.setTextSize(TypedValue.COMPLEX_UNIT_SP, 14);
                 tvBody.setTextColor(isMine ? Color.WHITE : 0xFF141B2B);
