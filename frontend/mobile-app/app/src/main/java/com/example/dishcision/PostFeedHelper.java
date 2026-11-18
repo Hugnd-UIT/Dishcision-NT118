@@ -7,6 +7,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.Color;
+import android.graphics.Rect;
 import android.graphics.Typeface;
 import android.net.Uri;
 import android.text.Editable;
@@ -20,6 +21,9 @@ import android.text.style.StyleSpan;
 import android.util.TypedValue;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.ViewTreeObserver;
+import android.view.Window;
+import android.view.WindowManager;
 import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
@@ -33,6 +37,11 @@ import androidx.activity.result.ActivityResultLauncher;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.widget.PopupMenu;
+import androidx.core.graphics.Insets;
+import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowCompat;
+import androidx.core.view.WindowInsetsAnimationCompat;
+import androidx.core.view.WindowInsetsCompat;
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
 import com.google.android.material.card.MaterialCardView;
@@ -53,6 +62,7 @@ import com.example.dishcision.network.SendChatMessageResponse;
 import com.example.dishcision.network.TokenManager;
 import com.example.dishcision.network.UpdatePostRequest;
 import com.example.dishcision.network.UserProfileResponse;
+import com.google.android.material.bottomsheet.BottomSheetBehavior;
 import com.google.android.material.bottomsheet.BottomSheetDialog;
 
 import java.net.URLDecoder;
@@ -531,11 +541,11 @@ public final class PostFeedHelper {
 
     private static void renderLikeState(ImageView imgLike, TextView tvLikeCount, FeedPostsResponse.PostItem post) {
         if (imgLike != null) {
-            imgLike.setImageResource(post.isLiked ? R.drawable.ic_heart_red : R.drawable.ic_heart);
+            imgLike.setImageResource(post.isLiked ? R.drawable.ic_heart_filled_pink : R.drawable.ic_heart);
         }
         if (tvLikeCount != null) {
             tvLikeCount.setText(formatCount(post.likesCount) + " Thích");
-            tvLikeCount.setTextColor(Color.parseColor(post.isLiked ? "#E53935" : "#1E232C"));
+            tvLikeCount.setTextColor(Color.parseColor(post.isLiked ? "#E91E63" : "#1E232C"));
         }
     }
 
@@ -661,6 +671,11 @@ public final class PostFeedHelper {
         View dialogView = activity.getLayoutInflater().inflate(R.layout.layout_dialog_comments, null);
         bottomSheetDialog.setContentView(dialogView);
 
+        Window window = bottomSheetDialog.getWindow();
+        if (window != null) {
+            window.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
+        }
+
         TextView tvCommentsTitle = dialogView.findViewById(R.id.tvCommentsTitle);
         TextView tvCommentInputHeader = dialogView.findViewById(R.id.tvCommentInputHeader);
         View btnCloseComments = dialogView.findViewById(R.id.btnCloseComments);
@@ -673,6 +688,54 @@ public final class PostFeedHelper {
         View btnEmojiPicker = dialogView.findViewById(R.id.btnEmojiPicker);
         View btnAttachFileComment = dialogView.findViewById(R.id.btnAttachFileComment);
         LinearLayout layoutEmojiBar = dialogView.findViewById(R.id.layoutEmojiBar);
+
+        final int defaultCommentsHeight = dpToPx(activity, 240);
+        final int compactCommentsHeight = dpToPx(activity, 100);
+
+        final boolean[] wasKeyboardOpen = {false};
+        final Runnable applyKeyboardState = () -> {
+            Rect r = new Rect();
+            dialogView.getWindowVisibleDisplayFrame(r);
+            int rootHeight = dialogView.getRootView().getHeight();
+            int keypadHeight = rootHeight - r.bottom;
+            boolean keyboardOpen = keypadHeight > rootHeight * 0.15;
+
+            if (keyboardOpen != wasKeyboardOpen[0]) {
+                wasKeyboardOpen[0] = keyboardOpen;
+                if (swipeRefreshComments != null) {
+                    ViewGroup.LayoutParams lp = swipeRefreshComments.getLayoutParams();
+                    if (lp != null) {
+                        lp.height = keyboardOpen ? compactCommentsHeight : defaultCommentsHeight;
+                        swipeRefreshComments.setLayoutParams(lp);
+                    }
+                }
+                if (keyboardOpen) {
+                    FrameLayout bs = bottomSheetDialog.findViewById(com.google.android.material.R.id.design_bottom_sheet);
+                    if (bs != null) {
+                        BottomSheetBehavior.from(bs).setState(BottomSheetBehavior.STATE_EXPANDED);
+                    }
+                    if (scrollComments != null) {
+                        scrollComments.postDelayed(() -> scrollComments.fullScroll(View.FOCUS_DOWN), 150);
+                    }
+                }
+            }
+        };
+
+        ViewTreeObserver.OnGlobalLayoutListener layoutListener = applyKeyboardState::run;
+        dialogView.getViewTreeObserver().addOnGlobalLayoutListener(layoutListener);
+        bottomSheetDialog.setOnDismissListener(d -> {
+            dialogView.getViewTreeObserver().removeOnGlobalLayoutListener(layoutListener);
+        });
+
+        bottomSheetDialog.setOnShowListener(dialogInterface -> {
+            FrameLayout bottomSheet = bottomSheetDialog.findViewById(com.google.android.material.R.id.design_bottom_sheet);
+            if (bottomSheet != null) {
+                BottomSheetBehavior<FrameLayout> behavior = BottomSheetBehavior.from(bottomSheet);
+                behavior.setSkipCollapsed(true);
+                behavior.setState(BottomSheetBehavior.STATE_EXPANDED);
+            }
+            applyKeyboardState.run();
+        });
 
         if (btnAttachFileComment != null) {
             btnAttachFileComment.setVisibility(View.GONE);
