@@ -9,7 +9,11 @@ import android.graphics.Bitmap;
 import android.graphics.Color;
 import android.graphics.Typeface;
 import android.graphics.drawable.GradientDrawable;
+import android.content.ActivityNotFoundException;
 import android.net.Uri;
+import androidx.core.content.FileProvider;
+import java.io.File;
+import java.io.IOException;
 import android.os.Bundle;
 import android.text.util.Linkify;
 import android.util.TypedValue;
@@ -90,6 +94,8 @@ public class ChatActivity extends AppCompatActivity {
     private boolean isSending = false;
 
     private ActivityResultLauncher<String> imagePickerLauncher;
+    private ActivityResultLauncher<Uri> cameraLauncher;
+    private Uri cameraPhotoUri;
     private ActivityResultLauncher<Intent> detailLauncher;
 
     @Override
@@ -122,6 +128,14 @@ public class ChatActivity extends AppCompatActivity {
                 uri -> {
                     if (uri != null) {
                         uploadAndSendImage(uri);
+                    }
+                }
+        );
+        cameraLauncher = registerForActivityResult(
+                new ActivityResultContracts.TakePicture(),
+                saved -> {
+                    if (saved && cameraPhotoUri != null) {
+                        uploadAndSendImage(cameraPhotoUri);
                     }
                 }
         );
@@ -254,7 +268,23 @@ public class ChatActivity extends AppCompatActivity {
             }
             imagePickerLauncher.launch("image/*");
         };
-        if (btnCamera != null) btnCamera.setOnClickListener(pickImageClick);
+        if (btnCamera != null) {
+            btnCamera.setOnClickListener(v -> {
+                if (isUploadingImage) {
+                    Toast.makeText(this, "Đang tải ảnh lên, vui lòng đợi...", Toast.LENGTH_SHORT).show();
+                    return;
+                }
+                try {
+                    File dir = new File(getCacheDir(), "camera");
+                    if (!dir.exists() && !dir.mkdirs()) throw new IOException("mkdirs failed");
+                    File photo = File.createTempFile("chat_cam_", ".jpg", dir);
+                    cameraPhotoUri = FileProvider.getUriForFile(this, getPackageName() + ".fileprovider", photo);
+                    cameraLauncher.launch(cameraPhotoUri);
+                } catch (IOException | ActivityNotFoundException e) {
+                    Toast.makeText(this, "Không mở được máy ảnh", Toast.LENGTH_SHORT).show();
+                }
+            });
+        }
         if (btnAttachImage != null) btnAttachImage.setOnClickListener(pickImageClick);
 
         if (btnQuickEmoji != null) {
