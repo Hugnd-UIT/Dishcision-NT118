@@ -66,7 +66,7 @@ public class ChatActivity extends AppCompatActivity {
     private TextView tvChatTitle;
     private TextView tvChatSubtitle;
     private ImageView btnInfo;
-    private ImageView btnProfileUser;
+    private View layoutChatName;
     private ScrollView scrollChatHistory;
     private ProgressBar progressChat;
     private TextView tvEmptyChat;
@@ -99,7 +99,8 @@ public class ChatActivity extends AppCompatActivity {
         setContentView(R.layout.activity_chat);
 
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(android.R.id.content), (v, insets) -> {
-            Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
+            // ime(): edge-to-edge ignores adjustResize, so lift the input row above the keyboard here.
+            Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars() | WindowInsetsCompat.Type.ime());
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
             return insets;
         });
@@ -153,7 +154,7 @@ public class ChatActivity extends AppCompatActivity {
         tvChatTitle = findViewById(R.id.tvChatTitle);
         tvChatSubtitle = findViewById(R.id.tvChatSubtitle);
         btnInfo = findViewById(R.id.btnInfo);
-        btnProfileUser = findViewById(R.id.btnProfileUser);
+        layoutChatName = findViewById(R.id.layoutChatName);
         scrollChatHistory = findViewById(R.id.scrollChatHistory);
         progressChat = findViewById(R.id.progressChat);
         tvEmptyChat = findViewById(R.id.tvEmptyChat);
@@ -235,24 +236,16 @@ public class ChatActivity extends AppCompatActivity {
             btnBack.setOnClickListener(v -> finish());
         }
 
-        if (btnInfo != null) {
-            btnInfo.setOnClickListener(v -> {
-                Intent intent = new Intent(ChatActivity.this, ChatDetailActivity.class);
-                intent.putExtra("USER_ID", targetUserId);
-                intent.putExtra("CHAT_NAME", partnerName);
-                intent.putExtra("AVATAR_URL", partnerAvatarUrl);
-                intent.putExtra("USER_ROLE", partnerRole);
-                detailLauncher.launch(intent);
-            });
-        }
-
-        if (btnProfileUser != null) {
-            btnProfileUser.setOnClickListener(v -> {
-                Intent intent = new Intent(ChatActivity.this, UserProfileActivity.class);
-                intent.putExtra("USER_ID", targetUserId);
-                startActivity(intent);
-            });
-        }
+        View.OnClickListener openDetail = v -> {
+            Intent intent = new Intent(ChatActivity.this, ChatDetailActivity.class);
+            intent.putExtra("USER_ID", targetUserId);
+            intent.putExtra("CHAT_NAME", partnerName);
+            intent.putExtra("AVATAR_URL", partnerAvatarUrl);
+            intent.putExtra("USER_ROLE", partnerRole);
+            detailLauncher.launch(intent);
+        };
+        if (btnInfo != null) btnInfo.setOnClickListener(openDetail);
+        if (layoutChatName != null) layoutChatName.setOnClickListener(openDetail);
 
         View.OnClickListener pickImageClick = v -> {
             if (isUploadingImage) {
