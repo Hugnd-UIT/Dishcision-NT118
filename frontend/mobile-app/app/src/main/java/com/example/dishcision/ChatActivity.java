@@ -395,6 +395,8 @@ public class ChatActivity extends AppCompatActivity {
             if (msg.content != null && !msg.content.trim().isEmpty()) {
                 TextView tvBody = new TextView(this);
                 tvBody.setMaxWidth(dpToPx(255));
+                tvBody.setLayoutParams(new LinearLayout.LayoutParams(
+                        LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT));
                 tvBody.setLineSpacing(dpToPx(2), 1.0f);
                 tvBody.setTextSize(TypedValue.COMPLEX_UNIT_SP, 14);
                 tvBody.setTextColor(isMine ? Color.WHITE : 0xFF141B2B);
