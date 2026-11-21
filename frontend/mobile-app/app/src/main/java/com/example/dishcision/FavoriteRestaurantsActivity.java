@@ -293,6 +293,8 @@ public class FavoriteRestaurantsActivity extends AppCompatActivity {
             }
         };
         if (containerImage != null) containerImage.setOnClickListener(pickClick);
+        if (popupLayoutNoImage != null) popupLayoutNoImage.setOnClickListener(pickClick);
+        if (popupImgStoryPreview != null) popupImgStoryPreview.setOnClickListener(pickClick);
         if (popupBtnChangePhoto != null) popupBtnChangePhoto.setOnClickListener(pickClick);
 
         if (btnSelectMusic != null) {
@@ -393,6 +395,7 @@ public class FavoriteRestaurantsActivity extends AppCompatActivity {
         if (tvSubmitLabel != null) tvSubmitLabel.setText("Đang tải ảnh...");
         if (btnSubmit != null) btnSubmit.setEnabled(false);
 
+        final String activeAuth = !TextUtils.isEmpty(authHeader) ? authHeader : ApiClient.getAuthHeader(this);
         final String displayName = resolveFileName(targetUri);
 
         ImageOrientationHelper.prepareUploadAsync(
@@ -412,7 +415,7 @@ public class FavoriteRestaurantsActivity extends AppCompatActivity {
                         RequestBody requestFile = RequestBody.create(MediaType.parse(prepared.mimeType), prepared.file);
                         MultipartBody.Part filePart = MultipartBody.Part.createFormData("file", fileName, requestFile);
 
-                        ApiClient.getApiService().uploadSingleImage(authHeader, filePart).enqueue(new Callback<UploadResponse>() {
+                        ApiClient.getApiService().uploadSingleImage(activeAuth, filePart).enqueue(new Callback<UploadResponse>() {
                             @Override
                             public void onResponse(@NonNull Call<UploadResponse> call, @NonNull Response<UploadResponse> response) {
                                 ImageOrientationHelper.deleteQuietly(prepared.file);
@@ -421,12 +424,20 @@ public class FavoriteRestaurantsActivity extends AppCompatActivity {
                                             ? response.body().data.url
                                             : response.body().data.fullUrl;
                                     if (!TextUtils.isEmpty(uploadedUrl)) {
-                                        createStoryFromPopup(authHeader, uploadedUrl, caption, btnSubmit, pbSubmit, tvSubmitLabel, dialog);
+                                        createStoryFromPopup(activeAuth, uploadedUrl, caption, btnSubmit, pbSubmit, tvSubmitLabel, dialog);
                                         return;
                                     }
                                 }
                                 resetPopupSubmit(btnSubmit, pbSubmit, tvSubmitLabel);
-                                Toast.makeText(FavoriteRestaurantsActivity.this, "Tải ảnh thất bại (mã " + response.code() + ")", Toast.LENGTH_SHORT).show();
+                                String errMsg = "mã " + response.code();
+                                try {
+                                    if (response.errorBody() != null) {
+                                        String b = response.errorBody().string();
+                                        String m = com.example.dishcision.network.ProfileSyncHelper.extractJsonField(b, "message");
+                                        if (m != null && !m.isEmpty()) errMsg = m;
+                                    }
+                                } catch (Exception ignored) {}
+                                Toast.makeText(FavoriteRestaurantsActivity.this, "Tải ảnh thất bại (" + errMsg + ")", Toast.LENGTH_SHORT).show();
                             }
 
                             @Override
@@ -441,7 +452,7 @@ public class FavoriteRestaurantsActivity extends AppCompatActivity {
                     @Override
                     public void onError(Exception error) {
                         resetPopupSubmit(btnSubmit, pbSubmit, tvSubmitLabel);
-                        Toast.makeText(FavoriteRestaurantsActivity.this, "Không thể xử lý ảnh đã chọn", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(FavoriteRestaurantsActivity.this, "Không thể xử lý ảnh đã chọn: " + (error != null ? error.getMessage() : ""), Toast.LENGTH_SHORT).show();
                     }
                 }
         );
@@ -464,7 +475,15 @@ public class FavoriteRestaurantsActivity extends AppCompatActivity {
                             }
                             fetchRestaurantsFromBackend();
                         } else {
-                            Toast.makeText(FavoriteRestaurantsActivity.this, "Đăng story thất bại (mã " + response.code() + ")", Toast.LENGTH_SHORT).show();
+                            String errMsg = "mã " + response.code();
+                            try {
+                                if (response.errorBody() != null) {
+                                    String b = response.errorBody().string();
+                                    String m = com.example.dishcision.network.ProfileSyncHelper.extractJsonField(b, "message");
+                                    if (m != null && !m.isEmpty()) errMsg = m;
+                                }
+                            } catch (Exception ignored) {}
+                            Toast.makeText(FavoriteRestaurantsActivity.this, "Đăng story thất bại (" + errMsg + ")", Toast.LENGTH_SHORT).show();
                         }
                     }
 
@@ -504,13 +523,17 @@ public class FavoriteRestaurantsActivity extends AppCompatActivity {
             }
         }
 
+        TokenManager tm = new TokenManager(this);
+        int currentUserId = tm.getUserId();
+        FollowingRestaurantsResponse.StoryItem myStory = currentUserId > 0 ? distinctByStore.remove(currentUserId) : null;
+
         // Luôn hiển thị thanh story để người dùng có thể bấm "Thêm story"
         if (tvStoriesHeader != null) tvStoriesHeader.setVisibility(View.VISIBLE);
         if (scrollStories != null) scrollStories.setVisibility(View.VISIBLE);
 
         int pad = dpToPx(3);
 
-        // 1. NÚT THÊM STORY (Nằm đầu tiên, cạnh các story)
+        // 1. NÚT STORY CỦA BẠN / THÊM STORY (Nằm đầu tiên)
         LinearLayout addCol = new LinearLayout(this);
         LinearLayout.LayoutParams addColParams = new LinearLayout.LayoutParams(dpToPx(72), LinearLayout.LayoutParams.WRAP_CONTENT);
         addCol.setLayoutParams(addColParams);
@@ -521,7 +544,7 @@ public class FavoriteRestaurantsActivity extends AppCompatActivity {
 
         RelativeLayout addRing = new RelativeLayout(this);
         addRing.setLayoutParams(new LinearLayout.LayoutParams(dpToPx(60), dpToPx(60)));
-        addRing.setBackgroundResource(R.drawable.bg_add_story_ring);
+        addRing.setBackgroundResource(myStory != null ? R.drawable.bg_story_ring : R.drawable.bg_add_story_ring);
         addRing.setPadding(pad, pad, pad, pad);
 
         ImageView addAvatar = new ImageView(this);
@@ -529,6 +552,9 @@ public class FavoriteRestaurantsActivity extends AppCompatActivity {
                 RelativeLayout.LayoutParams.MATCH_PARENT, RelativeLayout.LayoutParams.MATCH_PARENT));
         addAvatar.setScaleType(ImageView.ScaleType.CENTER_CROP);
         addAvatar.setImageResource(R.drawable.ic_profile);
+        if (myStory != null && myStory.avatarUrl != null && !myStory.avatarUrl.isEmpty()) {
+            ImageLoader.loadAvatar(addAvatar, myStory.avatarUrl);
+        }
         addRing.addView(addAvatar);
 
         // Huy hiệu (+) ở góc dưới phải của avatar
@@ -539,6 +565,8 @@ public class FavoriteRestaurantsActivity extends AppCompatActivity {
         FrameLayout badgeContainer = new FrameLayout(this);
         badgeContainer.setLayoutParams(badgeParams);
         badgeContainer.setBackgroundResource(R.drawable.bg_add_story_badge);
+        badgeContainer.setClickable(true);
+        badgeContainer.setFocusable(true);
 
         ImageView plusIcon = new ImageView(this);
         FrameLayout.LayoutParams iconParams = new FrameLayout.LayoutParams(dpToPx(12), dpToPx(12));
@@ -547,6 +575,7 @@ public class FavoriteRestaurantsActivity extends AppCompatActivity {
         plusIcon.setImageResource(R.drawable.ic_add);
         plusIcon.setColorFilter(ContextCompat.getColor(this, R.color.white));
         badgeContainer.addView(plusIcon);
+        badgeContainer.setOnClickListener(v -> showCreateStoryPopup());
         addRing.addView(badgeContainer);
 
         TextView tvAddLabel = new TextView(this);
@@ -556,14 +585,29 @@ public class FavoriteRestaurantsActivity extends AppCompatActivity {
         tvAddLabel.setLayoutParams(addLabelParams);
         tvAddLabel.setMaxLines(1);
         tvAddLabel.setEllipsize(TextUtils.TruncateAt.END);
-        tvAddLabel.setText("Thêm story");
+        tvAddLabel.setText(myStory != null ? "Story của bạn" : "Thêm story");
         tvAddLabel.setTextColor(ContextCompat.getColor(this, R.color.text_dark));
         tvAddLabel.setTextSize(12f);
         tvAddLabel.setTypeface(null, Typeface.BOLD);
 
         addCol.addView(addRing);
         addCol.addView(tvAddLabel);
-        addCol.setOnClickListener(v -> showCreateStoryPopup());
+
+        if (myStory != null) {
+            final FollowingRestaurantsResponse.StoryItem finalMyStory = myStory;
+            View.OnClickListener openMyStory = v -> {
+                Intent intent = new Intent(FavoriteRestaurantsActivity.this, StoryActivity.class);
+                intent.putExtra(StoryActivity.EXTRA_USER_ID, finalMyStory.userId);
+                intent.putExtra(StoryActivity.EXTRA_STORE_NAME, finalMyStory.storeName != null ? finalMyStory.storeName : "Story của bạn");
+                startActivity(intent);
+            };
+            addRing.setOnClickListener(openMyStory);
+            tvAddLabel.setOnClickListener(openMyStory);
+        } else {
+            addRing.setOnClickListener(v -> showCreateStoryPopup());
+            tvAddLabel.setOnClickListener(v -> showCreateStoryPopup());
+        }
+
         layoutStoriesContainer.addView(addCol);
 
         // 2. CÁC STORY HIỆN CÓ CỦA CÁC QUÁN

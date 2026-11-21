@@ -318,11 +318,26 @@ async function buildRestaurantsPayload(userId: number | undefined, keyword: stri
 
   if (onlyFollowing) {
     if (!userId || followingIds.size === 0) {
+      const myStories = userId
+        ? await prisma.story.findMany({
+            where: { userId },
+            include: { user: { select: { id: true, fullName: true, avatarUrl: true } } },
+            orderBy: { createdAt: 'desc' },
+            take: 10,
+          })
+        : [];
       return {
         newDishesSummary: '0 quán đang theo dõi',
         totalFollowing: 0,
         openStoresCount: 0,
-        stories: [],
+        stories: myStories.map((st) => ({
+          id: st.id,
+          userId: st.userId,
+          storeName: st.user.fullName,
+          title: st.caption || st.user.fullName,
+          avatarUrl: resolveAvatarUrl(st.user.avatarUrl || st.mediaUrl),
+          mediaUrl: st.mediaUrl,
+        })),
         restaurants: [],
       };
     }
@@ -340,14 +355,15 @@ async function buildRestaurantsPayload(userId: number | undefined, keyword: stri
   });
 
   const storeIds = restaurantUsers.map((r) => r.id);
+  const targetStoryUserIds = userId ? Array.from(new Set([...storeIds, userId])) : storeIds;
 
   const [reviews, storeStories] = await Promise.all([
     prisma.review.findMany({
       select: { restaurantName: true },
     }),
-    storeIds.length > 0
+    targetStoryUserIds.length > 0
       ? prisma.story.findMany({
-          where: { userId: { in: storeIds } },
+          where: { userId: { in: targetStoryUserIds } },
           include: { user: { select: { id: true, fullName: true, avatarUrl: true } } },
           orderBy: { createdAt: 'desc' },
           take: 20,
