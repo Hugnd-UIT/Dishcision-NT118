@@ -1,11 +1,14 @@
 package com.example.dishcision;
 
 import android.content.Intent;
+import android.graphics.Rect;
 import android.os.Bundle;
 import android.text.InputType;
+import android.view.View;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.RelativeLayout;
+import android.widget.ScrollView;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -50,9 +53,23 @@ public class ResetPasswordActivity extends AppCompatActivity {
         EdgeToEdge.enable(this);
         setContentView(R.layout.activity_reset_password);
 
+        ScrollView scrollView = findViewById(R.id.scrollResetPassword);
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main_reset_password), (v, insets) -> {
-            Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
-            v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
+            Insets insetsCombined = insets.getInsets(WindowInsetsCompat.Type.systemBars() | WindowInsetsCompat.Type.ime());
+            v.setPadding(insetsCombined.left, insetsCombined.top, insetsCombined.right, insetsCombined.bottom);
+
+            boolean isImeVisible = insets.isVisible(WindowInsetsCompat.Type.ime());
+            if (isImeVisible && scrollView != null) {
+                View focused = getCurrentFocus();
+                if (focused != null) {
+                    scrollView.post(() -> {
+                        Rect rect = new Rect();
+                        focused.getDrawingRect(rect);
+                        rect.bottom += 120;
+                        scrollView.requestChildRectangleOnScreen(focused, rect, false);
+                    });
+                }
+            }
             return insets;
         });
 

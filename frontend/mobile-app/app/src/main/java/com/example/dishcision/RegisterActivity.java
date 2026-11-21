@@ -1,6 +1,7 @@
 package com.example.dishcision;
 
 import android.content.Intent;
+import android.graphics.Rect;
 import android.os.Bundle;
 import android.text.InputType;
 import android.text.SpannableString;
@@ -11,6 +12,7 @@ import android.view.View;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.RelativeLayout;
+import android.widget.ScrollView;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -63,9 +65,23 @@ public class RegisterActivity extends AppCompatActivity {
         EdgeToEdge.enable(this);
         setContentView(R.layout.activity_register);
 
+        ScrollView scrollView = findViewById(R.id.scrollRegister);
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main_register), (v, insets) -> {
-            Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
-            v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
+            Insets insetsCombined = insets.getInsets(WindowInsetsCompat.Type.systemBars() | WindowInsetsCompat.Type.ime());
+            v.setPadding(insetsCombined.left, insetsCombined.top, insetsCombined.right, insetsCombined.bottom);
+
+            boolean isImeVisible = insets.isVisible(WindowInsetsCompat.Type.ime());
+            if (isImeVisible && scrollView != null) {
+                View focused = getCurrentFocus();
+                if (focused != null) {
+                    scrollView.post(() -> {
+                        Rect rect = new Rect();
+                        focused.getDrawingRect(rect);
+                        rect.bottom += 120;
+                        scrollView.requestChildRectangleOnScreen(focused, rect, false);
+                    });
+                }
+            }
             return insets;
         });
 
@@ -144,6 +160,22 @@ public class RegisterActivity extends AppCompatActivity {
     }
 
     private void setupListeners() {
+        ScrollView scrollView = findViewById(R.id.scrollRegister);
+        View.OnFocusChangeListener focusListener = (view, hasFocus) -> {
+            if (hasFocus && scrollView != null) {
+                scrollView.postDelayed(() -> {
+                    Rect rect = new Rect();
+                    view.getDrawingRect(rect);
+                    rect.bottom += 120;
+                    scrollView.requestChildRectangleOnScreen(view, rect, false);
+                }, 100);
+            }
+        };
+        if (edtFullName != null) edtFullName.setOnFocusChangeListener(focusListener);
+        if (edtRegisterEmail != null) edtRegisterEmail.setOnFocusChangeListener(focusListener);
+        if (edtRegisterPassword != null) edtRegisterPassword.setOnFocusChangeListener(focusListener);
+        if (edtConfirmPassword != null) edtConfirmPassword.setOnFocusChangeListener(focusListener);
+
         if (btnRegister != null) {
             btnRegister.setOnClickListener(v -> performRegister());
         }
