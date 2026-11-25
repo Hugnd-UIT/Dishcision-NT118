@@ -139,6 +139,15 @@ public class TastePreferencesActivity extends AppCompatActivity {
         baselineAllergies = collectSelectedAllergies();
     }
 
+    private void updateAllergySummary() {
+        TextView tv = findViewById(R.id.tvAllergySubtext);
+        if (tv == null) return;
+        CheckBox[] boxes = {chkPeanuts, chkShellfish, chkMilk, chkEggs, chkGluten, chkSoy};
+        int n = 0;
+        for (CheckBox c : boxes) if (c != null && c.isChecked()) n++;
+        tv.setText(n == 0 ? "Chưa thiết lập · Chọn các chất bạn muốn lưu ý." : "Đã chọn " + n + " chất gây dị ứng");
+    }
+
     private void applyAllergySet(java.util.Collection<String> allergies) {
         Set<String> normalized = ProfileSyncHelper.normalizeLowerStringSet(allergies);
         isPopulatingAllergies = true;
@@ -308,6 +317,7 @@ public class TastePreferencesActivity extends AppCompatActivity {
             if (!isPopulatingAllergies) {
                 isAllergiesEdited = true;
             }
+            updateAllergySummary();
         };
         if (chkPeanuts != null) chkPeanuts.setOnCheckedChangeListener(allergyListener);
         if (chkShellfish != null) chkShellfish.setOnCheckedChangeListener(allergyListener);

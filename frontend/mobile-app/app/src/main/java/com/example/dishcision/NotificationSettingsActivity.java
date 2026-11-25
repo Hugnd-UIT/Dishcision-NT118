@@ -86,7 +86,15 @@ public class NotificationSettingsActivity extends AppCompatActivity {
         // Category switches only matter while push notifications are on
         if (switchPush != null) {
             updateCategoryEnabled(switchPush.isChecked());
-            switchPush.setOnCheckedChangeListener((b, isChecked) -> updateCategoryEnabled(isChecked));
+            updatePushSubtext(switchPush.isChecked());
+            switchPush.setOnCheckedChangeListener((b, isChecked) -> {
+                updateCategoryEnabled(isChecked);
+                updatePushSubtext(isChecked);
+            });
+        }
+        if (switchEmail != null) {
+            updateEmailSubtext(switchEmail.isChecked());
+            switchEmail.setOnCheckedChangeListener((b, isChecked) -> updateEmailSubtext(isChecked));
         }
 
         if (btnSaveNotificationSettings != null) {
@@ -109,6 +117,16 @@ public class NotificationSettingsActivity extends AppCompatActivity {
 
     private void saveSwitch(SwitchCompat sw, String key) {
         if (sw != null) NotificationPrefs.set(this, key, sw.isChecked());
+    }
+
+    private void updatePushSubtext(boolean on) {
+        TextView tv = findViewById(R.id.tvPushSubtext);
+        if (tv != null) tv.setText(on ? "Đang bật trong Dishcision" : "Đang tắt trong Dishcision");
+    }
+
+    private void updateEmailSubtext(boolean on) {
+        TextView tv = findViewById(R.id.tvEmailSubtext);
+        if (tv != null) tv.setText(on ? "Đang nhận email khuyến mãi" : "Không nhận email khuyến mãi");
     }
 
     private void updateCategoryEnabled(boolean pushOn) {
