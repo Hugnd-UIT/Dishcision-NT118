@@ -173,6 +173,7 @@
                     app:tint="#C2410C" />
 
                 <TextView
+                    android:id="@+id/tvConfirmHint"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_marginStart="10dp"

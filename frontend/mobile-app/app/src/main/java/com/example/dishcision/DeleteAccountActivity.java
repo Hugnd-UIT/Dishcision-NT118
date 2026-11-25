@@ -60,6 +60,12 @@ public class DeleteAccountActivity extends AppCompatActivity {
         if (chkConfirmDelete != null) {
             chkConfirmDelete.setOnCheckedChangeListener((buttonView, isChecked) -> {
                 isConfirmed = isChecked;
+                TextView tvHint = findViewById(R.id.tvConfirmHint);
+                if (tvHint != null) {
+                    tvHint.setText(isChecked
+                            ? "Nút xóa đã được mở. Tài khoản chỉ bị xóa khi bạn bấm \"Xóa tài khoản\" và xác nhận."
+                            : "Chọn ô xác nhận để chủ động tiếp tục. Tài khoản chưa bị xóa trên màn hình này.");
+                }
                 if (btnConfirmDeleteAccount != null) {
                     btnConfirmDeleteAccount.setClickable(isChecked);
                     btnConfirmDeleteAccount.setFocusable(isChecked);
