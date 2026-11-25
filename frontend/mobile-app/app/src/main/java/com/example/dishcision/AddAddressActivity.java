@@ -52,6 +52,38 @@ public class AddAddressActivity extends AppCompatActivity {
     private String selectedDistrict = "";
     private String selectedWard = "";
     private boolean isSubmitting = false;
+    private int placeholderColor = 0xFF8E7570;
+
+    // shortcut: danh sách mẫu cố định, thay bằng API địa giới hành chính khi có.
+    private static final String[] CITIES = {"Hà Nội", "TP. Hồ Chí Minh", "Đà Nẵng"};
+
+    private static String[] districtsOf(String city) {
+        switch (city) {
+            case "Hà Nội": return new String[]{"Ba Đình", "Cầu Giấy", "Đống Đa"};
+            case "TP. Hồ Chí Minh": return new String[]{"Quận 1", "Thủ Đức"};
+            case "Đà Nẵng": return new String[]{"Hải Châu", "Sơn Trà"};
+            default: return new String[0];
+        }
+    }
+
+    private static String[] wardsOf(String district) {
+        switch (district) {
+            case "Ba Đình": return new String[]{"Phường Điện Biên", "Phường Phúc Xá"};
+            case "Cầu Giấy": return new String[]{"Phường Dịch Vọng", "Phường Nghĩa Đô"};
+            case "Đống Đa": return new String[]{"Phường Cát Linh", "Phường Láng Hạ"};
+            case "Quận 1": return new String[]{"Phường Bến Nghé", "Phường Bến Thành"};
+            case "Thủ Đức": return new String[]{"Phường Thảo Điền", "Phường An Phú"};
+            case "Hải Châu": return new String[]{"Phường Hải Châu I", "Phường Thạch Thang"};
+            case "Sơn Trà": return new String[]{"Phường An Hải Bắc", "Phường Mân Thái"};
+            default: return new String[0];
+        }
+    }
+
+    private void resetPlaceholder(TextView tv, String hint) {
+        if (tv == null) return;
+        tv.setText(hint);
+        tv.setTextColor(placeholderColor);
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -78,6 +110,7 @@ public class AddAddressActivity extends AppCompatActivity {
         edtRecipientPhone = findViewById(R.id.edtRecipientPhone);
         spinnerCity = findViewById(R.id.spinnerCity);
         tvSelectedCity = findViewById(R.id.tvSelectedCity);
+        if (tvSelectedCity != null) placeholderColor = tvSelectedCity.getCurrentTextColor();
         spinnerDistrict = findViewById(R.id.spinnerDistrict);
         tvSelectedDistrict = findViewById(R.id.tvSelectedDistrict);
         spinnerWard = findViewById(R.id.spinnerWard);
@@ -100,11 +133,16 @@ public class AddAddressActivity extends AppCompatActivity {
         if (spinnerCity != null) {
             spinnerCity.setOnClickListener(v -> {
                 PopupMenu popup = new PopupMenu(this, spinnerCity);
-                popup.getMenu().add("Hà Nội");
-                popup.getMenu().add("TP. Hồ Chí Minh");
-                popup.getMenu().add("Đà Nẵng");
+                for (String c : CITIES) popup.getMenu().add(c);
                 popup.setOnMenuItemClickListener((MenuItem item) -> {
-                    selectedCity = item.getTitle().toString();
+                    String city = item.getTitle().toString();
+                    if (!city.equals(selectedCity)) {
+                        selectedDistrict = "";
+                        selectedWard = "";
+                        resetPlaceholder(tvSelectedDistrict, "Chọn quận, huyện");
+                        resetPlaceholder(tvSelectedWard, "Chọn phường, xã");
+                    }
+                    selectedCity = city;
                     if (tvSelectedCity != null) {
                         tvSelectedCity.setText(selectedCity);
                         tvSelectedCity.setTextColor(0xFF141B2B);
@@ -117,14 +155,19 @@ public class AddAddressActivity extends AppCompatActivity {
 
         if (spinnerDistrict != null) {
             spinnerDistrict.setOnClickListener(v -> {
+                if (selectedCity.isEmpty()) {
+                    Toast.makeText(this, "Vui lòng chọn Tỉnh / Thành phố trước", Toast.LENGTH_SHORT).show();
+                    return;
+                }
                 PopupMenu popup = new PopupMenu(this, spinnerDistrict);
-                popup.getMenu().add("Ba Đình");
-                popup.getMenu().add("Cầu Giấy");
-                popup.getMenu().add("Đống Đa");
-                popup.getMenu().add("Quận 1");
-                popup.getMenu().add("Thủ Đức");
+                for (String d : districtsOf(selectedCity)) popup.getMenu().add(d);
                 popup.setOnMenuItemClickListener((MenuItem item) -> {
-                    selectedDistrict = item.getTitle().toString();
+                    String district = item.getTitle().toString();
+                    if (!district.equals(selectedDistrict)) {
+                        selectedWard = "";
+                        resetPlaceholder(tvSelectedWard, "Chọn phường, xã");
+                    }
+                    selectedDistrict = district;
                     if (tvSelectedDistrict != null) {
                         tvSelectedDistrict.setText(selectedDistrict);
                         tvSelectedDistrict.setTextColor(0xFF141B2B);
@@ -137,12 +180,12 @@ public class AddAddressActivity extends AppCompatActivity {
 
         if (spinnerWard != null) {
             spinnerWard.setOnClickListener(v -> {
+                if (selectedDistrict.isEmpty()) {
+                    Toast.makeText(this, "Vui lòng chọn Quận / Huyện trước", Toast.LENGTH_SHORT).show();
+                    return;
+                }
                 PopupMenu popup = new PopupMenu(this, spinnerWard);
-                popup.getMenu().add("Phường Điện Biên");
-                popup.getMenu().add("Phường Phúc Xá");
-                popup.getMenu().add("Phường Dịch Vọng");
-                popup.getMenu().add("Phường Bến Nghé");
-                popup.getMenu().add("Phường Thảo Điền");
+                for (String w : wardsOf(selectedDistrict)) popup.getMenu().add(w);
                 popup.setOnMenuItemClickListener((MenuItem item) -> {
                     selectedWard = item.getTitle().toString();
                     if (tvSelectedWard != null) {
@@ -183,6 +226,15 @@ public class AddAddressActivity extends AppCompatActivity {
 
         if (name.isEmpty() || phone.isEmpty() || detail.isEmpty()) {
             Toast.makeText(this, "Vui lòng điền đầy đủ các thông tin bắt buộc (*)", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        // Khi sửa địa chỉ cũ, tỉnh/quận/phường nằm sẵn trong phần chi tiết nên không bắt chọn lại.
+        if (editingAddressId == 0 && (selectedCity.isEmpty() || selectedDistrict.isEmpty() || selectedWard.isEmpty())) {
+            Toast.makeText(this, "Vui lòng chọn Tỉnh/Thành phố, Quận/Huyện và Phường/Xã", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        if (!phone.replaceAll("[\\s.-]", "").matches("^(0|\\+84)\\d{9}$")) {
+            Toast.makeText(this, "Số điện thoại không hợp lệ", Toast.LENGTH_SHORT).show();
             return;
         }
 
