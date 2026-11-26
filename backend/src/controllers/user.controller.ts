@@ -752,15 +752,16 @@ export async function deleteMe(req: AuthRequest, res: Response): Promise<void> {
   const token = req.headers.authorization?.slice(7).trim() || '';
 
   const user = await prisma.user.findUnique({ where: { id: userId } });
-  const adminUser = await prisma.user.findFirst({ where: { role: 'Admin' } });
-  const actorId = adminUser ? adminUser.id : userId;
 
   await logActivity({
-    userId: actorId,
+    userId,
+    username: user?.username,
+    role: user?.role,
+    avatarUrl: user?.avatarUrl || undefined,
     action: 'DELETE_ACCOUNT',
     targetType: 'User' as any,
     targetId: userId,
-    details: `Tài khoản @${user?.username || userId} (${user?.email || ''}) đã thực hiện xóa tài khoản`,
+    details: `Tài khoản @${user?.username || userId} ${user?.email || ''} đã thực hiện xóa tài khoản`,
     ipAddress: req.ip,
   });
 

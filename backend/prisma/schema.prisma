@@ -387,17 +387,23 @@ model Report {
 }
 
 model AuditLog {
-  id         Int             @id @default(autoincrement())
-  adminId    Int
-  action     String          @db.VarChar(100)
-  targetType AuditTargetType
-  targetId   Int
-  ipAddress  String?         @db.VarChar(45)
-  details    String?         @db.Text
-  createdAt  DateTime        @default(now())
+  id            Int              @id @default(autoincrement())
+  adminId       Int?
+  actorUsername String?          @db.VarChar(100)
+  actorRole     String?          @db.VarChar(50)
+  actorAvatar   String?          @db.Text
+  action        String           @db.VarChar(100)
+  targetType    AuditTargetType
+  targetId      Int
+  ipAddress     String?          @db.VarChar(45)
+  details       String?          @db.Text
+  createdAt     DateTime         @default(now())
 
-  admin User @relation("AdminLogs", fields: [adminId], references: [id], onDelete: Cascade)
+  admin         User?            @relation("AdminLogs", fields: [adminId], references: [id], onDelete: SetNull)
 
+  @@index([adminId])
+  @@index([action])
+  @@index([createdAt])
   @@map("audit_logs")
 }
 

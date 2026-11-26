@@ -2,7 +2,10 @@ import { useQuery } from '@tanstack/react-query'
 
 export interface AuditLogItem {
   id: number
-  adminId: number
+  adminId?: number | null
+  actorUsername?: string | null
+  actorRole?: string | null
+  actorAvatar?: string | null
   admin?: {
     id: number
     username: string

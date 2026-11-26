@@ -671,7 +671,21 @@ export async function getAuditLogs(req: AuthRequest, res: Response): Promise<voi
     prisma.auditLog.count({ where }),
   ]);
 
-  paginatedResponse(res, logs, { page, limit, total });
+  const formattedLogs = logs.map((log: any) => ({
+    ...log,
+    admin: log.admin
+      ? log.admin
+      : log.actorUsername
+      ? {
+          id: log.adminId || log.targetId || 0,
+          username: log.actorUsername,
+          role: log.actorRole || 'User',
+          avatarUrl: log.actorAvatar || null,
+        }
+      : null,
+  }));
+
+  paginatedResponse(res, formattedLogs, { page, limit, total });
 }
 
 // ── GET /admin/dashboard-stats ────────────

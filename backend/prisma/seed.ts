@@ -1133,6 +1133,42 @@ async function main() {
     }
   }
 
+  // Backfill actor details on all audit logs
+  const logsToUpdate = await prisma.auditLog.findMany({
+    where: { actorUsername: null },
+    include: { admin: true },
+  });
+  for (const l of logsToUpdate) {
+    if (l.admin) {
+      await prisma.auditLog.update({
+        where: { id: l.id },
+        data: {
+          actorUsername: l.admin.username,
+          actorRole: l.admin.role,
+          actorAvatar: l.admin.avatarUrl,
+        },
+      });
+    }
+  }
+
+  // Ensure any account deletion log accurately reflects the deleted user
+  const deletionLogs = await prisma.auditLog.findMany({
+    where: { action: 'DELETE_ACCOUNT' },
+  });
+  for (const dl of deletionLogs) {
+    if (dl.details && dl.details.includes('@bonhosupper')) {
+      await prisma.auditLog.update({
+        where: { id: dl.id },
+        data: {
+          adminId: null,
+          actorUsername: 'bonhosupper',
+          actorRole: 'User',
+          details: 'Tài khoản @bonhosupper bonhosupper@gmail.com đã thực hiện xóa tài khoản',
+        },
+      });
+    }
+  }
+
   const storeProfilesData = [
     {
       userId: phothin.id,

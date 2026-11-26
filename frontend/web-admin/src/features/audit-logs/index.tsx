@@ -61,10 +61,11 @@ export function AuditLogsFeature() {
   const filteredLogs = logs.filter((log) => {
     if (!searchTerm) return true
     const term = searchTerm.toLowerCase()
+    const actorUser = (log.admin?.username || log.actorUsername || '').toLowerCase()
     return (
       log.action.toLowerCase().includes(term) ||
       (log.details || '').toLowerCase().includes(term) ||
-      (log.admin?.username || '').toLowerCase().includes(term) ||
+      actorUser.includes(term) ||
       log.targetType.toLowerCase().includes(term)
     )
   })
@@ -254,18 +255,18 @@ export function AuditLogsFeature() {
                         <TableCell>
                           <div className='flex items-center gap-2'>
                             <Avatar className='size-6'>
-                              <AvatarImage src={log.admin?.avatarUrl || ''} />
+                              <AvatarImage src={log.admin?.avatarUrl || log.actorAvatar || ''} />
                               <AvatarFallback className='text-[10px] bg-primary/10 text-primary'>
-                                {(log.admin?.username || 'U')[0].toUpperCase()}
+                                {(log.admin?.username || log.actorUsername || 'U')[0].toUpperCase()}
                               </AvatarFallback>
                             </Avatar>
                             <div className='flex flex-col'>
                               <span className='font-medium text-foreground truncate max-w-[120px]'>
-                                @{log.admin?.username || 'nguoidung'}
+                                @{log.admin?.username || log.actorUsername || 'nguoidung'}
                               </span>
-                              {log.admin?.role && (
+                              {(log.admin?.role || log.actorRole) && (
                                 <span className='text-[10px] text-muted-foreground'>
-                                  {log.admin.role === 'Admin' ? 'Quản trị viên' : log.admin.role === 'RestaurantAccount' ? 'Chủ quán' : 'Người dùng'}
+                                  {(log.admin?.role || log.actorRole) === 'Admin' ? 'Quản trị viên' : (log.admin?.role || log.actorRole) === 'RestaurantAccount' ? 'Chủ quán' : 'Người dùng'}
                                 </span>
                               )}
                             </div>
