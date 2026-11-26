@@ -324,6 +324,14 @@ export async function likePost(req: AuthRequest, res: Response): Promise<void> {
       });
     }
     await delCache(`post:${postId}`);
+    logActivity({
+      userId,
+      action: 'LIKE_POST',
+      targetType: 'Post' as any,
+      targetId: postId,
+      details: `Thích bài viết #${postId}`,
+      ipAddress: req.ip,
+    });
     successResponse(res, null, 'Liked successfully');
   } catch {
     errorResponse(res, 'Already liked', 409);

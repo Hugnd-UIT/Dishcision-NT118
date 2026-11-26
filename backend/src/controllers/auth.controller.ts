@@ -567,6 +567,14 @@ export async function googleAuth(req: Request, res: Response): Promise<void> {
 export async function logout(req: AuthRequest, res: Response): Promise<void> {
   const userId = req.user!.userId;
   await prisma.user.update({ where: { id: userId }, data: { refreshToken: null } });
+  logActivity({
+    userId,
+    action: 'USER_LOGOUT',
+    targetType: 'User' as any,
+    targetId: userId,
+    details: 'Đăng xuất khỏi hệ thống',
+    ipAddress: req.ip,
+  });
   const token = req.headers.authorization?.slice(7).trim();
   if (token) {
     const tokenHash = hashToken(token);
@@ -757,6 +765,14 @@ export async function changePassword(req: AuthRequest, res: Response): Promise<v
   ]);
 
   successResponse(res, null, 'Password changed successfully');
+  logActivity({
+    userId,
+    action: 'CHANGE_PASSWORD',
+    targetType: 'User' as any,
+    targetId: userId,
+    details: 'Đổi mật khẩu tài khoản',
+    ipAddress: req.ip,
+  });
 }
 
 // ── 2FA & Security Preferences ───────────

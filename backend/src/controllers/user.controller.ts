@@ -7,6 +7,7 @@ import { AuthRequest } from '../middlewares/auth.middleware';
 import { getExpiresIn } from '../utils/auth';
 import { toRelativeUploadPath } from './upload.controller';
 import { areUsersBlocked, canAccessPrivacy } from '../utils/privacy';
+import { logActivity } from '../utils/audit';
 import crypto from 'crypto';
 
 const USER_PUBLIC_SELECT = {
@@ -175,6 +176,15 @@ export async function updateMe(req: AuthRequest, res: Response): Promise<void> {
       },
       preferences: { include: { preference: true } },
     },
+  });
+
+  logActivity({
+    userId,
+    action: 'UPDATE_PROFILE',
+    targetType: 'User' as any,
+    targetId: userId,
+    details: `Cập nhật hồ sơ cá nhân: ${fullName || user.fullName || ''}`,
+    ipAddress: req.ip,
   });
 
   const invalidations: Promise<unknown>[] = [
@@ -523,6 +533,14 @@ export async function blockAccount(req: AuthRequest, res: Response): Promise<voi
   await Promise.all([delCache(`user:${userId}`), delCache(`user:${targetId}`)]);
 
   const blocked = await fetchBlockedList(userId);
+  logActivity({
+    userId,
+    action: 'BLOCK_USER',
+    targetType: 'User' as any,
+    targetId,
+    details: `Chặn tài khoản #${targetId}`,
+    ipAddress: req.ip,
+  });
   res.status(200).json({
     success: true,
     data: blocked,
@@ -545,6 +563,14 @@ export async function unblockAccount(req: AuthRequest, res: Response): Promise<v
   await Promise.all([delCache(`user:${userId}`), delCache(`user:${targetId}`)]);
 
   const blocked = await fetchBlockedList(userId);
+  logActivity({
+    userId,
+    action: 'UNBLOCK_USER',
+    targetType: 'User' as any,
+    targetId,
+    details: `Bỏ chặn tài khoản #${targetId}`,
+    ipAddress: req.ip,
+  });
   res.status(200).json({
     success: true,
     data: blocked,
@@ -724,6 +750,20 @@ export async function getMyActivity(req: AuthRequest, res: Response): Promise<vo
 export async function deleteMe(req: AuthRequest, res: Response): Promise<void> {
   const userId = req.user!.userId;
   const token = req.headers.authorization?.slice(7).trim() || '';
+
+  const user = await prisma.user.findUnique({ where: { id: userId } });
+  const adminUser = await prisma.user.findFirst({ where: { role: 'Admin' } });
+  const actorId = adminUser ? adminUser.id : userId;
+
+  await logActivity({
+    userId: actorId,
+    action: 'DELETE_ACCOUNT',
+    targetType: 'User' as any,
+    targetId: userId,
+    details: `Tài khoản @${user?.username || userId} (${user?.email || ''}) đã thực hiện xóa tài khoản`,
+    ipAddress: req.ip,
+  });
+
   const sessions = await prisma.userSession.findMany({
     where: { userId },
     select: { tokenHash: true },
