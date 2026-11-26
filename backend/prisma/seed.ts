@@ -1559,7 +1559,7 @@ async function main() {
       title: 'Cập nhật vị trí quán trên bản đồ',
       description: 'Nhờ đội ngũ kiểm tra lại liên kết Google Maps cho bài viết đánh giá gần đây.',
       contactEmail: 'tester@dishcision.com',
-      status: 'Đã xử lý',
+      status: 'Đã giải quyết',
       attachments: [],
       timeline: [
         { step: 'Đã gửi yêu cầu', date: '05/11/2026', desc: 'Qua biểu mẫu hỗ trợ', isDone: true },

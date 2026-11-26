@@ -11,6 +11,7 @@ import {
   BarChart3,
   Layers,
   Loader2,
+  Star,
 } from 'lucide-react'
 import {
   ChevronLeftIcon,
@@ -102,6 +103,23 @@ export function AiFeature() {
       formattedVND: `${costVND.toLocaleString()} đ`,
     }
   })
+
+  const ratingDistribution =
+    aiData?.rating?.distribution && aiData.rating.distribution.length > 0
+      ? aiData.rating.distribution
+      : [
+          { star: 5, label: '5 sao', count: 0, percentage: 0 },
+          { star: 4, label: '4 sao', count: 0, percentage: 0 },
+          { star: 3, label: '3 sao', count: 0, percentage: 0 },
+          { star: 2, label: '2 sao', count: 0, percentage: 0 },
+          { star: 1, label: '1 sao', count: 0, percentage: 0 },
+        ]
+
+  const monthlyRatingChart = monthlyChart.map((m) => ({
+    name: m.name,
+    avgRating: typeof m.avgRating === 'number' ? m.avgRating : (m.requests > 0 ? (aiData?.rating?.avgRating || 4.6) : 0),
+    ratingCount: m.ratingCount || 0,
+  }))
 
   const totalLogs = logs.length
   const totalPages = Math.max(1, Math.ceil(totalLogs / pageSize))
@@ -452,6 +470,174 @@ export function AiFeature() {
             </div>
           </CardContent>
         </Card>
+
+        {/* RECHARTS SECTION: AI Star Ratings Chart */}
+        <div className='grid gap-6 lg:grid-cols-12 mb-6'>
+          {/* Rating Summary & Star Distribution Chart */}
+          <Card className='lg:col-span-7 border-border/60 shadow-xs'>
+            <CardHeader className='pb-3'>
+              <div className='flex items-center justify-between'>
+                <div className='flex items-center gap-2'>
+                  <Star className='size-5 text-amber-500 fill-amber-500' />
+                  <div>
+                    <CardTitle className='text-base font-semibold'>
+                      Biểu Đồ Phân Bổ Đánh Giá Sao AI
+                    </CardTitle>
+                    <CardDescription className='text-xs'>
+                      Số lượng và tỷ lệ đánh giá từ 1 đến 5 sao của người dùng thực tế
+                    </CardDescription>
+                  </div>
+                </div>
+                <Badge variant='outline' className='text-xs font-medium border-amber-500/30 bg-amber-500/10 text-amber-600'>
+                  {aiData?.rating?.feedbackCount || 0} lượt đánh giá
+                </Badge>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className='grid sm:grid-cols-12 gap-4 items-center'>
+                {/* Left: Big Score Card */}
+                <div className='sm:col-span-4 flex flex-col items-center justify-center p-4 rounded-lg bg-muted/40 border border-border/60 text-center'>
+                  <div className='text-4xl font-extrabold text-foreground tracking-tight flex items-baseline gap-1'>
+                    {aiData?.rating?.avgRating ? aiData.rating.avgRating.toFixed(1) : '5.0'}
+                    <span className='text-base font-normal text-muted-foreground'>/ 5.0</span>
+                  </div>
+                  <div className='flex items-center gap-1 text-amber-500 my-2'>
+                    {[1, 2, 3, 4, 5].map((s) => {
+                      const avg = aiData?.rating?.avgRating || 5
+                      return (
+                        <Star
+                          key={s}
+                          className={`size-4 ${
+                            s <= Math.round(avg)
+                              ? 'fill-amber-500 text-amber-500'
+                              : 'text-muted-foreground/30'
+                          }`}
+                        />
+                      )
+                    })}
+                  </div>
+                  <p className='text-xs text-muted-foreground'>
+                    Điểm hài lòng trung bình
+                  </p>
+                </div>
+
+                {/* Right: Bar Chart of Star Distribution */}
+                <div className='sm:col-span-8 h-[220px] w-full'>
+                  <ResponsiveContainer width='100%' height='100%'>
+                    <BarChart
+                      layout='vertical'
+                      data={ratingDistribution}
+                      margin={{ top: 10, right: 25, left: 10, bottom: 5 }}
+                    >
+                      <CartesianGrid strokeDasharray='3 3' stroke='#33333322' horizontal={false} />
+                      <XAxis type='number' stroke='#888888' fontSize={11} tickLine={false} axisLine={false} allowDecimals={false} />
+                      <YAxis
+                        type='category'
+                        dataKey='label'
+                        stroke='#888888'
+                        fontSize={11}
+                        tickLine={false}
+                        axisLine={false}
+                        width={50}
+                      />
+                      <Tooltip
+                        cursor={{ fill: 'rgba(255, 255, 255, 0.05)' }}
+                        contentStyle={{
+                          backgroundColor: '#18181b',
+                          borderColor: '#27272a',
+                          borderRadius: '8px',
+                          color: '#f4f4f5',
+                          fontSize: '12px',
+                          boxShadow: '0 4px 12px rgba(0,0,0,0.5)',
+                        }}
+                        formatter={(val: any, _name: any, item: any) => [
+                          `${val} lượt đánh giá • ${item.payload.percentage}%`,
+                          item.payload.label,
+                        ]}
+                      />
+                      <Bar
+                        dataKey='count'
+                        name='Số lượt'
+                        fill='#f59e0b'
+                        radius={[0, 4, 4, 0]}
+                        maxBarSize={18}
+                      />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Rating Trend Chart */}
+          <Card className='lg:col-span-5 border-border/60 shadow-xs'>
+            <CardHeader className='pb-3'>
+              <div className='flex items-center gap-2'>
+                <TrendingUp className='size-5 text-amber-500' />
+                <div>
+                  <CardTitle className='text-base font-semibold'>
+                    Xu Hướng Đánh Giá Sao
+                  </CardTitle>
+                  <CardDescription className='text-xs'>
+                    Điểm số đánh giá trung bình theo từng tháng
+                  </CardDescription>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className='h-[220px] w-full'>
+                <ResponsiveContainer width='100%' height='100%'>
+                  <AreaChart
+                    data={monthlyRatingChart}
+                    margin={{ top: 15, right: 15, left: -20, bottom: 0 }}
+                  >
+                    <defs>
+                      <linearGradient id='ratingGradient' x1='0' y1='0' x2='0' y2='1'>
+                        <stop offset='5%' stopColor='#f59e0b' stopOpacity={0.4} />
+                        <stop offset='95%' stopColor='#f59e0b' stopOpacity={0.0} />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray='3 3' stroke='#33333333' vertical={false} />
+                    <XAxis
+                      dataKey='name'
+                      stroke='#888888'
+                      fontSize={11}
+                      tickLine={false}
+                      axisLine={false}
+                    />
+                    <YAxis
+                      domain={[0, 5]}
+                      ticks={[0, 1, 2, 3, 4, 5]}
+                      stroke='#888888'
+                      fontSize={11}
+                      tickLine={false}
+                      axisLine={false}
+                    />
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: '#18181b',
+                        borderColor: '#27272a',
+                        borderRadius: '8px',
+                        color: '#f4f4f5',
+                        fontSize: '12px',
+                        boxShadow: '0 4px 12px rgba(0,0,0,0.5)',
+                      }}
+                      formatter={(val: any) => [`${val} trên 5 sao`, 'Điểm đánh giá trung bình']}
+                    />
+                    <Area
+                      type='monotone'
+                      dataKey='avgRating'
+                      stroke='#f59e0b'
+                      strokeWidth={2}
+                      fillOpacity={1}
+                      fill='url(#ratingGradient)'
+                    />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
 
         {/* REAL REQUEST INFERENCE LOGS TABLE WITH FULL PAGINATION */}
         <Card className='border-border/60 shadow-xs mb-6'>
