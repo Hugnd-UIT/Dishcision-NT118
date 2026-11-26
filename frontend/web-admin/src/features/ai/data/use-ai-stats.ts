@@ -34,11 +34,6 @@ export interface MonthlyAIChartItem {
   latency: number
 }
 
-export interface ChartCountItem {
-  name: string
-  count: number
-}
-
 export interface AIStatsData {
   totalRequests: number
   geminiRequests: number
@@ -61,9 +56,6 @@ export interface AIStatsData {
     feedbackCount: number
   }
   monthlyChart: MonthlyAIChartItem[]
-  cravingsChart: ChartCountItem[]
-  budgetChart: ChartCountItem[]
-  companionChart: ChartCountItem[]
   logs: AILogItem[]
 }
 
@@ -89,9 +81,6 @@ const emptyAIStats: AIStatsData = {
     feedbackCount: 0,
   },
   monthlyChart: [],
-  cravingsChart: [],
-  budgetChart: [],
-  companionChart: [],
   logs: [],
 }
 

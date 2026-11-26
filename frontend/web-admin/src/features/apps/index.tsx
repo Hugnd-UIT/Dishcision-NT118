@@ -235,7 +235,7 @@ export function Apps() {
             <div className='relative flex-1'>
               <SearchIcon className='absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground' />
               <Input
-                placeholder='Tìm kiếm API (vd: /auth/login, post, AI decide, store...)'
+                placeholder='Tìm kiếm API...'
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className='pl-9'
@@ -480,7 +480,7 @@ export function Apps() {
                 {selectedApi.auth === 'Bearer Token' && (
                   <div>
                     <label className='text-xs font-medium text-muted-foreground block mb-1'>
-                      Authorization Bearer Token (nếu có):
+                      Mã xác thực Bearer Token:
                     </label>
                     <Input
                       placeholder='Dán accessToken vào đây để test API có xác thực...'
@@ -495,7 +495,7 @@ export function Apps() {
                   <div>
                     <div className='flex items-center justify-between mb-1'>
                       <label className='text-xs font-medium text-muted-foreground'>
-                        Request Body (JSON):
+                        Nội dung yêu cầu:
                       </label>
                       <Button
                         variant='ghost'
@@ -534,7 +534,7 @@ export function Apps() {
                     className='bg-primary text-primary-foreground hover:bg-primary/90 gap-1.5'
                   >
                     <Send className='size-3.5' />
-                    {isLoading ? 'Đang gửi...' : 'Gửi Request (Send)'}
+                    {isLoading ? 'Đang gửi...' : 'Gửi yêu cầu'}
                   </Button>
                 </div>
               </TabsContent>

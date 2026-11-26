@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import {
   Sparkles,
   CheckCircle2,
@@ -11,11 +12,14 @@ import {
   ArrowUpRight,
   BarChart3,
   Layers,
-  UtensilsCrossed,
-  Wallet,
-  Users2,
   Loader2,
 } from 'lucide-react'
+import {
+  ChevronLeftIcon,
+  ChevronRightIcon,
+  DoubleArrowLeftIcon,
+  DoubleArrowRightIcon,
+} from '@radix-ui/react-icons'
 import {
   Bar,
   BarChart,
@@ -35,6 +39,14 @@ import {
   CardTitle,
 } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import {
   Table,
@@ -53,6 +65,8 @@ import { useAIStats } from './data/use-ai-stats'
 
 export function AiFeature() {
   const { data: aiData, isLoading } = useAIStats()
+  const [currentPage, setCurrentPage] = useState(1)
+  const [pageSize, setPageSize] = useState(10)
 
   const tokens = aiData?.tokens ?? {
     totalPromptTokens: 0,
@@ -75,11 +89,12 @@ export function AiFeature() {
   }
 
   const monthlyChart = aiData?.monthlyChart ?? []
-  const cravingsChart = aiData?.cravingsChart ?? []
-  const budgetChart = aiData?.budgetChart ?? []
-  const companionChart = aiData?.companionChart ?? []
   const logs = aiData?.logs ?? []
   const totalRequests = aiData?.totalRequests ?? 0
+
+  const totalLogs = logs.length
+  const totalPages = Math.max(1, Math.ceil(totalLogs / pageSize))
+  const paginatedLogs = logs.slice((currentPage - 1) * pageSize, currentPage * pageSize)
 
   return (
     <>
@@ -95,17 +110,17 @@ export function AiFeature() {
           <div>
             <h1 className='flex items-center gap-2 text-2xl font-bold tracking-tight'>
               <Sparkles className='size-6 text-primary' />
-              Hệ Thống Trí Tuệ Nhân Tạo (Dishcision AI)
+              Hệ Thống Trí Tuệ Nhân Tạo
             </h1>
             <p className='text-sm text-muted-foreground mt-0.5'>
-              Giám sát mô hình quyết định món ăn duy nhất: <strong>Google Gemini 2.5 Flash</strong> • Dữ liệu đo lường thời gian thực từ PostgreSQL.
+              Giám sát mô hình quyết định món ăn: <strong>Google Gemini 2.5 Flash</strong> • Dữ liệu đo lường thời gian thực từ cơ sở dữ liệu.
             </p>
           </div>
           <div className='flex items-center gap-2'>
             {isLoading ? (
               <Badge variant='outline' className='gap-1.5 py-1 px-3 text-xs'>
                 <Loader2 className='size-3 animate-spin text-primary' />
-                Đang tải dữ liệu thực tế...
+                Đang tải dữ liệu thực tế
               </Badge>
             ) : (
               <Badge
@@ -113,7 +128,7 @@ export function AiFeature() {
                 className='gap-1.5 border-emerald-500/30 bg-emerald-500/10 text-emerald-500 py-1 px-3 text-xs'
               >
                 <span className='size-2 rounded-full bg-emerald-500 animate-pulse' />
-                Gemini 2.5 Flash: Đang hoạt động ({totalRequests} lượt gọi thực tế)
+                Gemini 2.5 Flash: Đang hoạt động • {totalRequests} lượt gọi thực tế
               </Badge>
             )}
           </div>
@@ -125,21 +140,21 @@ export function AiFeature() {
           <Card className='border-border/60 shadow-xs'>
             <CardHeader className='flex flex-row items-center justify-between pb-2'>
               <CardTitle className='text-xs font-medium text-muted-foreground'>
-                Tổng Token Tiêu Thụ Thực Tế
+                Tổng token tiêu thụ
               </CardTitle>
               <Coins className='size-4 text-amber-500' />
             </CardHeader>
             <CardContent>
               <div className='text-2xl font-bold text-foreground'>
                 {tokens.totalTokens.toLocaleString()}{' '}
-                <span className='text-xs font-normal text-muted-foreground'>tokens</span>
+                <span className='text-xs font-normal text-muted-foreground'>token</span>
               </div>
               <div className='flex items-center gap-3 text-xs text-muted-foreground mt-1.5'>
                 <span className='inline-flex items-center gap-1 text-sky-400'>
-                  <ArrowDownLeft className='size-3' /> In: {tokens.totalPromptTokens.toLocaleString()}
+                  <ArrowDownLeft className='size-3' /> Token vào: {tokens.totalPromptTokens.toLocaleString()}
                 </span>
                 <span className='inline-flex items-center gap-1 text-primary'>
-                  <ArrowUpRight className='size-3' /> Out: {tokens.totalCompletionTokens.toLocaleString()}
+                  <ArrowUpRight className='size-3' /> Token ra: {tokens.totalCompletionTokens.toLocaleString()}
                 </span>
               </div>
             </CardContent>
@@ -149,7 +164,7 @@ export function AiFeature() {
           <Card className='border-border/60 shadow-xs'>
             <CardHeader className='flex flex-row items-center justify-between pb-2'>
               <CardTitle className='text-xs font-medium text-muted-foreground'>
-                Thời Gian Phản Hồi TB (Latency)
+                Thời gian phản hồi trung bình
               </CardTitle>
               <Activity className='size-4 text-sky-500' />
             </CardHeader>
@@ -167,7 +182,7 @@ export function AiFeature() {
           <Card className='border-border/60 shadow-xs'>
             <CardHeader className='flex flex-row items-center justify-between pb-2'>
               <CardTitle className='text-xs font-medium text-muted-foreground'>
-                Độ Chuẩn Xác Định Dạng JSON
+                Độ chuẩn xác định dạng JSON
               </CardTitle>
               <CheckCircle2 className='size-4 text-emerald-500' />
             </CardHeader>
@@ -176,7 +191,7 @@ export function AiFeature() {
                 {performance.formatAccuracy}%
               </div>
               <p className='text-xs text-muted-foreground mt-1'>
-                Tỷ lệ trả về đúng cấu trúc Top 3 món ăn
+                Tỷ lệ trả về đúng cấu trúc 3 món ăn
               </p>
             </CardContent>
           </Card>
@@ -185,7 +200,7 @@ export function AiFeature() {
           <Card className='border-border/60 shadow-xs'>
             <CardHeader className='flex flex-row items-center justify-between pb-2'>
               <CardTitle className='text-xs font-medium text-muted-foreground'>
-                Độ Hài Lòng & Tỷ Lệ Thành Công
+                Độ hài lòng và tỷ lệ thành công
               </CardTitle>
               <Star className='size-4 text-amber-500 fill-amber-500/20' />
             </CardHeader>
@@ -200,7 +215,7 @@ export function AiFeature() {
           </Card>
         </div>
 
-        {/* RECHARTS SECTION 1: Dual Chart (Token In/Out & Latency Trend) */}
+        {/* RECHARTS SECTION: Dual Chart (Token In/Out & Latency Trend) */}
         <div className='grid gap-6 lg:grid-cols-12 mb-6'>
           {/* Chart 1: Token Usage Chart (In vs Out) */}
           <Card className='lg:col-span-8 border-border/60 shadow-xs'>
@@ -210,19 +225,19 @@ export function AiFeature() {
                   <BarChart3 className='size-5 text-primary' />
                   <div>
                     <CardTitle className='text-base font-semibold'>
-                      Biểu Đồ Tiêu Thụ Token Hàng Tháng (Token In vs Token Out)
+                      Biểu Đồ Tiêu Thụ Token Hàng Tháng
                     </CardTitle>
                     <CardDescription className='text-xs'>
-                      Số lượng Prompt Tokens (Đầu vào) và Completion Tokens (Đầu ra) thực tế theo thời gian
+                      Số lượng token vào và token ra thực tế theo thời gian
                     </CardDescription>
                   </div>
                 </div>
                 <div className='flex items-center gap-3 text-xs'>
                   <span className='inline-flex items-center gap-1.5'>
-                    <span className='size-2.5 rounded-xs bg-[#38bdf8]' /> Token In (Prompt)
+                    <span className='size-2.5 rounded-xs bg-[#38bdf8]' /> Token vào
                   </span>
                   <span className='inline-flex items-center gap-1.5'>
-                    <span className='size-2.5 rounded-xs bg-[#f97316]' /> Token Out (Completion)
+                    <span className='size-2.5 rounded-xs bg-[#f97316]' /> Token ra
                   </span>
                 </div>
               </div>
@@ -260,8 +275,8 @@ export function AiFeature() {
                         boxShadow: '0 4px 12px rgba(0,0,0,0.5)',
                       }}
                       formatter={(val: any, name: any) => {
-                        const label = name === 'promptTokens' ? 'Token In (Prompt)' : 'Token Out (Completion)'
-                        return [`${Number(val).toLocaleString()} tokens`, label]
+                        const label = name === 'promptTokens' ? 'Token vào' : 'Token ra'
+                        return [`${Number(val).toLocaleString()} token`, label]
                       }}
                     />
                     <Bar
@@ -291,10 +306,10 @@ export function AiFeature() {
                 <Clock className='size-5 text-sky-400' />
                 <div>
                   <CardTitle className='text-base font-semibold'>
-                    Xu Hướng Độ Trễ (Latency)
+                    Xu Hướng Thời Gian Phản Hồi
                   </CardTitle>
                   <CardDescription className='text-xs'>
-                    Thời gian phản hồi Gemini API thực tế (ms)
+                    Thời gian phản hồi Gemini API thực tế
                   </CardDescription>
                 </div>
               </div>
@@ -335,7 +350,7 @@ export function AiFeature() {
                         fontSize: '12px',
                         boxShadow: '0 4px 12px rgba(0,0,0,0.5)',
                       }}
-                      formatter={(val: any) => [`${val} ms`, 'Độ trễ trung bình']}
+                      formatter={(val: any) => [`${val} ms`, 'Thời gian phản hồi trung bình']}
                     />
                     <Area
                       type='monotone'
@@ -352,183 +367,7 @@ export function AiFeature() {
           </Card>
         </div>
 
-        {/* RECHARTS SECTION 2: Cravings, Budget, Companions (All Real from DB) */}
-        <div className='grid gap-6 md:grid-cols-3 mb-6'>
-          {/* Cravings Distribution Chart */}
-          <Card className='border-border/60 shadow-xs md:col-span-1'>
-            <CardHeader className='pb-2'>
-              <div className='flex items-center gap-2'>
-                <UtensilsCrossed className='size-5 text-rose-500' />
-                <div>
-                  <CardTitle className='text-base font-semibold'>
-                    Phân Bổ Cơn Thèm Món Ăn
-                  </CardTitle>
-                  <CardDescription className='text-xs'>
-                    Tần suất từ khóa cơn thèm thực tế trong cơ sở dữ liệu
-                  </CardDescription>
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className='h-[250px] w-full'>
-                {cravingsChart.length === 0 ? (
-                  <div className='h-full flex items-center justify-center text-xs text-muted-foreground'>
-                    Chưa có dữ liệu cơn thèm
-                  </div>
-                ) : (
-                  <ResponsiveContainer width='100%' height='100%'>
-                    <BarChart
-                      data={cravingsChart}
-                      layout='vertical'
-                      margin={{ top: 10, right: 20, left: 20, bottom: 0 }}
-                    >
-                      <CartesianGrid strokeDasharray='3 3' stroke='#33333333' horizontal={false} />
-                      <XAxis type='number' stroke='#888888' fontSize={10} tickLine={false} axisLine={false} />
-                      <YAxis
-                        type='category'
-                        dataKey='name'
-                        stroke='#888888'
-                        fontSize={10}
-                        tickLine={false}
-                        axisLine={false}
-                        width={110}
-                      />
-                      <Tooltip
-                        contentStyle={{
-                          backgroundColor: '#18181b',
-                          borderColor: '#27272a',
-                          borderRadius: '8px',
-                          color: '#f4f4f5',
-                          fontSize: '12px',
-                        }}
-                        formatter={(val: any) => [`${val} lượt`, 'Số lượt yêu cầu']}
-                      />
-                      <Bar dataKey='count' fill='#ec4899' radius={[0, 4, 4, 0]} maxBarSize={16} />
-                    </BarChart>
-                  </ResponsiveContainer>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Budget Distribution Chart */}
-          <Card className='border-border/60 shadow-xs md:col-span-1'>
-            <CardHeader className='pb-2'>
-              <div className='flex items-center gap-2'>
-                <Wallet className='size-5 text-emerald-500' />
-                <div>
-                  <CardTitle className='text-base font-semibold'>
-                    Phân Bổ Ngân Sách Dự Chi
-                  </CardTitle>
-                  <CardDescription className='text-xs'>
-                    Khoảng giá người dùng thực tế lựa chọn khi hỏi AI
-                  </CardDescription>
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className='h-[250px] w-full'>
-                {budgetChart.length === 0 ? (
-                  <div className='h-full flex items-center justify-center text-xs text-muted-foreground'>
-                    Chưa có dữ liệu ngân sách
-                  </div>
-                ) : (
-                  <ResponsiveContainer width='100%' height='100%'>
-                    <BarChart
-                      data={budgetChart}
-                      layout='vertical'
-                      margin={{ top: 10, right: 20, left: 10, bottom: 0 }}
-                    >
-                      <CartesianGrid strokeDasharray='3 3' stroke='#33333333' horizontal={false} />
-                      <XAxis type='number' stroke='#888888' fontSize={10} tickLine={false} axisLine={false} />
-                      <YAxis
-                        type='category'
-                        dataKey='name'
-                        stroke='#888888'
-                        fontSize={10}
-                        tickLine={false}
-                        axisLine={false}
-                        width={90}
-                      />
-                      <Tooltip
-                        contentStyle={{
-                          backgroundColor: '#18181b',
-                          borderColor: '#27272a',
-                          borderRadius: '8px',
-                          color: '#f4f4f5',
-                          fontSize: '12px',
-                        }}
-                        formatter={(val: any) => [`${val} lượt`, 'Số lượt']}
-                      />
-                      <Bar dataKey='count' fill='#10b981' radius={[0, 4, 4, 0]} maxBarSize={16} />
-                    </BarChart>
-                  </ResponsiveContainer>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Companions Distribution Chart */}
-          <Card className='border-border/60 shadow-xs md:col-span-1'>
-            <CardHeader className='pb-2'>
-              <div className='flex items-center gap-2'>
-                <Users2 className='size-5 text-indigo-500' />
-                <div>
-                  <CardTitle className='text-base font-semibold'>
-                    Quy Mô Bàn Ăn Thực Tế
-                  </CardTitle>
-                  <CardDescription className='text-xs'>
-                    Số lượng người cùng ăn trong các phiên nhờ AI gợi ý
-                  </CardDescription>
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className='h-[250px] w-full'>
-                {companionChart.length === 0 ? (
-                  <div className='h-full flex items-center justify-center text-xs text-muted-foreground'>
-                    Chưa có dữ liệu người cùng ăn
-                  </div>
-                ) : (
-                  <ResponsiveContainer width='100%' height='100%'>
-                    <BarChart
-                      data={companionChart}
-                      layout='vertical'
-                      margin={{ top: 10, right: 20, left: 10, bottom: 0 }}
-                    >
-                      <CartesianGrid strokeDasharray='3 3' stroke='#33333333' horizontal={false} />
-                      <XAxis type='number' stroke='#888888' fontSize={10} tickLine={false} axisLine={false} />
-                      <YAxis
-                        type='category'
-                        dataKey='name'
-                        stroke='#888888'
-                        fontSize={10}
-                        tickLine={false}
-                        axisLine={false}
-                        width={90}
-                      />
-                      <Tooltip
-                        contentStyle={{
-                          backgroundColor: '#18181b',
-                          borderColor: '#27272a',
-                          borderRadius: '8px',
-                          color: '#f4f4f5',
-                          fontSize: '12px',
-                        }}
-                        formatter={(val: any) => [`${val} lượt`, 'Số lượt']}
-                      />
-                      <Bar dataKey='count' fill='#6366f1' radius={[0, 4, 4, 0]} maxBarSize={16} />
-                    </BarChart>
-                  </ResponsiveContainer>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-
-
-        {/* REAL REQUEST INFERENCE LOGS TABLE */}
+        {/* REAL REQUEST INFERENCE LOGS TABLE WITH FULL PAGINATION */}
         <Card className='border-border/60 shadow-xs mb-6'>
           <CardHeader className='pb-3'>
             <div className='flex items-center justify-between'>
@@ -536,44 +375,44 @@ export function AiFeature() {
                 <Layers className='size-5 text-primary' />
                 <div>
                   <CardTitle className='text-base font-semibold'>
-                    Nhật Ký Gọi AI Thực Tế Từ Cơ Sở Dữ Liệu (Inference Logs)
+                    Nhật Ký Truy Vấn AI Thực Tế
                   </CardTitle>
                   <CardDescription className='text-xs'>
-                    Tất cả các bản ghi truy vấn Gemini được lưu trong PostgreSQL: Token In, Token Out, Độ trễ (ms) và 3 món được gợi ý
+                    Tất cả các bản ghi truy vấn Gemini được lưu trong cơ sở dữ liệu
                   </CardDescription>
                 </div>
               </div>
               <Badge variant='outline' className='text-xs font-mono'>
-                {logs.length} bản ghi thực tế
+                {totalLogs} bản ghi thực tế
               </Badge>
             </div>
           </CardHeader>
-          <CardContent>
+          <CardContent className='p-0'>
             <div className='overflow-x-auto'>
               <Table>
                 <TableHeader>
                   <TableRow className='text-xs'>
-                    <TableHead className='w-[140px]'>Thời gian</TableHead>
+                    <TableHead className='w-[140px] pl-6'>Thời gian</TableHead>
                     <TableHead className='w-[160px]'>Người dùng</TableHead>
-                    <TableHead>Nhu cầu / Cơn thèm</TableHead>
-                    <TableHead>Top 3 Món Gemini Gợi Ý</TableHead>
-                    <TableHead className='text-right w-[120px]'>Token (In/Out)</TableHead>
-                    <TableHead className='text-right w-[90px]'>Độ trễ</TableHead>
-                    <TableHead className='text-center w-[100px]'>Chuẩn JSON</TableHead>
-                    <TableHead className='text-center w-[80px]'>Đánh giá</TableHead>
+                    <TableHead>Nhu cầu ẩm thực</TableHead>
+                    <TableHead>Top 3 món gợi ý</TableHead>
+                    <TableHead className='text-right w-[140px]'>Token vào / ra</TableHead>
+                    <TableHead className='text-right w-[90px]'>Thời gian xử lý</TableHead>
+                    <TableHead className='text-center w-[110px]'>Định dạng chuẩn</TableHead>
+                    <TableHead className='text-center w-[90px] pr-6'>Đánh giá</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {logs.length === 0 ? (
+                  {paginatedLogs.length === 0 ? (
                     <TableRow>
                       <TableCell colSpan={8} className='text-center py-8 text-muted-foreground text-xs'>
                         Chưa có bản ghi gọi AI nào trong cơ sở dữ liệu.
                       </TableCell>
                     </TableRow>
                   ) : (
-                    logs.map((log) => (
+                    paginatedLogs.map((log) => (
                       <TableRow key={log.id} className='text-xs hover:bg-muted/30'>
-                        <TableCell className='font-mono text-[11px] text-muted-foreground whitespace-nowrap'>
+                        <TableCell className='font-mono text-[11px] text-muted-foreground whitespace-nowrap pl-6'>
                           {new Date(log.createdAt).toLocaleString('vi-VN', {
                             hour: '2-digit',
                             minute: '2-digit',
@@ -606,7 +445,9 @@ export function AiFeature() {
                                   <span className='font-bold text-primary font-mono text-[10px]'>#{i + 1}</span>
                                   <span className='font-semibold text-foreground'>{dish.dishName}</span>
                                   {dish.estimatedPrice && (
-                                    <span className='text-[10px] text-muted-foreground'>({dish.estimatedPrice})</span>
+                                    <span className='text-[10px] text-muted-foreground font-mono'>
+                                      {dish.estimatedPrice}
+                                    </span>
                                   )}
                                 </div>
                               ))
@@ -635,7 +476,7 @@ export function AiFeature() {
                             {log.isFormatValid ? 'Hợp lệ 100%' : 'Sai format'}
                           </Badge>
                         </TableCell>
-                        <TableCell className='text-center font-mono text-[11px] text-amber-400'>
+                        <TableCell className='text-center font-mono text-[11px] text-amber-400 pr-6'>
                           {log.feedbackRating ? `${log.feedbackRating} ⭐` : '—'}
                         </TableCell>
                       </TableRow>
@@ -643,6 +484,79 @@ export function AiFeature() {
                   )}
                 </TableBody>
               </Table>
+            </div>
+
+            {/* Pagination Controls */}
+            <div className='flex items-center justify-between border-t border-border/50 px-6 py-3 text-xs'>
+              <div className='flex items-center gap-2'>
+                <span className='text-muted-foreground'>Số dòng mỗi trang:</span>
+                <Select
+                  value={String(pageSize)}
+                  onValueChange={(val) => {
+                    setPageSize(Number(val))
+                    setCurrentPage(1)
+                  }}
+                >
+                  <SelectTrigger className='h-8 w-16'>
+                    <SelectValue placeholder={pageSize} />
+                  </SelectTrigger>
+                  <SelectContent side='top'>
+                    {[5, 10, 20, 50].map((size) => (
+                      <SelectItem key={size} value={String(size)}>
+                        {size}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className='flex items-center gap-4'>
+                <span className='text-muted-foreground'>
+                  Trang {currentPage} trên {totalPages} • Tổng {totalLogs} bản ghi
+                </span>
+                <div className='flex items-center gap-1'>
+                  <Button
+                    variant='outline'
+                    size='icon'
+                    className='size-8'
+                    onClick={() => setCurrentPage(1)}
+                    disabled={currentPage === 1}
+                  >
+                    <span className='sr-only'>Trang đầu</span>
+                    <DoubleArrowLeftIcon className='size-3.5' />
+                  </Button>
+                  <Button
+                    variant='outline'
+                    size='icon'
+                    className='size-8'
+                    onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                    disabled={currentPage === 1}
+                  >
+                    <span className='sr-only'>Trang trước</span>
+                    <ChevronLeftIcon className='size-3.5' />
+                  </Button>
+                  <Button
+                    variant='outline'
+                    size='icon'
+                    className='size-8'
+                    onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                    disabled={currentPage === totalPages}
+                  >
+                    <span className='sr-only'>Trang sau</span>
+                    <ChevronRightIcon className='size-3.5' />
+                  </Button>
+                  <Button
+                    variant='outline'
+                    size='icon'
+                    className='size-8'
+                    onClick={() => setCurrentPage(totalPages)}
+                    disabled={currentPage === totalPages}
+                  >
+                    <span className='sr-only'>Trang cuối</span>
+                    <DoubleArrowRightIcon className='size-3.5' />
+                  </Button>
+                </div>
+              </div>
             </div>
           </CardContent>
         </Card>

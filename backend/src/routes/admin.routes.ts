@@ -47,6 +47,9 @@ router.get('/ai-stats', getAIStats);
 router.get('/ai-configs', listAIConfigs);
 router.get('/ai-prompts', listAIPrompts);
 
+// Audit Logs (accessible from web-admin)
+router.get('/audit-logs', getAuditLogs);
+
 // Protect all other admin routes
 router.use(authenticate, authorizeAdmin);
 

@@ -1,0 +1,54 @@
+import { useQuery } from '@tanstack/react-query'
+
+export interface AuditLogItem {
+  id: number
+  adminId: number
+  admin?: {
+    id: number
+    username: string
+    fullName?: string
+    avatarUrl?: string | null
+    role?: string
+  } | null
+  action: string
+  targetType: string
+  targetId: number
+  details?: string | null
+  ipAddress?: string | null
+  createdAt: string
+}
+
+export interface AuditLogsResponse {
+  logs: AuditLogItem[]
+  total: number
+  page: number
+  limit: number
+}
+
+export function useAuditLogs(page = 1, limit = 20) {
+  return useQuery<AuditLogsResponse>({
+    queryKey: ['admin-audit-logs', page, limit],
+    queryFn: async () => {
+      try {
+        const res = await fetch(`/api/v1/admin/audit-logs?page=${page}&limit=${limit}`)
+        if (!res.ok) {
+          return { logs: [], total: 0, page: 1, limit }
+        }
+        const json = await res.json()
+        if (json.success && Array.isArray(json.data)) {
+          return {
+            logs: json.data as AuditLogItem[],
+            total: json.meta?.total ?? json.data.length,
+            page: json.meta?.page ?? page,
+            limit: json.meta?.limit ?? limit,
+          }
+        }
+        return { logs: [], total: 0, page: 1, limit }
+      } catch {
+        return { logs: [], total: 0, page: 1, limit }
+      }
+    },
+    refetchInterval: 15000,
+    staleTime: 5000,
+  })
+}

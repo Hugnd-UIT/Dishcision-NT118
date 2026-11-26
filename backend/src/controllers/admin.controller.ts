@@ -501,10 +501,6 @@ export async function getAIStats(req: AuthRequest, res: Response): Promise<void>
   let totalLatencyMs = 0;
   let validFormatCount = 0;
 
-  const cravingCounts: Record<string, number> = {};
-  const budgetCounts: Record<string, number> = {};
-  const companionCounts: Record<string, number> = {};
-
   const monthNames = ['Th01', 'Th02', 'Th03', 'Th04', 'Th05', 'Th06', 'Th07', 'Th08', 'Th09', 'Th10', 'Th11', 'Th12'];
   const monthlyMap = monthNames.map((name) => ({
     name,
@@ -548,35 +544,6 @@ Dựa trên các tiêu chí sau, hãy gợi ý 3 món ăn ngon nhất, chuẩn v
       monthlyMap[monthIdx].totalLatency += latencyMs;
     }
 
-    // Aggregate cravings
-    const text = (r.craving || r.mood || '').trim();
-    if (text) {
-      let cat = 'Khác';
-      const lower = text.toLowerCase();
-      if (lower.includes('phở') || lower.includes('bún') || lower.includes('nước') || lower.includes('nóng')) {
-        cat = 'Món nước & Nóng hổi';
-      } else if (lower.includes('cơm') || lower.includes('bổ dưỡng')) {
-        cat = 'Cơm & Bổ dưỡng';
-      } else if (lower.includes('lẩu') || lower.includes('tụ tập') || lower.includes('bạn')) {
-        cat = 'Lẩu & Tụ tập';
-      } else if (lower.includes('mới lạ') || lower.includes('trung tâm')) {
-        cat = 'Khám phá món mới lạ';
-      } else if (lower.includes('ngọt') || lower.includes('ăn vặt')) {
-        cat = 'Đồ ngọt & Ăn vặt';
-      } else {
-        cat = text.length > 25 ? text.substring(0, 25) + '...' : text;
-      }
-      cravingCounts[cat] = (cravingCounts[cat] || 0) + 1;
-    }
-
-    // Aggregate budget
-    const b = r.budget ? String(r.budget) : 'Bình dân';
-    budgetCounts[b] = (budgetCounts[b] || 0) + 1;
-
-    // Aggregate companions
-    const c = r.companions === 1 ? 'Đi ăn 1 mình' : (r.companions === 2 ? 'Đi 2 người' : 'Nhóm bạn đông');
-    companionCounts[c] = (companionCounts[c] || 0) + 1;
-
     return {
       id: r.id,
       user: r.user,
@@ -606,18 +573,6 @@ Dựa trên các tiêu chí sau, hãy gợi ý 3 món ăn ngon nhất, chuẩn v
     latency: item.requests > 0 ? Math.round(item.totalLatency / item.requests) : 0,
   }));
 
-  const cravingsChart = Object.entries(cravingCounts)
-    .map(([name, count]) => ({ name, count }))
-    .sort((a, b) => b.count - a.count);
-
-  const budgetChart = Object.entries(budgetCounts)
-    .map(([name, count]) => ({ name, count }))
-    .sort((a, b) => b.count - a.count);
-
-  const companionChart = Object.entries(companionCounts)
-    .map(([name, count]) => ({ name, count }))
-    .sort((a, b) => b.count - a.count);
-
   successResponse(res, {
     totalRequests,
     geminiRequests,
@@ -640,9 +595,6 @@ Dựa trên các tiêu chí sau, hãy gợi ý 3 món ăn ngon nhất, chuẩn v
       feedbackCount: requestsWithFeedback,
     },
     monthlyChart,
-    cravingsChart,
-    budgetChart,
-    companionChart,
     logs,
   });
 }
@@ -709,6 +661,9 @@ export async function getAuditLogs(req: AuthRequest, res: Response): Promise<voi
   const [logs, total] = await Promise.all([
     prisma.auditLog.findMany({
       where,
+      include: {
+        admin: { select: { id: true, username: true, fullName: true, avatarUrl: true, role: true } },
+      },
       orderBy: { createdAt: 'desc' },
       skip,
       take: limit,
@@ -716,8 +671,7 @@ export async function getAuditLogs(req: AuthRequest, res: Response): Promise<voi
     prisma.auditLog.count({ where }),
   ]);
 
-  const formatted = logs.map(({ id, ...l }) => ({ logId: id, ...l }));
-  paginatedResponse(res, formatted, { page, limit, total });
+  paginatedResponse(res, logs, { page, limit, total });
 }
 
 // ── GET /admin/dashboard-stats ────────────

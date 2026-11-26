@@ -1,22 +1,16 @@
 import {
-  Construction,
   LayoutDashboard,
   Monitor,
-  Bug,
   ListTodo,
-  FileX,
-  Lock,
   Bell,
   Package,
   Palette,
-  ServerOff,
   Settings,
   Wrench,
   UserCog,
-  UserX,
   Users,
-  ShieldCheck,
   Sparkles,
+  ScrollText,
 } from 'lucide-react'
 import { DishcisionLogo } from '@/assets/logo'
 import { type SidebarData } from '../types'
@@ -31,12 +25,12 @@ export const sidebarData: SidebarData = {
     {
       name: 'Dishcision',
       logo: DishcisionLogo,
-      plan: 'Admin Dashboard',
+      plan: 'Bảng điều khiển quản trị',
     },
   ],
   navGroups: [
     {
-      title: 'General',
+      title: 'Chung',
       items: [
         {
           title: 'Tổng quan',
@@ -59,103 +53,46 @@ export const sidebarData: SidebarData = {
           icon: Users,
         },
         {
-          title: 'AI',
+          title: 'Trí tuệ nhân tạo',
           url: '/ai',
           icon: Sparkles,
         },
       ],
     },
     {
-      title: 'Pages',
+      title: 'Khác',
       items: [
         {
-          title: 'Auth',
-          icon: ShieldCheck,
-          items: [
-            {
-              title: 'Sign In',
-              url: '/sign-in',
-            },
-            {
-              title: 'Sign In (2 Col)',
-              url: '/sign-in-2',
-            },
-            {
-              title: 'Sign Up',
-              url: '/sign-up',
-            },
-            {
-              title: 'Forgot Password',
-              url: '/forgot-password',
-            },
-            {
-              title: 'OTP',
-              url: '/otp',
-            },
-          ],
+          title: 'Nhật ký hoạt động',
+          url: '/audit-logs',
+          icon: ScrollText,
         },
         {
-          title: 'Errors',
-          icon: Bug,
-          items: [
-            {
-              title: 'Unauthorized',
-              url: '/errors/unauthorized',
-              icon: Lock,
-            },
-            {
-              title: 'Forbidden',
-              url: '/errors/forbidden',
-              icon: UserX,
-            },
-            {
-              title: 'Not Found',
-              url: '/errors/not-found',
-              icon: FileX,
-            },
-            {
-              title: 'Internal Server Error',
-              url: '/errors/internal-server-error',
-              icon: ServerOff,
-            },
-            {
-              title: 'Maintenance Error',
-              url: '/errors/maintenance-error',
-              icon: Construction,
-            },
-          ],
-        },
-      ],
-    },
-    {
-      title: 'Other',
-      items: [
-        {
-          title: 'Settings',
+          title: 'Cài đặt',
           icon: Settings,
           items: [
             {
-              title: 'Profile',
+              title: 'Hồ sơ',
               url: '/settings',
               icon: UserCog,
             },
             {
-              title: 'Account',
+              title: 'Tài khoản',
               url: '/settings/account',
               icon: Wrench,
             },
             {
-              title: 'Appearance',
+              title: 'Giao diện',
               url: '/settings/appearance',
               icon: Palette,
             },
             {
-              title: 'Notifications',
+              title: 'Thông báo',
               url: '/settings/notifications',
               icon: Bell,
             },
             {
-              title: 'Display',
+              title: 'Hiển thị',
               url: '/settings/display',
               icon: Monitor,
             },
