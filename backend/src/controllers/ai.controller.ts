@@ -3,6 +3,7 @@ import { prisma } from '../config/prisma';
 import { successResponse, errorResponse } from '../utils/response';
 import { parsePositiveInt } from '../utils/http';
 import { AuthRequest } from '../middlewares/auth.middleware';
+import { logActivity } from '../utils/audit';
 
 interface GeminiCallResult {
   suggestions: any[] | null;
@@ -198,6 +199,14 @@ YÊU CẦU: Trả về DUY NHẤT một mảng JSON gồm 3 object (không thêm
       },
     });
     requestId = aiRequest.id;
+    logActivity({
+      userId,
+      action: 'AI_FOOD_DECIDE',
+      targetType: 'AIConfig' as any,
+      targetId: requestId,
+      details: `Yêu cầu Gemini AI gợi ý món ăn: ${craving || mood || 'Tự động'}`.slice(0, 150),
+      ipAddress: req.ip,
+    });
   }
 
   successResponse(res, {
@@ -227,6 +236,15 @@ export async function submitFeedback(req: AuthRequest, res: Response): Promise<v
   await prisma.aIRequest.update({
     where: { id: requestId },
     data: { feedbackRating: rating, feedbackComment: comment },
+  });
+
+  logActivity({
+    userId,
+    action: 'SUBMIT_AI_FEEDBACK',
+    targetType: 'AIConfig' as any,
+    targetId: requestId,
+    details: `Đánh giá gợi ý AI: ${rating} sao`,
+    ipAddress: req.ip,
   });
 
   successResponse(res, null, 'Feedback recorded', 201);

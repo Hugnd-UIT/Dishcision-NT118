@@ -5,6 +5,7 @@ import { AuthRequest } from '../middlewares/auth.middleware';
 import { formatUser } from './user.controller';
 import { toRelativeUploadPath } from './upload.controller';
 import { getBlockedUserIds } from '../utils/privacy';
+import { logActivity } from '../utils/audit';
 
 function formatReview(review: any) {
   const { id, author, ...rest } = review;
@@ -86,6 +87,15 @@ export async function createReview(req: AuthRequest, res: Response): Promise<voi
         : undefined,
     },
     include: { author: { select: AUTHOR_SELECT }, images: true },
+  });
+
+  logActivity({
+    userId,
+    action: 'CREATE_REVIEW',
+    targetType: 'Comment' as any,
+    targetId: review.id,
+    details: `Đánh giá ${rating} sao cho ${restaurantName || 'quán ăn'}`,
+    ipAddress: req.ip,
   });
 
   successResponse(res, formatReview(review), 'Review posted', 201);

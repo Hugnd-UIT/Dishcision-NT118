@@ -223,9 +223,6 @@ public class SettingsActivity extends AppCompatActivity {
         View rate = findViewById(R.id.btnAppRating);
         if (rate != null) rate.setOnClickListener(v -> openStoreListing());
 
-        View share = findViewById(R.id.btnShareApp);
-        if (share != null) share.setOnClickListener(v -> shareApp());
-
         View clearCache = findViewById(R.id.btnClearCache);
         if (clearCache != null) clearCache.setOnClickListener(v -> confirmClearCache());
 
@@ -241,16 +238,6 @@ public class SettingsActivity extends AppCompatActivity {
             startActivity(new Intent(Intent.ACTION_VIEW,
                     Uri.parse("https://play.google.com/store/apps/details?id=" + pkg)));
         }
-    }
-
-    private void shareApp() {
-        Intent send = new Intent(Intent.ACTION_SEND);
-        send.setType("text/plain");
-        send.putExtra(Intent.EXTRA_SUBJECT, "Dishcision");
-        send.putExtra(Intent.EXTRA_TEXT,
-                "Hôm nay ăn gì? Thử Dishcision để chọn món và khám phá quán ngon: "
-                        + "https://play.google.com/store/apps/details?id=" + getPackageName());
-        startActivity(Intent.createChooser(send, "Chia sẻ Dishcision"));
     }
 
     private void confirmClearCache() {

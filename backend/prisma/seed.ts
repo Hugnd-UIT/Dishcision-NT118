@@ -1017,14 +1017,120 @@ async function main() {
       targetType: AuditTargetType.AIConfig,
       targetId: 1,
       ipAddress: '127.0.0.1',
-      details: 'Đặt model gemini-2.0-flash làm mô hình AI hoạt động chính',
+      details: 'Đặt model gemini-2.5-flash làm mô hình AI hoạt động chính',
+    },
+    {
+      adminId: userA.id,
+      action: 'USER_LOGIN',
+      targetType: AuditTargetType.User,
+      targetId: userA.id,
+      ipAddress: '113.190.23.45',
+      details: 'Đăng nhập vào ứng dụng qua thiết bị di động',
+    },
+    {
+      adminId: userA.id,
+      action: 'AI_FOOD_DECIDE',
+      targetType: AuditTargetType.AIConfig,
+      targetId: 1,
+      ipAddress: '113.190.23.45',
+      details: 'Yêu cầu Gemini AI gợi ý món ăn: Món nước nóng hổi',
+    },
+    {
+      adminId: userB.id,
+      action: 'CREATE_POST',
+      targetType: AuditTargetType.Post,
+      targetId: createdPosts[1]?.id || 2,
+      ipAddress: '14.162.140.88',
+      details: 'Đăng bài chia sẻ trải nghiệm quán cà phê và bánh ngọt',
+    },
+    {
+      adminId: userB.id,
+      action: 'SUBMIT_AI_FEEDBACK',
+      targetType: AuditTargetType.AIConfig,
+      targetId: 2,
+      ipAddress: '14.162.140.88',
+      details: 'Đánh giá gợi ý AI: 5 sao chất lượng cao',
+    },
+    {
+      adminId: userC.id,
+      action: 'CREATE_COMMENT',
+      targetType: AuditTargetType.Comment,
+      targetId: 1,
+      ipAddress: '27.72.60.102',
+      details: 'Bình luận khen ngợi món phở bò tái lăn gia truyền',
+    },
+    {
+      adminId: phothin.id,
+      action: 'CREATE_POST',
+      targetType: AuditTargetType.Post,
+      targetId: createdPosts[0]?.id || 1,
+      ipAddress: '118.70.128.14',
+      details: 'Đăng bài giới thiệu thực đơn phở bò Lò Đúc mới',
+    },
+    {
+      adminId: banhmi25.id,
+      action: 'USER_LOGIN',
+      targetType: AuditTargetType.User,
+      targetId: banhmi25.id,
+      ipAddress: '171.244.10.55',
+      details: 'Chủ quán Bánh Mì 25 đăng nhập cập nhật giờ mở cửa',
+    },
+    {
+      adminId: userB.id,
+      action: 'CREATE_REPORT',
+      targetType: AuditTargetType.Report,
+      targetId: 1,
+      ipAddress: '14.162.140.88',
+      details: 'Báo cáo bài viết có dấu hiệu quảng cáo lặp lại',
     },
   ];
   for (const entry of auditEntries) {
     const existing = await prisma.auditLog.findFirst({
-      where: { adminId: entry.adminId, action: entry.action },
+      where: { adminId: entry.adminId, action: entry.action, details: entry.details },
     });
     if (!existing) await prisma.auditLog.create({ data: entry });
+  }
+
+  // Backfill audit logs from existing AI requests across all users
+  const recentAI = await prisma.aIRequest.findMany({ take: 30, orderBy: { createdAt: 'desc' } });
+  for (const r of recentAI) {
+    const existing = await prisma.auditLog.findFirst({
+      where: { adminId: r.userId, action: 'AI_FOOD_DECIDE', targetId: r.id },
+    });
+    if (!existing) {
+      await prisma.auditLog.create({
+        data: {
+          adminId: r.userId,
+          action: 'AI_FOOD_DECIDE',
+          targetType: AuditTargetType.AIConfig,
+          targetId: r.id,
+          ipAddress: '113.190.45.12',
+          details: `Yêu cầu Gemini AI gợi ý món ăn: ${r.craving || r.mood || 'Tự động'}`.slice(0, 150),
+          createdAt: r.createdAt,
+        },
+      });
+    }
+  }
+
+  // Backfill audit logs from existing Posts across all users
+  const recentPosts = await prisma.post.findMany({ take: 30, orderBy: { createdAt: 'desc' } });
+  for (const p of recentPosts) {
+    const existing = await prisma.auditLog.findFirst({
+      where: { adminId: p.authorId, action: 'CREATE_POST', targetId: p.id },
+    });
+    if (!existing) {
+      await prisma.auditLog.create({
+        data: {
+          adminId: p.authorId,
+          action: 'CREATE_POST',
+          targetType: AuditTargetType.Post,
+          targetId: p.id,
+          ipAddress: '14.162.80.20',
+          details: `Đăng bài viết mới: ${p.content || ''}`.slice(0, 150),
+          createdAt: p.createdAt,
+        },
+      });
+    }
   }
 
   const storeProfilesData = [

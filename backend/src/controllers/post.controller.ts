@@ -12,6 +12,7 @@ import {
   canAccessPrivacy,
   getBlockedUserIds,
 } from '../utils/privacy';
+import { logActivity } from '../utils/audit';
 
 export const POST_INCLUDE = {
   author: {
@@ -131,6 +132,14 @@ export async function createPost(req: AuthRequest, res: Response): Promise<void>
   });
 
   await Promise.all([delCacheByPattern('newsfeed:*'), delCache(`user:${userId}`), delCache('search:trending')]);
+  logActivity({
+    userId,
+    action: 'CREATE_POST',
+    targetType: 'Post' as any,
+    targetId: post.id,
+    details: `Đăng bài viết mới: ${content || ''}`.slice(0, 150),
+    ipAddress: req.ip,
+  });
   successResponse(res, { ...formatPost(post), isSaved: false, isLiked: false }, 'Post created', 201);
 }
 
@@ -315,6 +324,14 @@ export async function likePost(req: AuthRequest, res: Response): Promise<void> {
       });
     }
     await delCache(`post:${postId}`);
+    logActivity({
+      userId,
+      action: 'LIKE_POST',
+      targetType: 'Post' as any,
+      targetId: postId,
+      details: `Thích bài viết #${postId}`,
+      ipAddress: req.ip,
+    });
     successResponse(res, null, 'Liked successfully');
   } catch {
     errorResponse(res, 'Already liked', 409);

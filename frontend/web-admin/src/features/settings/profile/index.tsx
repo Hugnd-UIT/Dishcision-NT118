@@ -4,8 +4,8 @@ import { ProfileForm } from './profile-form'
 export function SettingsProfile() {
   return (
     <ContentSection
-      title='Profile'
-      desc='This is how others will see you on the site.'
+      title='Hồ sơ'
+      desc='Thông tin hiển thị công khai của bạn trên hệ thống.'
     >
       <ProfileForm />
     </ContentSection>

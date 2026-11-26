@@ -6,6 +6,7 @@ import { parsePagination, parsePositiveInt } from '../utils/http';
 import { AuthRequest } from '../middlewares/auth.middleware';
 import { formatUser, attachPostFlags, resolveAvatarUrl } from './user.controller';
 import { toRelativeUploadPath } from './upload.controller';
+import { logActivity } from '../utils/audit';
 import {
   areUsersBlocked,
   buildPostAuthorWhere,
@@ -89,6 +90,15 @@ export async function followUser(req: AuthRequest, res: Response): Promise<void>
       delCache(`user:${followerId}`),
       delCacheByPattern('newsfeed:*'),
     ]);
+
+    logActivity({
+      userId: followerId,
+      action: 'FOLLOW_USER',
+      targetType: 'User' as any,
+      targetId: followingId,
+      details: `Theo dõi tài khoản #${followingId}`,
+      ipAddress: req.ip,
+    });
 
     successResponse(res, null, 'Follow successful');
   } catch {
@@ -280,6 +290,14 @@ export async function savePost(req: AuthRequest, res: Response): Promise<void> {
 
   const existing = await prisma.savedPost.findFirst({ where: { userId, postId } });
   if (!existing) await prisma.savedPost.create({ data: { userId, postId } });
+  logActivity({
+    userId,
+    action: 'SAVE_POST',
+    targetType: 'Post' as any,
+    targetId: postId,
+    details: `Lưu bài viết #${postId}`,
+    ipAddress: req.ip,
+  });
   successResponse(res, { postId, isSaved: true }, 'Saved successfully');
 }
 

@@ -6,6 +6,7 @@ import { parsePositiveInt } from '../utils/http';
 import { resolveAvatarUrl } from './user.controller';
 import { toRelativeUploadPath } from './upload.controller';
 import { canAccessPrivacy, getBlockedUserIds, getUserPrivacy } from '../utils/privacy';
+import { logActivity } from '../utils/audit';
 
 // ─────────────────────────────────────────
 // 1. STORIES
@@ -72,6 +73,15 @@ export async function createStory(req: AuthRequest, res: Response): Promise<void
     include: {
       user: { select: { id: true, username: true, fullName: true, avatarUrl: true } },
     },
+  });
+
+  logActivity({
+    userId,
+    action: 'CREATE_STORY',
+    targetType: 'Post' as any,
+    targetId: newStory.id,
+    details: `Đăng story mới: ${caption || 'Hình ảnh story'}`,
+    ipAddress: req.ip,
   });
 
   successResponse(res, formatStory(newStory), 'Đăng story thành công', 201);

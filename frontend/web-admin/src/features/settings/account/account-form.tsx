@@ -31,32 +31,32 @@ import {
 import { DatePicker } from '@/components/date-picker'
 
 const languages = [
-  { label: 'English', value: 'en' },
-  { label: 'French', value: 'fr' },
-  { label: 'German', value: 'de' },
-  { label: 'Spanish', value: 'es' },
-  { label: 'Portuguese', value: 'pt' },
-  { label: 'Russian', value: 'ru' },
-  { label: 'Japanese', value: 'ja' },
-  { label: 'Korean', value: 'ko' },
-  { label: 'Chinese', value: 'zh' },
+  { label: 'Tiếng Việt', value: 'vi' },
+  { label: 'Tiếng Anh', value: 'en' },
+  { label: 'Tiếng Pháp', value: 'fr' },
+  { label: 'Tiếng Đức', value: 'de' },
+  { label: 'Tiếng Tây Ban Nha', value: 'es' },
+  { label: 'Tiếng Bồ Đào Nha', value: 'pt' },
+  { label: 'Tiếng Nga', value: 'ru' },
+  { label: 'Tiếng Nhật', value: 'ja' },
+  { label: 'Tiếng Hàn', value: 'ko' },
+  { label: 'Tiếng Trung', value: 'zh' },
 ] as const
 
 const accountFormSchema = z.object({
   name: z
-    .string()
-    .min(1, 'Please enter your name.')
-    .min(2, 'Name must be at least 2 characters.')
-    .max(30, 'Name must not be longer than 30 characters.'),
-  dob: z.date('Please select your date of birth.'),
-  language: z.string('Please select a language.'),
+    .string('Vui lòng nhập họ và tên.')
+    .min(2, 'Họ và tên phải có ít nhất 2 ký tự.')
+    .max(30, 'Họ và tên không được vượt quá 30 ký tự.'),
+  dob: z.date('Vui lòng chọn ngày sinh.'),
+  language: z.string('Vui lòng chọn ngôn ngữ.'),
 })
 
 type AccountFormValues = z.infer<typeof accountFormSchema>
 
-// This can come from your database or API.
 const defaultValues: Partial<AccountFormValues> = {
-  name: '',
+  name: 'Quản trị viên',
+  language: 'vi',
 }
 
 export function AccountForm() {
@@ -77,13 +77,12 @@ export function AccountForm() {
           name='name'
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Name</FormLabel>
+              <FormLabel>Họ và tên</FormLabel>
               <FormControl>
-                <Input placeholder='Your name' {...field} />
+                <Input placeholder='Họ và tên của bạn' {...field} />
               </FormControl>
               <FormDescription>
-                This is the name that will be displayed on your profile and in
-                emails.
+                Tên này sẽ hiển thị trên hồ sơ và trong hệ thống.
               </FormDescription>
               <FormMessage />
             </FormItem>
@@ -94,10 +93,10 @@ export function AccountForm() {
           name='dob'
           render={({ field }) => (
             <FormItem className='flex flex-col'>
-              <FormLabel>Date of birth</FormLabel>
+              <FormLabel>Ngày sinh</FormLabel>
               <DatePicker selected={field.value} onSelect={field.onChange} />
               <FormDescription>
-                Your date of birth is used to calculate your age.
+                Ngày sinh được sử dụng để xác định thông tin cá nhân.
               </FormDescription>
               <FormMessage />
             </FormItem>
@@ -108,7 +107,7 @@ export function AccountForm() {
           name='language'
           render={({ field }) => (
             <FormItem className='flex flex-col'>
-              <FormLabel>Language</FormLabel>
+              <FormLabel>Ngôn ngữ</FormLabel>
               <Popover>
                 <PopoverTrigger asChild>
                   <FormControl>
@@ -124,15 +123,15 @@ export function AccountForm() {
                         ? languages.find(
                             (language) => language.value === field.value
                           )?.label
-                        : 'Select language'}
+                        : 'Chọn ngôn ngữ'}
                       <CaretSortIcon className='ms-2 h-4 w-4 shrink-0 opacity-50' />
                     </Button>
                   </FormControl>
                 </PopoverTrigger>
                 <PopoverContent className='w-50 p-0'>
                   <Command>
-                    <CommandInput placeholder='Search language...' />
-                    <CommandEmpty>No language found.</CommandEmpty>
+                    <CommandInput placeholder='Tìm kiếm ngôn ngữ...' />
+                    <CommandEmpty>Không tìm thấy ngôn ngữ.</CommandEmpty>
                     <CommandGroup>
                       <CommandList>
                         {languages.map((language) => (
@@ -160,13 +159,13 @@ export function AccountForm() {
                 </PopoverContent>
               </Popover>
               <FormDescription>
-                This is the language that will be used in the dashboard.
+                Ngôn ngữ chính được áp dụng cho bảng điều khiển.
               </FormDescription>
               <FormMessage />
             </FormItem>
           )}
         />
-        <Button type='submit'>Update account</Button>
+        <Button type='submit'>Cập nhật tài khoản</Button>
       </form>
     </Form>
   )

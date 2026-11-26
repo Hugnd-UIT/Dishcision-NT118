@@ -82,16 +82,16 @@ public class VerifyOtpActivity extends AppCompatActivity {
             Insets insetsCombined = insets.getInsets(WindowInsetsCompat.Type.systemBars() | WindowInsetsCompat.Type.ime());
             v.setPadding(insetsCombined.left, insetsCombined.top, insetsCombined.right, insetsCombined.bottom);
 
-            if (insets.isVisible(WindowInsetsCompat.Type.ime()) && scrollView != null) {
+            boolean isImeVisible = insets.isVisible(WindowInsetsCompat.Type.ime());
+            if (isImeVisible && scrollView != null) {
                 View focused = getCurrentFocus();
                 if (focused != null) {
-                    // chờ ScrollView co lại theo padding bàn phím rồi mới cuộn
-                    scrollView.postDelayed(() -> {
+                    scrollView.post(() -> {
                         Rect rect = new Rect();
                         focused.getDrawingRect(rect);
                         rect.bottom += 120;
-                        focused.requestRectangleOnScreen(rect, false);
-                    }, 150);
+                        scrollView.requestChildRectangleOnScreen(focused, rect, false);
+                    });
                 }
             }
             return insets;

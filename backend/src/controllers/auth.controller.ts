@@ -5,6 +5,7 @@ import { hashPassword, comparePassword, generateAccessToken, generateRefreshToke
 import { successResponse, errorResponse } from '../utils/response';
 import { AuthRequest } from '../middlewares/auth.middleware';
 import { DEFAULT_AVATAR_URL, resolveAvatarUrl } from './user.controller';
+import { logActivity } from '../utils/audit';
 import crypto from 'crypto';
 import nodemailer from 'nodemailer';
 
@@ -209,6 +210,15 @@ async function issueAuthSession(user: any, req: Request, res: Response, message:
     blacklistSessionHashes(hashesToRevoke, true),
   ]);
 
+  logActivity({
+    userId: user.id,
+    action: 'USER_LOGIN',
+    targetType: 'User' as any,
+    targetId: user.id,
+    details: `Đăng nhập qua thiết bị ${extractDeviceName(req)}`,
+    ipAddress: req.ip,
+  });
+
   res.status(200).json({
     success: true,
     message,
@@ -308,6 +318,15 @@ export async function register(req: Request, res: Response): Promise<void> {
     prisma.user.update({ where: { id: user.id }, data: { refreshToken } }),
     recordSession(user.id, req, accessToken),
   ]);
+
+  logActivity({
+    userId: user.id,
+    action: 'USER_REGISTER',
+    targetType: 'User' as any,
+    targetId: user.id,
+    details: `Đăng ký tài khoản mới: @${user.username}`,
+    ipAddress: req.ip || '127.0.0.1',
+  });
 
   res.status(201).json({
     success: true,
@@ -515,6 +534,15 @@ export async function googleAuth(req: Request, res: Response): Promise<void> {
         preferences: { include: { preference: true } },
       },
     });
+
+    logActivity({
+      userId: user.id,
+      action: 'USER_REGISTER',
+      targetType: 'User' as any,
+      targetId: user.id,
+      details: `Đăng ký tài khoản mới qua Google: @${user.username}`,
+      ipAddress: req.ip || '127.0.0.1',
+    });
   } else if ((!user.avatarUrl || user.avatarUrl === DEFAULT_AVATAR_URL) && cleanGoogleAvatar) {
     user = await prisma.user.update({
       where: { id: user.id },
@@ -539,6 +567,14 @@ export async function googleAuth(req: Request, res: Response): Promise<void> {
 export async function logout(req: AuthRequest, res: Response): Promise<void> {
   const userId = req.user!.userId;
   await prisma.user.update({ where: { id: userId }, data: { refreshToken: null } });
+  logActivity({
+    userId,
+    action: 'USER_LOGOUT',
+    targetType: 'User' as any,
+    targetId: userId,
+    details: 'Đăng xuất khỏi hệ thống',
+    ipAddress: req.ip,
+  });
   const token = req.headers.authorization?.slice(7).trim();
   if (token) {
     const tokenHash = hashToken(token);
@@ -729,6 +765,14 @@ export async function changePassword(req: AuthRequest, res: Response): Promise<v
   ]);
 
   successResponse(res, null, 'Password changed successfully');
+  logActivity({
+    userId,
+    action: 'CHANGE_PASSWORD',
+    targetType: 'User' as any,
+    targetId: userId,
+    details: 'Đổi mật khẩu tài khoản',
+    ipAddress: req.ip,
+  });
 }
 
 // ── 2FA & Security Preferences ───────────

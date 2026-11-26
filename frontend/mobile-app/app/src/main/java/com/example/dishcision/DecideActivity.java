@@ -12,6 +12,7 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 import android.widget.RelativeLayout;
+import android.widget.ScrollView;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -73,14 +74,32 @@ public class DecideActivity extends AppCompatActivity {
         EdgeToEdge.enable(this);
         setContentView(R.layout.activity_decide);
 
-        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main_decide), (v, insets) -> {
-            Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
-            v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
-            return insets;
-        });
+        View mainDecide = findViewById(R.id.main_decide);
+        View bottomNav = findViewById(R.id.bottomNavigation);
+        ScrollView scrollContent = findViewById(R.id.scrollContent);
 
         ApiClient.init(this);
         initViews();
+
+        ViewCompat.setOnApplyWindowInsetsListener(mainDecide, (v, insets) -> {
+            Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
+            Insets ime = insets.getInsets(WindowInsetsCompat.Type.ime());
+            boolean isImeVisible = insets.isVisible(WindowInsetsCompat.Type.ime());
+            int bottomPadding = Math.max(systemBars.bottom, ime.bottom);
+            v.setPadding(systemBars.left, systemBars.top, systemBars.right, bottomPadding);
+            if (bottomNav != null) {
+                bottomNav.setVisibility(isImeVisible ? View.GONE : View.VISIBLE);
+            }
+            if (isImeVisible && scrollContent != null && edtDishList != null && edtDishList.hasFocus()) {
+                scrollContent.post(() -> {
+                    if (scrollContent.getChildCount() > 0) {
+                        scrollContent.smoothScrollTo(0, scrollContent.getChildAt(0).getBottom());
+                    }
+                });
+            }
+            return insets;
+        });
+
         setupListeners();
         updateUI();
         fetchDishesFromBackend();
