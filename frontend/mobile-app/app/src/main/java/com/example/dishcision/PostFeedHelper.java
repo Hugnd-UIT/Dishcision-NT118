@@ -685,9 +685,7 @@ public final class PostFeedHelper {
         LinearLayout containerCommentsList = dialogView.findViewById(R.id.containerCommentsList);
         EditText edtCommentInput = dialogView.findViewById(R.id.edtCommentInput);
         View btnSendComment = dialogView.findViewById(R.id.btnSendComment);
-        View btnEmojiPicker = dialogView.findViewById(R.id.btnEmojiPicker);
         View btnAttachFileComment = dialogView.findViewById(R.id.btnAttachFileComment);
-        LinearLayout layoutEmojiBar = dialogView.findViewById(R.id.layoutEmojiBar);
 
         final int defaultCommentsHeight = dpToPx(activity, 240);
         final int compactCommentsHeight = dpToPx(activity, 100);
@@ -901,23 +899,6 @@ public final class PostFeedHelper {
             });
         }
 
-        if (btnEmojiPicker != null && layoutEmojiBar != null) {
-            btnEmojiPicker.setOnClickListener(v ->
-                    layoutEmojiBar.setVisibility(layoutEmojiBar.getVisibility() == View.VISIBLE ? View.GONE : View.VISIBLE));
-        }
-
-        View.OnClickListener appendEmoji = v -> {
-            if (v instanceof TextView && edtCommentInput != null) {
-                edtCommentInput.append(((TextView) v).getText().toString());
-                edtCommentInput.requestFocus();
-            }
-        };
-        int[] emojiIds = {R.id.emojiHeart, R.id.emojiLaugh, R.id.emojiLove, R.id.emojiFire, R.id.emojiClap};
-        for (int id : emojiIds) {
-            View emojiView = dialogView.findViewById(id);
-            if (emojiView != null) emojiView.setOnClickListener(appendEmoji);
-        }
-
         final boolean[] sending = {false};
         if (btnSendComment != null) {
             btnSendComment.setOnClickListener(v -> {
@@ -944,7 +925,6 @@ public final class PostFeedHelper {
                                 if (activity.isFinishing()) return;
                                 if (response.isSuccessful() && response.body() != null && response.body().success) {
                                     if (edtCommentInput != null) edtCommentInput.setText("");
-                                    if (layoutEmojiBar != null) layoutEmojiBar.setVisibility(View.GONE);
                                     clearReplyTarget.run();
                                     loadPostComments(
                                             activity,
