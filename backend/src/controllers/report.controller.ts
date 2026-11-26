@@ -2,6 +2,7 @@ import { Response } from 'express';
 import { prisma } from '../config/prisma';
 import { successResponse, errorResponse } from '../utils/response';
 import { AuthRequest } from '../middlewares/auth.middleware';
+import { logActivity } from '../utils/audit';
 
 // ── POST /reports ─────────────────────────
 
@@ -39,6 +40,15 @@ export async function createReport(req: AuthRequest, res: Response): Promise<voi
       reason,
       description,
     },
+  });
+
+  logActivity({
+    userId: reporterId,
+    action: 'CREATE_REPORT',
+    targetType: 'Report' as any,
+    targetId: report.id,
+    details: `Báo cáo vi phạm: ${reason}`,
+    ipAddress: req.ip,
   });
 
   successResponse(res, { reportId: report.id }, 'Report submitted successfully', 201);

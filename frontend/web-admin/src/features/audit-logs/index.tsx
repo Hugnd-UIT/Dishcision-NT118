@@ -128,16 +128,16 @@ export function AuditLogsFeature() {
           <Card className='border-border/60 shadow-xs'>
             <CardHeader className='flex flex-row items-center justify-between pb-2'>
               <CardTitle className='text-xs font-medium text-muted-foreground'>
-                Quản trị viên hoạt động
+                Tài khoản hoạt động
               </CardTitle>
               <UserCheck className='size-4 text-emerald-500' />
             </CardHeader>
             <CardContent>
               <div className='text-2xl font-bold text-foreground'>
-                Admin
+                Đa dạng tài khoản
               </div>
               <p className='text-xs text-muted-foreground mt-1'>
-                Có quyền kiểm soát toàn diện
+                Gồm quản trị viên, chủ quán và người dùng
               </p>
             </CardContent>
           </Card>
@@ -191,7 +191,7 @@ export function AuditLogsFeature() {
                   Bảng Lịch Sử Thao Tác Hệ Thống
                 </CardTitle>
                 <CardDescription className='text-xs'>
-                  Danh sách chi tiết các hành động được thực hiện bởi quản trị viên
+                  Danh sách chi tiết các hành động và hoạt động của tất cả tài khoản trên hệ thống
                 </CardDescription>
               </div>
               <div className='relative w-full sm:w-64'>
@@ -211,7 +211,7 @@ export function AuditLogsFeature() {
                 <TableHeader>
                   <TableRow className='text-xs'>
                     <TableHead className='w-[150px] pl-6'>Thời gian</TableHead>
-                    <TableHead className='w-[160px]'>Quản trị viên</TableHead>
+                    <TableHead className='w-[180px]'>Tài khoản thực hiện</TableHead>
                     <TableHead className='w-[180px]'>Hành động</TableHead>
                     <TableHead className='w-[120px]'>Đối tượng</TableHead>
                     <TableHead>Chi tiết thao tác</TableHead>
@@ -243,12 +243,19 @@ export function AuditLogsFeature() {
                             <Avatar className='size-6'>
                               <AvatarImage src={log.admin?.avatarUrl || ''} />
                               <AvatarFallback className='text-[10px] bg-primary/10 text-primary'>
-                                {(log.admin?.username || 'A')[0].toUpperCase()}
+                                {(log.admin?.username || 'U')[0].toUpperCase()}
                               </AvatarFallback>
                             </Avatar>
-                            <span className='font-medium text-foreground truncate max-w-[110px]'>
-                              @{log.admin?.username || 'admin'}
-                            </span>
+                            <div className='flex flex-col'>
+                              <span className='font-medium text-foreground truncate max-w-[120px]'>
+                                @{log.admin?.username || 'nguoidung'}
+                              </span>
+                              {log.admin?.role && (
+                                <span className='text-[10px] text-muted-foreground'>
+                                  {log.admin.role === 'Admin' ? 'Quản trị viên' : log.admin.role === 'RestaurantAccount' ? 'Chủ quán' : 'Người dùng'}
+                                </span>
+                              )}
+                            </div>
                           </div>
                         </TableCell>
                         <TableCell>
