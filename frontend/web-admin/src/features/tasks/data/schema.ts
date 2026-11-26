@@ -4,7 +4,7 @@ export const postSchema = z.object({
   id: z.string(),
   postId: z.number().optional(),
   title: z.string(),
-  content: z.string(),
+  content: z.string().optional().default(''),
   author: z
     .object({
       id: z.number().optional(),
@@ -13,15 +13,15 @@ export const postSchema = z.object({
       avatarUrl: z.string().nullable().optional(),
     })
     .optional(),
-  images: z.array(z.string()).default([]),
+  images: z.array(z.string()).optional().default([]),
   status: z.string(),
-  label: z.string().default('review'),
-  priority: z.string().default('latest'),
-  likesCount: z.number().default(0),
-  commentsCount: z.number().default(0),
-  sharesCount: z.number().default(0),
-  isPinned: z.boolean().default(false),
-  createdAt: z.string().or(z.date()),
+  label: z.string().optional().default('review'),
+  priority: z.string().optional().default('latest'),
+  likesCount: z.number().optional().default(0),
+  commentsCount: z.number().optional().default(0),
+  sharesCount: z.number().optional().default(0),
+  isPinned: z.boolean().optional().default(false),
+  createdAt: z.string().or(z.date()).optional().default(() => new Date().toISOString()),
   updatedAt: z.string().or(z.date()).optional(),
 })
 

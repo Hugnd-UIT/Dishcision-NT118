@@ -4,7 +4,7 @@ import { Badge } from '@/components/ui/badge'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { DataTableColumnHeader } from '@/components/data-table'
-import { labels, priorities, statuses } from '../data/data'
+import { labels } from '../data/data'
 import { type Post } from '../data/schema'
 import { DataTableRowActions } from './data-table-row-actions'
 

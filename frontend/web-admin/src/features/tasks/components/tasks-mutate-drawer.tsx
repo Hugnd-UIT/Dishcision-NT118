@@ -83,13 +83,11 @@ export function TasksMutateDrawer({
     >
       <SheetContent className='flex flex-col'>
         <SheetHeader className='text-start'>
-          <SheetTitle>
-            {isUpdate ? 'Cập nhật bài viết' : 'Thêm bài viết mới'}
-          </SheetTitle>
+          <SheetTitle>{isUpdate ? 'Update Task' : 'Create Task'}</SheetTitle>
           <SheetDescription>
             {isUpdate
-              ? 'Chỉnh sửa thông tin và trạng thái bài viết cộng đồng.'
-              : 'Tạo bài viết chia sẻ ẩm thực mới trên Dishcision.'}
+              ? 'Update the task by providing necessary info.'
+              : 'Add a new task by providing necessary info.'}
           </SheetDescription>
         </SheetHeader>
         <Form {...form}>
