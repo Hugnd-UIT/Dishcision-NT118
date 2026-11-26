@@ -5,7 +5,6 @@ import {
   TrendingUp,
   Star,
   Activity,
-  Code2,
   Coins,
   Clock,
   ArrowDownLeft,
@@ -558,47 +557,6 @@ export function AiFeature() {
                 </div>
               </div>
             </div>
-          </CardContent>
-        </Card>
-
-        {/* SYSTEM PROMPT CONFIGURATION */}
-        <Card className='border-border/60'>
-          <CardHeader>
-            <div className='flex items-center justify-between'>
-              <div className='flex items-center gap-2'>
-                <Code2 className='size-5 text-primary' />
-                <div>
-                  <CardTitle className='text-base font-semibold'>
-                    System Prompt Điều Hướng Gemini
-                  </CardTitle>
-                  <CardDescription className='text-xs'>
-                    Prompt chính thức được truyền vào Gemini 2.5 Flash tại backend Dishcision
-                  </CardDescription>
-                </div>
-              </div>
-              <Badge variant='outline' className='text-xs'>
-                Cố định trong mã nguồn backend
-              </Badge>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <pre className='rounded-md bg-zinc-950 p-4 font-mono text-xs text-zinc-200 border border-border leading-relaxed whitespace-pre-wrap overflow-x-auto'>
-{`Bạn là chuyên gia tư vấn ẩm thực Việt Nam cho ứng dụng Dishcision.
-Dựa trên các tiêu chí sau, hãy gợi ý 3 món ăn ngon nhất, chuẩn vị Việt Nam:
-- Tâm trạng / Cảm xúc: \${mood}
-- Ngân sách: \${budget}
-- Số người cùng ăn: \${companions}
-- Nhu cầu / Thèm món gì: \${craving}
-
-YÊU CẦU: Trả về DUY NHẤT một mảng JSON gồm 3 object (không thêm bất kỳ văn bản nào khác ngoài JSON):
-[
-  {
-    "dishName": "Tên món ăn (tiếng Việt)",
-    "reason": "Lý do gợi ý ngắn gọn, thu hút, đúng với tâm trạng",
-    "estimatedPrice": "Khoảng giá dự kiến (ví dụ: 45.000 - 65.000 VND)"
-  }
-]`}
-            </pre>
           </CardContent>
         </Card>
       </Main>
