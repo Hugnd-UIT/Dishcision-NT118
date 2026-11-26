@@ -10,16 +10,29 @@
     android:orientation="horizontal"
     android:paddingVertical="10dp">
 
-    <TextView
-        android:id="@+id/tvFollowerAvatar"
+    <FrameLayout
         android:layout_width="48dp"
-        android:layout_height="48dp"
-        android:background="@drawable/bg_avatar_initials"
-        android:gravity="center"
-        android:text=""
-        android:textColor="#141B2B"
-        android:textSize="16sp"
-        android:textStyle="bold" />
+        android:layout_height="48dp">
+
+        <TextView
+            android:id="@+id/tvFollowerAvatar"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="@drawable/bg_avatar_initials"
+            android:gravity="center"
+            android:text=""
+            android:textColor="#141B2B"
+            android:textSize="16sp"
+            android:textStyle="bold" />
+
+        <ImageView
+            android:id="@+id/ivFollowerAvatar"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:contentDescription="@string/app_name"
+            android:scaleType="centerCrop"
+            android:visibility="gone" />
+    </FrameLayout>
 
     <LinearLayout
         android:layout_width="0dp"

@@ -25,6 +25,7 @@ import com.example.dishcision.network.ApiClient;
 import com.example.dishcision.network.AuthHelper;
 import com.example.dishcision.network.AuthResponse;
 import com.example.dishcision.network.FollowersListResponse;
+import com.example.dishcision.network.ImageLoader;
 import com.example.dishcision.network.TokenManager;
 import com.example.dishcision.network.UserProfileResponse;
 
@@ -364,6 +365,7 @@ public class FollowersActivity extends AppCompatActivity {
             View itemView = inflater.inflate(R.layout.item_follower_user, layoutUsersList, false);
 
             TextView tvAvatar = itemView.findViewById(R.id.tvFollowerAvatar);
+            ImageView ivAvatar = itemView.findViewById(R.id.ivFollowerAvatar);
             TextView tvName = itemView.findViewById(R.id.tvFollowerName);
             TextView tvHandle = itemView.findViewById(R.id.tvFollowerHandle);
             TextView btnAction = itemView.findViewById(R.id.btnFollowAction);
@@ -372,8 +374,16 @@ public class FollowersActivity extends AppCompatActivity {
             if (tvName != null) tvName.setText(displayName != null ? displayName : "Thành viên");
             if (tvHandle != null) tvHandle.setText("@" + (user.username != null ? user.username.replace("@", "") : ""));
 
-            if (tvAvatar != null) {
-                tvAvatar.setText(getInitials(displayName));
+            if (ivAvatar != null && user.avatarUrl != null && !user.avatarUrl.trim().isEmpty()) {
+                ivAvatar.setVisibility(View.VISIBLE);
+                if (tvAvatar != null) tvAvatar.setVisibility(View.GONE);
+                ImageLoader.loadAvatar(ivAvatar, user.avatarUrl);
+            } else {
+                if (ivAvatar != null) ivAvatar.setVisibility(View.GONE);
+                if (tvAvatar != null) {
+                    tvAvatar.setVisibility(View.VISIBLE);
+                    tvAvatar.setText(getInitials(displayName));
+                }
             }
 
             boolean isSelf = selfId > 0 && user.userId == selfId;
