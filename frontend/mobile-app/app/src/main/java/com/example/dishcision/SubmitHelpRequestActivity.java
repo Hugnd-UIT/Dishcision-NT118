@@ -92,8 +92,8 @@ public class SubmitHelpRequestActivity extends AppCompatActivity {
     private void setupSpinner() {
         if (spinnerSubject == null) return;
         String[] subjects = {"Chọn chủ đề", "Lỗi ứng dụng", "Đóng góp ý kiến", "Báo cáo người dùng", "Vấn đề tài khoản", "Khác"};
-        ArrayAdapter<String> adapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, subjects);
-        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        ArrayAdapter<String> adapter = new ArrayAdapter<>(this, R.layout.item_spinner_subject, subjects);
+        adapter.setDropDownViewResource(R.layout.item_spinner_subject_dropdown);
         spinnerSubject.setAdapter(adapter);
     }
 

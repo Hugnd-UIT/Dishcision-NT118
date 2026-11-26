@@ -291,7 +291,7 @@
                     android:layout_width="24dp"
                     android:layout_height="24dp"
                     android:contentDescription="@string/sidebar_for_you"
-                    android:src="@drawable/ic_sparkle" />
+                    android:src="@drawable/ic_home" />
 
                 <TextView
                     android:layout_width="wrap_content"

@@ -202,6 +202,16 @@
     <string name="help_faq_more">Xem tất cả</string>
     <string name="help_faq_1">Quên mật khẩu, làm sao đăng nhập lại?</string>
     <string name="help_faq_1_desc">Chọn "Quên mật khẩu" ở màn hình đăng nhập. Nhập email đã đăng ký và làm theo hướng dẫn để đặt lại mật khẩu.</string>
+    <string name="help_faq_2">Làm sao đổi mật khẩu?</string>
+    <string name="help_faq_2_desc">Vào Cá nhân, mở Cài đặt rồi chọn Đổi mật khẩu. Nhập mật khẩu hiện tại và mật khẩu mới để cập nhật.</string>
+    <string name="help_faq_3">Làm sao chặn hoặc báo cáo một tài khoản?</string>
+    <string name="help_faq_3_desc">Mở trang cá nhân hoặc bài viết của người đó, chọn menu ba chấm rồi chọn Chặn hoặc Báo cáo. Danh sách tài khoản đã chặn nằm trong Cài đặt.</string>
+    <string name="help_faq_4">Làm sao xóa tài khoản?</string>
+    <string name="help_faq_4_desc">Vào Cài đặt, chọn Xóa tài khoản và làm theo hướng dẫn xác nhận. Lưu ý: thao tác này không thể hoàn tác.</string>
+    <string name="help_faq_5">Làm sao đăng bài viết?</string>
+    <string name="help_faq_5_desc">Bấm nút + ở thanh dưới cùng, viết nội dung và thêm tối đa 2 ảnh, rồi chọn Đăng. Bạn có thể gắn địa điểm, mã giảm giá và hashtag.</string>
+    <string name="help_faq_6">Làm sao ẩn hoặc khôi phục bài viết?</string>
+    <string name="help_faq_6_desc">Bấm menu ba chấm trên bài của bạn rồi chọn Lưu trữ bài viết. Muốn đưa lại, vào Kho lưu trữ trong Cài đặt và chọn Khôi phục về hồ sơ.</string>
     <!-- Help Submit Request -->
     <string name="submit_help_title">Gửi yêu cầu hỗ trợ</string>
     <string name="submit_help_desc">Báo lỗi kỹ thuật, góp ý hoặc cần hỗ trợ từ đội ngũ Dishcision.</string>

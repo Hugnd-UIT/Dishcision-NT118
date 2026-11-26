@@ -847,7 +847,7 @@ public class FavoriteRestaurantsActivity extends AppCompatActivity {
                     LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT);
             aParams.topMargin = dpToPx(4);
             tvAddr.setLayoutParams(aParams);
-            tvAddr.setText("📍 " + store.address);
+            tvAddr.setText("" + store.address);
             tvAddr.setTextColor(ContextCompat.getColor(this, R.color.text_gray));
             tvAddr.setTextSize(13f);
             infoBody.addView(tvAddr);

@@ -125,12 +125,16 @@
                 </LinearLayout>
 
                 <TextView
+                    android:id="@+id/tvAudience"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginStart="16dp"
                     android:background="@drawable/bg_chip_inactive"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:foreground="?attr/selectableItemBackground"
                     android:paddingHorizontal="10dp"
-                    android:paddingVertical="4dp"
+                    android:paddingVertical="6dp"
                     android:text="🌐 Công khai ∨"
                     android:textColor="#0A8050"
                     android:textSize="12sp"
@@ -168,18 +172,11 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_alignParentStart="true"
-                    android:text="Hình ảnh (0/2)"
+                    android:text="Hình ảnh"
                     android:textColor="@color/text_dark"
                     android:textSize="13sp"
                     android:textStyle="bold" />
 
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_alignParentEnd="true"
-                    android:text="Nhấp để thêm ảnh"
-                    android:textColor="@color/text_gray"
-                    android:textSize="12sp" />
             </RelativeLayout>
 
             <LinearLayout
@@ -296,7 +293,7 @@
                 android:layout_height="42dp"
                 android:layout_marginTop="8dp"
                 android:background="@drawable/bg_favorite_search"
-                android:hint="📍 Tên địa điểm hoặc URL"
+                android:hint="Tên địa điểm hoặc URL"
                 android:paddingHorizontal="12dp"
                 android:textColor="@color/text_dark"
                 android:textColorHint="@color/text_gray"
@@ -308,7 +305,7 @@
                 android:layout_height="42dp"
                 android:layout_marginTop="8dp"
                 android:background="@drawable/bg_favorite_search"
-                android:hint="🎟 Mã giảm giá / Voucher (nếu có)"
+                android:hint="Mã giảm giá / Voucher (nếu có)"
                 android:paddingHorizontal="12dp"
                 android:textColor="@color/text_dark"
                 android:textColorHint="@color/text_gray"
@@ -320,7 +317,7 @@
                 android:layout_height="42dp"
                 android:layout_marginTop="8dp"
                 android:background="@drawable/bg_favorite_search"
-                android:hint="# Hashtags (phân cách bởi dấu phẩy, VD: food, review)"
+                android:hint="# Hashtags, VD: #food #review"
                 android:paddingHorizontal="12dp"
                 android:textColor="@color/text_dark"
                 android:textColorHint="@color/text_gray"
@@ -338,7 +335,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:lineSpacingExtra="2dp"
-                    android:text="💡 Mẹo tạo bài: Đính kèm địa điểm và hình ảnh thực tế sẽ giúp bài viết thu hút thêm tương tác từ cộng đồng."
+                    android:text="Mẹo tạo bài: Đính kèm địa điểm và hình ảnh thực tế sẽ giúp bài viết thu hút thêm tương tác từ cộng đồng."
                     android:textColor="#555555"
                     android:textSize="12sp" />
             </LinearLayout>

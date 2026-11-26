@@ -599,7 +599,7 @@ public class SearchResultsActivity extends AppCompatActivity {
 
             if (store.address != null && !store.address.trim().isEmpty()) {
                 TextView tvAddr = new TextView(this);
-                tvAddr.setText("📍 " + store.address.trim());
+                tvAddr.setText("" + store.address.trim());
                 tvAddr.setTextColor(ContextCompat.getColor(this, R.color.text_gray));
                 tvAddr.setTextSize(TypedValue.COMPLEX_UNIT_SP, 12);
                 LinearLayout.LayoutParams aLp = new LinearLayout.LayoutParams(

@@ -443,7 +443,7 @@ public final class PostFeedHelper {
         if (tvVoucherBadge != null) {
             if (!isEmpty(post.voucherCode)) {
                 String code = post.voucherCode.trim();
-                tvVoucherBadge.setText("🎟 Mã ưu đãi: " + code);
+                tvVoucherBadge.setText("Mã ưu đãi: " + code);
                 tvVoucherBadge.setVisibility(View.VISIBLE);
                 tvVoucherBadge.setOnClickListener(v -> {
                     copyToClipboard(activity, "Voucher Code", code);

@@ -340,7 +340,7 @@ public class TodayRestaurantResultActivity extends AppCompatActivity {
 
         StringBuilder metaLine = new StringBuilder();
         if (store.address != null && !store.address.trim().isEmpty()) {
-            metaLine.append("📍 ").append(store.address.trim());
+            metaLine.append(store.address.trim());
         }
         if (store.openHours != null && !store.openHours.trim().isEmpty()) {
             if (metaLine.length() > 0) metaLine.append(" • ");

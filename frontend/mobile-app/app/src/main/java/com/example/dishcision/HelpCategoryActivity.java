@@ -86,6 +86,11 @@ public class HelpCategoryActivity extends AppCompatActivity {
     private void setupListeners() {
         if (btnBack != null) btnBack.setOnClickListener(v -> finish());
         
+        View link1 = (View) findViewById(R.id.tvMoreLink1).getParent();
+        View link2 = (View) findViewById(R.id.tvMoreLink2).getParent();
+        if (link1 != null) link1.setOnClickListener(v -> startActivity(new Intent(this, PrivacySettingsActivity.class)));
+        if (link2 != null) link2.setOnClickListener(v -> startActivity(new Intent(this, EditProfileActivity.class)));
+
         if (btnSubmitRequest != null) {
             btnSubmitRequest.setOnClickListener(v -> {
                 Intent intent = new Intent(this, SubmitHelpRequestActivity.class);

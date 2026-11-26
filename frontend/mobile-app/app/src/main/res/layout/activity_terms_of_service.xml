@@ -38,12 +38,9 @@
             android:textSize="20sp"
             android:textStyle="bold" />
 
-        <ImageView
+        <View
             android:layout_width="20dp"
-            android:layout_height="20dp"
-            android:contentDescription="Sparkle"
-            android:src="@drawable/ic_sparkle"
-            app:tint="#FF5A36" />
+            android:layout_height="20dp" />
     </LinearLayout>
 
     <!-- Scrollable Terms & Privacy Document -->

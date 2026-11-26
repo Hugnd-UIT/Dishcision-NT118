@@ -4,6 +4,7 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.ImageView;
+import android.widget.TextView;
 
 import androidx.activity.EdgeToEdge;
 import androidx.appcompat.app.AppCompatActivity;
@@ -22,12 +23,6 @@ public class HelpCenterActivity extends AppCompatActivity {
         EdgeToEdge.enable(this);
         setContentView(R.layout.activity_help_center);
 
-        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.btnBack), (v, insets) -> {
-            Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
-            v.setPadding(0, systemBars.top, 0, 0);
-            return insets;
-        });
-
         initViews();
         setupListeners();
     }
@@ -42,7 +37,34 @@ public class HelpCenterActivity extends AppCompatActivity {
         cardCatSafety = findViewById(R.id.cardCatSafety);
     }
 
+    private void setupFaqFilter() {
+        final android.view.View list = findViewById(R.id.faqList);
+        final String[] topics = {"all", "account", "security", "post"};
+        final TextView[] chips = {
+                findViewById(R.id.chipFaqAll), findViewById(R.id.chipFaqAccount),
+                findViewById(R.id.chipFaqSecurity), findViewById(R.id.chipFaqPost)};
+        for (int i = 0; i < chips.length; i++) {
+            final String topic = topics[i];
+            chips[i].setOnClickListener(v -> {
+                for (int k = 0; k < chips.length; k++) {
+                    boolean on = chips[k] == v;
+                    chips[k].setBackgroundResource(on ? R.drawable.bg_recommend_card : R.drawable.bg_chip_preference);
+                    chips[k].setTextColor(on ? 0xFFC5221F : 0xFF505568);
+                }
+                android.view.ViewGroup group = (android.view.ViewGroup) list;
+                for (int c = 0; c < group.getChildCount(); c++) {
+                    android.view.View card = group.getChildAt(c);
+                    Object tag = card.getTag();
+                    boolean show = "all".equals(topic)
+                            || (tag != null && java.util.Arrays.asList(tag.toString().split(",")).contains(topic));
+                    card.setVisibility(show ? android.view.View.VISIBLE : android.view.View.GONE);
+                }
+            });
+        }
+    }
+
     private void setupListeners() {
+        setupFaqFilter();
         if (btnBack != null) btnBack.setOnClickListener(v -> finish());
 
         if (cardCatAccount != null) cardCatAccount.setOnClickListener(v -> openCategory(1));

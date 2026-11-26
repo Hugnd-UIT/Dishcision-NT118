@@ -396,7 +396,7 @@
 
                 <!-- Tab 2: Quán đã lưu -->
                 <LinearLayout
-                    android:id="@+id/tabSavedStores"
+                    android:id="@+id/tabReviews"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
@@ -416,14 +416,14 @@
                         <ImageView
                             android:layout_width="18dp"
                             android:layout_height="18dp"
-                            android:contentDescription="Store"
-                            android:src="@drawable/ic_book" />
+                            android:contentDescription="Đánh giá"
+                            android:src="@drawable/ic_star" />
 
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:layout_marginStart="6dp"
-                            android:text="Quán đã lưu"
+                            android:text="Đánh giá"
                             android:textColor="#6B7280"
                             android:textSize="14sp" />
                     </LinearLayout>
@@ -484,6 +484,25 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="12dp"
                 android:orientation="vertical" />
+
+            <LinearLayout
+                android:id="@+id/containerUserReviews"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:orientation="vertical"
+                android:visibility="gone" />
+
+            <TextView
+                android:id="@+id/tvEmptyUserReviews"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center"
+                android:padding="24dp"
+                android:text="Quán chưa có đánh giá nào"
+                android:textColor="#8E93A6"
+                android:textSize="14sp"
+                android:visibility="gone" />
 
             <TextView
                 android:id="@+id/tvEmptyUserPosts"

@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="@drawable/bg_card_white"
+    android:orientation="vertical"
+    android:padding="20dp">
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Nhập thông tin quán"
+        android:textColor="#141B2B"
+        android:textSize="18sp"
+        android:textStyle="bold" />
+
+    <EditText
+        android:id="@+id/edtRestaurantName"
+        android:layout_width="match_parent"
+        android:layout_height="48dp"
+        android:layout_marginTop="16dp"
+        android:background="@drawable/bg_input_field_light"
+        android:hint="Tên quán ăn *"
+        android:imeOptions="actionNext"
+        android:inputType="textCapWords"
+        android:maxLines="1"
+        android:paddingHorizontal="12dp"
+        android:singleLine="true"
+        android:textColor="#141B2B"
+        android:textColorHint="#8E7570"
+        android:textSize="15sp" />
+
+    <EditText
+        android:id="@+id/edtRestaurantAddress"
+        android:layout_width="match_parent"
+        android:layout_height="48dp"
+        android:layout_marginTop="10dp"
+        android:background="@drawable/bg_input_field_light"
+        android:hint="Địa chỉ (tùy chọn)"
+        android:imeOptions="actionDone"
+        android:inputType="textCapWords"
+        android:maxLines="1"
+        android:paddingHorizontal="12dp"
+        android:singleLine="true"
+        android:textColor="#141B2B"
+        android:textColorHint="#8E7570"
+        android:textSize="15sp" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="20dp"
+        android:gravity="end|center_vertical"
+        android:orientation="horizontal">
+
+        <TextView
+            android:id="@+id/btnRestaurantInfoCancel"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:clickable="true"
+            android:focusable="true"
+            android:padding="12dp"
+            android:text="Hủy"
+            android:textColor="#8E7570"
+            android:textSize="15sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/btnRestaurantInfoConfirm"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:background="@drawable/bg_button_primary"
+            android:clickable="true"
+            android:focusable="true"
+            android:gravity="center"
+            android:paddingHorizontal="24dp"
+            android:paddingVertical="12dp"
+            android:text="Xác nhận"
+            android:textColor="@color/white"
+            android:textSize="15sp"
+            android:textStyle="bold" />
+    </LinearLayout>
+</LinearLayout>

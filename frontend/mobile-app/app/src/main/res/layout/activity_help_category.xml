@@ -409,11 +409,10 @@
                     android:orientation="horizontal">
 
                     <ImageView
-                        android:layout_width="14dp"
-                        android:layout_height="14dp"
+                        android:layout_width="20dp"
+                        android:layout_height="20dp"
                         android:contentDescription="Logo"
-                        android:src="@drawable/ic_fire"
-                        app:tint="#C5221F" />
+                        android:src="@drawable/logo" />
 
                     <TextView
                         android:layout_width="wrap_content"

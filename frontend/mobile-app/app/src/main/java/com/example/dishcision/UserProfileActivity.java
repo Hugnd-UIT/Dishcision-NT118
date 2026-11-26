@@ -25,6 +25,8 @@ import com.example.dishcision.network.AuthResponse;
 import com.example.dishcision.network.CurrentUserBinder;
 import com.example.dishcision.network.FeedPostsResponse;
 import com.example.dishcision.network.ImageLoader;
+import com.example.dishcision.network.ReviewsResponse;
+import com.example.dishcision.network.StoreDetailResponse;
 import com.example.dishcision.network.TokenManager;
 import com.example.dishcision.network.UserProfileResponse;
 
@@ -64,6 +66,12 @@ public class UserProfileActivity extends AppCompatActivity {
 
     private LinearLayout gridUserPostsContainer;
     private TextView tvEmptyUserPosts;
+    private View tabPosts;
+    private View tabReviews;
+    private LinearLayout containerUserReviews;
+    private TextView tvEmptyUserReviews;
+    private int postsEmptyVisibility = View.GONE;
+    private boolean reviewsLoaded = false;
 
     private TokenManager tokenManager;
     private int targetUserId = 0;
@@ -160,6 +168,74 @@ public class UserProfileActivity extends AppCompatActivity {
 
         gridUserPostsContainer = findViewById(R.id.gridUserPostsContainer);
         tvEmptyUserPosts = findViewById(R.id.tvEmptyUserPosts);
+        tabPosts = findViewById(R.id.tabPosts);
+        tabReviews = findViewById(R.id.tabReviews);
+        containerUserReviews = findViewById(R.id.containerUserReviews);
+        tvEmptyUserReviews = findViewById(R.id.tvEmptyUserReviews);
+        setTabActive(tabPosts, true);
+        setTabActive(tabReviews, false);
+        if (tabPosts != null) tabPosts.setOnClickListener(v -> showTab(false));
+        if (tabReviews != null) tabReviews.setOnClickListener(v -> showTab(true));
+    }
+
+    private void setTabActive(View tab, boolean active) {
+        if (!(tab instanceof android.view.ViewGroup)) return;
+        android.view.ViewGroup t = (android.view.ViewGroup) tab;
+        android.view.ViewGroup row = (android.view.ViewGroup) t.getChildAt(0);
+        ImageView icon = (ImageView) row.getChildAt(0);
+        TextView label = (TextView) row.getChildAt(1);
+        int color = active ? 0xFFFF5A36 : 0xFF6B7280;
+        icon.setColorFilter(color);
+        label.setTextColor(color);
+        label.setTypeface(null, active ? android.graphics.Typeface.BOLD : android.graphics.Typeface.NORMAL);
+        View bar = t.getChildAt(1);
+        bar.setBackgroundColor(active ? 0xFFFF5A36 : 0xFFE9EBF4);
+        bar.getLayoutParams().height = (int) (getResources().getDisplayMetrics().density * (active ? 2 : 1));
+        bar.requestLayout();
+    }
+
+    private void showTab(boolean reviews) {
+        if (gridUserPostsContainer == null || containerUserReviews == null) return;
+        if (reviews && gridUserPostsContainer.getVisibility() == View.VISIBLE) {
+            postsEmptyVisibility = tvEmptyUserPosts.getVisibility();
+        }
+        setTabActive(tabPosts, !reviews);
+        setTabActive(tabReviews, reviews);
+        gridUserPostsContainer.setVisibility(reviews ? View.GONE : View.VISIBLE);
+        tvEmptyUserPosts.setVisibility(reviews ? View.GONE : postsEmptyVisibility);
+        containerUserReviews.setVisibility(reviews ? View.VISIBLE : View.GONE);
+        if (!reviews) tvEmptyUserReviews.setVisibility(View.GONE);
+        if (reviews && !reviewsLoaded) loadStoreReviews();
+        else if (reviews) tvEmptyUserReviews.setVisibility(containerUserReviews.getChildCount() == 0 ? View.VISIBLE : View.GONE);
+    }
+
+    private void loadStoreReviews() {
+        ApiClient.getApiService().getStoreDetail(ApiClient.getAuthHeader(this), targetUserId)
+                .enqueue(new Callback<StoreDetailResponse>() {
+                    @Override
+                    public void onResponse(@NonNull Call<StoreDetailResponse> call, @NonNull Response<StoreDetailResponse> response) {
+                        if (isFinishing() || isDestroyed()) return;
+                        if (!response.isSuccessful() || response.body() == null || response.body().data == null) {
+                            tvEmptyUserReviews.setVisibility(View.VISIBLE);
+                            return;
+                        }
+                        reviewsLoaded = true;
+                        containerUserReviews.removeAllViews();
+                        List<ReviewsResponse.ReviewItem> list = response.body().data.reviews;
+                        if (list != null) {
+                            for (ReviewsResponse.ReviewItem r : list) {
+                                if (r != null) containerUserReviews.addView(ReviewCardHelper.build(UserProfileActivity.this, r));
+                            }
+                        }
+                        tvEmptyUserReviews.setVisibility(containerUserReviews.getChildCount() == 0 ? View.VISIBLE : View.GONE);
+                    }
+
+                    @Override
+                    public void onFailure(@NonNull Call<StoreDetailResponse> call, @NonNull Throwable t) {
+                        if (isFinishing() || isDestroyed()) return;
+                        tvEmptyUserReviews.setVisibility(View.VISIBLE);
+                    }
+                });
     }
 
     private void setupListeners() {
@@ -316,6 +392,7 @@ public class UserProfileActivity extends AppCompatActivity {
 
         boolean isRestaurant = "RestaurantAccount".equals(user.role);
         boolean isAdmin = "Admin".equals(user.role);
+        if (tabReviews != null) tabReviews.setVisibility(isRestaurant ? View.VISIBLE : View.GONE);
         if (imgVerifiedBadge != null) {
             imgVerifiedBadge.setVisibility(isRestaurant || isAdmin ? View.VISIBLE : View.GONE);
         }
@@ -337,7 +414,7 @@ public class UserProfileActivity extends AppCompatActivity {
         boolean showPref = !user.profileRestricted && user.preferences != null && !user.preferences.isEmpty();
         if (tvLocationBadge != null) {
             if (showCity) {
-                tvLocationBadge.setText("📍 " + user.city.trim());
+                tvLocationBadge.setText("" + user.city.trim());
                 tvLocationBadge.setVisibility(View.VISIBLE);
             } else if (showPref) {
                 tvLocationBadge.setText("#" + user.preferences.get(0).replace("#", "").trim());

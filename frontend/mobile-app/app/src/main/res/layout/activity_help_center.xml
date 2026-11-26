@@ -373,24 +373,90 @@
                     android:textSize="18sp"
                     android:textStyle="bold" />
 
-                <TextView
+            </LinearLayout>
+
+            <HorizontalScrollView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:scrollbars="none">
+
+                <LinearLayout
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:background="@drawable/bg_recommend_card"
-                    android:paddingHorizontal="10dp"
-                    android:paddingVertical="4dp"
-                    android:text="Phổ biến"
-                    android:textColor="#C5221F"
-                    android:textSize="12sp"
-                    android:textStyle="bold" />
-            </LinearLayout>
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:id="@+id/chipFaqAll"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginEnd="8dp"
+                        android:background="@drawable/bg_recommend_card"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:paddingHorizontal="14dp"
+                        android:paddingVertical="6dp"
+                        android:text="Phổ biến"
+                        android:textColor="#C5221F"
+                        android:textSize="13sp"
+                        android:textStyle="bold" />
+                    <TextView
+                        android:id="@+id/chipFaqAccount"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginEnd="8dp"
+                        android:background="@drawable/bg_chip_preference"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:paddingHorizontal="14dp"
+                        android:paddingVertical="6dp"
+                        android:text="Tài khoản"
+                        android:textColor="#505568"
+                        android:textSize="13sp"
+                        android:textStyle="bold" />
+                    <TextView
+                        android:id="@+id/chipFaqSecurity"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginEnd="8dp"
+                        android:background="@drawable/bg_chip_preference"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:paddingHorizontal="14dp"
+                        android:paddingVertical="6dp"
+                        android:text="Bảo mật"
+                        android:textColor="#505568"
+                        android:textSize="13sp"
+                        android:textStyle="bold" />
+                    <TextView
+                        android:id="@+id/chipFaqPost"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginEnd="8dp"
+                        android:background="@drawable/bg_chip_preference"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:paddingHorizontal="14dp"
+                        android:paddingVertical="6dp"
+                        android:text="Bài viết"
+                        android:textColor="#505568"
+                        android:textSize="13sp"
+                        android:textStyle="bold" />
+                </LinearLayout>
+            </HorizontalScrollView>
+
+            <LinearLayout
+                android:id="@+id/faqList"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical">
 
             <!-- FAQ Item 1 -->
             <LinearLayout
+                android:tag="account"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="16dp"
-                android:layout_marginBottom="24dp"
                 android:background="@drawable/bg_card"
                 android:orientation="vertical"
                 android:padding="16dp">
@@ -427,6 +493,156 @@
                     android:textColor="@color/text_gray"
                     android:textSize="14sp" />
             </LinearLayout>
+
+            <!-- FAQ Item 2 -->
+            <LinearLayout
+                android:tag="account,security"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:layout_marginBottom="0dp"
+                android:background="@drawable/bg_card"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="@string/help_faq_2"
+                    android:textColor="@color/text_dark"
+                    android:textSize="15sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:lineSpacingExtra="2dp"
+                    android:text="@string/help_faq_2_desc"
+                    android:textColor="@color/text_gray"
+                    android:textSize="14sp" />
+            </LinearLayout>
+
+            <!-- FAQ Item 3 -->
+            <LinearLayout
+                android:tag="security"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:layout_marginBottom="0dp"
+                android:background="@drawable/bg_card"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="@string/help_faq_3"
+                    android:textColor="@color/text_dark"
+                    android:textSize="15sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:lineSpacingExtra="2dp"
+                    android:text="@string/help_faq_3_desc"
+                    android:textColor="@color/text_gray"
+                    android:textSize="14sp" />
+            </LinearLayout>
+
+            <!-- FAQ Item 4 -->
+            <LinearLayout
+                android:tag="account"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:layout_marginBottom="0dp"
+                android:background="@drawable/bg_card"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="@string/help_faq_4"
+                    android:textColor="@color/text_dark"
+                    android:textSize="15sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:lineSpacingExtra="2dp"
+                    android:text="@string/help_faq_4_desc"
+                    android:textColor="@color/text_gray"
+                    android:textSize="14sp" />
+            </LinearLayout>
+
+            <!-- FAQ Item 5 -->
+            <LinearLayout
+                android:tag="post"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:layout_marginBottom="0dp"
+                android:background="@drawable/bg_card"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="@string/help_faq_5"
+                    android:textColor="@color/text_dark"
+                    android:textSize="15sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:lineSpacingExtra="2dp"
+                    android:text="@string/help_faq_5_desc"
+                    android:textColor="@color/text_gray"
+                    android:textSize="14sp" />
+            </LinearLayout>
+
+            <!-- FAQ Item 6 -->
+            <LinearLayout
+                android:tag="post"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:layout_marginBottom="0dp"
+                android:background="@drawable/bg_card"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="@string/help_faq_6"
+                    android:textColor="@color/text_dark"
+                    android:textSize="15sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:lineSpacingExtra="2dp"
+                    android:text="@string/help_faq_6_desc"
+                    android:textColor="@color/text_gray"
+                    android:textSize="14sp" />
+            </LinearLayout>
+            </LinearLayout>
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="24dp" />
 
         </LinearLayout>
     </ScrollView>

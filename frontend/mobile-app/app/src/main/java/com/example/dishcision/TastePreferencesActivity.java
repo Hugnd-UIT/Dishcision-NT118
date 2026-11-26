@@ -57,6 +57,9 @@ public class TastePreferencesActivity extends AppCompatActivity {
     private CheckBox chkGluten;
     private CheckBox chkSoy;
     private LinearLayout btnSaveTasteSettings;
+    private LinearLayout layoutCustomAllergies;
+    private TextView btnAddAllergy;
+    private final Set<String> customAllergies = new LinkedHashSet<>();
 
     private TokenManager tokenManager;
     private boolean isSpicySelected = false;
@@ -121,6 +124,8 @@ public class TastePreferencesActivity extends AppCompatActivity {
         chkGluten = findViewById(R.id.chkGluten);
         chkSoy = findViewById(R.id.chkSoy);
         btnSaveTasteSettings = findViewById(R.id.btnSaveTasteSettings);
+        layoutCustomAllergies = findViewById(R.id.layoutCustomAllergies);
+        btnAddAllergy = findViewById(R.id.btnAddAllergy);
     }
 
     private String getAllergyPrefsKey() {
@@ -145,6 +150,7 @@ public class TastePreferencesActivity extends AppCompatActivity {
         CheckBox[] boxes = {chkPeanuts, chkShellfish, chkMilk, chkEggs, chkGluten, chkSoy};
         int n = 0;
         for (CheckBox c : boxes) if (c != null && c.isChecked()) n++;
+        n += customAllergies.size();
         tv.setText(n == 0 ? "Chưa thiết lập · Chọn các chất bạn muốn lưu ý." : "Đã chọn " + n + " chất gây dị ứng");
     }
 
@@ -158,9 +164,75 @@ public class TastePreferencesActivity extends AppCompatActivity {
             if (chkEggs != null) chkEggs.setChecked(normalized.contains("eggs"));
             if (chkGluten != null) chkGluten.setChecked(normalized.contains("gluten"));
             if (chkSoy != null) chkSoy.setChecked(normalized.contains("soy"));
+            customAllergies.clear();
+            for (String a : normalized) {
+                if (!KNOWN_ALLERGIES.contains(a)) customAllergies.add(a);
+            }
+            renderCustomAllergies();
         } finally {
             isPopulatingAllergies = false;
         }
+        updateAllergySummary();
+    }
+
+    private static final Set<String> KNOWN_ALLERGIES = new HashSet<>(java.util.Arrays.asList(
+            "peanuts", "shellfish", "milk", "eggs", "gluten", "soy"));
+
+    private void renderCustomAllergies() {
+        if (layoutCustomAllergies == null) return;
+        layoutCustomAllergies.removeAllViews();
+        int h = (int) (40 * getResources().getDisplayMetrics().density);
+        for (String a : new ArrayList<>(customAllergies)) {
+            CheckBox box = new CheckBox(this);
+            box.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, h));
+            box.setText(a.substring(0, 1).toUpperCase(java.util.Locale.ROOT) + a.substring(1));
+            box.setTextColor(0xFF141B2B);
+            box.setTextSize(14);
+            box.setButtonTintList(android.content.res.ColorStateList.valueOf(0xFFFF5A36));
+            box.setChecked(true);
+            box.setOnCheckedChangeListener((b, checked) -> {
+                if (!checked) {
+                    customAllergies.remove(a);
+                    isAllergiesEdited = true;
+                    renderCustomAllergies();
+                    updateAllergySummary();
+                }
+            });
+            layoutCustomAllergies.addView(box);
+        }
+    }
+
+    private void showAddAllergyDialog() {
+        android.view.View content = getLayoutInflater().inflate(R.layout.dialog_add_allergy, null);
+        final android.widget.EditText input = content.findViewById(R.id.edtNewPreference);
+        final AlertDialog dialog = new AlertDialog.Builder(this).setView(content).create();
+        Runnable confirm = () -> {
+            String item = input.getText().toString().trim();
+            if (item.length() > 50) item = item.substring(0, 50);
+            String key = item.toLowerCase(java.util.Locale.ROOT);
+            if (!key.isEmpty()) {
+                if (KNOWN_ALLERGIES.contains(key) || customAllergies.size() >= 14) {
+                    Toast.makeText(this, "Mục này đã có sẵn hoặc đã đủ số lượng cho phép", Toast.LENGTH_SHORT).show();
+                } else if (customAllergies.add(key)) {
+                    isAllergiesEdited = true;
+                    renderCustomAllergies();
+                    updateAllergySummary();
+                }
+            }
+            dialog.dismiss();
+        };
+        content.findViewById(R.id.btnConfirmPreference).setOnClickListener(v -> confirm.run());
+        content.findViewById(R.id.btnCancelPreference).setOnClickListener(v -> dialog.dismiss());
+        input.setOnEditorActionListener((v, actionId, event) -> {
+            confirm.run();
+            return true;
+        });
+        dialog.getWindow().setBackgroundDrawable(new android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT));
+        dialog.getWindow().setSoftInputMode(android.view.WindowManager.LayoutParams.SOFT_INPUT_STATE_VISIBLE);
+        dialog.show();
+        dialog.getWindow().setLayout(
+                (int) (getResources().getDisplayMetrics().widthPixels * 0.9f),
+                android.view.ViewGroup.LayoutParams.WRAP_CONTENT);
     }
 
     private Set<String> canonicalizeTasteSet(java.util.Collection<String> tastes) {
@@ -205,6 +277,9 @@ public class TastePreferencesActivity extends AppCompatActivity {
         if (normalized.contains("eggs")) known.add("eggs");
         if (normalized.contains("gluten")) known.add("gluten");
         if (normalized.contains("soy")) known.add("soy");
+        for (String a : normalized) {
+            if (!KNOWN_ALLERGIES.contains(a)) known.add(a);
+        }
         return known;
     }
 
@@ -256,7 +331,7 @@ public class TastePreferencesActivity extends AppCompatActivity {
             chip.setTextSize(13);
             chip.setTypeface(null, android.graphics.Typeface.BOLD);
             chip.setPadding(padH, padV, padH, padV);
-            chip.setText("✔ " + taste + " ✕");
+            chip.setText("✔ " + taste.replace("✨ ", "").replace("✨", "") + " ✕");
             LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
                     ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
             lp.setMarginEnd(gap);
@@ -329,6 +404,9 @@ public class TastePreferencesActivity extends AppCompatActivity {
         if (btnAddTastePreference != null) {
             btnAddTastePreference.setOnClickListener(v -> showAddNewTasteDialog());
         }
+        if (btnAddAllergy != null) {
+            btnAddAllergy.setOnClickListener(v -> showAddAllergyDialog());
+        }
 
         if (btnSaveTasteSettings != null) {
             btnSaveTasteSettings.setOnClickListener(v -> {
@@ -357,6 +435,7 @@ public class TastePreferencesActivity extends AppCompatActivity {
         if (chkEggs != null && chkEggs.isChecked()) set.add("eggs");
         if (chkGluten != null && chkGluten.isChecked()) set.add("gluten");
         if (chkSoy != null && chkSoy.isChecked()) set.add("soy");
+        set.addAll(customAllergies);
         return set;
     }
 
@@ -368,7 +447,7 @@ public class TastePreferencesActivity extends AppCompatActivity {
         Runnable confirm = () -> {
             String newTaste = input.getText().toString().trim();
             if (!newTaste.isEmpty()) {
-                String entry = newTaste.startsWith("✨") ? newTaste : "✨ " + newTaste;
+                String entry = newTaste;
                 if (customSelectedTastes.add(entry)) {
                     isTastesEdited = true;
                     renderCustomTastes();

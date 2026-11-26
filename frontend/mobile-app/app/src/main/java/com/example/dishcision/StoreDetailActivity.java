@@ -236,7 +236,7 @@ public class StoreDetailActivity extends AppCompatActivity {
 
         if (tvStoreAddress != null) {
             if (store.address != null && !store.address.isEmpty()) {
-                tvStoreAddress.setText("📍 " + store.address);
+                tvStoreAddress.setText("" + store.address);
                 tvStoreAddress.setVisibility(View.VISIBLE);
             } else {
                 tvStoreAddress.setVisibility(View.GONE);
@@ -311,83 +311,7 @@ public class StoreDetailActivity extends AppCompatActivity {
     }
 
     private View buildReviewCard(ReviewsResponse.ReviewItem rev) {
-        LinearLayout card = new LinearLayout(this);
-        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
-        params.topMargin = dpToPx(8);
-        card.setLayoutParams(params);
-        card.setBackgroundResource(R.drawable.bg_info_box);
-        card.setOrientation(LinearLayout.VERTICAL);
-        int pad = dpToPx(12);
-        card.setPadding(pad, pad, pad, pad);
-
-        LinearLayout header = new LinearLayout(this);
-        header.setOrientation(LinearLayout.HORIZONTAL);
-        header.setGravity(Gravity.CENTER_VERTICAL);
-
-        String authorName = "Người dùng";
-        String avatarUrl = null;
-        if (rev.author != null) {
-            if (rev.author.fullName != null && !rev.author.fullName.isEmpty()) authorName = rev.author.fullName;
-            else if (rev.author.username != null) authorName = rev.author.username;
-            avatarUrl = rev.author.avatarUrl;
-        }
-
-        if (avatarUrl != null && !avatarUrl.isEmpty()) {
-            ImageView imgAvatar = new ImageView(this);
-            imgAvatar.setLayoutParams(new LinearLayout.LayoutParams(dpToPx(32), dpToPx(32)));
-            imgAvatar.setScaleType(ImageView.ScaleType.CENTER_CROP);
-            ImageLoader.loadAvatar(imgAvatar, avatarUrl);
-            header.addView(imgAvatar);
-        } else {
-            TextView tvInitial = new TextView(this);
-            tvInitial.setLayoutParams(new LinearLayout.LayoutParams(dpToPx(32), dpToPx(32)));
-            tvInitial.setBackgroundResource(R.drawable.bg_logo_circle);
-            tvInitial.setGravity(Gravity.CENTER);
-            tvInitial.setText(authorName.substring(0, 1).toUpperCase(Locale.ROOT));
-            tvInitial.setTextColor(ContextCompat.getColor(this, R.color.primary));
-            tvInitial.setTextSize(13f);
-            tvInitial.setTypeface(null, Typeface.BOLD);
-            header.addView(tvInitial);
-        }
-
-        LinearLayout metaCol = new LinearLayout(this);
-        LinearLayout.LayoutParams mcParams = new LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT);
-        mcParams.setMarginStart(dpToPx(10));
-        metaCol.setLayoutParams(mcParams);
-        metaCol.setOrientation(LinearLayout.VERTICAL);
-
-        TextView tvAuthor = new TextView(this);
-        tvAuthor.setText(authorName);
-        tvAuthor.setTextColor(ContextCompat.getColor(this, R.color.text_dark));
-        tvAuthor.setTextSize(13f);
-        tvAuthor.setTypeface(null, Typeface.BOLD);
-
-        TextView tvMeta = new TextView(this);
-        String timeStr = MyPostsActivity.formatTime(rev.createdAt);
-        tvMeta.setText(rev.rating + " sao" + (!timeStr.isEmpty() ? " • " + timeStr : ""));
-        tvMeta.setTextColor(ContextCompat.getColor(this, R.color.text_gray));
-        tvMeta.setTextSize(11f);
-
-        metaCol.addView(tvAuthor);
-        metaCol.addView(tvMeta);
-        header.addView(metaCol);
-        card.addView(header);
-
-        if (rev.content != null && !rev.content.trim().isEmpty()) {
-            TextView tvBody = new TextView(this);
-            LinearLayout.LayoutParams bParams = new LinearLayout.LayoutParams(
-                    LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
-            bParams.topMargin = dpToPx(8);
-            tvBody.setLayoutParams(bParams);
-            tvBody.setText(rev.content.trim());
-            tvBody.setTextColor(ContextCompat.getColor(this, R.color.text_dark));
-            tvBody.setTextSize(13f);
-            card.addView(tvBody);
-        }
-
-        return card;
+        return ReviewCardHelper.build(this, rev);
     }
 
     private void toggleFollow() {

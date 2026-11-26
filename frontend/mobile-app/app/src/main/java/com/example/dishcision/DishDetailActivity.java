@@ -160,7 +160,7 @@ public class DishDetailActivity extends AppCompatActivity {
         if (tvServeStoreName != null) tvServeStoreName.setText(dish.storeName != null ? dish.storeName : "");
         if (tvServeStoreAddress != null) {
             tvServeStoreAddress.setText(dish.storeAddress != null && !dish.storeAddress.isEmpty()
-                    ? "📍 " + dish.storeAddress : "");
+                    ? "" + dish.storeAddress : "");
         }
         if (tvServeStoreRating != null) {
             tvServeStoreRating.setText(String.format(Locale.US, "★ %.1f điểm quán • %d đánh giá",

@@ -314,7 +314,7 @@
                         android:background="@drawable/bg_tag_chip_pink"
                         android:contentDescription="Theme"
                         android:padding="8dp"
-                        android:src="@drawable/ic_sparkle"
+                        android:src="@drawable/ic_image"
                         app:tint="#FF5A36" />
 
                     <LinearLayout

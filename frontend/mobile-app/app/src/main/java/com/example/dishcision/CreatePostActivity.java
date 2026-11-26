@@ -1,5 +1,6 @@
 package com.example.dishcision;
 
+import android.content.Intent;
 import android.graphics.Bitmap;
 import android.net.Uri;
 import android.os.Bundle;
@@ -22,6 +23,7 @@ import com.example.dishcision.network.CreatePostRequest;
 import com.example.dishcision.network.CreatePostResponse;
 import com.example.dishcision.network.ImageLoader;
 import com.example.dishcision.network.ImageOrientationHelper;
+import com.example.dishcision.network.PrivacySettingsResponse;
 import com.example.dishcision.network.TokenManager;
 import com.example.dishcision.network.UploadResponse;
 import com.example.dishcision.network.UserProfileResponse;
@@ -47,7 +49,7 @@ public class CreatePostActivity extends AppCompatActivity {
     private TextView tvAuthorHandle;
     private ImageView imgAuthorAvatar;
 
-    private TextView tvImageCount;
+    private TextView tvAudience;
     private View btnAddImage;
     private View containerImg1;
     private View containerImg2;
@@ -68,6 +70,7 @@ public class CreatePostActivity extends AppCompatActivity {
     private long nextUploadToken = 1L;
     private ActivityResultLauncher<String> imagePickerLauncher;
     private boolean isPublishing = false;
+    private String audienceValue = "public";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -77,7 +80,8 @@ public class CreatePostActivity extends AppCompatActivity {
 
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main_create_post), (v, insets) -> {
             Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
-            v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
+            Insets ime = insets.getInsets(WindowInsetsCompat.Type.ime());
+            v.setPadding(systemBars.left, systemBars.top, systemBars.right, Math.max(systemBars.bottom, ime.bottom));
             return insets;
         });
 
@@ -97,7 +101,7 @@ public class CreatePostActivity extends AppCompatActivity {
         tvAuthorHandle = findViewById(R.id.tvAuthorHandle);
         imgAuthorAvatar = findViewById(R.id.imgAuthorAvatar);
 
-        tvImageCount = findViewById(R.id.tvImageCount);
+        tvAudience = findViewById(R.id.tvAudience);
         btnAddImage = findViewById(R.id.btnAddImage);
         containerImg1 = findViewById(R.id.containerImg1);
         containerImg2 = findViewById(R.id.containerImg2);
@@ -177,6 +181,41 @@ public class CreatePostActivity extends AppCompatActivity {
             btnPublish.setOnClickListener(v -> performPublishPost());
         }
 
+        if (edtHashtags != null) {
+            // Gõ kiểu "#food #review": tự thêm # đầu ô và sau mỗi dấu cách.
+            edtHashtags.setOnFocusChangeListener((v, hasFocus) -> {
+                if (hasFocus && edtHashtags.getText().length() == 0) {
+                    edtHashtags.setText("#");
+                    edtHashtags.setSelection(1);
+                }
+            });
+            edtHashtags.addTextChangedListener(new android.text.TextWatcher() {
+                @Override public void beforeTextChanged(CharSequence s, int st, int c, int a) {}
+                @Override public void onTextChanged(CharSequence s, int st, int b, int c) {}
+                @Override public void afterTextChanged(android.text.Editable e) {
+                    int n = e.length();
+                    if (n > 0 && e.charAt(n - 1) == ' ' && (n < 2 || e.charAt(n - 2) != '#')) {
+                        e.append('#');
+                    }
+                }
+            });
+        }
+
+        if (tvAudience != null) {
+            tvAudience.setOnClickListener(v -> {
+                Intent intent = new Intent(this, PrivacyRadioChoiceActivity.class);
+                intent.putExtra("SETTING_KEY", "new_posts");
+                intent.putExtra("CURRENT_VALUE", audienceValue);
+                intent.putExtra("TITLE", "Bài đăng mới");
+                intent.putExtra("CATEGORY", "Ai có thể xem nội dung của bạn");
+                intent.putExtra("QUESTION_TITLE", "Ai có thể xem bài đăng mới của bạn?");
+                intent.putExtra("QUESTION_DESC", "Chọn đối tượng mặc định mỗi khi bạn chia sẻ bài đăng mới trên Dishcision.");
+                intent.putExtra("INFO_TITLE", "Chỉ áp dụng cho bài đăng mới");
+                intent.putExtra("INFO_DESC", "Lựa chọn này không thay đổi các bài đã đăng.");
+                startActivity(intent);
+            });
+        }
+
         if (btnAddImage != null) {
             btnAddImage.setOnClickListener(v -> {
                 if (getActiveSlotCount() >= 2) {
@@ -194,6 +233,36 @@ public class CreatePostActivity extends AppCompatActivity {
         if (btnRemoveImg2 != null) {
             btnRemoveImg2.setOnClickListener(v -> removeSlot(1));
         }
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        loadAudience();
+    }
+
+    private void loadAudience() {
+        String authHeader = ApiClient.getAuthHeader(this);
+        if (authHeader.isEmpty()) return;
+        ApiClient.getApiService().getPrivacySettings(authHeader).enqueue(new Callback<PrivacySettingsResponse>() {
+            @Override
+            public void onResponse(Call<PrivacySettingsResponse> call, Response<PrivacySettingsResponse> response) {
+                if (isFinishing() || isDestroyed() || tvAudience == null) return;
+                if (response.isSuccessful() && response.body() != null && response.body().getData() != null) {
+                    String v = response.body().getData().getNewPosts();
+                    if (v != null) audienceValue = v;
+                    switch (audienceValue) {
+                        case "friends_of_friends": tvAudience.setText("👥 Bạn của bạn bè ∨"); break;
+                        case "friends": tvAudience.setText("👥 Bạn bè ∨"); break;
+                        case "no_one": tvAudience.setText("🔒 Chỉ mình tôi ∨"); break;
+                        default: tvAudience.setText("🌐 Công khai ∨");
+                    }
+                }
+            }
+
+            @Override
+            public void onFailure(Call<PrivacySettingsResponse> call, Throwable t) {}
+        });
     }
 
     private void loadUserProfile() {
@@ -346,10 +415,6 @@ public class CreatePostActivity extends AppCompatActivity {
 
     private void updateImagePreviewUI() {
         int count = getActiveSlotCount();
-        if (tvImageCount != null) {
-            tvImageCount.setText("Hình ảnh (" + count + "/2)");
-        }
-
         if (slotPreviews[0] != null) {
             if (containerImg1 != null) containerImg1.setVisibility(View.VISIBLE);
             if (imgPreview1 != null) imgPreview1.setImageBitmap(slotPreviews[0]);
@@ -415,7 +480,7 @@ public class CreatePostActivity extends AppCompatActivity {
         List<String> hashtags = null;
         if (!hashtagsInput.isEmpty()) {
             hashtags = new ArrayList<>();
-            String[] parts = hashtagsInput.split("[,\\s]+");
+            String[] parts = hashtagsInput.split("[#,\\s]+");
             for (String p : parts) {
                 String clean = p.replace("#", "").trim();
                 if (!clean.isEmpty()) {

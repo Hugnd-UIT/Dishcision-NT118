@@ -144,8 +144,8 @@ public class SavedOffersActivity extends AppCompatActivity {
                         communityOffers.clear();
                         if (response.isSuccessful() && response.body() != null && response.body().getData() != null) {
                             for (FeedPostsResponse.PostItem p : response.body().getData()) {
-                                if (p != null && p.voucherCode != null && !p.voucherCode.trim().isEmpty()) {
-                                    p.isSaved = p.isSaved || savedPostIds.contains(p.postId);
+                                if (p != null && p.voucherCode != null && !p.voucherCode.trim().isEmpty()
+                                        && !p.isSaved && !savedPostIds.contains(p.postId)) {
                                     communityOffers.add(p);
                                 }
                             }
@@ -289,7 +289,7 @@ public class SavedOffersActivity extends AppCompatActivity {
         bottomRow.addView(btnCopy, copyLp);
 
         TextView btnOpenAuthor = new TextView(this);
-        btnOpenAuthor.setText(post.author != null && "RestaurantAccount".equals(post.author.role) ? "Xem quán ➔" : "Xem tác giả ➔");
+        btnOpenAuthor.setText("Xem quán ăn ➔");
         btnOpenAuthor.setTextColor(Color.parseColor("#FF5A36"));
         btnOpenAuthor.setTextSize(TypedValue.COMPLEX_UNIT_SP, 13);
         btnOpenAuthor.setTypeface(null, Typeface.BOLD);

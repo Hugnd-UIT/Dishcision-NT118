@@ -251,26 +251,26 @@ public class WriteReviewActivity extends AppCompatActivity {
                                 ? response.body().getData().restaurants
                                 : new ArrayList<>();
 
-                List<String> labels = new ArrayList<>();
-                for (FollowingRestaurantsResponse.StoreItem store : stores) {
-                    labels.add(!TextUtils.isEmpty(store.address) ? store.name + " • " + store.address : store.name);
-                }
-                labels.add("Nhập tên quán khác...");
+                if (isFinishing() || isDestroyed()) return;
+                View content = getLayoutInflater().inflate(R.layout.dialog_pick_restaurant, null);
+                LinearLayout list = content.findViewById(R.id.listRestaurants);
+                final AlertDialog dialog = new AlertDialog.Builder(WriteReviewActivity.this).setView(content).create();
+                content.findViewById(R.id.btnRestaurantCancel).setOnClickListener(v -> dialog.dismiss());
 
-                new AlertDialog.Builder(WriteReviewActivity.this)
-                        .setTitle("Chọn quán ăn")
-                        .setItems(labels.toArray(new String[0]), (dialog, which) -> {
-                            if (which < stores.size()) {
-                                FollowingRestaurantsResponse.StoreItem picked = stores.get(which);
-                                selectedRestaurantName = picked.name != null ? picked.name : "";
-                                selectedRestaurantLocation = picked.address != null ? picked.address : "";
-                                updateRestaurantDisplay();
-                            } else {
-                                promptCustomRestaurantName();
-                            }
-                        })
-                        .setNegativeButton("Hủy", null)
-                        .show();
+                for (FollowingRestaurantsResponse.StoreItem store : stores) {
+                    list.addView(restaurantRow(store.name, store.address, false, () -> {
+                        selectedRestaurantName = store.name != null ? store.name : "";
+                        selectedRestaurantLocation = store.address != null ? store.address : "";
+                        updateRestaurantDisplay();
+                        dialog.dismiss();
+                    }));
+                }
+                list.addView(restaurantRow("Nhập tên quán khác...", null, true, () -> {
+                    dialog.dismiss();
+                    promptCustomRestaurantName();
+                }));
+
+                showCardDialog(dialog);
             }
 
             @Override
@@ -281,29 +281,16 @@ public class WriteReviewActivity extends AppCompatActivity {
     }
 
     private void promptCustomRestaurantName() {
-        LinearLayout box = new LinearLayout(this);
-        box.setOrientation(LinearLayout.VERTICAL);
-        int pad = Math.round(16 * getResources().getDisplayMetrics().density);
-        box.setPadding(pad, pad, pad, 0);
-
-        EditText edtName = new EditText(this);
-        edtName.setHint("Tên quán ăn *");
+        View content = getLayoutInflater().inflate(R.layout.dialog_restaurant_info, null);
+        EditText edtName = content.findViewById(R.id.edtRestaurantName);
+        EditText edtAddress = content.findViewById(R.id.edtRestaurantAddress);
         if (!selectedRestaurantName.isEmpty()) edtName.setText(selectedRestaurantName);
-        box.addView(edtName);
-
-        EditText edtAddress = new EditText(this);
-        edtAddress.setHint("Địa chỉ (tùy chọn)");
         if (!selectedRestaurantLocation.isEmpty()) edtAddress.setText(selectedRestaurantLocation);
-        box.addView(edtAddress);
 
-        AlertDialog dialog = new AlertDialog.Builder(this)
-                .setTitle("Nhập thông tin quán")
-                .setView(box)
-                .setNegativeButton("Hủy", null)
-                .setPositiveButton("Xác nhận", null)
-                .show();
-        // Gán listener sau show() để tên rỗng không làm đóng hộp thoại
-        dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(v -> {
+        final AlertDialog dialog = new AlertDialog.Builder(this).setView(content).create();
+        content.findViewById(R.id.btnRestaurantInfoCancel).setOnClickListener(v -> dialog.dismiss());
+        // Tên rỗng thì báo lỗi và giữ hộp thoại mở
+        content.findViewById(R.id.btnRestaurantInfoConfirm).setOnClickListener(v -> {
             String name = edtName.getText().toString().trim();
             if (name.isEmpty()) {
                 edtName.setError("Vui lòng nhập tên quán");
@@ -314,6 +301,42 @@ public class WriteReviewActivity extends AppCompatActivity {
             updateRestaurantDisplay();
             dialog.dismiss();
         });
+
+        showCardDialog(dialog);
+    }
+
+    private void showCardDialog(AlertDialog dialog) {
+        dialog.getWindow().setBackgroundDrawable(new android.graphics.drawable.ColorDrawable(Color.TRANSPARENT));
+        dialog.getWindow().setSoftInputMode(android.view.WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
+        dialog.show();
+        dialog.getWindow().setLayout(
+                (int) (getResources().getDisplayMetrics().widthPixels * 0.9f),
+                android.view.ViewGroup.LayoutParams.WRAP_CONTENT);
+    }
+
+    private View restaurantRow(String name, String address, boolean accent, Runnable onClick) {
+        float d = getResources().getDisplayMetrics().density;
+        LinearLayout row = new LinearLayout(this);
+        row.setOrientation(LinearLayout.VERTICAL);
+        row.setPadding(0, Math.round(12 * d), 0, Math.round(12 * d));
+        row.setClickable(true);
+        row.setOnClickListener(v -> onClick.run());
+
+        TextView tvName = new TextView(this);
+        tvName.setText(name != null ? name : "");
+        tvName.setTextSize(15f);
+        tvName.setTypeface(null, android.graphics.Typeface.BOLD);
+        tvName.setTextColor(Color.parseColor(accent ? "#FF5722" : "#141B2B"));
+        row.addView(tvName);
+
+        if (!TextUtils.isEmpty(address)) {
+            TextView tvAddr = new TextView(this);
+            tvAddr.setText(address);
+            tvAddr.setTextSize(12f);
+            tvAddr.setTextColor(Color.parseColor("#8E7570"));
+            row.addView(tvAddr);
+        }
+        return row;
     }
 
     private void setupStarListeners() {
