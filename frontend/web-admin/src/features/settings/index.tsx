@@ -11,27 +11,27 @@ import { SidebarNav } from './components/sidebar-nav'
 
 const sidebarNavItems = [
   {
-    title: 'Profile',
+    title: 'Hồ sơ',
     href: '/settings',
     icon: <UserCog size={18} />,
   },
   {
-    title: 'Account',
+    title: 'Tài khoản',
     href: '/settings/account',
     icon: <Wrench size={18} />,
   },
   {
-    title: 'Appearance',
+    title: 'Giao diện',
     href: '/settings/appearance',
     icon: <Palette size={18} />,
   },
   {
-    title: 'Notifications',
+    title: 'Thông báo',
     href: '/settings/notifications',
     icon: <Bell size={18} />,
   },
   {
-    title: 'Display',
+    title: 'Hiển thị',
     href: '/settings/display',
     icon: <Monitor size={18} />,
   },
@@ -51,10 +51,10 @@ export function Settings() {
       <Main fixed>
         <div className='space-y-0.5'>
           <h1 className='text-2xl font-bold tracking-tight md:text-3xl'>
-            Settings
+            Cài đặt
           </h1>
           <p className='text-muted-foreground'>
-            Manage your account settings and set e-mail preferences.
+            Quản lý cài đặt tài khoản và tùy chọn hệ thống.
           </p>
         </div>
         <Separator className='my-4 lg:my-6' />
