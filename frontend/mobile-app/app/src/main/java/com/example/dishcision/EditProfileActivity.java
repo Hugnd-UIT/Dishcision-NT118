@@ -4,6 +4,8 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.graphics.Color;
+import android.graphics.Rect;
+import android.graphics.drawable.ColorDrawable;
 import android.net.Uri;
 import android.os.Bundle;
 import android.text.Editable;
@@ -11,9 +13,11 @@ import android.text.TextWatcher;
 import android.util.TypedValue;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.WindowManager;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
+import android.widget.ScrollView;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -91,9 +95,23 @@ public class EditProfileActivity extends AppCompatActivity {
         EdgeToEdge.enable(this);
         setContentView(R.layout.activity_edit_profile);
 
+        ScrollView scrollView = findViewById(R.id.scrollEditProfile);
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(android.R.id.content), (v, insets) -> {
-            Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
-            v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
+            Insets insetsCombined = insets.getInsets(WindowInsetsCompat.Type.systemBars() | WindowInsetsCompat.Type.ime());
+            v.setPadding(insetsCombined.left, insetsCombined.top, insetsCombined.right, insetsCombined.bottom);
+
+            if (insets.isVisible(WindowInsetsCompat.Type.ime()) && scrollView != null) {
+                View focused = getCurrentFocus();
+                if (focused != null) {
+                    // chờ ScrollView co lại theo padding bàn phím rồi mới cuộn
+                    scrollView.postDelayed(() -> {
+                        Rect rect = new Rect();
+                        focused.getDrawingRect(rect);
+                        rect.bottom += 120;
+                        focused.requestRectangleOnScreen(rect, false);
+                    }, 150);
+                }
+            }
             return insets;
         });
 
@@ -385,22 +403,30 @@ public class EditProfileActivity extends AppCompatActivity {
     }
 
     private void showAddPreferenceOptions() {
-        final EditText input = new EditText(this);
-        input.setHint("Nhập khẩu vị mới (VD: Thuần chay, Ít ngọt...)");
-        int padding = dpToPx(16);
-        input.setPadding(padding, padding, padding, padding);
+        View content = getLayoutInflater().inflate(R.layout.dialog_add_preference, null);
+        final EditText input = content.findViewById(R.id.edtNewPreference);
 
-        new AlertDialog.Builder(this)
-                .setTitle("Thêm khẩu vị món ăn")
-                .setView(input)
-                .setPositiveButton("Thêm ngay", (dialog, which) -> {
-                    String taste = input.getText().toString().trim();
-                    if (!taste.isEmpty()) {
-                        addCustomTastePreference(taste.startsWith("✨") ? taste : "✨ " + taste);
-                    }
-                })
-                .setNegativeButton("Hủy", null)
-                .show();
+        final AlertDialog dialog = new AlertDialog.Builder(this).setView(content).create();
+        Runnable confirm = () -> {
+            String taste = input.getText().toString().trim();
+            if (!taste.isEmpty()) {
+                addCustomTastePreference(taste.startsWith("✨") ? taste : "✨ " + taste);
+            }
+            dialog.dismiss();
+        };
+        content.findViewById(R.id.btnConfirmPreference).setOnClickListener(v -> confirm.run());
+        content.findViewById(R.id.btnCancelPreference).setOnClickListener(v -> dialog.dismiss());
+        input.setOnEditorActionListener((v, actionId, event) -> {
+            confirm.run();
+            return true;
+        });
+
+        dialog.getWindow().setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
+        dialog.getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_VISIBLE);
+        dialog.show();
+        dialog.getWindow().setLayout(
+                (int) (getResources().getDisplayMetrics().widthPixels * 0.9f),
+                ViewGroup.LayoutParams.WRAP_CONTENT);
     }
 
     private void addCustomTastePreference(String tasteName) {
@@ -568,7 +594,7 @@ public class EditProfileActivity extends AppCompatActivity {
         }
 
         if (username.isEmpty()) {
-            Toast.makeText(this, "Tên người dùng (@username) không được để trống!", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "Tên người dùng không được để trống!", Toast.LENGTH_SHORT).show();
             if (edtUsername != null) edtUsername.requestFocus();
             return;
         }

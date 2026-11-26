@@ -116,15 +116,6 @@
                         android:layout_height="80dp"
                         android:contentDescription="Avatar"
                         android:src="@drawable/bg_avatar_circle" />
-
-                    <ImageView
-                        android:layout_width="24dp"
-                        android:layout_height="24dp"
-                        android:layout_gravity="bottom|end"
-                        android:background="@drawable/bg_badge_utensils_red"
-                        android:contentDescription="Utensils Badge"
-                        android:padding="4dp"
-                        android:src="@drawable/ic_utensils" />
                 </FrameLayout>
 
                 <!-- Name & Badges & Location -->

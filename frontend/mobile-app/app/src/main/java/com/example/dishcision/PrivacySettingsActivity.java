@@ -147,6 +147,7 @@ public class PrivacySettingsActivity extends AppCompatActivity {
     private void openRadioChoice(String key, String title, String category, String qTitle, String qDesc, String infoTitle, String infoDesc) {
         Intent intent = new Intent(PrivacySettingsActivity.this, PrivacyRadioChoiceActivity.class);
         intent.putExtra("SETTING_KEY", key);
+        intent.putExtra("CURRENT_VALUE", currentValueFor(key));
         intent.putExtra("TITLE", title);
         intent.putExtra("CATEGORY", category);
         intent.putExtra("QUESTION_TITLE", qTitle);
@@ -154,6 +155,19 @@ public class PrivacySettingsActivity extends AppCompatActivity {
         intent.putExtra("INFO_TITLE", infoTitle);
         intent.putExtra("INFO_DESC", infoDesc);
         startActivity(intent);
+    }
+
+    private String currentValueFor(String key) {
+        switch (key) {
+            case "new_posts": return currentPrivacy.getNewPosts();
+            case "profile_info": return currentPrivacy.getProfileInfo();
+            case "following_list": return currentPrivacy.getFollowingList();
+            case "find_email": return currentPrivacy.getFindEmail();
+            case "friend_requests": return currentPrivacy.getFriendRequests();
+            case "messages": return currentPrivacy.getMessages();
+            case "comments": return currentPrivacy.getComments();
+            default: return null;
+        }
     }
 
     private void fetchPrivacySettingsFromBackend() {

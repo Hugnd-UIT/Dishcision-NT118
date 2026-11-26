@@ -36,6 +36,7 @@ public class PrivacyRadioChoiceActivity extends AppCompatActivity {
     private View divider1, divider2, divider3;
     private RadioButton rbOption1, rbOption2, rbOption3, rbOption4;
     private TextView tvOption1Desc, tvOption2Desc, tvOption3Desc, tvOption4Desc;
+    private TextView tvOption1Title, tvOption2Title, tvOption3Title, tvOption4Title;
 
     private String settingKey = "new_posts";
     private PrivacySettingsModel currentPrivacy = new PrivacySettingsModel();
@@ -84,6 +85,10 @@ public class PrivacyRadioChoiceActivity extends AppCompatActivity {
         rbOption3 = findViewById(R.id.rbOption3);
         rbOption4 = findViewById(R.id.rbOption4);
 
+        tvOption1Title = findViewById(R.id.tvOption1Title);
+        tvOption2Title = findViewById(R.id.tvOption2Title);
+        tvOption3Title = findViewById(R.id.tvOption3Title);
+        tvOption4Title = findViewById(R.id.tvOption4Title);
         tvOption1Desc = findViewById(R.id.tvOption1Desc);
         tvOption2Desc = findViewById(R.id.tvOption2Desc);
         tvOption3Desc = findViewById(R.id.tvOption3Desc);
@@ -103,36 +108,43 @@ public class PrivacyRadioChoiceActivity extends AppCompatActivity {
         if (intent.hasExtra("INFO_DESC") && tvInfoDesc != null) tvInfoDesc.setText(intent.getStringExtra("INFO_DESC"));
 
         configureOptionsForKey(settingKey);
+
+        // Hiện ngay giá trị đang lưu, không chờ mạng (mạng lỗi từng khiến "Chỉ mình tôi" hiện thành "Bạn bè")
+        String initial = intent.getStringExtra("CURRENT_VALUE");
+        if (initial != null) {
+            updateModelValue(settingKey, initial);
+            setCheckedFromValue(initial);
+        }
     }
 
     private void configureOptionsForKey(String key) {
         if ("find_email".equals(key)) {
             // 4 options: Mọi người, Bạn của bạn bè, Bạn bè, Không ai
             layoutOption1.setVisibility(View.VISIBLE);
-            rbOption1.setText("Mọi người");
+            tvOption1Title.setText("Mọi người");
             tvOption1Desc.setText("Bất kỳ ai trên Dishcision.");
 
             layoutOption2.setVisibility(View.VISIBLE);
-            rbOption2.setText("Bạn của bạn bè");
+            tvOption2Title.setText("Bạn của bạn bè");
             tvOption2Desc.setText("Người có ít nhất một bạn chung.");
 
             layoutOption3.setVisibility(View.VISIBLE);
-            rbOption3.setText("Bạn bè");
+            tvOption3Title.setText("Bạn bè");
             tvOption3Desc.setText("Những người đã kết bạn với bạn.");
 
             divider3.setVisibility(View.VISIBLE);
             layoutOption4.setVisibility(View.VISIBLE);
-            rbOption4.setText("Không ai");
+            tvOption4Title.setText("Không ai");
             tvOption4Desc.setText("Không cho phép tìm bạn bằng email.");
 
         } else if ("friend_requests".equals(key)) {
             // 2 options: Mọi người, Bạn của bạn bè
             layoutOption1.setVisibility(View.VISIBLE);
-            rbOption1.setText("Mọi người");
+            tvOption1Title.setText("Mọi người");
             tvOption1Desc.setText("Bất kỳ ai trên Dishcision.");
 
             layoutOption2.setVisibility(View.VISIBLE);
-            rbOption2.setText("Bạn của bạn bè");
+            tvOption2Title.setText("Bạn của bạn bè");
             tvOption2Desc.setText("Người có ít nhất một bạn chung.");
 
             divider2.setVisibility(View.GONE);
@@ -143,15 +155,15 @@ public class PrivacyRadioChoiceActivity extends AppCompatActivity {
         } else if ("messages".equals(key) || "comments".equals(key)) {
             // 3 options: Mọi người, Bạn bè, Không ai
             layoutOption1.setVisibility(View.VISIBLE);
-            rbOption1.setText("Mọi người");
+            tvOption1Title.setText("Mọi người");
             tvOption1Desc.setText("messages".equals(key) ? "Bất kỳ ai trên Dishcision." : "Bất kỳ ai có thể xem bài đăng.");
 
             layoutOption2.setVisibility(View.VISIBLE);
-            rbOption2.setText("Bạn bè");
+            tvOption2Title.setText("Bạn bè");
             tvOption2Desc.setText("messages".equals(key) ? "Những người đã kết bạn với bạn." : "Bạn bè có thể xem bài đăng.");
 
             layoutOption3.setVisibility(View.VISIBLE);
-            rbOption3.setText("Không ai");
+            tvOption3Title.setText("Không ai");
             tvOption3Desc.setText("messages".equals(key) ? "Không ai được gửi tin nhắn cho bạn." : "Không cho phép bình luận.");
 
             divider3.setVisibility(View.GONE);
@@ -160,15 +172,15 @@ public class PrivacyRadioChoiceActivity extends AppCompatActivity {
         } else {
             // Default 3 options: Công khai, Bạn bè, Chỉ mình tôi
             layoutOption1.setVisibility(View.VISIBLE);
-            rbOption1.setText("Công khai");
+            tvOption1Title.setText("Công khai");
             tvOption1Desc.setText("Bất kỳ ai trên Dishcision.");
 
             layoutOption2.setVisibility(View.VISIBLE);
-            rbOption2.setText("Bạn bè");
+            tvOption2Title.setText("Bạn bè");
             tvOption2Desc.setText("Những người đã kết bạn với bạn.");
 
             layoutOption3.setVisibility(View.VISIBLE);
-            rbOption3.setText("Chỉ mình tôi");
+            tvOption3Title.setText("Chỉ mình tôi");
             tvOption3Desc.setText("Chỉ bạn có thể xem.");
 
             divider3.setVisibility(View.GONE);
@@ -237,7 +249,12 @@ public class PrivacyRadioChoiceActivity extends AppCompatActivity {
     }
 
     private void setCheckedFromValue(String val) {
+        if (val == null) return;
         isUserAction = false;
+        rbOption1.setChecked(false);
+        rbOption2.setChecked(false);
+        rbOption3.setChecked(false);
+        rbOption4.setChecked(false);
         if ("find_email".equals(settingKey)) {
             if ("public".equals(val)) rbOption1.setChecked(true);
             else if ("friends_of_friends".equals(val)) rbOption2.setChecked(true);
@@ -270,7 +287,7 @@ public class PrivacyRadioChoiceActivity extends AppCompatActivity {
 
             @Override
             public void onFailure(@NonNull Call<PrivacySettingsResponse> call, @NonNull Throwable t) {
-                setCheckedFromValue(getCurrentValue(settingKey));
+                // giữ nguyên giá trị đã hiện, không đoán "Bạn bè"
             }
         });
     }
@@ -283,7 +300,7 @@ public class PrivacyRadioChoiceActivity extends AppCompatActivity {
         if ("friend_requests".equals(key)) return currentPrivacy.getFriendRequests();
         if ("messages".equals(key)) return currentPrivacy.getMessages();
         if ("comments".equals(key)) return currentPrivacy.getComments();
-        return "friends";
+        return null;
     }
 
     private void updateModelValue(String key, String val) {

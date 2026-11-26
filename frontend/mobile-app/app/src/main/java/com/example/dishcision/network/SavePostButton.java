@@ -62,9 +62,8 @@ public final class SavePostButton {
                 inFlight = false;
                 if (activity.isFinishing()) return;
                 if (response.isSuccessful()) {
-                    String who = authorName != null && !authorName.isEmpty() ? " của " + authorName : "";
                     Toast.makeText(activity,
-                            target ? "Đã lưu bài viết" + who + " vào mục Bài viết đã lưu" : "Đã bỏ lưu bài viết",
+                            target ? "Đã lưu bài viết" : "Đã bỏ lưu bài viết",
                             Toast.LENGTH_SHORT).show();
                 } else {
                     rollback(response.code() == 401

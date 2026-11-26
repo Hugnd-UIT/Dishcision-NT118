@@ -188,7 +188,7 @@ public final class PostFeedHelper {
                     tvLikes.setLayoutParams(badgeLp);
                     tvLikes.setBackgroundResource(R.drawable.bg_badge_green_rating);
                     tvLikes.setPadding(dpToPx(activity, 6), dpToPx(activity, 2), dpToPx(activity, 6), dpToPx(activity, 2));
-                    tvLikes.setText("👍 " + formatCount(post.likesCount));
+                    tvLikes.setText("❤️ " + formatCount(post.likesCount));
                     tvLikes.setTextColor(Color.WHITE);
                     tvLikes.setTextSize(TypedValue.COMPLEX_UNIT_SP, 11);
                     tvLikes.setTypeface(null, Typeface.BOLD);

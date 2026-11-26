@@ -39,8 +39,6 @@
     <string name="forgot_password_subtitle">Vui lòng nhập địa chỉ email đã đăng ký.\nChúng tôi sẽ gửi mã xác nhận cho bạn.</string>
     <string name="send_code_button">Gửi mã xác nhận</string>
     <string name="remember_password">Nhớ mật khẩu?&#160;</string>
-    <string name="need_more_help">Cần trợ giúp thêm?&#160;</string>
-    <string name="contact_support">Liên hệ bộ phận hỗ trợ</string>
 
     <string name="reset_password_top_bar">Reset Password</string>
     <string name="reset_password_title">Đặt lại mật khẩu</string>
@@ -98,7 +96,7 @@
     <string name="session_current_section">Phiên hiện tại</string>
     <string name="session_current_device">Thiết bị hiện tại</string>
     <string name="session_current_status">Phiên đang hoạt động</string>
-    <string name="session_manage">Quản lý</string>
+    <string name="session_manage">Đăng xuất</string>
     <string name="session_this_device">Thiết bị này</string>
     <string name="session_other_section">Các phiên khác</string>
     <string name="session_other_device_1">Thiết bị khác</string>

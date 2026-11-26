@@ -606,55 +606,25 @@ public class ProfileActivity extends AppCompatActivity {
             return;
         }
 
-        LinearLayout container = new LinearLayout(this);
-        container.setOrientation(LinearLayout.VERTICAL);
-        container.setGravity(Gravity.CENTER_HORIZONTAL);
-        int pad = dpToPx(20);
-        container.setPadding(pad, dpToPx(16), pad, dpToPx(8));
+        View content = getLayoutInflater().inflate(R.layout.dialog_profile_qr, null);
+        ((ImageView) content.findViewById(R.id.ivProfileQr)).setImageBitmap(qrBitmap);
+        ((TextView) content.findViewById(R.id.tvProfileQrName)).setText(displayName + "\n" + handleText);
 
-        ImageView ivQr = new ImageView(this);
-        int sizePx = dpToPx(220);
-        LinearLayout.LayoutParams qrLp = new LinearLayout.LayoutParams(sizePx, sizePx);
-        ivQr.setLayoutParams(qrLp);
-        ivQr.setImageBitmap(qrBitmap);
-        ivQr.setContentDescription("Mã QR hồ sơ cá nhân");
-        container.addView(ivQr);
+        final AlertDialog dialog = new AlertDialog.Builder(this).setView(content).create();
+        content.findViewById(R.id.btnProfileQrClose).setOnClickListener(v -> dialog.dismiss());
+        content.findViewById(R.id.btnProfileQrCopy).setOnClickListener(v -> {
+            ClipboardManager clipboard = (ClipboardManager) getSystemService(CLIPBOARD_SERVICE);
+            if (clipboard != null) {
+                clipboard.setPrimaryClip(ClipData.newPlainText("Profile Link", qrContent));
+            }
+            Toast.makeText(this, "Đã sao chép liên kết hồ sơ", Toast.LENGTH_SHORT).show();
+        });
 
-        TextView tvInfo = new TextView(this);
-        LinearLayout.LayoutParams infoLp = new LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
-        infoLp.topMargin = dpToPx(14);
-        tvInfo.setLayoutParams(infoLp);
-        tvInfo.setGravity(Gravity.CENTER);
-        tvInfo.setText(displayName + "\n" + handleText);
-        tvInfo.setTextColor(Color.parseColor("#141B2B"));
-        tvInfo.setTextSize(TypedValue.COMPLEX_UNIT_SP, 15);
-        tvInfo.setTypeface(null, Typeface.BOLD);
-        container.addView(tvInfo);
-
-        TextView tvHint = new TextView(this);
-        LinearLayout.LayoutParams hintLp = new LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
-        hintLp.topMargin = dpToPx(6);
-        tvHint.setLayoutParams(hintLp);
-        tvHint.setGravity(Gravity.CENTER);
-        tvHint.setText("Quét mã QR hoặc chia sẻ liên kết để bạn bè xem trang cá nhân của bạn trên Dishcision.");
-        tvHint.setTextColor(Color.parseColor("#6B7280"));
-        tvHint.setTextSize(TypedValue.COMPLEX_UNIT_SP, 12);
-        container.addView(tvHint);
-
-        new AlertDialog.Builder(this)
-                .setTitle("Mã hồ sơ cá nhân")
-                .setView(container)
-                .setNeutralButton("Sao chép liên kết", (dialog, which) -> {
-                    ClipboardManager clipboard = (ClipboardManager) getSystemService(CLIPBOARD_SERVICE);
-                    if (clipboard != null) {
-                        clipboard.setPrimaryClip(ClipData.newPlainText("Profile Link", qrContent));
-                    }
-                    Toast.makeText(this, "Đã sao chép liên kết hồ sơ", Toast.LENGTH_SHORT).show();
-                })
-                .setPositiveButton("Đóng", (dialog, which) -> dialog.dismiss())
-                .show();
+        dialog.getWindow().setBackgroundDrawable(new android.graphics.drawable.ColorDrawable(Color.TRANSPARENT));
+        dialog.show();
+        dialog.getWindow().setLayout(
+                (int) (getResources().getDisplayMetrics().widthPixels * 0.9f),
+                android.view.ViewGroup.LayoutParams.WRAP_CONTENT);
     }
 
     private Bitmap generateQrBitmap(String content, int sizePx) {

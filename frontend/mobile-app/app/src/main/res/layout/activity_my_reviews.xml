@@ -120,15 +120,6 @@
                             android:layout_height="50dp"
                             android:contentDescription="Avatar"
                             android:src="@drawable/bg_avatar_circle" />
-
-                        <ImageView
-                            android:layout_width="18dp"
-                            android:layout_height="18dp"
-                            android:layout_gravity="bottom|end"
-                            android:background="@drawable/bg_badge_utensils_red"
-                            android:contentDescription="Badge"
-                            android:padding="3dp"
-                            android:src="@drawable/ic_utensils" />
                     </FrameLayout>
 
                     <LinearLayout
@@ -402,6 +393,7 @@
 
                     <TextView
                         android:id="@+id/chipWithPhotos"
+                        android:visibility="gone"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginStart="8dp"

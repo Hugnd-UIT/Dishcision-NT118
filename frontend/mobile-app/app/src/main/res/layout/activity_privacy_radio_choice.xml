@@ -155,35 +155,49 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:background="@drawable/bg_radio_selector"
-                        android:orientation="vertical"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal"
                         android:clickable="true"
                         android:focusable="true">
 
                         <RadioButton
                             android:id="@+id/rbOption1"
-                            android:layout_width="match_parent"
+                            android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
+                            android:layout_marginStart="12dp"
                             android:background="@null"
-                            android:buttonTint="#FF5722"
                             android:clickable="false"
-                            android:paddingStart="12dp"
-                            android:paddingVertical="16dp"
-                            android:text="@string/privacy_radio_public"
-                            android:textColor="@color/text_dark"
-                            android:textSize="15sp"
-                            android:textStyle="bold" />
+                            android:minHeight="0dp"
+                            android:minWidth="0dp"
+                            android:text=""
+                            app:buttonTint="#FF5722" />
 
-                        <TextView
-                            android:id="@+id/tvOption1Desc"
-                            android:layout_width="match_parent"
+                        <LinearLayout
+                            android:layout_width="0dp"
                             android:layout_height="wrap_content"
-                            android:layout_marginStart="44dp"
-                            android:layout_marginTop="-12dp"
-                            android:layout_marginBottom="16dp"
-                            android:clickable="false"
-                            android:text="@string/privacy_radio_public_desc"
-                            android:textColor="@color/text_gray"
-                            android:textSize="12sp" />
+                            android:layout_marginStart="12dp"
+                            android:layout_weight="1"
+                            android:orientation="vertical"
+                            android:paddingVertical="16dp">
+
+                            <TextView
+                                android:id="@+id/tvOption1Title"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:text="@string/privacy_radio_public"
+                                android:textColor="@color/text_dark"
+                                android:textSize="15sp"
+                                android:textStyle="bold" />
+
+                            <TextView
+                                android:id="@+id/tvOption1Desc"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:clickable="false"
+                                android:text="@string/privacy_radio_public_desc"
+                                android:textColor="@color/text_gray"
+                                android:textSize="12sp" />
+                        </LinearLayout>
                     </LinearLayout>
 
                     <View
@@ -201,33 +215,47 @@
                         android:background="@drawable/bg_radio_selector"
                         android:clickable="true"
                         android:focusable="true"
-                        android:orientation="vertical">
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal">
 
                         <RadioButton
                             android:id="@+id/rbOption2"
-                            android:layout_width="match_parent"
+                            android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
+                            android:layout_marginStart="12dp"
                             android:background="@null"
-                            android:buttonTint="#FF5722"
                             android:clickable="false"
-                            android:paddingStart="12dp"
-                            android:paddingVertical="16dp"
-                            android:text="@string/privacy_radio_friends"
-                            android:textColor="@color/text_dark"
-                            android:textSize="15sp"
-                            android:textStyle="bold" />
+                            android:minHeight="0dp"
+                            android:minWidth="0dp"
+                            android:text=""
+                            app:buttonTint="#FF5722" />
 
-                        <TextView
-                            android:id="@+id/tvOption2Desc"
-                            android:layout_width="match_parent"
+                        <LinearLayout
+                            android:layout_width="0dp"
                             android:layout_height="wrap_content"
-                            android:layout_marginStart="44dp"
-                            android:layout_marginTop="-12dp"
-                            android:layout_marginBottom="16dp"
-                            android:clickable="false"
-                            android:text="@string/privacy_radio_friends_desc"
-                            android:textColor="@color/text_gray"
-                            android:textSize="12sp" />
+                            android:layout_marginStart="12dp"
+                            android:layout_weight="1"
+                            android:orientation="vertical"
+                            android:paddingVertical="16dp">
+
+                            <TextView
+                                android:id="@+id/tvOption2Title"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:text="@string/privacy_radio_friends"
+                                android:textColor="@color/text_dark"
+                                android:textSize="15sp"
+                                android:textStyle="bold" />
+
+                            <TextView
+                                android:id="@+id/tvOption2Desc"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:clickable="false"
+                                android:text="@string/privacy_radio_friends_desc"
+                                android:textColor="@color/text_gray"
+                                android:textSize="12sp" />
+                        </LinearLayout>
                     </LinearLayout>
 
                     <View
@@ -245,33 +273,47 @@
                         android:background="@drawable/bg_radio_selector"
                         android:clickable="true"
                         android:focusable="true"
-                        android:orientation="vertical">
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal">
 
                         <RadioButton
                             android:id="@+id/rbOption3"
-                            android:layout_width="match_parent"
+                            android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
+                            android:layout_marginStart="12dp"
                             android:background="@null"
-                            android:buttonTint="#FF5722"
                             android:clickable="false"
-                            android:paddingStart="12dp"
-                            android:paddingVertical="16dp"
-                            android:text="@string/privacy_radio_only_me"
-                            android:textColor="@color/text_dark"
-                            android:textSize="15sp"
-                            android:textStyle="bold" />
+                            android:minHeight="0dp"
+                            android:minWidth="0dp"
+                            android:text=""
+                            app:buttonTint="#FF5722" />
 
-                        <TextView
-                            android:id="@+id/tvOption3Desc"
-                            android:layout_width="match_parent"
+                        <LinearLayout
+                            android:layout_width="0dp"
                             android:layout_height="wrap_content"
-                            android:layout_marginStart="44dp"
-                            android:layout_marginTop="-12dp"
-                            android:layout_marginBottom="16dp"
-                            android:clickable="false"
-                            android:text="@string/privacy_radio_only_me_desc"
-                            android:textColor="@color/text_gray"
-                            android:textSize="12sp" />
+                            android:layout_marginStart="12dp"
+                            android:layout_weight="1"
+                            android:orientation="vertical"
+                            android:paddingVertical="16dp">
+
+                            <TextView
+                                android:id="@+id/tvOption3Title"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:text="@string/privacy_radio_only_me"
+                                android:textColor="@color/text_dark"
+                                android:textSize="15sp"
+                                android:textStyle="bold" />
+
+                            <TextView
+                                android:id="@+id/tvOption3Desc"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:clickable="false"
+                                android:text="@string/privacy_radio_only_me_desc"
+                                android:textColor="@color/text_gray"
+                                android:textSize="12sp" />
+                        </LinearLayout>
                     </LinearLayout>
 
                     <View
@@ -290,34 +332,48 @@
                         android:background="@drawable/bg_radio_selector"
                         android:clickable="true"
                         android:focusable="true"
-                        android:orientation="vertical"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal"
                         android:visibility="gone">
 
                         <RadioButton
                             android:id="@+id/rbOption4"
-                            android:layout_width="match_parent"
+                            android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
+                            android:layout_marginStart="12dp"
                             android:background="@null"
-                            android:buttonTint="#FF5722"
                             android:clickable="false"
-                            android:paddingStart="12dp"
-                            android:paddingVertical="16dp"
-                            android:text="@string/privacy_radio_none"
-                            android:textColor="@color/text_dark"
-                            android:textSize="15sp"
-                            android:textStyle="bold" />
+                            android:minHeight="0dp"
+                            android:minWidth="0dp"
+                            android:text=""
+                            app:buttonTint="#FF5722" />
 
-                        <TextView
-                            android:id="@+id/tvOption4Desc"
-                            android:layout_width="match_parent"
+                        <LinearLayout
+                            android:layout_width="0dp"
                             android:layout_height="wrap_content"
-                            android:layout_marginStart="44dp"
-                            android:layout_marginTop="-12dp"
-                            android:layout_marginBottom="16dp"
-                            android:clickable="false"
-                            android:text="Không cho phép tìm bạn bằng email."
-                            android:textColor="@color/text_gray"
-                            android:textSize="12sp" />
+                            android:layout_marginStart="12dp"
+                            android:layout_weight="1"
+                            android:orientation="vertical"
+                            android:paddingVertical="16dp">
+
+                            <TextView
+                                android:id="@+id/tvOption4Title"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:text="@string/privacy_radio_none"
+                                android:textColor="@color/text_dark"
+                                android:textSize="15sp"
+                                android:textStyle="bold" />
+
+                            <TextView
+                                android:id="@+id/tvOption4Desc"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:clickable="false"
+                                android:text="Không cho phép tìm bạn bằng email."
+                                android:textColor="@color/text_gray"
+                                android:textSize="12sp" />
+                        </LinearLayout>
                     </LinearLayout>
 
                 </RadioGroup>

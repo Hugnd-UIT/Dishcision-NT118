@@ -361,27 +361,35 @@ public class TastePreferencesActivity extends AppCompatActivity {
     }
 
     private void showAddNewTasteDialog() {
-        final android.widget.EditText input = new android.widget.EditText(this);
-        input.setHint("Nhập khẩu vị (VD: Ăn chay, Ít ngọt...)");
-        int padding = (int) (16 * getResources().getDisplayMetrics().density);
-        input.setPadding(padding, padding, padding, padding);
+        android.view.View content = getLayoutInflater().inflate(R.layout.dialog_add_preference, null);
+        final android.widget.EditText input = content.findViewById(R.id.edtNewPreference);
 
-        new AlertDialog.Builder(this)
-                .setTitle("Thêm khẩu vị món ăn")
-                .setView(input)
-                .setPositiveButton("Thêm", (dialog, which) -> {
-                    String newTaste = input.getText().toString().trim();
-                    if (!newTaste.isEmpty()) {
-                        String entry = newTaste.startsWith("✨") ? newTaste : "✨ " + newTaste;
-                        if (customSelectedTastes.add(entry)) {
-                            isTastesEdited = true;
-                            renderCustomTastes();
-                            updateTasteCount();
-                        }
-                    }
-                })
-                .setNegativeButton("Hủy", null)
-                .show();
+        final AlertDialog dialog = new AlertDialog.Builder(this).setView(content).create();
+        Runnable confirm = () -> {
+            String newTaste = input.getText().toString().trim();
+            if (!newTaste.isEmpty()) {
+                String entry = newTaste.startsWith("✨") ? newTaste : "✨ " + newTaste;
+                if (customSelectedTastes.add(entry)) {
+                    isTastesEdited = true;
+                    renderCustomTastes();
+                    updateTasteCount();
+                }
+            }
+            dialog.dismiss();
+        };
+        content.findViewById(R.id.btnConfirmPreference).setOnClickListener(v -> confirm.run());
+        content.findViewById(R.id.btnCancelPreference).setOnClickListener(v -> dialog.dismiss());
+        input.setOnEditorActionListener((v, actionId, event) -> {
+            confirm.run();
+            return true;
+        });
+
+        dialog.getWindow().setBackgroundDrawable(new android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT));
+        dialog.getWindow().setSoftInputMode(android.view.WindowManager.LayoutParams.SOFT_INPUT_STATE_VISIBLE);
+        dialog.show();
+        dialog.getWindow().setLayout(
+                (int) (getResources().getDisplayMetrics().widthPixels * 0.9f),
+                android.view.ViewGroup.LayoutParams.WRAP_CONTENT);
     }
 
     private void toggleChipStyle(TextView chipView, boolean isSelected, String label) {

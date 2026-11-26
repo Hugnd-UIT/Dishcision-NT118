@@ -47,8 +47,18 @@ public class ReportContentActivity extends AppCompatActivity {
         setContentView(R.layout.activity_report_content);
 
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main_report_content), (v, insets) -> {
-            Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
-            v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
+            Insets bars = insets.getInsets(WindowInsetsCompat.Type.systemBars() | WindowInsetsCompat.Type.ime());
+            v.setPadding(bars.left, bars.top, bars.right, bars.bottom);
+            View focused = getCurrentFocus();
+            if (focused != null && insets.isVisible(WindowInsetsCompat.Type.ime())) {
+                // chờ ScrollView co lại theo bàn phím rồi mới cuộn tới ô đang nhập
+                focused.postDelayed(() -> {
+                    android.graphics.Rect r = new android.graphics.Rect();
+                    focused.getDrawingRect(r);
+                    r.bottom += 120;
+                    focused.requestRectangleOnScreen(r, false);
+                }, 150);
+            }
             return insets;
         });
 

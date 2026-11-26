@@ -167,7 +167,7 @@
                 android:gravity="center"
                 android:lineSpacingExtra="4dp"
                 android:text="Chưa có bài viết nào được lưu.
-Bấm biểu tượng 🔖 trên một bài viết để lưu vào đây."
+Bấm biểu tượng lưu trên một bài viết để lưu vào đây."
                 android:textColor="@color/text_gray"
                 android:textSize="14sp"
                 android:visibility="gone" />

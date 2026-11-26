@@ -35,7 +35,6 @@ public class ForgotPasswordActivity extends AppCompatActivity {
     private EditText edtForgotEmail;
     private RelativeLayout btnSendCode;
     private TextView tvBackToLogin;
-    private TextView tvContactSupport;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -73,7 +72,6 @@ public class ForgotPasswordActivity extends AppCompatActivity {
         edtForgotEmail = findViewById(R.id.edtForgotEmail);
         btnSendCode = findViewById(R.id.btnSendCode);
         tvBackToLogin = findViewById(R.id.tvBackToLogin);
-        tvContactSupport = findViewById(R.id.tvContactSupport);
     }
 
     private void setupListeners() {

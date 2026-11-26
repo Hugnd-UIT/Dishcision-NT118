@@ -201,7 +201,7 @@
                 android:foreground="?attr/selectableItemBackground"
                 android:paddingHorizontal="16dp"
                 android:paddingVertical="8dp"
-                android:text="🔴 Chưa đọc"
+                android:text="Chưa đọc"
                 android:textColor="#141B2B"
                 android:textSize="13sp" />
 
@@ -216,7 +216,7 @@
                 android:foreground="?attr/selectableItemBackground"
                 android:paddingHorizontal="16dp"
                 android:paddingVertical="8dp"
-                android:text="🏪 Quán ăn"
+                android:text="Quán ăn"
                 android:textColor="#141B2B"
                 android:textSize="13sp" />
 
@@ -231,7 +231,7 @@
                 android:foreground="?attr/selectableItemBackground"
                 android:paddingHorizontal="16dp"
                 android:paddingVertical="8dp"
-                android:text="👥 Bạn bè"
+                android:text="Bạn bè"
                 android:textColor="#141B2B"
                 android:textSize="13sp" />
         </LinearLayout>

@@ -139,7 +139,7 @@ public class FavoriteDishesActivity extends AppCompatActivity {
         if (tvSavedCount != null) tvSavedCount.setText(savedPosts.size() + " bài đã lưu");
         if (tvEmptySaved != null) {
             if (savedPosts.isEmpty()) {
-                tvEmptySaved.setText("Chưa có bài viết nào được lưu.\nBấm biểu tượng 🔖 trên một bài viết để lưu vào đây.");
+                tvEmptySaved.setText(emptySavedMessage());
                 tvEmptySaved.setVisibility(View.VISIBLE);
             } else if (shown == 0) {
                 tvEmptySaved.setText("Không có bài đã lưu nào khớp với \"" + query + "\".");
@@ -257,5 +257,22 @@ public class FavoriteDishesActivity extends AppCompatActivity {
         savedPosts.add(Math.max(0, Math.min(index, savedPosts.size())), post);
         renderSavedPosts();
         Toast.makeText(this, message, Toast.LENGTH_SHORT).show();
+    }
+
+    /** Thông báo trống có icon bookmark thật của app (thay emoji sai biểu tượng). */
+    private CharSequence emptySavedMessage() {
+        String head = "Chưa có bài viết nào được lưu.\nBấm biểu tượng ";
+        String tail = " trên một bài viết để lưu vào đây.";
+        android.text.SpannableStringBuilder sb = new android.text.SpannableStringBuilder(head + "￼" + tail);
+        android.graphics.drawable.Drawable d = androidx.core.content.ContextCompat.getDrawable(this, R.drawable.ic_bookmark);
+        if (d != null) {
+            d = d.mutate();
+            int size = Math.round(16 * getResources().getDisplayMetrics().density);
+            d.setBounds(0, 0, size, size);
+            d.setTint(0xFF141B2B);
+            sb.setSpan(new android.text.style.ImageSpan(d, android.text.style.ImageSpan.ALIGN_BOTTOM),
+                    head.length(), head.length() + 1, android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        }
+        return sb;
     }
 }

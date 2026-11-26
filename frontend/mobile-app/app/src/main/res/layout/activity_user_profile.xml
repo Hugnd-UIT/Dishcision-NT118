@@ -25,19 +25,12 @@
             android:src="@drawable/ic_arrow_back"
             app:tint="#141B2B" />
 
-        <ImageView
-            android:layout_width="24dp"
-            android:layout_height="24dp"
-            android:layout_marginStart="12dp"
-            android:contentDescription="Logo"
-            android:src="@drawable/bg_logo_circle" />
-
         <!-- Tên người dùng (@handle) nằm trên thanh tiêu đề -->
         <TextView
             android:id="@+id/tvHandle"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_marginStart="8dp"
+            android:layout_marginStart="12dp"
             android:layout_weight="1"
             android:ellipsize="end"
             android:maxLines="1"

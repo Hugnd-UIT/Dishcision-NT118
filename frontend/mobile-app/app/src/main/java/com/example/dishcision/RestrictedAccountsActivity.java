@@ -28,9 +28,8 @@ import com.example.dishcision.network.AccountModel;
 import com.example.dishcision.network.AccountsListResponse;
 import com.example.dishcision.network.ApiClient;
 import com.example.dishcision.network.AuthHelper;
-import com.example.dishcision.network.FeedPostsResponse;
+import com.example.dishcision.network.FollowersListResponse;
 import com.example.dishcision.network.ImageLoader;
-import com.example.dishcision.network.SearchAccountsResponse;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -182,104 +181,54 @@ public class RestrictedAccountsActivity extends AppCompatActivity {
         });
     }
 
+    // "Bạn bè" = những người mình đang theo dõi (cùng định nghĩa với quyền riêng tư "Bạn bè" của app)
+    private List<FollowersListResponse.FollowItem> friendsCache;
+
+    private AccountPickerDialog.Page friendsPage(String keyword, int page) {
+        String kw = keyword.toLowerCase(Locale.ROOT);
+        int selfId = AuthHelper.getCurrentUserId(this);
+        List<AccountPickerDialog.Item> all = new ArrayList<>();
+        for (FollowersListResponse.FollowItem f : friendsCache) {
+            if (f.userId <= 0 || f.userId == selfId || isAlreadyRestricted(f.userId)) continue;
+            String name = (f.fullName != null ? f.fullName : "") + " " + (f.username != null ? f.username : "");
+            if (!kw.isEmpty() && !name.toLowerCase(Locale.ROOT).contains(kw.replace("@", ""))) continue;
+            all.add(new AccountPickerDialog.Item(f.userId, f.username, f.fullName, f.avatarUrl));
+        }
+        int from = Math.min((page - 1) * AccountPickerDialog.PAGE_SIZE, all.size());
+        int to = Math.min(from + AccountPickerDialog.PAGE_SIZE, all.size());
+        return new AccountPickerDialog.Page(new ArrayList<>(all.subList(from, to)), to < all.size(), false);
+    }
+
     private void showAddRestrictedDialog() {
-        LinearLayout wrapper = new LinearLayout(this);
-        wrapper.setOrientation(LinearLayout.VERTICAL);
-        int pad = dpToPx(16);
-        wrapper.setPadding(pad, dpToPx(8), pad, dpToPx(8));
-
-        EditText edtQuery = new EditText(this);
-        edtQuery.setHint("Nhập tên hoặc @username...");
-        edtQuery.setTextSize(14f);
-        wrapper.addView(edtQuery);
-
-        ScrollView scroll = new ScrollView(this);
-        LinearLayout.LayoutParams scrollParams = new LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT, dpToPx(240));
-        scrollParams.topMargin = dpToPx(8);
-        scroll.setLayoutParams(scrollParams);
-
-        LinearLayout resultsBox = new LinearLayout(this);
-        resultsBox.setOrientation(LinearLayout.VERTICAL);
-        scroll.addView(resultsBox);
-        wrapper.addView(scroll);
-
-        AlertDialog dialog = new AlertDialog.Builder(this)
-                .setTitle("Thêm tài khoản hạn chế")
-                .setView(wrapper)
-                .setNegativeButton("Đóng", null)
-                .create();
-
-        Runnable runSearch = () -> {
-            String keyword = edtQuery.getText().toString().trim();
-            ApiClient.getApiService().searchAccounts(keyword, 20).enqueue(new Callback<SearchAccountsResponse>() {
-                @Override
-                public void onResponse(@NonNull Call<SearchAccountsResponse> call, @NonNull Response<SearchAccountsResponse> response) {
-                    resultsBox.removeAllViews();
-                    if (!response.isSuccessful() || response.body() == null || response.body().data == null) {
-                        addSimpleMessage(resultsBox, "Không thể tải danh sách tài khoản");
+        AccountPickerDialog.show(this,
+                "Thêm tài khoản hạn chế",
+                "Chỉ có thể hạn chế những người bạn đã kết bạn.",
+                "Hạn chế",
+                "Không có người bạn nào phù hợp",
+                (keyword, page, done) -> {
+                    if (friendsCache != null) {
+                        done.done(friendsPage(keyword, page));
                         return;
                     }
-                    int selfId = AuthHelper.getCurrentUserId(RestrictedAccountsActivity.this);
-                    int shown = 0;
-                    for (FeedPostsResponse.Author a : response.body().data) {
-                        if (a.userId <= 0 || a.userId == selfId || isAlreadyRestricted(a.userId)) continue;
-                        shown++;
-                        LinearLayout row = new LinearLayout(RestrictedAccountsActivity.this);
-                        row.setOrientation(LinearLayout.HORIZONTAL);
-                        row.setGravity(Gravity.CENTER_VERTICAL);
-                        row.setPadding(0, dpToPx(10), 0, dpToPx(10));
+                    ApiClient.getApiService().getFollowing(ApiClient.getAuthHeader(this), "me")
+                            .enqueue(new Callback<FollowersListResponse>() {
+                                @Override
+                                public void onResponse(@NonNull Call<FollowersListResponse> call, @NonNull Response<FollowersListResponse> response) {
+                                    if (!response.isSuccessful() || response.body() == null || response.body().data == null) {
+                                        done.done(AccountPickerDialog.Page.error());
+                                        return;
+                                    }
+                                    friendsCache = response.body().data;
+                                    done.done(friendsPage(keyword, page));
+                                }
 
-                        LinearLayout info = new LinearLayout(RestrictedAccountsActivity.this);
-                        info.setOrientation(LinearLayout.VERTICAL);
-                        info.setLayoutParams(new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f));
-
-                        TextView tvName = new TextView(RestrictedAccountsActivity.this);
-                        tvName.setText(a.fullName != null && !a.fullName.isEmpty() ? a.fullName : a.username);
-                        tvName.setTextColor(Color.parseColor("#141B2B"));
-                        tvName.setTextSize(14f);
-                        tvName.setTypeface(null, Typeface.BOLD);
-
-                        TextView tvUser = new TextView(RestrictedAccountsActivity.this);
-                        tvUser.setText(a.username != null ? "@" + a.username : "");
-                        tvUser.setTextColor(Color.parseColor("#6B7280"));
-                        tvUser.setTextSize(12f);
-
-                        info.addView(tvName);
-                        info.addView(tvUser);
-
-                        TextView btnPick = new TextView(RestrictedAccountsActivity.this);
-                        btnPick.setText("Hạn chế");
-                        btnPick.setTextColor(Color.parseColor("#C5221F"));
-                        btnPick.setTypeface(null, Typeface.BOLD);
-                        btnPick.setPadding(dpToPx(12), dpToPx(6), dpToPx(4), dpToPx(6));
-
-                        row.addView(info);
-                        row.addView(btnPick);
-                        row.setOnClickListener(v -> restrictOnBackend(a.userId, dialog));
-                        resultsBox.addView(row);
-                    }
-                    if (shown == 0) {
-                        addSimpleMessage(resultsBox, "Không có tài khoản phù hợp");
-                    }
-                }
-
-                @Override
-                public void onFailure(@NonNull Call<SearchAccountsResponse> call, @NonNull Throwable t) {
-                    resultsBox.removeAllViews();
-                    addSimpleMessage(resultsBox, "Lỗi kết nối máy chủ");
-                }
-            });
-        };
-
-        edtQuery.addTextChangedListener(new TextWatcher() {
-            @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
-            @Override public void onTextChanged(CharSequence s, int start, int before, int count) { runSearch.run(); }
-            @Override public void afterTextChanged(Editable s) {}
-        });
-
-        dialog.show();
-        runSearch.run();
+                                @Override
+                                public void onFailure(@NonNull Call<FollowersListResponse> call, @NonNull Throwable t) {
+                                    done.done(AccountPickerDialog.Page.error());
+                                }
+                            });
+                },
+                (item, dialog) -> restrictOnBackend(item.userId, dialog));
     }
 
     private boolean isAlreadyRestricted(int userId) {
@@ -287,15 +236,6 @@ public class RestrictedAccountsActivity extends AppCompatActivity {
             if (item.getId() == userId) return true;
         }
         return false;
-    }
-
-    private void addSimpleMessage(LinearLayout container, String msg) {
-        TextView tv = new TextView(this);
-        tv.setText(msg);
-        tv.setTextColor(Color.parseColor("#6B7280"));
-        tv.setTextSize(13f);
-        tv.setPadding(0, dpToPx(12), 0, dpToPx(12));
-        container.addView(tv);
     }
 
     private void renderRestrictedList() {

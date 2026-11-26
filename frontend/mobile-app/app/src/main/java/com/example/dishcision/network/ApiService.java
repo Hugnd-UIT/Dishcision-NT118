@@ -409,6 +409,13 @@ public interface ApiService {
             @Query("limit") Integer limit
     );
 
+    @GET("search/accounts")
+    Call<SearchAccountsResponse> searchAccountsPage(
+            @Query("keyword") String keyword,
+            @Query("limit") Integer limit,
+            @Query("page") Integer page
+    );
+
     @GET("search/dishes")
     Call<SearchDishesResponse> searchDishes(
             @Query("keyword") String keyword,

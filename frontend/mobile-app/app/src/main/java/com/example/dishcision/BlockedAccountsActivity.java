@@ -203,103 +203,36 @@ public class BlockedAccountsActivity extends AppCompatActivity {
     }
 
     private void showAddBlockedDialog() {
-        LinearLayout wrapper = new LinearLayout(this);
-        wrapper.setOrientation(LinearLayout.VERTICAL);
-        int pad = dpToPx(16);
-        wrapper.setPadding(pad, dpToPx(8), pad, dpToPx(8));
+        final int selfId = AuthHelper.getCurrentUserId(this);
+        AccountPickerDialog.show(this,
+                "Thêm tài khoản để chặn",
+                "Người bị chặn không thể xem hồ sơ, bài viết hay bình luận của bạn.",
+                "Chặn",
+                "Không có tài khoản phù hợp",
+                (keyword, page, done) -> ApiClient.getApiService()
+                        .searchAccountsPage(keyword, AccountPickerDialog.PAGE_SIZE, page)
+                        .enqueue(new Callback<SearchAccountsResponse>() {
+                            @Override
+                            public void onResponse(@NonNull Call<SearchAccountsResponse> call, @NonNull Response<SearchAccountsResponse> response) {
+                                if (!response.isSuccessful() || response.body() == null || response.body().data == null) {
+                                    done.done(AccountPickerDialog.Page.error());
+                                    return;
+                                }
+                                List<AccountPickerDialog.Item> items = new ArrayList<>();
+                                for (FeedPostsResponse.Author a : response.body().data) {
+                                    if (a.userId <= 0 || a.userId == selfId || isAlreadyBlocked(a.userId)) continue;
+                                    items.add(new AccountPickerDialog.Item(a.userId, a.username, a.fullName, a.avatarUrl));
+                                }
+                                done.done(new AccountPickerDialog.Page(items,
+                                        response.body().data.size() >= AccountPickerDialog.PAGE_SIZE, false));
+                            }
 
-        EditText edtQuery = new EditText(this);
-        edtQuery.setHint("Nhập tên hoặc @username...");
-        edtQuery.setTextSize(14f);
-        wrapper.addView(edtQuery);
-
-        ScrollView scroll = new ScrollView(this);
-        LinearLayout.LayoutParams scrollParams = new LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT, dpToPx(240));
-        scrollParams.topMargin = dpToPx(8);
-        scroll.setLayoutParams(scrollParams);
-
-        LinearLayout resultsBox = new LinearLayout(this);
-        resultsBox.setOrientation(LinearLayout.VERTICAL);
-        scroll.addView(resultsBox);
-        wrapper.addView(scroll);
-
-        AlertDialog dialog = new AlertDialog.Builder(this)
-                .setTitle("Thêm tài khoản để chặn")
-                .setView(wrapper)
-                .setNegativeButton("Đóng", null)
-                .create();
-
-        Runnable runSearch = () -> {
-            String keyword = edtQuery.getText().toString().trim();
-            ApiClient.getApiService().searchAccounts(keyword, 20).enqueue(new Callback<SearchAccountsResponse>() {
-                @Override
-                public void onResponse(@NonNull Call<SearchAccountsResponse> call, @NonNull Response<SearchAccountsResponse> response) {
-                    resultsBox.removeAllViews();
-                    if (!response.isSuccessful() || response.body() == null || response.body().data == null) {
-                        addSimpleMessage(resultsBox, "Không thể tải danh sách tài khoản");
-                        return;
-                    }
-                    int selfId = AuthHelper.getCurrentUserId(BlockedAccountsActivity.this);
-                    int shown = 0;
-                    for (FeedPostsResponse.Author a : response.body().data) {
-                        if (a.userId <= 0 || a.userId == selfId || isAlreadyBlocked(a.userId)) continue;
-                        shown++;
-                        LinearLayout row = new LinearLayout(BlockedAccountsActivity.this);
-                        row.setOrientation(LinearLayout.HORIZONTAL);
-                        row.setGravity(Gravity.CENTER_VERTICAL);
-                        row.setPadding(0, dpToPx(10), 0, dpToPx(10));
-
-                        LinearLayout info = new LinearLayout(BlockedAccountsActivity.this);
-                        info.setOrientation(LinearLayout.VERTICAL);
-                        info.setLayoutParams(new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f));
-
-                        TextView tvName = new TextView(BlockedAccountsActivity.this);
-                        tvName.setText(a.fullName != null && !a.fullName.isEmpty() ? a.fullName : a.username);
-                        tvName.setTextColor(Color.parseColor("#141B2B"));
-                        tvName.setTextSize(14f);
-                        tvName.setTypeface(null, Typeface.BOLD);
-
-                        TextView tvUser = new TextView(BlockedAccountsActivity.this);
-                        tvUser.setText(a.username != null ? "@" + a.username : "");
-                        tvUser.setTextColor(Color.parseColor("#6B7280"));
-                        tvUser.setTextSize(12f);
-
-                        info.addView(tvName);
-                        info.addView(tvUser);
-
-                        TextView btnPick = new TextView(BlockedAccountsActivity.this);
-                        btnPick.setText("Chặn");
-                        btnPick.setTextColor(Color.parseColor("#C5221F"));
-                        btnPick.setTypeface(null, Typeface.BOLD);
-                        btnPick.setPadding(dpToPx(12), dpToPx(6), dpToPx(4), dpToPx(6));
-
-                        row.addView(info);
-                        row.addView(btnPick);
-                        row.setOnClickListener(v -> blockOnBackend(a.userId, dialog));
-                        resultsBox.addView(row);
-                    }
-                    if (shown == 0) {
-                        addSimpleMessage(resultsBox, "Không có tài khoản phù hợp");
-                    }
-                }
-
-                @Override
-                public void onFailure(@NonNull Call<SearchAccountsResponse> call, @NonNull Throwable t) {
-                    resultsBox.removeAllViews();
-                    addSimpleMessage(resultsBox, "Lỗi kết nối máy chủ");
-                }
-            });
-        };
-
-        edtQuery.addTextChangedListener(new TextWatcher() {
-            @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
-            @Override public void onTextChanged(CharSequence s, int start, int before, int count) { runSearch.run(); }
-            @Override public void afterTextChanged(Editable s) {}
-        });
-
-        dialog.show();
-        runSearch.run();
+                            @Override
+                            public void onFailure(@NonNull Call<SearchAccountsResponse> call, @NonNull Throwable t) {
+                                done.done(AccountPickerDialog.Page.error());
+                            }
+                        }),
+                (item, dialog) -> blockOnBackend(item.userId, dialog));
     }
 
     private boolean isAlreadyBlocked(int userId) {
@@ -307,15 +240,6 @@ public class BlockedAccountsActivity extends AppCompatActivity {
             if (item.getId() == userId) return true;
         }
         return false;
-    }
-
-    private void addSimpleMessage(LinearLayout container, String msg) {
-        TextView tv = new TextView(this);
-        tv.setText(msg);
-        tv.setTextColor(Color.parseColor("#6B7280"));
-        tv.setTextSize(13f);
-        tv.setPadding(0, dpToPx(12), 0, dpToPx(12));
-        container.addView(tv);
     }
 
     private void renderBlockedList(String query) {

@@ -335,19 +335,27 @@ public class LoginSessionActivity extends AppCompatActivity {
 
     private void showUnrecognizedResolutionDialog() {
         boolean isGoogleLogin = getSharedPreferences("DishcisionPrefs", MODE_PRIVATE).getBoolean("is_google_login", false);
-        AlertDialog.Builder builder = new AlertDialog.Builder(this)
-                .setTitle("Hướng dẫn xử lý thiết bị lạ")
-                .setMessage(isGoogleLogin
-                        ? "1. Chọn 'Đăng xuất phiên này' đối với thiết bị không nhận ra.\n2. Kiểm tra bảo mật tài khoản Google và bật Xác thực hai yếu tố (2FA)."
-                        : "1. Chọn 'Đăng xuất phiên này' đối với thiết bị không nhận ra.\n2. Đổi mật khẩu tài khoản ngay lập tức để bảo vệ tài khoản.\n3. Bật Xác thực hai yếu tố (2FA) để tăng cường bảo mật.")
-                .setNegativeButton("Đóng", null);
+        View content = getLayoutInflater().inflate(R.layout.dialog_device_guide, null);
+        ((TextView) content.findViewById(R.id.tvDeviceGuideMessage)).setText(isGoogleLogin
+                ? "1. Chọn 'Đăng xuất phiên này' đối với thiết bị không nhận ra.\n2. Kiểm tra bảo mật tài khoản Google và bật Xác thực hai yếu tố (2FA)."
+                : "1. Chọn 'Đăng xuất phiên này' đối với thiết bị không nhận ra.\n2. Đổi mật khẩu tài khoản ngay lập tức để bảo vệ tài khoản.\n3. Bật Xác thực hai yếu tố (2FA) để tăng cường bảo mật.");
 
-        if (!isGoogleLogin) {
-            builder.setPositiveButton("Đổi mật khẩu", (dialog, which) -> {
-                Intent intent = new Intent(LoginSessionActivity.this, ChangePasswordActivity.class);
-                startActivity(intent);
+        final AlertDialog dialog = new AlertDialog.Builder(this).setView(content).create();
+        content.findViewById(R.id.btnDeviceGuideClose).setOnClickListener(v -> dialog.dismiss());
+        View btnChange = content.findViewById(R.id.btnDeviceGuideChangePassword);
+        if (isGoogleLogin) {
+            btnChange.setVisibility(View.GONE);
+        } else {
+            btnChange.setOnClickListener(v -> {
+                dialog.dismiss();
+                startActivity(new Intent(LoginSessionActivity.this, ChangePasswordActivity.class));
             });
         }
-        builder.show();
+
+        dialog.getWindow().setBackgroundDrawable(new android.graphics.drawable.ColorDrawable(Color.TRANSPARENT));
+        dialog.show();
+        dialog.getWindow().setLayout(
+                (int) (getResources().getDisplayMetrics().widthPixels * 0.9f),
+                android.view.ViewGroup.LayoutParams.WRAP_CONTENT);
     }
 }
