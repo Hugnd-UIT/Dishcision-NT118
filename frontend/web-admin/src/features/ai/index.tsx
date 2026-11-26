@@ -1,9 +1,7 @@
 import {
   Sparkles,
-  Bot,
   CheckCircle2,
   TrendingUp,
-  Cpu,
   Star,
   Activity,
   Code2,
@@ -528,83 +526,7 @@ export function AiFeature() {
           </Card>
         </div>
 
-        {/* SINGLE MODEL ARCHITECTURE & FALLBACK CARDS */}
-        <div className='grid gap-6 md:grid-cols-2 mb-6'>
-          {/* Core Model Card */}
-          <Card className='border-primary/30 shadow-xs bg-linear-to-br from-card to-primary/5'>
-            <CardHeader className='pb-2'>
-              <div className='flex items-center justify-between'>
-                <div className='flex items-center gap-2.5'>
-                  <div className='p-2.5 rounded-lg bg-primary/10 text-primary'>
-                    <Bot className='size-5' />
-                  </div>
-                  <div>
-                    <CardTitle className='text-base font-bold'>
-                      Mô hình cốt lõi: Google Gemini 2.5 Flash
-                    </CardTitle>
-                    <CardDescription className='text-xs mt-0.5'>
-                      Endpoint: <code>POST /api/v1/ai/food-decide</code> • Provider: Google Generative AI
-                    </CardDescription>
-                  </div>
-                </div>
-                <Badge className='bg-primary/20 text-primary border-primary/30 text-xs'>
-                  Chính thức (Active)
-                </Badge>
-              </div>
-            </CardHeader>
-            <CardContent className='space-y-3 text-xs leading-relaxed text-muted-foreground pt-1'>
-              <p>
-                Hệ thống Dishcision vận hành <strong>duy nhất 1 model AI</strong> là <strong>Gemini 2.5 Flash</strong>. Model tiếp nhận các tiêu chí thời gian thực của người dùng (tâm trạng, ngân sách, số người cùng ăn, cơn thèm) để đưa ra <strong>3 món ăn chuẩn vị Việt Nam tối ưu nhất</strong> kèm lý do thuyết phục và khoảng giá dự kiến.
-              </p>
-              <div className='grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1'>
-                <div className='p-2 rounded-md bg-muted/50 border border-border/50'>
-                  <span className='text-muted-foreground block text-[10px]'>Tên Model</span>
-                  <strong className='font-mono text-foreground text-xs'>gemini-2.5-flash</strong>
-                </div>
-                <div className='p-2 rounded-md bg-muted/50 border border-border/50'>
-                  <span className='text-muted-foreground block text-[10px]'>Temperature</span>
-                  <strong className='font-mono text-foreground text-xs'>0.7 (Cân bằng)</strong>
-                </div>
-                <div className='p-2 rounded-md bg-muted/50 border border-border/50'>
-                  <span className='text-muted-foreground block text-[10px]'>Định dạng</span>
-                  <strong className='font-mono text-foreground text-xs'>application/json</strong>
-                </div>
-                <div className='p-2 rounded-md bg-muted/50 border border-border/50'>
-                  <span className='text-muted-foreground block text-[10px]'>Đầu ra</span>
-                  <strong className='font-mono text-foreground text-xs'>Top 3 món ngon</strong>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
 
-          {/* Fallback Engine Card */}
-          <Card className='border-border/60 shadow-xs'>
-            <CardHeader className='pb-2'>
-              <div className='flex items-center gap-2.5'>
-                <div className='p-2.5 rounded-lg bg-muted text-muted-foreground'>
-                  <Cpu className='size-5' />
-                </div>
-                <div>
-                  <CardTitle className='text-base font-semibold'>Cơ chế Dự phòng (Fallback)</CardTitle>
-                  <CardDescription className='text-xs mt-0.5'>Database Matcher Engine</CardDescription>
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent className='space-y-3 text-xs leading-relaxed text-muted-foreground pt-1'>
-              <p>
-                Nếu API Gemini gặp sự cố mạng, timeout hoặc vượt hạn mức (quota), hệ thống sẽ chuyển đổi mượt mà sang bộ máy <strong>Database Matcher</strong>.
-              </p>
-              <div className='rounded-md bg-muted/40 p-2.5 border border-border/40 space-y-1 text-xs'>
-                <p className='font-medium text-foreground'>Quy trình dự phòng tự động:</p>
-                <ul className='list-disc pl-4 space-y-1 text-muted-foreground'>
-                  <li>Lọc món ăn thực tế từ các quán ăn trong PostgreSQL</li>
-                  <li>Khớp theo từ khóa cơn thèm và khoảng giá tối đa</li>
-                  <li>Đảm bảo người dùng luôn nhận được món ăn gợi ý liên tục</li>
-                </ul>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
 
         {/* REAL REQUEST INFERENCE LOGS TABLE */}
         <Card className='border-border/60 shadow-xs mb-6'>
