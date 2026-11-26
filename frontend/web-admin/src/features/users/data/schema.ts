@@ -1,30 +1,40 @@
 import { z } from 'zod'
 
-const userStatusSchema = z.union([
-  z.literal('active'),
-  z.literal('inactive'),
-  z.literal('invited'),
-  z.literal('suspended'),
-])
-export type UserStatus = z.infer<typeof userStatusSchema>
+const userStatusSchema = z.string()
+export type UserStatus = string
 
-const userRoleSchema = z.union([
-  z.literal('superadmin'),
-  z.literal('admin'),
-  z.literal('cashier'),
-  z.literal('manager'),
-])
+const userRoleSchema = z.string()
 
-const _userSchema = z.object({
+export const userSchema = z.object({
   id: z.string(),
   firstName: z.string(),
   lastName: z.string(),
   username: z.string(),
   email: z.string(),
-  phoneNumber: z.string(),
+  phoneNumber: z.string().optional().default(''),
   status: userStatusSchema,
   role: userRoleSchema,
-  createdAt: z.coerce.date(),
-  updatedAt: z.coerce.date(),
+  createdAt: z.coerce.date().optional(),
+  updatedAt: z.coerce.date().optional(),
+  avatarUrl: z.string().nullable().optional(),
+  postsCount: z.number().optional(),
+  followersCount: z.number().optional(),
+  city: z.string().nullable().optional(),
 })
-export type User = z.infer<typeof _userSchema>
+
+export type User = {
+  id: string
+  firstName: string
+  lastName: string
+  username: string
+  email: string
+  phoneNumber: string
+  status: string
+  role: string
+  createdAt: Date | string
+  updatedAt: Date | string
+  avatarUrl?: string | null
+  postsCount?: number
+  followersCount?: number
+  city?: string | null
+}

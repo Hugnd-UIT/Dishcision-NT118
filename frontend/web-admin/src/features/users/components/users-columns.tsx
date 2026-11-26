@@ -1,10 +1,9 @@
 import { type ColumnDef } from '@tanstack/react-table'
-import { cn } from '@/lib/utils'
-import { Badge } from '@/components/ui/badge'
 import { Checkbox } from '@/components/ui/checkbox'
+import { Badge } from '@/components/ui/badge'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { DataTableColumnHeader } from '@/components/data-table'
 import { LongText } from '@/components/long-text'
-import { callTypes, roles } from '../data/data'
 import { type User } from '../data/schema'
 import { DataTableRowActions } from './data-table-row-actions'
 
@@ -22,9 +21,6 @@ export const usersColumns: ColumnDef<User>[] = [
         className='translate-y-0.5'
       />
     ),
-    meta: {
-      className: cn('inset-s-0 z-10 rounded-tl-[inherit] max-md:sticky'),
-    },
     cell: ({ row }) => (
       <Checkbox
         checked={row.getIsSelected()}
@@ -39,28 +35,44 @@ export const usersColumns: ColumnDef<User>[] = [
   {
     accessorKey: 'username',
     header: ({ column }) => (
-      <DataTableColumnHeader column={column} title='Username' />
+      <DataTableColumnHeader column={column} title='Tài khoản' />
     ),
-    cell: ({ row }) => (
-      <LongText className='max-w-36 ps-3'>{row.getValue('username')}</LongText>
-    ),
-    meta: {
-      className: cn(
-        'drop-shadow-[0_1px_2px_rgb(0_0_0_/_0.1)] dark:drop-shadow-[0_1px_2px_rgb(255_255_255_/_0.1)]',
-        'inset-s-6 ps-0.5 max-md:sticky @4xl/content:table-cell @4xl/content:drop-shadow-none'
-      ),
+    cell: ({ row }) => {
+      const user = row.original
+      const initials = (user.firstName?.[0] || user.username?.[0] || 'U').toUpperCase()
+
+      return (
+        <div className='flex items-center gap-2.5'>
+          <Avatar className='h-8 w-8 rounded-full border border-border'>
+            {user.avatarUrl && (
+              <AvatarImage src={user.avatarUrl} alt={user.username} />
+            )}
+            <AvatarFallback className='text-xs font-semibold bg-muted'>
+              {initials}
+            </AvatarFallback>
+          </Avatar>
+          <div className='flex flex-col text-left'>
+            <span className='font-mono text-xs font-semibold text-primary'>
+              @{user.username}
+            </span>
+            <span className='text-[10px] text-muted-foreground'>
+              ID: #{user.id}
+            </span>
+          </div>
+        </div>
+      )
     },
     enableHiding: false,
   },
   {
     id: 'fullName',
     header: ({ column }) => (
-      <DataTableColumnHeader column={column} title='Name' />
+      <DataTableColumnHeader column={column} title='Họ và tên' />
     ),
     cell: ({ row }) => {
       const { firstName, lastName } = row.original
-      const fullName = `${firstName} ${lastName}`
-      return <LongText className='max-w-36'>{fullName}</LongText>
+      const fullName = `${firstName} ${lastName}`.trim() || 'Thành viên'
+      return <LongText className='max-w-36 font-medium text-sm'>{fullName}</LongText>
     },
     meta: { className: 'w-36' },
   },
@@ -70,69 +82,93 @@ export const usersColumns: ColumnDef<User>[] = [
       <DataTableColumnHeader column={column} title='Email' />
     ),
     cell: ({ row }) => (
-      <div className='w-fit ps-2 text-nowrap'>{row.getValue('email')}</div>
+      <div className='w-fit text-xs text-muted-foreground'>{row.getValue('email')}</div>
     ),
   },
   {
     accessorKey: 'phoneNumber',
     header: ({ column }) => (
-      <DataTableColumnHeader column={column} title='Phone Number' />
+      <DataTableColumnHeader column={column} title='Khu vực / Tỉnh thành' />
     ),
-    cell: ({ row }) => <div>{row.getValue('phoneNumber')}</div>,
-    enableSorting: false,
-  },
-  {
-    accessorKey: 'status',
-    header: ({ column }) => (
-      <DataTableColumnHeader column={column} title='Status' />
+    cell: ({ row }) => (
+      <div className='text-xs text-muted-foreground'>
+        {row.getValue('phoneNumber') || 'Việt Nam'}
+      </div>
     ),
-    cell: ({ row }) => {
-      const { status } = row.original
-      const badgeColor = callTypes.get(status)
-      return (
-        <div className='flex space-x-2'>
-          <Badge variant='outline' className={cn('capitalize', badgeColor)}>
-            {row.getValue('status')}
-          </Badge>
-        </div>
-      )
-    },
-    filterFn: (row, id, value) => {
-      return value.includes(row.getValue(id))
-    },
-    enableHiding: false,
     enableSorting: false,
   },
   {
     accessorKey: 'role',
     header: ({ column }) => (
-      <DataTableColumnHeader column={column} title='Role' />
+      <DataTableColumnHeader column={column} title='Vai trò' />
     ),
     cell: ({ row }) => {
-      const { role } = row.original
-      const userType = roles.find(({ value }) => value === role)
+      const role = String(row.getValue('role') || '').toLowerCase()
 
-      if (!userType) {
-        return null
+      if (role === 'admin' || role === 'superadmin') {
+        return (
+          <Badge className='bg-amber-500/15 text-amber-500 border-amber-500/20 font-normal text-xs'>
+            Quản trị viên
+          </Badge>
+        )
+      }
+
+      if (role === 'manager') {
+        return (
+          <Badge className='bg-sky-500/15 text-sky-500 border-sky-500/20 font-normal text-xs'>
+            Chủ quán ăn
+          </Badge>
+        )
       }
 
       return (
-        <div className='flex items-center gap-x-2'>
-          {userType.icon && (
-            <userType.icon size={16} className='text-muted-foreground' />
-          )}
-          <span className='text-sm capitalize'>{row.getValue('role')}</span>
-        </div>
+        <Badge
+          variant='outline'
+          className='text-muted-foreground border-border font-normal text-xs'
+        >
+          Thành viên
+        </Badge>
       )
     },
     filterFn: (row, id, value) => {
       return value.includes(row.getValue(id))
     },
-    enableSorting: false,
     enableHiding: false,
+    enableSorting: false,
+  },
+  {
+    accessorKey: 'status',
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title='Trạng thái' />
+    ),
+    cell: ({ row }) => {
+      const status = String(row.getValue('status') || '').toLowerCase()
+
+      if (status === 'active') {
+        return (
+          <Badge className='bg-emerald-500/15 text-emerald-500 border-emerald-500/20 font-normal text-xs'>
+            Hoạt động
+          </Badge>
+        )
+      }
+
+      return (
+        <Badge
+          variant='secondary'
+          className='bg-destructive/15 text-destructive border-destructive/20 font-normal text-xs'
+        >
+          Bị khóa
+        </Badge>
+      )
+    },
+    filterFn: (row, id, value) => {
+      return value.includes(row.getValue(id))
+    },
+    enableHiding: false,
+    enableSorting: false,
   },
   {
     id: 'actions',
-    cell: DataTableRowActions,
+    cell: ({ row }) => <DataTableRowActions row={row} />,
   },
 ]

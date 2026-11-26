@@ -8,6 +8,7 @@ export interface ApiEndpoint {
   rawUrl: string
   description: string
   auth: 'Public' | 'Bearer Token'
+  body?: string | null
 }
 
 export const apiCategories = [
@@ -32,7 +33,8 @@ export const apiEndpoints: ApiEndpoint[] = [
     "path": "/health",
     "rawUrl": "{{rootUrl}}/health",
     "description": "Trả về `{ status: 'ok', timestamp }` nếu backend đang chạy bình thường.",
-    "auth": "Public"
+    "auth": "Public",
+    "body": null
   },
   {
     "id": "api-2",
@@ -42,8 +44,9 @@ export const apiEndpoints: ApiEndpoint[] = [
     "method": "POST",
     "path": "/auth/register",
     "rawUrl": "{{baseUrl}}/auth/register",
-    "description": "Tạo tài khoản mới và tự động lưu `{{token}}`, `{{userId}}`. - `password`: từ 8-100 ký tự, không chứa khoảng trắng, bắt buộc có chữ thường, c",
-    "auth": "Public"
+    "description": "Tạo tài khoản mới và tự động lưu `{{token}}`, `{{userId}}`.\n- `password`: từ 8-100 ký tự, không chứa khoảng trắng, bắt buộc có chữ thường, chữ hoa, chữ số và ký tự đặc biệt.\n- `username`: tùy chọn (3-50 ký tự); nếu bỏ trống backend tự sinh từ email.",
+    "auth": "Public",
+    "body": "{\n  \"username\": \"foodie_demo\",\n  \"email\": \"user@example.com\",\n  \"password\": \"Password@123\",\n  \"fullName\": \"Nguyen Van A\",\n  \"deviceName\": \"Postman Client\"\n}"
   },
   {
     "id": "api-3",
@@ -53,8 +56,9 @@ export const apiEndpoints: ApiEndpoint[] = [
     "method": "POST",
     "path": "/auth/login",
     "rawUrl": "{{baseUrl}}/auth/login",
-    "description": "Đăng nhập bằng `credential` (email hoặc username), hoặc truyền `email` / `username` đều được. - Nếu tài khoản không bật 2FA: trả `accessToke",
-    "auth": "Public"
+    "description": "Đăng nhập bằng `credential` (email hoặc username), hoặc truyền `email` / `username` đều được.\n- Nếu tài khoản không bật 2FA: trả `accessToken` và tự động lưu vào `{{token}}`.\n- Nếu tài khoản đang bật 2FA: trả `requiresTwoFactor: true` + `tempToken` (tự động lưu vào `{{tempToken}}`), sau đó gọi **Verify Login 2FA**.",
+    "auth": "Public",
+    "body": "{\n  \"credential\": \"user@example.com\",\n  \"password\": \"Password@123\",\n  \"deviceName\": \"Postman Client\"\n}"
   },
   {
     "id": "api-4",
@@ -65,7 +69,8 @@ export const apiEndpoints: ApiEndpoint[] = [
     "path": "/auth/login/verify-2fa",
     "rawUrl": "{{baseUrl}}/auth/login/verify-2fa",
     "description": "Xác thực OTP 6 chữ số được gửi về email khi đăng nhập tài khoản có bật 2FA. Tự lưu `{{token}}` khi thành công.",
-    "auth": "Public"
+    "auth": "Public",
+    "body": "{\n  \"tempToken\": \"{{tempToken}}\",\n  \"otp\": \"123456\"\n}"
   },
   {
     "id": "api-5",
@@ -76,7 +81,8 @@ export const apiEndpoints: ApiEndpoint[] = [
     "path": "/auth/login/resend-2fa",
     "rawUrl": "{{baseUrl}}/auth/login/resend-2fa",
     "description": "Gửi lại mã OTP đăng nhập 2FA (cooldown 60 giây giữa các lần gửi).",
-    "auth": "Public"
+    "auth": "Public",
+    "body": "{\n  \"tempToken\": \"{{tempToken}}\"\n}"
   },
   {
     "id": "api-6",
@@ -87,7 +93,8 @@ export const apiEndpoints: ApiEndpoint[] = [
     "path": "/auth/google",
     "rawUrl": "{{baseUrl}}/auth/google",
     "description": "Đăng nhập / tự động đăng ký bằng tài khoản Google và lưu `{{token}}`.",
-    "auth": "Bearer Token"
+    "auth": "Public",
+    "body": "{\n  \"email\": \"user@example.com\",\n  \"fullName\": \"Nguyen Van A\",\n  \"avatarUrl\": \"https://example.com/avatar.jpg\"\n}"
   },
   {
     "id": "api-7",
@@ -98,7 +105,8 @@ export const apiEndpoints: ApiEndpoint[] = [
     "path": "/auth/logout",
     "rawUrl": "{{baseUrl}}/auth/logout",
     "description": "Đăng xuất phiên hiện tại, thu hồi JWT token hiện tại trên Redis & DB và xóa `{{token}}`.",
-    "auth": "Bearer Token"
+    "auth": "Public",
+    "body": null
   },
   {
     "id": "api-8",
@@ -109,7 +117,8 @@ export const apiEndpoints: ApiEndpoint[] = [
     "path": "/auth/forgot-password",
     "rawUrl": "{{baseUrl}}/auth/forgot-password",
     "description": "Gửi mã OTP 6 chữ số khôi phục mật khẩu tới email (cooldown 60 giây).",
-    "auth": "Bearer Token"
+    "auth": "Public",
+    "body": "{\n  \"email\": \"user@example.com\"\n}"
   },
   {
     "id": "api-9",
@@ -120,7 +129,8 @@ export const apiEndpoints: ApiEndpoint[] = [
     "path": "/auth/verify-otp",
     "rawUrl": "{{baseUrl}}/auth/verify-otp",
     "description": "Xác thực OTP quên mật khẩu. Thành công sẽ trả và tự lưu `{{tokenHash}}` để gọi **Reset Password**.",
-    "auth": "Bearer Token"
+    "auth": "Public",
+    "body": "{\n  \"email\": \"user@example.com\",\n  \"otp\": \"123456\"\n}"
   },
   {
     "id": "api-10",
@@ -131,7 +141,8 @@ export const apiEndpoints: ApiEndpoint[] = [
     "path": "/auth/reset-password",
     "rawUrl": "{{baseUrl}}/auth/reset-password",
     "description": "Đặt lại mật khẩu mới bằng `tokenHash` lấy từ bước Verify OTP. Mật khẩu mới phải đủ mạnh và khác mật khẩu cũ.",
-    "auth": "Bearer Token"
+    "auth": "Public",
+    "body": "{\n  \"tokenHash\": \"{{tokenHash}}\",\n  \"newPassword\": \"NewPassword@123\"\n}"
   },
   {
     "id": "api-11",
@@ -142,7 +153,8 @@ export const apiEndpoints: ApiEndpoint[] = [
     "path": "/auth/change-password",
     "rawUrl": "{{baseUrl}}/auth/change-password",
     "description": "Đổi mật khẩu cho tài khoản đang đăng nhập (không áp dụng cho tài khoản Google chưa có mật khẩu).",
-    "auth": "Bearer Token"
+    "auth": "Public",
+    "body": "{\n  \"currentPassword\": \"Password@123\",\n  \"newPassword\": \"NewPassword@123\"\n}"
   },
   {
     "id": "api-12",
@@ -153,7 +165,8 @@ export const apiEndpoints: ApiEndpoint[] = [
     "path": "/auth/2fa/status",
     "rawUrl": "{{baseUrl}}/auth/2fa/status",
     "description": "Kiểm tra trạng thái bật/tắt xác thực 2 yếu tố của tài khoản hiện tại.",
-    "auth": "Bearer Token"
+    "auth": "Public",
+    "body": null
   },
   {
     "id": "api-13",
@@ -164,7 +177,8 @@ export const apiEndpoints: ApiEndpoint[] = [
     "path": "/auth/2fa/setup",
     "rawUrl": "{{baseUrl}}/auth/2fa/setup",
     "description": "Gửi mã OTP 6 chữ số về email tài khoản để kích hoạt 2FA.",
-    "auth": "Bearer Token"
+    "auth": "Public",
+    "body": null
   },
   {
     "id": "api-14",
@@ -175,7 +189,8 @@ export const apiEndpoints: ApiEndpoint[] = [
     "path": "/auth/2fa/verify",
     "rawUrl": "{{baseUrl}}/auth/2fa/verify",
     "description": "Nhập mã OTP 6 chữ số từ email để bật 2FA.",
-    "auth": "Bearer Token"
+    "auth": "Public",
+    "body": "{\n  \"code\": \"123456\"\n}"
   },
   {
     "id": "api-15",
@@ -186,7 +201,8 @@ export const apiEndpoints: ApiEndpoint[] = [
     "path": "/auth/2fa/disable",
     "rawUrl": "{{baseUrl}}/auth/2fa/disable",
     "description": "Tắt xác thực 2 yếu tố của tài khoản hiện tại.",
-    "auth": "Bearer Token"
+    "auth": "Public",
+    "body": null
   },
   {
     "id": "api-16",
@@ -197,7 +213,8 @@ export const apiEndpoints: ApiEndpoint[] = [
     "path": "/auth/sessions",
     "rawUrl": "{{baseUrl}}/auth/sessions",
     "description": "Lấy danh sách phiên đăng nhập hiện đang hoạt động.",
-    "auth": "Bearer Token"
+    "auth": "Public",
+    "body": null
   },
   {
     "id": "api-17",
@@ -208,7 +225,8 @@ export const apiEndpoints: ApiEndpoint[] = [
     "path": "/auth/sessions/revoke",
     "rawUrl": "{{baseUrl}}/auth/sessions/revoke",
     "description": "Thu hồi các phiên đăng nhập khác (`sessionId` hoặc `sessionIds`); để mảng rỗng sẽ thu hồi toàn bộ phiên khác phiên hiện tại.",
-    "auth": "Bearer Token"
+    "auth": "Public",
+    "body": "{\n  \"sessionIds\": []\n}"
   },
   {
     "id": "api-18",
@@ -219,194 +237,212 @@ export const apiEndpoints: ApiEndpoint[] = [
     "path": "/auth/session-status",
     "rawUrl": "{{baseUrl}}/auth/session-status",
     "description": "Kiểm tra nhanh phiên token hiện tại còn hiệu lực hay đã bị thay thế (`SESSION_REPLACED`).",
-    "auth": "Bearer Token"
+    "auth": "Public",
+    "body": null
   },
   {
     "id": "api-19",
     "name": "Get My Profile",
     "folder": "02. Users, Privacy & Safety",
-    "category": "Người Dùng & Mạng Xã Hội",
+    "category": "Hệ Thống & Khác",
     "method": "GET",
     "path": "/users/me",
     "rawUrl": "{{baseUrl}}/users/me",
     "description": "Lấy thông tin chi tiết hồ sơ cá nhân của user đang đăng nhập.",
-    "auth": "Bearer Token"
+    "auth": "Public",
+    "body": null
   },
   {
     "id": "api-20",
     "name": "Update My Profile",
     "folder": "02. Users, Privacy & Safety",
-    "category": "Người Dùng & Mạng Xã Hội",
+    "category": "Hệ Thống & Khác",
     "method": "PUT",
     "path": "/users/me",
     "rawUrl": "{{baseUrl}}/users/me",
-    "description": "Cập nhật từng phần hoặc toàn bộ hồ sơ cá nhân (chỉ gửi các trường cần sửa; các trường không gửi được giữ nguyên). - `gender`: `Male` | `Fema",
-    "auth": "Bearer Token"
+    "description": "Cập nhật từng phần hoặc toàn bộ hồ sơ cá nhân (chỉ gửi các trường cần sửa; các trường không gửi được giữ nguyên).\n- `gender`: `Male` | `Female` | `Other`\n- `avatarUrl`: `/uploads/...` hoặc `https://...` hoặc `\"\"` để reset về ảnh mặc định",
+    "auth": "Public",
+    "body": "{\n  \"fullName\": \"Nguyen Van A\",\n  \"bio\": \"Yêu ẩm thực Việt Nam\",\n  \"city\": \"Hà Nội\",\n  \"gender\": \"Male\",\n  \"dateOfBirth\": \"2000-01-15\",\n  \"avatarUrl\": \"/uploads/images/default-avatar.jpg\",\n  \"preferences\": [\n    \"Phở\",\n    \"Bún\",\n    \"Hải sản\"\n  ]\n}"
   },
   {
     "id": "api-21",
     "name": "Delete / Deactivate My Account",
     "folder": "02. Users, Privacy & Safety",
-    "category": "Người Dùng & Mạng Xã Hội",
+    "category": "Hệ Thống & Khác",
     "method": "DELETE",
     "path": "/users/me",
     "rawUrl": "{{baseUrl}}/users/me",
     "description": "Xóa tài khoản (hoặc vô hiệu hóa nếu có dữ liệu liên kết) và thu hồi toàn bộ phiên đăng nhập. **Cẩn thận khi gọi trên tài khoản thật!**",
-    "auth": "Bearer Token"
+    "auth": "Public",
+    "body": null
   },
   {
     "id": "api-22",
     "name": "Get My Posts",
     "folder": "02. Users, Privacy & Safety",
-    "category": "Người Dùng & Mạng Xã Hội",
+    "category": "Hệ Thống & Khác",
     "method": "GET",
-    "path": "/users/me/posts",
+    "path": "/users/me/posts?page=1&limit=10",
     "rawUrl": "{{baseUrl}}/users/me/posts?page=1&limit=10",
     "description": "Lấy danh sách bài viết của bản thân (có thể lọc `status=Hidden` để xem bài đã ẩn/lưu trữ).",
-    "auth": "Bearer Token"
+    "auth": "Public",
+    "body": null
   },
   {
     "id": "api-23",
     "name": "Get My Activity Log",
     "folder": "02. Users, Privacy & Safety",
-    "category": "Người Dùng & Mạng Xã Hội",
+    "category": "Hệ Thống & Khác",
     "method": "GET",
     "path": "/users/me/activity",
     "rawUrl": "{{baseUrl}}/users/me/activity",
     "description": "Lấy nhật ký hoạt động gần đây của user (tối đa 60 mục).",
-    "auth": "Bearer Token"
+    "auth": "Public",
+    "body": null
   },
   {
     "id": "api-24",
     "name": "Get My Preferences & Allergies (via /users)",
     "folder": "02. Users, Privacy & Safety",
-    "category": "Người Dùng & Mạng Xã Hội",
+    "category": "Hệ Thống & Khác",
     "method": "GET",
     "path": "/users/me/preferences",
     "rawUrl": "{{baseUrl}}/users/me/preferences",
     "description": "Lấy danh sách sở thích ăn uống và dị ứng thực phẩm của user hiện tại.",
-    "auth": "Bearer Token"
+    "auth": "Public",
+    "body": null
   },
   {
     "id": "api-25",
     "name": "Update My Preferences & Allergies (via /users)",
     "folder": "02. Users, Privacy & Safety",
-    "category": "Người Dùng & Mạng Xã Hội",
+    "category": "Hệ Thống & Khác",
     "method": "PUT",
     "path": "/users/me/preferences",
     "rawUrl": "{{baseUrl}}/users/me/preferences",
     "description": "Cập nhật sở thích (theo `preferences: string[]` hoặc `preferenceIds: number[]`) và `allergies: string[]`.",
-    "auth": "Bearer Token"
+    "auth": "Public",
+    "body": "{\n  \"preferences\": [\n    \"Món Việt\",\n    \"Lẩu & Nướng\",\n    \"Đồ uống\"\n  ],\n  \"allergies\": [\n    \"Hải sản có vỏ\",\n    \"Đậu phộng\"\n  ]\n}"
   },
   {
     "id": "api-26",
     "name": "Get Privacy Settings",
     "folder": "02. Users, Privacy & Safety",
-    "category": "Người Dùng & Mạng Xã Hội",
+    "category": "Hệ Thống & Khác",
     "method": "GET",
     "path": "/users/me/privacy",
     "rawUrl": "{{baseUrl}}/users/me/privacy",
     "description": "Lấy cấu hình quyền riêng tư của tài khoản.",
-    "auth": "Bearer Token"
+    "auth": "Public",
+    "body": null
   },
   {
     "id": "api-27",
     "name": "Update Privacy Settings",
     "folder": "02. Users, Privacy & Safety",
-    "category": "Người Dùng & Mạng Xã Hội",
+    "category": "Hệ Thống & Khác",
     "method": "PUT",
     "path": "/users/me/privacy",
     "rawUrl": "{{baseUrl}}/users/me/privacy",
-    "description": "Cập nhật quyền riêng tư (chỉ cho phép các key hợp lệ bên dưới, phải có ít nhất 1 trường): - `newPosts`, `profileInfo`, `followingList`: `pub",
-    "auth": "Bearer Token"
+    "description": "Cập nhật quyền riêng tư (chỉ cho phép các key hợp lệ bên dưới, phải có ít nhất 1 trường):\n- `newPosts`, `profileInfo`, `followingList`: `public` | `friends` | `only_me`\n- `findEmail`: `public` | `friends_of_friends` | `friends` | `no_one`\n- `friendRequests`: `public` | `friends_of_friends`\n- `messages`, `comments`: `public` | `friends` | `no_one`",
+    "auth": "Public",
+    "body": "{\n  \"newPosts\": \"public\",\n  \"profileInfo\": \"public\",\n  \"followingList\": \"public\",\n  \"findEmail\": \"no_one\",\n  \"friendRequests\": \"friends_of_friends\",\n  \"messages\": \"public\",\n  \"comments\": \"public\"\n}"
   },
   {
     "id": "api-28",
     "name": "Get Blocked Accounts",
     "folder": "02. Users, Privacy & Safety",
-    "category": "Người Dùng & Mạng Xã Hội",
+    "category": "Hệ Thống & Khác",
     "method": "GET",
     "path": "/users/me/blocked",
     "rawUrl": "{{baseUrl}}/users/me/blocked",
     "description": "Danh sách tài khoản đã chặn.",
-    "auth": "Bearer Token"
+    "auth": "Public",
+    "body": null
   },
   {
     "id": "api-29",
     "name": "Block Account",
     "folder": "02. Users, Privacy & Safety",
-    "category": "Người Dùng & Mạng Xã Hội",
+    "category": "Hệ Thống & Khác",
     "method": "POST",
     "path": "/users/me/block",
     "rawUrl": "{{baseUrl}}/users/me/block",
     "description": "Chặn một user (chấp nhận `targetUserId`, `accountId` hoặc `userId`).",
-    "auth": "Bearer Token"
+    "auth": "Public",
+    "body": "{\n  \"targetUserId\": \"{{targetUserId}}\"\n}"
   },
   {
     "id": "api-30",
     "name": "Unblock Account",
     "folder": "02. Users, Privacy & Safety",
-    "category": "Người Dùng & Mạng Xã Hội",
+    "category": "Hệ Thống & Khác",
     "method": "POST",
     "path": "/users/me/unblock",
     "rawUrl": "{{baseUrl}}/users/me/unblock",
     "description": "Bỏ chặn user.",
-    "auth": "Bearer Token"
+    "auth": "Public",
+    "body": "{\n  \"targetUserId\": \"{{targetUserId}}\"\n}"
   },
   {
     "id": "api-31",
     "name": "Get Restricted Accounts",
     "folder": "02. Users, Privacy & Safety",
-    "category": "Người Dùng & Mạng Xã Hội",
+    "category": "Hệ Thống & Khác",
     "method": "GET",
     "path": "/users/me/restricted",
     "rawUrl": "{{baseUrl}}/users/me/restricted",
     "description": "Danh sách tài khoản bị hạn chế.",
-    "auth": "Bearer Token"
+    "auth": "Public",
+    "body": null
   },
   {
     "id": "api-32",
     "name": "Restrict Account",
     "folder": "02. Users, Privacy & Safety",
-    "category": "Người Dùng & Mạng Xã Hội",
+    "category": "Hệ Thống & Khác",
     "method": "POST",
     "path": "/users/me/restrict",
     "rawUrl": "{{baseUrl}}/users/me/restrict",
     "description": "Hạn chế user bình luận/nhắn tin.",
-    "auth": "Bearer Token"
+    "auth": "Public",
+    "body": "{\n  \"targetUserId\": \"{{targetUserId}}\"\n}"
   },
   {
     "id": "api-33",
     "name": "Unrestrict Account",
     "folder": "02. Users, Privacy & Safety",
-    "category": "Người Dùng & Mạng Xã Hội",
+    "category": "Hệ Thống & Khác",
     "method": "POST",
     "path": "/users/me/unrestrict",
     "rawUrl": "{{baseUrl}}/users/me/unrestrict",
     "description": "Bỏ hạn chế user.",
-    "auth": "Bearer Token"
+    "auth": "Public",
+    "body": "{\n  \"targetUserId\": \"{{targetUserId}}\"\n}"
   },
   {
     "id": "api-34",
     "name": "Get User Profile by ID",
     "folder": "02. Users, Privacy & Safety",
-    "category": "Người Dùng & Mạng Xã Hội",
+    "category": "Hệ Thống & Khác",
     "method": "GET",
     "path": "/users/:userId",
     "rawUrl": "{{baseUrl}}/users/:userId",
     "description": "Xem trang cá nhân của một user khác (tôn trọng cài đặt `profileInfo` privacy và danh sách chặn).",
-    "auth": "Bearer Token"
+    "auth": "Public",
+    "body": null
   },
   {
     "id": "api-35",
     "name": "Get User Posts by ID",
     "folder": "02. Users, Privacy & Safety",
-    "category": "Người Dùng & Mạng Xã Hội",
+    "category": "Hệ Thống & Khác",
     "method": "GET",
-    "path": "/users/:userId/posts",
+    "path": "/users/:userId/posts?page=1&limit=10",
     "rawUrl": "{{baseUrl}}/users/:userId/posts?page=1&limit=10",
     "description": "Lấy bài viết công khai (hoặc bạn bè được phép xem) của một user.",
-    "auth": "Bearer Token"
+    "auth": "Public",
+    "body": null
   },
   {
     "id": "api-36",
@@ -417,7 +453,8 @@ export const apiEndpoints: ApiEndpoint[] = [
     "path": "/preferences",
     "rawUrl": "{{baseUrl}}/preferences",
     "description": "Lấy toàn bộ danh sách sở thích ăn uống có sẵn trên hệ thống (yêu cầu đăng nhập).",
-    "auth": "Bearer Token"
+    "auth": "Public",
+    "body": null
   },
   {
     "id": "api-37",
@@ -428,7 +465,8 @@ export const apiEndpoints: ApiEndpoint[] = [
     "path": "/preferences/me",
     "rawUrl": "{{baseUrl}}/preferences/me",
     "description": "Lấy sở thích và dị ứng của user đang đăng nhập.",
-    "auth": "Bearer Token"
+    "auth": "Public",
+    "body": null
   },
   {
     "id": "api-38",
@@ -439,513 +477,560 @@ export const apiEndpoints: ApiEndpoint[] = [
     "path": "/preferences/me",
     "rawUrl": "{{baseUrl}}/preferences/me",
     "description": "Cập nhật bằng mảng `preferenceIds` (ID từ GET `/preferences`) hoặc `preferences` (mảng tên), kèm `allergies`.",
-    "auth": "Bearer Token"
+    "auth": "Public",
+    "body": "{\n  \"preferenceIds\": [\n    1,\n    2\n  ],\n  \"allergies\": [\n    \"Đậu phộng\"\n  ]\n}"
   },
   {
     "id": "api-39",
     "name": "Get Newsfeed",
     "folder": "04. Posts, Likes, Comments & Bookmarks",
-    "category": "Bài Viết & Tương Tác",
+    "category": "Hệ Thống & Khác",
     "method": "GET",
-    "path": "/posts",
+    "path": "/posts?page=1&limit=10&sort=latest",
     "rawUrl": "{{baseUrl}}/posts?page=1&limit=10&sort=latest",
     "description": "Lấy danh sách bài viết trên bảng tin (yêu cầu đăng nhập; trả kèm `isLiked`, `isSaved` và lọc theo quyền riêng tư / danh sách chặn).",
-    "auth": "Bearer Token"
+    "auth": "Public",
+    "body": null
   },
   {
     "id": "api-40",
     "name": "Get Saved Posts",
     "folder": "04. Posts, Likes, Comments & Bookmarks",
-    "category": "Bài Viết & Tương Tác",
+    "category": "Hệ Thống & Khác",
     "method": "GET",
-    "path": "/posts/saved",
+    "path": "/posts/saved?page=1&limit=10",
     "rawUrl": "{{baseUrl}}/posts/saved?page=1&limit=10",
     "description": "Lấy các bài viết đã lưu của user hiện tại.",
-    "auth": "Bearer Token"
+    "auth": "Public",
+    "body": null
   },
   {
     "id": "api-41",
     "name": "Get Liked Posts",
     "folder": "04. Posts, Likes, Comments & Bookmarks",
-    "category": "Bài Viết & Tương Tác",
+    "category": "Hệ Thống & Khác",
     "method": "GET",
-    "path": "/posts/liked",
+    "path": "/posts/liked?page=1&limit=10",
     "rawUrl": "{{baseUrl}}/posts/liked?page=1&limit=10",
     "description": "Lấy các bài viết đã thích của user hiện tại.",
-    "auth": "Bearer Token"
+    "auth": "Public",
+    "body": null
   },
   {
     "id": "api-42",
     "name": "Create Post",
     "folder": "04. Posts, Likes, Comments & Bookmarks",
-    "category": "Bài Viết & Tương Tác",
+    "category": "Hệ Thống & Khác",
     "method": "POST",
     "path": "/posts",
     "rawUrl": "{{baseUrl}}/posts",
-    "description": "Đăng bài viết mới và tự lưu `{{postId}}`. Upload ảnh trước qua `/posts/upload-media` hoặc `/upload` rồi lấy `data.url` đưa vào `images[].ima",
-    "auth": "Bearer Token"
+    "description": "Đăng bài viết mới và tự lưu `{{postId}}`. Upload ảnh trước qua `/posts/upload-media` hoặc `/upload` rồi lấy `data.url` đưa vào `images[].imageUrl`.",
+    "auth": "Public",
+    "body": "{\n  \"content\": \"Hôm nay đi ăn bún chả ngon tuyệt vời!\",\n  \"images\": [\n    {\n      \"imageUrl\": \"/uploads/images/sample.jpg\",\n      \"displayOrder\": 0\n    }\n  ],\n  \"locationUrl\": \"https://maps.google.com/?q=Ha+Noi\",\n  \"voucherCode\": \"DISH15\",\n  \"hashtags\": [\n    \"buncha\",\n    \"hanoi\",\n    \"monngon\"\n  ]\n}"
   },
   {
     "id": "api-43",
     "name": "Upload Post Media",
     "folder": "04. Posts, Likes, Comments & Bookmarks",
-    "category": "Bài Viết & Tương Tác",
+    "category": "Hệ Thống & Khác",
     "method": "POST",
     "path": "/posts/upload-media",
     "rawUrl": "{{baseUrl}}/posts/upload-media",
     "description": "Upload 1 file ảnh/video cho bài viết (`multipart/form-data`, field key: `file`). Tự lưu `{{uploadedUrl}}`.",
-    "auth": "Bearer Token"
+    "auth": "Public",
+    "body": null
   },
   {
     "id": "api-44",
     "name": "Get Post Detail",
     "folder": "04. Posts, Likes, Comments & Bookmarks",
-    "category": "Bài Viết & Tương Tác",
+    "category": "Hệ Thống & Khác",
     "method": "GET",
     "path": "/posts/:postId",
     "rawUrl": "{{baseUrl}}/posts/:postId",
     "description": "Lấy chi tiết một bài viết.",
-    "auth": "Bearer Token"
+    "auth": "Public",
+    "body": null
   },
   {
     "id": "api-45",
     "name": "Update Post",
     "folder": "04. Posts, Likes, Comments & Bookmarks",
-    "category": "Bài Viết & Tương Tác",
+    "category": "Hệ Thống & Khác",
     "method": "PUT",
     "path": "/posts/:postId",
     "rawUrl": "{{baseUrl}}/posts/:postId",
     "description": "Chỉnh sửa bài viết của mình (`status`: `Active` | `Hidden`).",
-    "auth": "Bearer Token"
+    "auth": "Public",
+    "body": "{\n  \"content\": \"Nội dung bài viết sau khi chỉnh sửa\",\n  \"status\": \"Active\"\n}"
   },
   {
     "id": "api-46",
     "name": "Delete Post",
     "folder": "04. Posts, Likes, Comments & Bookmarks",
-    "category": "Bài Viết & Tương Tác",
+    "category": "Hệ Thống & Khác",
     "method": "DELETE",
     "path": "/posts/:postId",
     "rawUrl": "{{baseUrl}}/posts/:postId",
     "description": "Xóa mềm bài viết (chuyển `status = Deleted`).",
-    "auth": "Bearer Token"
+    "auth": "Public",
+    "body": null
   },
   {
     "id": "api-47",
     "name": "Get Post Likes",
     "folder": "04. Posts, Likes, Comments & Bookmarks",
-    "category": "Bài Viết & Tương Tác",
+    "category": "Hệ Thống & Khác",
     "method": "GET",
-    "path": "/posts/:postId/likes",
+    "path": "/posts/:postId/likes?page=1&limit=20",
     "rawUrl": "{{baseUrl}}/posts/:postId/likes?page=1&limit=20",
     "description": "Xem danh sách những người đã thích bài viết.",
-    "auth": "Bearer Token"
+    "auth": "Public",
+    "body": null
   },
   {
     "id": "api-48",
     "name": "Like Post",
     "folder": "04. Posts, Likes, Comments & Bookmarks",
-    "category": "Bài Viết & Tương Tác",
+    "category": "Hệ Thống & Khác",
     "method": "POST",
     "path": "/posts/:postId/likes",
     "rawUrl": "{{baseUrl}}/posts/:postId/likes",
     "description": "Thả tim bài viết.",
-    "auth": "Bearer Token"
+    "auth": "Public",
+    "body": null
   },
   {
     "id": "api-49",
     "name": "Unlike Post",
     "folder": "04. Posts, Likes, Comments & Bookmarks",
-    "category": "Bài Viết & Tương Tác",
+    "category": "Hệ Thống & Khác",
     "method": "DELETE",
     "path": "/posts/:postId/likes",
     "rawUrl": "{{baseUrl}}/posts/:postId/likes",
     "description": "Bỏ thích bài viết.",
-    "auth": "Bearer Token"
+    "auth": "Public",
+    "body": null
   },
   {
     "id": "api-50",
     "name": "Share Post",
     "folder": "04. Posts, Likes, Comments & Bookmarks",
-    "category": "Bài Viết & Tương Tác",
+    "category": "Hệ Thống & Khác",
     "method": "POST",
     "path": "/posts/:postId/shares",
     "rawUrl": "{{baseUrl}}/posts/:postId/shares",
     "description": "Ghi nhận lượt chia sẻ bài viết.",
-    "auth": "Bearer Token"
+    "auth": "Public",
+    "body": null
   },
   {
     "id": "api-51",
     "name": "Get Post Comments",
     "folder": "04. Posts, Likes, Comments & Bookmarks",
-    "category": "Bài Viết & Tương Tác",
+    "category": "Hệ Thống & Khác",
     "method": "GET",
-    "path": "/posts/:postId/comments",
+    "path": "/posts/:postId/comments?page=1&limit=10",
     "rawUrl": "{{baseUrl}}/posts/:postId/comments?page=1&limit=10",
     "description": "Lấy danh sách bình luận gốc kèm phản hồi (`replies`).",
-    "auth": "Bearer Token"
+    "auth": "Public",
+    "body": null
   },
   {
     "id": "api-52",
     "name": "Create Comment / Reply",
     "folder": "04. Posts, Likes, Comments & Bookmarks",
-    "category": "Bài Viết & Tương Tác",
+    "category": "Hệ Thống & Khác",
     "method": "POST",
     "path": "/posts/:postId/comments",
     "rawUrl": "{{baseUrl}}/posts/:postId/comments",
     "description": "Thêm bình luận mới vào bài viết (truyền `parentCommentId` là số nguyên nếu trả lời bình luận cha). Tự lưu `{{commentId}}`.",
-    "auth": "Bearer Token"
+    "auth": "Public",
+    "body": "{\n  \"content\": \"Quán này nhìn hấp dẫn quá!\",\n  \"parentCommentId\": null\n}"
   },
   {
     "id": "api-53",
     "name": "Delete Comment",
     "folder": "04. Posts, Likes, Comments & Bookmarks",
-    "category": "Bài Viết & Tương Tác",
+    "category": "Hệ Thống & Khác",
     "method": "DELETE",
     "path": "/comments/:commentId",
     "rawUrl": "{{baseUrl}}/comments/:commentId",
     "description": "Xóa bình luận (kèm toàn bộ reply con) nếu là tác giả hoặc Admin.",
-    "auth": "Bearer Token"
+    "auth": "Public",
+    "body": null
   },
   {
     "id": "api-54",
     "name": "Save Post (Bookmark)",
     "folder": "04. Posts, Likes, Comments & Bookmarks",
-    "category": "Bài Viết & Tương Tác",
+    "category": "Hệ Thống & Khác",
     "method": "POST",
     "path": "/posts/:postId/save",
     "rawUrl": "{{baseUrl}}/posts/:postId/save",
     "description": "Lưu bài viết vào danh sách bookmark.",
-    "auth": "Bearer Token"
+    "auth": "Public",
+    "body": null
   },
   {
     "id": "api-55",
     "name": "Unsave Post (Remove Bookmark)",
     "folder": "04. Posts, Likes, Comments & Bookmarks",
-    "category": "Bài Viết & Tương Tác",
+    "category": "Hệ Thống & Khác",
     "method": "DELETE",
     "path": "/posts/:postId/save",
     "rawUrl": "{{baseUrl}}/posts/:postId/save",
     "description": "Bỏ lưu bài viết.",
-    "auth": "Bearer Token"
+    "auth": "Public",
+    "body": null
   },
   {
     "id": "api-56",
     "name": "Get Followers",
     "folder": "05. Social, Follow & Chat",
-    "category": "Người Dùng & Mạng Xã Hội",
+    "category": "Hệ Thống & Khác",
     "method": "GET",
     "path": "/users/:userId/followers",
     "rawUrl": "{{baseUrl}}/users/:userId/followers",
     "description": "Lấy danh sách người đang theo dõi user.",
-    "auth": "Bearer Token"
+    "auth": "Public",
+    "body": null
   },
   {
     "id": "api-57",
     "name": "Get Following",
     "folder": "05. Social, Follow & Chat",
-    "category": "Người Dùng & Mạng Xã Hội",
+    "category": "Hệ Thống & Khác",
     "method": "GET",
     "path": "/users/:userId/following",
     "rawUrl": "{{baseUrl}}/users/:userId/following",
     "description": "Lấy danh sách những người mà user đang theo dõi (tôn trọng quyền riêng tư `followingList`).",
-    "auth": "Bearer Token"
+    "auth": "Public",
+    "body": null
   },
   {
     "id": "api-58",
     "name": "Follow User",
     "folder": "05. Social, Follow & Chat",
-    "category": "Người Dùng & Mạng Xã Hội",
+    "category": "Hệ Thống & Khác",
     "method": "POST",
     "path": "/users/:userId/follow",
     "rawUrl": "{{baseUrl}}/users/:userId/follow",
     "description": "Theo dõi một user hoặc nhà hàng.",
-    "auth": "Bearer Token"
+    "auth": "Public",
+    "body": null
   },
   {
     "id": "api-59",
     "name": "Unfollow User",
     "folder": "05. Social, Follow & Chat",
-    "category": "Người Dùng & Mạng Xã Hội",
+    "category": "Hệ Thống & Khác",
     "method": "DELETE",
     "path": "/users/:userId/follow",
     "rawUrl": "{{baseUrl}}/users/:userId/follow",
     "description": "Hủy theo dõi một user.",
-    "auth": "Bearer Token"
+    "auth": "Public",
+    "body": null
   },
   {
     "id": "api-60",
     "name": "Get My Saved Posts (User Alias)",
     "folder": "05. Social, Follow & Chat",
-    "category": "Người Dùng & Mạng Xã Hội",
+    "category": "Hệ Thống & Khác",
     "method": "GET",
-    "path": "/users/me/saved-posts",
+    "path": "/users/me/saved-posts?page=1&limit=10",
     "rawUrl": "{{baseUrl}}/users/me/saved-posts?page=1&limit=10",
     "description": "Lấy danh sách bài viết đã lưu của user hiện tại.",
-    "auth": "Bearer Token"
+    "auth": "Public",
+    "body": null
   },
   {
     "id": "api-61",
     "name": "Get My Liked Posts (User Alias)",
     "folder": "05. Social, Follow & Chat",
-    "category": "Người Dùng & Mạng Xã Hội",
+    "category": "Hệ Thống & Khác",
     "method": "GET",
-    "path": "/users/me/liked-posts",
+    "path": "/users/me/liked-posts?page=1&limit=10",
     "rawUrl": "{{baseUrl}}/users/me/liked-posts?page=1&limit=10",
     "description": "Lấy danh sách bài viết đã thích của user hiện tại.",
-    "auth": "Bearer Token"
+    "auth": "Public",
+    "body": null
   },
   {
     "id": "api-62",
     "name": "Get Chat Conversations",
     "folder": "05. Social, Follow & Chat",
-    "category": "Người Dùng & Mạng Xã Hội",
+    "category": "Hệ Thống & Khác",
     "method": "GET",
     "path": "/chats",
     "rawUrl": "{{baseUrl}}/chats",
     "description": "Lấy danh sách cuộc trò chuyện gần nhất và số tin nhắn chưa đọc.",
-    "auth": "Bearer Token"
+    "auth": "Public",
+    "body": null
   },
   {
     "id": "api-63",
     "name": "Get Messages with User",
     "folder": "05. Social, Follow & Chat",
-    "category": "Người Dùng & Mạng Xã Hội",
+    "category": "Hệ Thống & Khác",
     "method": "GET",
-    "path": "/chats/:recipientId/messages",
+    "path": "/chats/:recipientId/messages?page=1&limit=20",
     "rawUrl": "{{baseUrl}}/chats/:recipientId/messages?page=1&limit=20",
     "description": "Lấy lịch sử tin nhắn với `recipientId` và đánh dấu đã đọc các tin nhắn gửi tới mình.",
-    "auth": "Bearer Token"
+    "auth": "Public",
+    "body": null
   },
   {
     "id": "api-64",
     "name": "Send Direct Message",
     "folder": "05. Social, Follow & Chat",
-    "category": "Người Dùng & Mạng Xã Hội",
+    "category": "Hệ Thống & Khác",
     "method": "POST",
     "path": "/chats/:recipientId/messages",
     "rawUrl": "{{baseUrl}}/chats/:recipientId/messages",
     "description": "Gửi tin nhắn text hoặc kèm `mediaUrl` (`/uploads/...` hoặc `https://...`). Cần ít nhất `content` hoặc `mediaUrl`.",
-    "auth": "Bearer Token"
+    "auth": "Public",
+    "body": "{\n  \"content\": \"Chiều nay đi ăn bún bò nhé?\",\n  \"mediaUrl\": \"\"\n}"
   },
   {
     "id": "api-65",
     "name": "Get Stories",
     "folder": "06. Stories, Stores, Dishes & Addresses",
-    "category": "Quán Ăn & Món Ăn",
+    "category": "Hệ Thống & Khác",
     "method": "GET",
     "path": "/stories",
     "rawUrl": "{{baseUrl}}/stories",
     "description": "Lấy tối đa 50 story gần nhất (có thể lọc theo `userId` hoặc `storeName`).",
-    "auth": "Bearer Token"
+    "auth": "Public",
+    "body": null
   },
   {
     "id": "api-66",
     "name": "Create Story",
     "folder": "06. Stories, Stores, Dishes & Addresses",
-    "category": "Quán Ăn & Món Ăn",
+    "category": "Hệ Thống & Khác",
     "method": "POST",
     "path": "/stories",
     "rawUrl": "{{baseUrl}}/stories",
     "description": "Đăng story mới (`mediaUrl` là bắt buộc).",
-    "auth": "Bearer Token"
+    "auth": "Public",
+    "body": "{\n  \"mediaUrl\": \"/uploads/images/sample.jpg\",\n  \"caption\": \"Bữa trưa hôm nay!\"\n}"
   },
   {
     "id": "api-67",
     "name": "List Dishes",
     "folder": "06. Stories, Stores, Dishes & Addresses",
-    "category": "Quán Ăn & Món Ăn",
+    "category": "Hệ Thống & Khác",
     "method": "GET",
-    "path": "/dishes",
+    "path": "/dishes?limit=50",
     "rawUrl": "{{baseUrl}}/dishes?limit=50",
     "description": "Lấy danh sách món ăn trên hệ thống (lọc theo `storeId`, `category`, `keyword`).",
-    "auth": "Bearer Token"
+    "auth": "Public",
+    "body": null
   },
   {
     "id": "api-68",
     "name": "Get Dish Detail",
     "folder": "06. Stories, Stores, Dishes & Addresses",
-    "category": "Quán Ăn & Món Ăn",
+    "category": "Hệ Thống & Khác",
     "method": "GET",
     "path": "/dishes/:id",
     "rawUrl": "{{baseUrl}}/dishes/:id",
     "description": "Xem chi tiết món ăn cùng đánh giá của quán.",
-    "auth": "Bearer Token"
+    "auth": "Public",
+    "body": null
   },
   {
     "id": "api-69",
     "name": "List Stores",
     "folder": "06. Stories, Stores, Dishes & Addresses",
-    "category": "Quán Ăn & Món Ăn",
+    "category": "Hệ Thống & Khác",
     "method": "GET",
     "path": "/stores",
     "rawUrl": "{{baseUrl}}/stores",
     "description": "Lấy danh sách quán ăn, stories của quán và thực đơn nổi bật.",
-    "auth": "Bearer Token"
+    "auth": "Public",
+    "body": null
   },
   {
     "id": "api-70",
     "name": "Get Store Detail",
     "folder": "06. Stories, Stores, Dishes & Addresses",
-    "category": "Quán Ăn & Món Ăn",
+    "category": "Hệ Thống & Khác",
     "method": "GET",
     "path": "/stores/:id",
     "rawUrl": "{{baseUrl}}/stores/:id",
     "description": "Xem chi tiết nhà hàng: menu, đánh giá, bài viết và trạng thái follow.",
-    "auth": "Bearer Token"
+    "auth": "Public",
+    "body": null
   },
   {
     "id": "api-71",
     "name": "List Restaurants (Alias for /stores)",
     "folder": "06. Stories, Stores, Dishes & Addresses",
-    "category": "Quán Ăn & Món Ăn",
+    "category": "Hệ Thống & Khác",
     "method": "GET",
     "path": "/restaurants",
     "rawUrl": "{{baseUrl}}/restaurants",
     "description": "Alias của `GET /stores`.",
-    "auth": "Bearer Token"
+    "auth": "Public",
+    "body": null
   },
   {
     "id": "api-72",
     "name": "Get Following Restaurants",
     "folder": "06. Stories, Stores, Dishes & Addresses",
-    "category": "Quán Ăn & Món Ăn",
+    "category": "Hệ Thống & Khác",
     "method": "GET",
     "path": "/restaurants/following",
     "rawUrl": "{{baseUrl}}/restaurants/following",
     "description": "Lấy danh sách các quán ăn mà user hiện tại đang theo dõi.",
-    "auth": "Bearer Token"
+    "auth": "Public",
+    "body": null
   },
   {
     "id": "api-73",
     "name": "Get My Delivery Addresses",
     "folder": "06. Stories, Stores, Dishes & Addresses",
-    "category": "Quán Ăn & Món Ăn",
+    "category": "Hệ Thống & Khác",
     "method": "GET",
     "path": "/users/me/addresses",
     "rawUrl": "{{baseUrl}}/users/me/addresses",
     "description": "Lấy sổ địa chỉ giao hàng của user hiện tại.",
-    "auth": "Bearer Token"
+    "auth": "Public",
+    "body": null
   },
   {
     "id": "api-74",
     "name": "Add Delivery Address",
     "folder": "06. Stories, Stores, Dishes & Addresses",
-    "category": "Quán Ăn & Món Ăn",
+    "category": "Hệ Thống & Khác",
     "method": "POST",
     "path": "/users/me/addresses",
     "rawUrl": "{{baseUrl}}/users/me/addresses",
     "description": "Thêm địa chỉ giao hàng mới (`recipientName`, `phoneNumber`, `detailAddress` là bắt buộc). Tự lưu `{{addressId}}`.",
-    "auth": "Bearer Token"
+    "auth": "Public",
+    "body": "{\n  \"label\": \"Nhà riêng\",\n  \"recipientName\": \"Nguyen Van A\",\n  \"phoneNumber\": \"0901234567\",\n  \"detailAddress\": \"123 Đường Láng, Đống Đa, Hà Nội\",\n  \"notes\": \"Gọi trước khi giao\",\n  \"isDefault\": true\n}"
   },
   {
     "id": "api-75",
     "name": "Update Delivery Address",
     "folder": "06. Stories, Stores, Dishes & Addresses",
-    "category": "Quán Ăn & Món Ăn",
+    "category": "Hệ Thống & Khác",
     "method": "PUT",
     "path": "/users/me/addresses/:id",
     "rawUrl": "{{baseUrl}}/users/me/addresses/:id",
     "description": "Cập nhật thông tin địa chỉ giao hàng.",
-    "auth": "Bearer Token"
+    "auth": "Public",
+    "body": "{\n  \"label\": \"Công ty\",\n  \"detailAddress\": \"456 Cầu Giấy, Hà Nội\",\n  \"isDefault\": true\n}"
   },
   {
     "id": "api-76",
     "name": "Set Default Delivery Address",
     "folder": "06. Stories, Stores, Dishes & Addresses",
-    "category": "Quán Ăn & Món Ăn",
+    "category": "Hệ Thống & Khác",
     "method": "PATCH",
     "path": "/users/me/addresses/:id/default",
     "rawUrl": "{{baseUrl}}/users/me/addresses/:id/default",
     "description": "Đặt địa chỉ làm mặc định.",
-    "auth": "Bearer Token"
+    "auth": "Public",
+    "body": null
   },
   {
     "id": "api-77",
     "name": "Delete Delivery Address",
     "folder": "06. Stories, Stores, Dishes & Addresses",
-    "category": "Quán Ăn & Món Ăn",
+    "category": "Hệ Thống & Khác",
     "method": "DELETE",
     "path": "/users/me/addresses/:id",
     "rawUrl": "{{baseUrl}}/users/me/addresses/:id",
     "description": "Xóa địa chỉ giao hàng.",
-    "auth": "Bearer Token"
+    "auth": "Public",
+    "body": null
   },
   {
     "id": "api-78",
     "name": "List Reviews",
     "folder": "07. Reviews",
-    "category": "Đánh Giá & Review",
+    "category": "Hệ Thống & Khác",
     "method": "GET",
-    "path": "/reviews",
+    "path": "/reviews?page=1&limit=10",
     "rawUrl": "{{baseUrl}}/reviews?page=1&limit=10",
     "description": "Lấy danh sách đánh giá (lọc theo tên quán, số sao 1-5 hoặc tác giả).",
-    "auth": "Bearer Token"
+    "auth": "Public",
+    "body": null
   },
   {
     "id": "api-79",
     "name": "Create Review",
     "folder": "07. Reviews",
-    "category": "Đánh Giá & Review",
+    "category": "Hệ Thống & Khác",
     "method": "POST",
     "path": "/reviews",
     "rawUrl": "{{baseUrl}}/reviews",
     "description": "Đăng đánh giá quán ăn (`rating` từ 1 đến 5) và tự lưu `{{reviewId}}`.",
-    "auth": "Bearer Token"
+    "auth": "Public",
+    "body": "{\n  \"restaurantName\": \"Phở Thìn Bờ Hồ\",\n  \"locationUrl\": \"https://maps.google.com/?q=Pho+Thin\",\n  \"rating\": 5,\n  \"content\": \"Nước dùng đậm đà, thịt tái lăn thơm ngon.\",\n  \"images\": [\n    {\n      \"imageUrl\": \"/uploads/images/sample.jpg\",\n      \"displayOrder\": 0\n    }\n  ],\n  \"tags\": [\n    \"pho\",\n    \"hanoi\",\n    \"ngon\"\n  ]\n}"
   },
   {
     "id": "api-80",
     "name": "Delete Review",
     "folder": "07. Reviews",
-    "category": "Đánh Giá & Review",
+    "category": "Hệ Thống & Khác",
     "method": "DELETE",
     "path": "/reviews/:reviewId",
     "rawUrl": "{{baseUrl}}/reviews/:reviewId",
     "description": "Xóa bài đánh giá (tác giả hoặc Admin).",
-    "auth": "Bearer Token"
+    "auth": "Public",
+    "body": null
   },
   {
     "id": "api-81",
     "name": "Get Food Decision Categories",
     "folder": "08. Food Decision & AI",
-    "category": "AI & Quyết Định",
+    "category": "Hệ Thống & Khác",
     "method": "GET",
     "path": "/food-decision/categories",
     "rawUrl": "{{baseUrl}}/food-decision/categories",
     "description": "Lấy danh sách danh mục món ăn cho vòng quay chọn món.",
-    "auth": "Bearer Token"
+    "auth": "Public",
+    "body": null
   },
   {
     "id": "api-82",
     "name": "Spin Random Wheel",
     "folder": "08. Food Decision & AI",
-    "category": "AI & Quyết Định",
+    "category": "Hệ Thống & Khác",
     "method": "POST",
     "path": "/food-decision/random-wheel",
     "rawUrl": "{{baseUrl}}/food-decision/random-wheel",
     "description": "Quay ngẫu nhiên chọn 1 món & quán phù hợp (`budget`, `category` đều tùy chọn).",
-    "auth": "Bearer Token"
+    "auth": "Public",
+    "body": "{\n  \"budget\": \"60000\",\n  \"category\": \"Món nước\"\n}"
   },
   {
     "id": "api-83",
     "name": "AI Food Decide",
     "folder": "08. Food Decision & AI",
-    "category": "AI & Quyết Định",
+    "category": "Hệ Thống & Khác",
     "method": "POST",
     "path": "/ai/food-decide",
     "rawUrl": "{{baseUrl}}/ai/food-decide",
     "description": "Gửi yêu cầu gợi ý 3 món ăn phù hợp từ AI, lưu lịch sử và tự lưu `{{aiRequestId}}`.",
-    "auth": "Bearer Token"
+    "auth": "Public",
+    "body": "{\n  \"mood\": \"Vui vẻ, muốn ăn nóng hổi\",\n  \"budget\": \"100000\",\n  \"companions\": 2,\n  \"craving\": \"lẩu hoặc nướng\"\n}"
   },
   {
     "id": "api-84",
     "name": "Submit AI Request Feedback",
     "folder": "08. Food Decision & AI",
-    "category": "AI & Quyết Định",
+    "category": "Hệ Thống & Khác",
     "method": "POST",
     "path": "/ai/requests/:requestId/feedback",
     "rawUrl": "{{baseUrl}}/ai/requests/:requestId/feedback",
     "description": "Đánh giá chất lượng gợi ý AI cho `requestId` đã lưu.",
-    "auth": "Bearer Token"
+    "auth": "Public",
+    "body": "{\n  \"rating\": 5,\n  \"comment\": \"Gợi ý rất chuẩn ý!\"\n}"
   },
   {
     "id": "api-85",
@@ -953,10 +1038,11 @@ export const apiEndpoints: ApiEndpoint[] = [
     "folder": "09. Search & Trending",
     "category": "Hệ Thống & Khác",
     "method": "GET",
-    "path": "/search/food",
+    "path": "/search/food?keyword=phở&page=1&limit=10",
     "rawUrl": "{{baseUrl}}/search/food?keyword=phở&page=1&limit=10",
     "description": "Tìm kiếm bài viết theo từ khóa nội dung/hashtag và vị trí.",
-    "auth": "Bearer Token"
+    "auth": "Public",
+    "body": null
   },
   {
     "id": "api-86",
@@ -964,10 +1050,11 @@ export const apiEndpoints: ApiEndpoint[] = [
     "folder": "09. Search & Trending",
     "category": "Hệ Thống & Khác",
     "method": "GET",
-    "path": "/search/accounts",
+    "path": "/search/accounts?keyword=foodie&page=1&limit=10",
     "rawUrl": "{{baseUrl}}/search/accounts?keyword=foodie&page=1&limit=10",
     "description": "Tìm kiếm tài khoản người dùng / nhà hàng theo `username` hoặc `fullName`.",
-    "auth": "Bearer Token"
+    "auth": "Public",
+    "body": null
   },
   {
     "id": "api-87",
@@ -975,10 +1062,11 @@ export const apiEndpoints: ApiEndpoint[] = [
     "folder": "09. Search & Trending",
     "category": "Hệ Thống & Khác",
     "method": "GET",
-    "path": "/search/dishes",
+    "path": "/search/dishes?keyword=bún&page=1&limit=20",
     "rawUrl": "{{baseUrl}}/search/dishes?keyword=bún&page=1&limit=20",
     "description": "Tìm kiếm món ăn theo tên, danh mục, mô tả hoặc tên quán.",
-    "auth": "Bearer Token"
+    "auth": "Public",
+    "body": null
   },
   {
     "id": "api-88",
@@ -986,10 +1074,11 @@ export const apiEndpoints: ApiEndpoint[] = [
     "folder": "09. Search & Trending",
     "category": "Hệ Thống & Khác",
     "method": "GET",
-    "path": "/search/stores",
+    "path": "/search/stores?keyword=Hà Nội&page=1&limit=20",
     "rawUrl": "{{baseUrl}}/search/stores?keyword=Hà Nội&page=1&limit=20",
     "description": "Tìm kiếm quán ăn theo tên quán, địa chỉ hoặc món ăn phục vụ.",
-    "auth": "Bearer Token"
+    "auth": "Public",
+    "body": null
   },
   {
     "id": "api-89",
@@ -1000,7 +1089,8 @@ export const apiEndpoints: ApiEndpoint[] = [
     "path": "/search/trending",
     "rawUrl": "{{baseUrl}}/search/trending",
     "description": "Lấy top hashtag 30 ngày qua và top món ăn được đánh giá nhiều nhất.",
-    "auth": "Bearer Token"
+    "auth": "Public",
+    "body": null
   },
   {
     "id": "api-90",
@@ -1008,10 +1098,11 @@ export const apiEndpoints: ApiEndpoint[] = [
     "folder": "10. Notifications, Reports & Help Center",
     "category": "Hệ Thống & Khác",
     "method": "GET",
-    "path": "/notifications",
+    "path": "/notifications?page=1&limit=20",
     "rawUrl": "{{baseUrl}}/notifications?page=1&limit=20",
     "description": "Lấy danh sách thông báo của user hiện tại.",
-    "auth": "Bearer Token"
+    "auth": "Public",
+    "body": null
   },
   {
     "id": "api-91",
@@ -1022,7 +1113,8 @@ export const apiEndpoints: ApiEndpoint[] = [
     "path": "/notifications/:notificationId/read",
     "rawUrl": "{{baseUrl}}/notifications/:notificationId/read",
     "description": "Đánh dấu 1 thông báo đã đọc.",
-    "auth": "Bearer Token"
+    "auth": "Public",
+    "body": null
   },
   {
     "id": "api-92",
@@ -1032,8 +1124,9 @@ export const apiEndpoints: ApiEndpoint[] = [
     "method": "POST",
     "path": "/reports",
     "rawUrl": "{{baseUrl}}/reports",
-    "description": "Báo cáo bài viết (`postId`) hoặc người dùng (`reportedUserId`), bắt buộc có ít nhất 1 trong 2. - `reason`: `Spam` | `Nudity` | `Violence` | ",
-    "auth": "Bearer Token"
+    "description": "Báo cáo bài viết (`postId`) hoặc người dùng (`reportedUserId`), bắt buộc có ít nhất 1 trong 2.\n- `reason`: `Spam` | `Nudity` | `Violence` | `FakeNews` | `Harassment` | `Other`",
+    "auth": "Public",
+    "body": "{\n  \"postId\": 1,\n  \"reportedUserId\": null,\n  \"reason\": \"Spam\",\n  \"description\": \"Bài viết có dấu hiệu quảng cáo lặp lại.\"\n}"
   },
   {
     "id": "api-93",
@@ -1044,7 +1137,8 @@ export const apiEndpoints: ApiEndpoint[] = [
     "path": "/help/inbox",
     "rawUrl": "{{baseUrl}}/help/inbox",
     "description": "Lấy danh sách ticket hỗ trợ và báo cáo vi phạm đã gửi (`id` dạng số hoặc `real_<reportId>`).",
-    "auth": "Bearer Token"
+    "auth": "Public",
+    "body": null
   },
   {
     "id": "api-94",
@@ -1055,7 +1149,8 @@ export const apiEndpoints: ApiEndpoint[] = [
     "path": "/help/tickets/:ticketId",
     "rawUrl": "{{baseUrl}}/help/tickets/:ticketId",
     "description": "Xem chi tiết trạng thái xử lý của yêu cầu hỗ trợ hoặc báo cáo (`real_<reportId>`).",
-    "auth": "Bearer Token"
+    "auth": "Public",
+    "body": null
   },
   {
     "id": "api-95",
@@ -1066,7 +1161,8 @@ export const apiEndpoints: ApiEndpoint[] = [
     "path": "/help/tickets",
     "rawUrl": "{{baseUrl}}/help/tickets",
     "description": "Gửi yêu cầu hỗ trợ mới (`subject`, `title`, `description` bắt buộc). Tự lưu `{{ticketId}}`.",
-    "auth": "Bearer Token"
+    "auth": "Public",
+    "body": "{\n  \"subject\": \"Lỗi tài khoản\",\n  \"title\": \"Không cập nhật được ảnh đại diện\",\n  \"description\": \"Nhờ bộ phận kỹ thuật kiểm tra giúp lỗi upload ảnh.\",\n  \"email\": \"user@example.com\",\n  \"attachments\": []\n}"
   },
   {
     "id": "api-96",
@@ -1077,7 +1173,8 @@ export const apiEndpoints: ApiEndpoint[] = [
     "path": "/upload",
     "rawUrl": "{{baseUrl}}/upload",
     "description": "Upload 1 ảnh/video (`multipart/form-data`, key: `file`). Tự lưu `{{uploadedUrl}}` (vd: `/uploads/images/...`).",
-    "auth": "Bearer Token"
+    "auth": "Public",
+    "body": null
   },
   {
     "id": "api-97",
@@ -1088,183 +1185,200 @@ export const apiEndpoints: ApiEndpoint[] = [
     "path": "/upload/multiple",
     "rawUrl": "{{baseUrl}}/upload/multiple",
     "description": "Upload tối đa 10 tệp cùng lúc (`multipart/form-data`, key: `files`).",
-    "auth": "Bearer Token"
+    "auth": "Public",
+    "body": null
   },
   {
     "id": "api-98",
     "name": "Admin: List Users",
     "folder": "12. Admin (Admin Role Required)",
-    "category": "Quản Trị Admin",
+    "category": "Hệ Thống & Khác",
     "method": "GET",
-    "path": "/admin/users",
+    "path": "/admin/users?page=1&limit=20",
     "rawUrl": "{{baseUrl}}/admin/users?page=1&limit=20",
     "description": "Tìm kiếm và phân trang danh sách toàn bộ người dùng.",
-    "auth": "Bearer Token"
+    "auth": "Public",
+    "body": null
   },
   {
     "id": "api-99",
     "name": "Admin: Update User Status",
     "folder": "12. Admin (Admin Role Required)",
-    "category": "Quản Trị Admin",
+    "category": "Hệ Thống & Khác",
     "method": "PATCH",
     "path": "/admin/users/:userId/status",
     "rawUrl": "{{baseUrl}}/admin/users/:userId/status",
     "description": "`status`: `Active` | `Banned` | `Suspended` (`reason` bắt buộc). Nếu khóa tài khoản sẽ xóa toàn bộ phiên đăng nhập của user.",
-    "auth": "Bearer Token"
+    "auth": "Public",
+    "body": "{\n  \"status\": \"Suspended\",\n  \"reason\": \"Vi phạm điều khoản cộng đồng\"\n}"
   },
   {
     "id": "api-100",
     "name": "Admin: Warn User",
     "folder": "12. Admin (Admin Role Required)",
-    "category": "Quản Trị Admin",
+    "category": "Hệ Thống & Khác",
     "method": "POST",
     "path": "/admin/users/:userId/warn",
     "rawUrl": "{{baseUrl}}/admin/users/:userId/warn",
     "description": "Gửi thông báo cảnh báo hệ thống tới user và ghi audit log.",
-    "auth": "Bearer Token"
+    "auth": "Public",
+    "body": "{\n  \"message\": \"Vui lòng không đăng nội dung spam.\"\n}"
   },
   {
     "id": "api-101",
     "name": "Admin: List Posts",
     "folder": "12. Admin (Admin Role Required)",
-    "category": "Quản Trị Admin",
+    "category": "Hệ Thống & Khác",
     "method": "GET",
-    "path": "/admin/posts",
+    "path": "/admin/posts?page=1&limit=20",
     "rawUrl": "{{baseUrl}}/admin/posts?page=1&limit=20",
     "description": "Quản lý danh sách bài viết toàn hệ thống.",
-    "auth": "Bearer Token"
+    "auth": "Public",
+    "body": null
   },
   {
     "id": "api-102",
     "name": "Admin: Pin / Unpin Post",
     "folder": "12. Admin (Admin Role Required)",
-    "category": "Quản Trị Admin",
+    "category": "Hệ Thống & Khác",
     "method": "PATCH",
     "path": "/admin/posts/:postId/pin",
     "rawUrl": "{{baseUrl}}/admin/posts/:postId/pin",
     "description": "Ghim hoặc bỏ ghim bài viết.",
-    "auth": "Bearer Token"
+    "auth": "Public",
+    "body": "{\n  \"isPinned\": true\n}"
   },
   {
     "id": "api-103",
     "name": "Admin: Hide / Unhide Post",
     "folder": "12. Admin (Admin Role Required)",
-    "category": "Quản Trị Admin",
+    "category": "Hệ Thống & Khác",
     "method": "PATCH",
     "path": "/admin/posts/:postId/hide",
     "rawUrl": "{{baseUrl}}/admin/posts/:postId/hide",
     "description": "Ẩn hoặc hiện lại bài viết.",
-    "auth": "Bearer Token"
+    "auth": "Public",
+    "body": "{\n  \"isHidden\": true,\n  \"reason\": \"Nội dung đang chờ kiểm duyệt\"\n}"
   },
   {
     "id": "api-104",
     "name": "Admin: Hard Delete Post",
     "folder": "12. Admin (Admin Role Required)",
-    "category": "Quản Trị Admin",
+    "category": "Hệ Thống & Khác",
     "method": "DELETE",
     "path": "/admin/posts/:postId",
     "rawUrl": "{{baseUrl}}/admin/posts/:postId",
     "description": "Xóa vĩnh viễn bài viết khỏi database.",
-    "auth": "Bearer Token"
+    "auth": "Public",
+    "body": null
   },
   {
     "id": "api-105",
     "name": "Admin: List Reports",
     "folder": "12. Admin (Admin Role Required)",
-    "category": "Quản Trị Admin",
+    "category": "Hệ Thống & Khác",
     "method": "GET",
-    "path": "/admin/reports",
+    "path": "/admin/reports?page=1&limit=20",
     "rawUrl": "{{baseUrl}}/admin/reports?page=1&limit=20",
     "description": "Lấy danh sách báo cáo vi phạm.",
-    "auth": "Bearer Token"
+    "auth": "Public",
+    "body": null
   },
   {
     "id": "api-106",
     "name": "Admin: Process Report",
     "folder": "12. Admin (Admin Role Required)",
-    "category": "Quản Trị Admin",
+    "category": "Hệ Thống & Khác",
     "method": "PATCH",
     "path": "/admin/reports/:reportId/process",
     "rawUrl": "{{baseUrl}}/admin/reports/:reportId/process",
-    "description": "Xử lý báo cáo vi phạm: - `status`: `Resolved` | `Dismissed` - `action`: `DeletePost` | `WarnUser` | `BanUser` | `NoAction`",
-    "auth": "Bearer Token"
+    "description": "Xử lý báo cáo vi phạm:\n- `status`: `Resolved` | `Dismissed`\n- `action`: `DeletePost` | `WarnUser` | `BanUser` | `NoAction`",
+    "auth": "Public",
+    "body": "{\n  \"status\": \"Resolved\",\n  \"action\": \"NoAction\",\n  \"note\": \"Đã kiểm tra và xử lý.\"\n}"
   },
   {
     "id": "api-107",
     "name": "Admin: List AI Configs",
     "folder": "12. Admin (Admin Role Required)",
-    "category": "Quản Trị Admin",
+    "category": "Hệ Thống & Khác",
     "method": "GET",
     "path": "/admin/ai-configs",
     "rawUrl": "{{baseUrl}}/admin/ai-configs",
     "description": "Lấy cấu hình các model AI.",
-    "auth": "Bearer Token"
+    "auth": "Public",
+    "body": null
   },
   {
     "id": "api-108",
     "name": "Admin: Set Active AI Config",
     "folder": "12. Admin (Admin Role Required)",
-    "category": "Quản Trị Admin",
+    "category": "Hệ Thống & Khác",
     "method": "PUT",
     "path": "/admin/ai-configs/:configId/active",
     "rawUrl": "{{baseUrl}}/admin/ai-configs/:configId/active",
     "description": "Kích hoạt 1 model AI làm mặc định.",
-    "auth": "Bearer Token"
+    "auth": "Public",
+    "body": null
   },
   {
     "id": "api-109",
     "name": "Admin: List AI Prompts",
     "folder": "12. Admin (Admin Role Required)",
-    "category": "Quản Trị Admin",
+    "category": "Hệ Thống & Khác",
     "method": "GET",
     "path": "/admin/ai-prompts",
     "rawUrl": "{{baseUrl}}/admin/ai-prompts",
     "description": "Lấy danh sách prompt AI.",
-    "auth": "Bearer Token"
+    "auth": "Public",
+    "body": null
   },
   {
     "id": "api-110",
     "name": "Admin: Update AI Prompt",
     "folder": "12. Admin (Admin Role Required)",
-    "category": "Quản Trị Admin",
+    "category": "Hệ Thống & Khác",
     "method": "PUT",
     "path": "/admin/ai-prompts/:promptId",
     "rawUrl": "{{baseUrl}}/admin/ai-prompts/:promptId",
     "description": "Chỉnh sửa nội dung prompt AI.",
-    "auth": "Bearer Token"
+    "auth": "Public",
+    "body": "{\n  \"name\": \"Food Recommendation Prompt\",\n  \"content\": \"Gợi ý 3 món ăn phù hợp tâm trạng và ngân sách.\",\n  \"isActive\": true\n}"
   },
   {
     "id": "api-111",
     "name": "Admin: Get AI Stats",
     "folder": "12. Admin (Admin Role Required)",
-    "category": "Quản Trị Admin",
+    "category": "Hệ Thống & Khác",
     "method": "GET",
     "path": "/admin/ai-stats",
     "rawUrl": "{{baseUrl}}/admin/ai-stats",
     "description": "Thống kê số lượt gọi AI, tỷ lệ lỗi, đánh giá trung bình và từ khóa mood phổ biến.",
-    "auth": "Bearer Token"
+    "auth": "Public",
+    "body": null
   },
   {
     "id": "api-112",
     "name": "Admin: Broadcast System Notification",
     "folder": "12. Admin (Admin Role Required)",
-    "category": "Quản Trị Admin",
+    "category": "Hệ Thống & Khác",
     "method": "POST",
     "path": "/admin/system-notifications",
     "rawUrl": "{{baseUrl}}/admin/system-notifications",
     "description": "Gửi thông báo hàng loạt (`targetGroup`: `All` | `User` | `RestaurantAccount`).",
-    "auth": "Bearer Token"
+    "auth": "Public",
+    "body": "{\n  \"title\": \"Bảo trì hệ thống\",\n  \"message\": \"Hệ thống sẽ bảo trì định kỳ lúc 02:00 sáng.\",\n  \"targetGroup\": \"All\"\n}"
   },
   {
     "id": "api-113",
     "name": "Admin: Get Audit Logs",
     "folder": "12. Admin (Admin Role Required)",
-    "category": "Quản Trị Admin",
+    "category": "Hệ Thống & Khác",
     "method": "GET",
-    "path": "/admin/audit-logs",
+    "path": "/admin/audit-logs?page=1&limit=20",
     "rawUrl": "{{baseUrl}}/admin/audit-logs?page=1&limit=20",
     "description": "Xem nhật ký thao tác quản trị.",
-    "auth": "Bearer Token"
+    "auth": "Public",
+    "body": null
   },
   {
     "id": "api-114",
@@ -1275,7 +1389,8 @@ export const apiEndpoints: ApiEndpoint[] = [
     "path": "/accounts/blocked",
     "rawUrl": "{{baseUrl}}/accounts/blocked",
     "description": "Alias của `GET /users/me/blocked`.",
-    "auth": "Bearer Token"
+    "auth": "Public",
+    "body": null
   },
   {
     "id": "api-115",
@@ -1286,7 +1401,8 @@ export const apiEndpoints: ApiEndpoint[] = [
     "path": "/accounts/block",
     "rawUrl": "{{baseUrl}}/accounts/block",
     "description": "Alias của `POST /users/me/block`.",
-    "auth": "Bearer Token"
+    "auth": "Public",
+    "body": "{\n  \"targetUserId\": \"{{targetUserId}}\"\n}"
   },
   {
     "id": "api-116",
@@ -1297,7 +1413,8 @@ export const apiEndpoints: ApiEndpoint[] = [
     "path": "/accounts/unblock",
     "rawUrl": "{{baseUrl}}/accounts/unblock",
     "description": "Alias của `POST /users/me/unblock`.",
-    "auth": "Bearer Token"
+    "auth": "Public",
+    "body": "{\n  \"targetUserId\": \"{{targetUserId}}\"\n}"
   },
   {
     "id": "api-117",
@@ -1308,7 +1425,8 @@ export const apiEndpoints: ApiEndpoint[] = [
     "path": "/accounts/restricted",
     "rawUrl": "{{baseUrl}}/accounts/restricted",
     "description": "Alias của `GET /users/me/restricted`.",
-    "auth": "Bearer Token"
+    "auth": "Public",
+    "body": null
   },
   {
     "id": "api-118",
@@ -1319,7 +1437,8 @@ export const apiEndpoints: ApiEndpoint[] = [
     "path": "/accounts/restrict",
     "rawUrl": "{{baseUrl}}/accounts/restrict",
     "description": "Alias của `POST /users/me/restrict`.",
-    "auth": "Bearer Token"
+    "auth": "Public",
+    "body": "{\n  \"targetUserId\": \"{{targetUserId}}\"\n}"
   },
   {
     "id": "api-119",
@@ -1330,7 +1449,8 @@ export const apiEndpoints: ApiEndpoint[] = [
     "path": "/accounts/unrestrict",
     "rawUrl": "{{baseUrl}}/accounts/unrestrict",
     "description": "Alias của `POST /users/me/unrestrict`.",
-    "auth": "Bearer Token"
+    "auth": "Public",
+    "body": "{\n  \"targetUserId\": \"{{targetUserId}}\"\n}"
   },
   {
     "id": "api-120",
@@ -1341,7 +1461,8 @@ export const apiEndpoints: ApiEndpoint[] = [
     "path": "/privacy",
     "rawUrl": "{{baseUrl}}/privacy",
     "description": "Alias của `GET /users/me/privacy`.",
-    "auth": "Bearer Token"
+    "auth": "Public",
+    "body": null
   },
   {
     "id": "api-121",
@@ -1352,7 +1473,8 @@ export const apiEndpoints: ApiEndpoint[] = [
     "path": "/privacy/update",
     "rawUrl": "{{baseUrl}}/privacy/update",
     "description": "Alias `POST` của `PUT /users/me/privacy`.",
-    "auth": "Bearer Token"
+    "auth": "Public",
+    "body": "{\n  \"newPosts\": \"public\"\n}"
   },
   {
     "id": "api-122",
@@ -1363,7 +1485,8 @@ export const apiEndpoints: ApiEndpoint[] = [
     "path": "/sessions",
     "rawUrl": "{{baseUrl}}/sessions",
     "description": "Alias của `GET /auth/sessions`.",
-    "auth": "Bearer Token"
+    "auth": "Public",
+    "body": null
   },
   {
     "id": "api-123",
@@ -1374,7 +1497,8 @@ export const apiEndpoints: ApiEndpoint[] = [
     "path": "/sessions/revoke",
     "rawUrl": "{{baseUrl}}/sessions/revoke",
     "description": "Alias của `POST /auth/sessions/revoke`.",
-    "auth": "Bearer Token"
+    "auth": "Public",
+    "body": "{\n  \"sessionIds\": []\n}"
   },
   {
     "id": "api-124",
@@ -1385,7 +1509,8 @@ export const apiEndpoints: ApiEndpoint[] = [
     "path": "/2fa/status",
     "rawUrl": "{{baseUrl}}/2fa/status",
     "description": "Alias của `GET /auth/2fa/status`.",
-    "auth": "Bearer Token"
+    "auth": "Public",
+    "body": null
   },
   {
     "id": "api-125",
@@ -1396,7 +1521,8 @@ export const apiEndpoints: ApiEndpoint[] = [
     "path": "/2fa/setup",
     "rawUrl": "{{baseUrl}}/2fa/setup",
     "description": "Alias của `GET /auth/2fa/setup`.",
-    "auth": "Bearer Token"
+    "auth": "Public",
+    "body": null
   },
   {
     "id": "api-126",
@@ -1407,7 +1533,8 @@ export const apiEndpoints: ApiEndpoint[] = [
     "path": "/2fa/verify",
     "rawUrl": "{{baseUrl}}/2fa/verify",
     "description": "Alias của `POST /auth/2fa/verify`.",
-    "auth": "Bearer Token"
+    "auth": "Public",
+    "body": "{\n  \"code\": \"123456\"\n}"
   },
   {
     "id": "api-127",
@@ -1418,7 +1545,8 @@ export const apiEndpoints: ApiEndpoint[] = [
     "path": "/2fa/disable",
     "rawUrl": "{{baseUrl}}/2fa/disable",
     "description": "Alias của `POST /auth/2fa/disable`.",
-    "auth": "Bearer Token"
+    "auth": "Public",
+    "body": null
   },
   {
     "id": "api-128",
@@ -1429,7 +1557,8 @@ export const apiEndpoints: ApiEndpoint[] = [
     "path": "/report",
     "rawUrl": "{{baseUrl}}/report",
     "description": "Alias của `POST /reports` (mặc định `reason = 'Other'` nếu bỏ trống).",
-    "auth": "Bearer Token"
+    "auth": "Public",
+    "body": "{\n  \"postId\": 1,\n  \"reason\": \"Other\",\n  \"description\": \"Mô tả báo cáo\"\n}"
   },
   {
     "id": "api-129",
@@ -1437,10 +1566,11 @@ export const apiEndpoints: ApiEndpoint[] = [
     "folder": "13. Mobile Compatibility Aliases",
     "category": "Hệ Thống & Khác",
     "method": "GET",
-    "path": "/help/ticket",
+    "path": "/help/ticket?ticketId={{ticketId}}",
     "rawUrl": "{{baseUrl}}/help/ticket?ticketId={{ticketId}}",
     "description": "Alias dùng query `?ticketId=...` của `GET /help/tickets/:ticketId`.",
-    "auth": "Bearer Token"
+    "auth": "Public",
+    "body": null
   },
   {
     "id": "api-130",
@@ -1451,6 +1581,7 @@ export const apiEndpoints: ApiEndpoint[] = [
     "path": "/help/ticket",
     "rawUrl": "{{baseUrl}}/help/ticket",
     "description": "Alias của `POST /help/tickets`.",
-    "auth": "Bearer Token"
+    "auth": "Public",
+    "body": "{\n  \"subject\": \"Góp ý tính năng\",\n  \"title\": \"Đề xuất tính năng mới\",\n  \"description\": \"Chi tiết nội dung góp ý.\"\n}"
   }
-];
+]

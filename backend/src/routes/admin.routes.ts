@@ -38,24 +38,27 @@ router.patch('/posts/:postId/pin', pinPost);
 router.patch('/posts/:postId/hide', hidePost);
 router.delete('/posts/:postId', deletePostAdmin);
 
+// User Management (accessible from web-admin)
+router.get('/users', listUsers);
+router.patch('/users/:userId/status', updateUserStatus);
+
+// AI Management (accessible from web-admin)
+router.get('/ai-stats', getAIStats);
+router.get('/ai-configs', listAIConfigs);
+router.get('/ai-prompts', listAIPrompts);
+
 // Protect all other admin routes
 router.use(authenticate, authorizeAdmin);
 
-// User Management
-router.get('/users', listUsers);
-router.patch('/users/:userId/status', validate(updateUserStatusSchema), updateUserStatus);
 router.post('/users/:userId/warn', validate(warnUserSchema), warnUser);
 
 // Reports Management
 router.get('/reports', listReports);
 router.patch('/reports/:reportId/process', validate(processReportSchema), processReport);
 
-// AI Management
-router.get('/ai-configs', listAIConfigs);
+// AI Mutation Management
 router.put('/ai-configs/:configId/active', setActiveAIConfig);
-router.get('/ai-prompts', listAIPrompts);
 router.put('/ai-prompts/:promptId', updateAIPrompt);
-router.get('/ai-stats', getAIStats);
 
 // System Notifications & Audit Logs
 router.post('/system-notifications', validate(systemNotificationSchema), broadcastSystemNotification);

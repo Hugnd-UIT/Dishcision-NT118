@@ -74,9 +74,10 @@ export async function updateUserStatus(req: AuthRequest, res: Response): Promise
     delCacheByPattern('newsfeed:*'),
   ]);
 
+  const adminId = req.user?.userId || 1;
   await prisma.auditLog.create({
     data: {
-      adminId: req.user!.userId,
+      adminId,
       action: `UPDATE_USER_STATUS_${status}`,
       targetType: AuditTargetType.User,
       targetId: userId,
