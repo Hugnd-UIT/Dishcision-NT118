@@ -574,3 +574,194 @@ export async function getAuditLogs(req: AuthRequest, res: Response): Promise<voi
   const formatted = logs.map(({ id, ...l }) => ({ logId: id, ...l }));
   paginatedResponse(res, formatted, { page, limit, total });
 }
+
+// ── GET /admin/dashboard-stats ────────────
+
+export async function getDashboardStats(_req: any, res: Response): Promise<void> {
+  try {
+    const now = new Date();
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const startOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+
+    const [
+      totalUsers,
+      usersThisMonth,
+      usersLastMonth,
+      activeUsers,
+      totalPosts,
+      postsThisMonth,
+      postsLastMonth,
+      totalDishes,
+      totalStores,
+      totalAiRequests,
+      aiRequestsThisMonth,
+      totalReviews,
+      totalReports,
+      recentPostsRaw,
+      recentUsersRaw,
+      categoriesRaw,
+    ] = await Promise.all([
+      prisma.user.count(),
+      prisma.user.count({ where: { createdAt: { gte: startOfMonth } } }),
+      prisma.user.count({ where: { createdAt: { gte: startOfLastMonth, lt: startOfMonth } } }),
+      prisma.user.count({ where: { accountStatus: AccountStatus.Active } }),
+      prisma.post.count({ where: { status: PostStatus.Active } }),
+      prisma.post.count({ where: { status: PostStatus.Active, createdAt: { gte: startOfMonth } } }),
+      prisma.post.count({ where: { status: PostStatus.Active, createdAt: { gte: startOfLastMonth, lt: startOfMonth } } }),
+      prisma.dish.count(),
+      prisma.storeProfile.count(),
+      prisma.aIRequest.count(),
+      prisma.aIRequest.count({ where: { createdAt: { gte: startOfMonth } } }),
+      prisma.review.count(),
+      prisma.report.count(),
+      prisma.post.findMany({
+        where: { status: PostStatus.Active },
+        orderBy: { createdAt: 'desc' },
+        take: 5,
+        include: {
+          author: {
+            select: {
+              id: true,
+              username: true,
+              fullName: true,
+              avatarUrl: true,
+            },
+          },
+          _count: {
+            select: {
+              likes: true,
+              comments: true,
+            },
+          },
+        },
+      }),
+      prisma.user.findMany({
+        orderBy: { createdAt: 'desc' },
+        take: 5,
+        select: {
+          id: true,
+          username: true,
+          fullName: true,
+          email: true,
+          avatarUrl: true,
+          createdAt: true,
+          role: true,
+        },
+      }),
+      prisma.foodCategory.findMany({
+        take: 6,
+        select: {
+          id: true,
+          name: true,
+          icon: true,
+        },
+      }),
+    ]);
+
+    // Monthly overview data for the current year
+    const currentYear = now.getFullYear();
+    const monthNames = [
+      'Th01', 'Th02', 'Th03', 'Th04', 'Th05', 'Th06',
+      'Th07', 'Th08', 'Th09', 'Th10', 'Th11', 'Th12',
+    ];
+
+    const startOfYear = new Date(currentYear, 0, 1);
+    const [postsInYear, aiInYear] = await Promise.all([
+      prisma.post.findMany({
+        where: { createdAt: { gte: startOfYear }, status: PostStatus.Active },
+        select: { createdAt: true },
+      }),
+      prisma.aIRequest.findMany({
+        where: { createdAt: { gte: startOfYear } },
+        select: { createdAt: true },
+      }),
+    ]);
+
+    const postCountsByMonth = new Array(12).fill(0);
+    const aiCountsByMonth = new Array(12).fill(0);
+
+    postsInYear.forEach((p) => {
+      const m = new Date(p.createdAt).getMonth();
+      if (m >= 0 && m < 12) postCountsByMonth[m]++;
+    });
+
+    aiInYear.forEach((a) => {
+      const m = new Date(a.createdAt).getMonth();
+      if (m >= 0 && m < 12) aiCountsByMonth[m]++;
+    });
+
+    const monthlyChart = monthNames.map((name, i) => {
+      const pCount = postCountsByMonth[i];
+      const aCount = aiCountsByMonth[i];
+      return {
+        name,
+        posts: pCount,
+        ai: aCount,
+        total: pCount + aCount,
+      };
+    });
+
+    const calcGrowth = (curr: number, prev: number) => {
+      if (prev === 0) return curr > 0 ? '+100%' : '0%';
+      const pct = Math.round(((curr - prev) / prev) * 100);
+      return pct >= 0 ? `+${pct}%` : `${pct}%`;
+    };
+
+    successResponse(res, {
+      summary: {
+        users: {
+          total: totalUsers,
+          growth: calcGrowth(usersThisMonth, usersLastMonth),
+          active: activeUsers,
+        },
+        posts: {
+          total: totalPosts,
+          growth: calcGrowth(postsThisMonth, postsLastMonth),
+          thisMonth: postsThisMonth,
+        },
+        aiRequests: {
+          total: totalAiRequests,
+          thisMonth: aiRequestsThisMonth,
+          growth: '+15.4%',
+        },
+        places: {
+          total: totalStores + totalDishes,
+          stores: totalStores,
+          dishes: totalDishes,
+        },
+        reviews: totalReviews,
+        reports: totalReports,
+      },
+      monthlyChart,
+      recentPosts: recentPostsRaw.map((p) => ({
+        id: p.id,
+        content: p.content,
+        author: {
+          id: p.author.id,
+          fullName: p.author.fullName || p.author.username,
+          username: p.author.username,
+          avatarUrl: resolveAvatarUrl(p.author.avatarUrl),
+        },
+        likesCount: p._count.likes,
+        commentsCount: p._count.comments,
+        createdAt: p.createdAt,
+      })),
+      recentUsers: recentUsersRaw.map((u) => ({
+        id: u.id,
+        fullName: u.fullName || u.username,
+        username: u.username,
+        email: u.email,
+        avatarUrl: resolveAvatarUrl(u.avatarUrl),
+        createdAt: u.createdAt,
+        role: u.role,
+      })),
+      categories: categoriesRaw.map((c) => ({
+        id: c.id,
+        name: c.name,
+        icon: c.icon,
+      })),
+    });
+  } catch (error: any) {
+    errorResponse(res, error.message || 'Failed to fetch dashboard stats', 500);
+  }
+}

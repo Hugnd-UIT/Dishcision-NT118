@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import {
+  getDashboardStats,
   listUsers,
   updateUserStatus,
   warnUser,
@@ -27,6 +28,9 @@ import {
 } from '../middlewares/validate.middleware';
 
 const router = Router();
+
+// Dashboard Stats (overview)
+router.get('/dashboard-stats', getDashboardStats);
 
 // Protect all admin routes
 router.use(authenticate, authorizeAdmin);

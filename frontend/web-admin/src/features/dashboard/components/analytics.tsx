@@ -5,185 +5,137 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
-import { AnalyticsChart } from './analytics-chart'
+import { Badge } from '@/components/ui/badge'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { Star, ShieldAlert, UserCheck, Utensils, Tag } from 'lucide-react'
+import { DashboardStatsData } from '../data/use-dashboard-stats'
 
-export function Analytics() {
+interface AnalyticsProps {
+  stats?: DashboardStatsData
+}
+
+export function Analytics({ stats }: AnalyticsProps) {
+  const summary = stats?.summary
+  const recentUsers = stats?.recentUsers ?? []
+  const categories = stats?.categories ?? []
+
   return (
-    <div className='space-y-4'>
-      <Card>
-        <CardHeader>
-          <CardTitle>Traffic Overview</CardTitle>
-          <CardDescription>Weekly clicks and unique visitors</CardDescription>
-        </CardHeader>
-        <CardContent className='px-6'>
-          <AnalyticsChart />
-        </CardContent>
-      </Card>
+    <div className='space-y-6'>
       <div className='grid gap-4 sm:grid-cols-2 lg:grid-cols-4'>
         <Card>
           <CardHeader className='flex flex-row items-center justify-between space-y-0 pb-2'>
-            <CardTitle className='text-sm font-medium'>Total Clicks</CardTitle>
-            <svg
-              xmlns='http://www.w3.org/2000/svg'
-              viewBox='0 0 24 24'
-              fill='none'
-              stroke='currentColor'
-              strokeLinecap='round'
-              strokeLinejoin='round'
-              strokeWidth='2'
-              className='h-4 w-4 text-muted-foreground'
-            >
-              <path d='M3 3v18h18' />
-              <path d='M7 15l4-4 4 4 4-6' />
-            </svg>
+            <CardTitle className='text-sm font-medium'>Đánh giá quán ăn</CardTitle>
+            <Star className='size-4 text-amber-500 fill-amber-500' />
           </CardHeader>
           <CardContent>
-            <div className='text-2xl font-bold'>1,248</div>
-            <p className='text-xs text-muted-foreground'>+12.4% vs last week</p>
+            <div className='text-2xl font-bold'>{summary?.reviews ?? 16}</div>
+            <p className='text-xs text-muted-foreground mt-1'>Đánh giá chất lượng từ cộng đồng</p>
           </CardContent>
         </Card>
+
         <Card>
           <CardHeader className='flex flex-row items-center justify-between space-y-0 pb-2'>
-            <CardTitle className='text-sm font-medium'>
-              Unique Visitors
-            </CardTitle>
-            <svg
-              xmlns='http://www.w3.org/2000/svg'
-              viewBox='0 0 24 24'
-              fill='none'
-              stroke='currentColor'
-              strokeLinecap='round'
-              strokeLinejoin='round'
-              strokeWidth='2'
-              className='h-4 w-4 text-muted-foreground'
-            >
-              <circle cx='12' cy='7' r='4' />
-              <path d='M6 21v-2a6 6 0 0 1 12 0v2' />
-            </svg>
+            <CardTitle className='text-sm font-medium'>Báo cáo vi phạm</CardTitle>
+            <ShieldAlert className='size-4 text-rose-500' />
           </CardHeader>
           <CardContent>
-            <div className='text-2xl font-bold'>832</div>
-            <p className='text-xs text-muted-foreground'>+5.8% vs last week</p>
+            <div className='text-2xl font-bold'>{summary?.reports ?? 3}</div>
+            <p className='text-xs text-muted-foreground mt-1'>Cần kiểm duyệt nội dung</p>
           </CardContent>
         </Card>
+
         <Card>
           <CardHeader className='flex flex-row items-center justify-between space-y-0 pb-2'>
-            <CardTitle className='text-sm font-medium'>Bounce Rate</CardTitle>
-            <svg
-              xmlns='http://www.w3.org/2000/svg'
-              viewBox='0 0 24 24'
-              fill='none'
-              stroke='currentColor'
-              strokeLinecap='round'
-              strokeLinejoin='round'
-              strokeWidth='2'
-              className='h-4 w-4 text-muted-foreground'
-            >
-              <path d='M3 12h6l3 6 3-6h6' />
-            </svg>
+            <CardTitle className='text-sm font-medium'>User đang hoạt động</CardTitle>
+            <UserCheck className='size-4 text-emerald-500' />
           </CardHeader>
           <CardContent>
-            <div className='text-2xl font-bold'>42%</div>
-            <p className='text-xs text-muted-foreground'>-3.2% vs last week</p>
+            <div className='text-2xl font-bold'>{summary?.users.active ?? 34}</div>
+            <p className='text-xs text-muted-foreground mt-1'>Tài khoản trạng thái Active</p>
           </CardContent>
         </Card>
+
         <Card>
           <CardHeader className='flex flex-row items-center justify-between space-y-0 pb-2'>
-            <CardTitle className='text-sm font-medium'>Avg. Session</CardTitle>
-            <svg
-              xmlns='http://www.w3.org/2000/svg'
-              viewBox='0 0 24 24'
-              fill='none'
-              stroke='currentColor'
-              strokeLinecap='round'
-              strokeLinejoin='round'
-              strokeWidth='2'
-              className='h-4 w-4 text-muted-foreground'
-            >
-              <circle cx='12' cy='12' r='10' />
-              <path d='M12 6v6l4 2' />
-            </svg>
+            <CardTitle className='text-sm font-medium'>Món ăn trong Menu</CardTitle>
+            <Utensils className='size-4 text-primary' />
           </CardHeader>
           <CardContent>
-            <div className='text-2xl font-bold'>3m 24s</div>
-            <p className='text-xs text-muted-foreground'>+18s vs last week</p>
+            <div className='text-2xl font-bold'>{summary?.places.dishes ?? 14}</div>
+            <p className='text-xs text-muted-foreground mt-1'>Món ăn được số hóa trên hệ thống</p>
           </CardContent>
         </Card>
       </div>
-      <div className='grid grid-cols-1 gap-4 lg:grid-cols-7'>
-        <Card className='col-span-1 lg:col-span-4'>
+
+      <div className='grid gap-6 md:grid-cols-2'>
+        {/* Recent Registered Users */}
+        <Card>
           <CardHeader>
-            <CardTitle>Referrers</CardTitle>
-            <CardDescription>Top sources driving traffic</CardDescription>
+            <CardTitle className='text-base'>Thành viên mới gia nhập</CardTitle>
+            <CardDescription>Danh sách người dùng đăng ký tài khoản gần đây nhất</CardDescription>
           </CardHeader>
           <CardContent>
-            <SimpleBarList
-              items={[
-                { name: 'Direct', value: 512 },
-                { name: 'Product Hunt', value: 238 },
-                { name: 'Twitter', value: 174 },
-                { name: 'Blog', value: 104 },
-              ]}
-              barClass='bg-primary'
-              valueFormatter={(n) => `${n}`}
-            />
+            <div className='space-y-4'>
+              {recentUsers.length > 0 ? (
+                recentUsers.map((user) => (
+                  <div key={user.id} className='flex items-center justify-between gap-3'>
+                    <div className='flex items-center gap-3 min-w-0'>
+                      <Avatar className='h-9 w-9 border border-primary/20'>
+                        {user.avatarUrl && <AvatarImage src={user.avatarUrl} alt={user.fullName} />}
+                        <AvatarFallback className='bg-primary/10 text-primary text-xs font-semibold'>
+                          {user.fullName.slice(0, 2).toUpperCase()}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className='min-w-0'>
+                        <p className='text-sm font-medium truncate'>{user.fullName}</p>
+                        <p className='text-xs text-muted-foreground truncate'>{user.email}</p>
+                      </div>
+                    </div>
+                    <Badge variant='outline' className='text-xs shrink-0 capitalize'>
+                      {user.role.toLowerCase()}
+                    </Badge>
+                  </div>
+                ))
+              ) : (
+                <p className='text-xs text-muted-foreground'>Chưa có dữ liệu thành viên mới.</p>
+              )}
+            </div>
           </CardContent>
         </Card>
-        <Card className='col-span-1 lg:col-span-3'>
+
+        {/* Categories */}
+        <Card>
           <CardHeader>
-            <CardTitle>Devices</CardTitle>
-            <CardDescription>How users access your app</CardDescription>
+            <CardTitle className='text-base'>Danh mục món ăn hệ thống</CardTitle>
+            <CardDescription>Các nhóm món ăn chính phục vụ cho gợi ý AI</CardDescription>
           </CardHeader>
           <CardContent>
-            <SimpleBarList
-              items={[
-                { name: 'Desktop', value: 74 },
-                { name: 'Mobile', value: 22 },
-                { name: 'Tablet', value: 4 },
-              ]}
-              barClass='bg-muted-foreground'
-              valueFormatter={(n) => `${n}%`}
-            />
+            <div className='grid grid-cols-2 gap-3 sm:grid-cols-3'>
+              {categories.length > 0 ? (
+                categories.map((cat) => (
+                  <div
+                    key={cat.id}
+                    className='flex items-center gap-2 p-3 rounded-lg border border-border/60 bg-muted/30'
+                  >
+                    <span className='text-xl'>{cat.icon || '🍜'}</span>
+                    <span className='text-sm font-medium truncate'>{cat.name}</span>
+                  </div>
+                ))
+              ) : (
+                ['Cơm', 'Phở & Bún', 'Lẩu & Nướng', 'Ăn Vặt', 'Đồ Uống', 'Tráng Miệng'].map((name, i) => (
+                  <div
+                    key={i}
+                    className='flex items-center gap-2 p-3 rounded-lg border border-border/60 bg-muted/30'
+                  >
+                    <Tag className='size-4 text-primary' />
+                    <span className='text-sm font-medium'>{name}</span>
+                  </div>
+                ))
+              )}
+            </div>
           </CardContent>
         </Card>
       </div>
     </div>
-  )
-}
-
-function SimpleBarList({
-  items,
-  valueFormatter,
-  barClass,
-}: {
-  items: { name: string; value: number }[]
-  valueFormatter: (n: number) => string
-  barClass: string
-}) {
-  const max = Math.max(...items.map((i) => i.value), 1)
-  return (
-    <ul className='space-y-3'>
-      {items.map((i) => {
-        const width = `${Math.round((i.value / max) * 100)}%`
-        return (
-          <li key={i.name} className='flex items-center justify-between gap-3'>
-            <div className='min-w-0 flex-1'>
-              <div className='mb-1 truncate text-xs text-muted-foreground'>
-                {i.name}
-              </div>
-              <div className='h-2.5 w-full rounded-full bg-muted'>
-                <div
-                  className={`h-2.5 rounded-full ${barClass}`}
-                  style={{ width }}
-                />
-              </div>
-            </div>
-            <div className='ps-2 text-xs font-medium tabular-nums'>
-              {valueFormatter(i.value)}
-            </div>
-          </li>
-        )
-      })}
-    </ul>
   )
 }

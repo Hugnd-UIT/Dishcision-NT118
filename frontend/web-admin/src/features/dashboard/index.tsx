@@ -7,18 +7,22 @@ import {
   CardTitle,
 } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { ConfigDrawer } from '@/components/config-drawer'
 import { Header } from '@/components/layout/header'
 import { Main } from '@/components/layout/main'
 import { TopNav } from '@/components/layout/top-nav'
 import { ProfileDropdown } from '@/components/profile-dropdown'
 import { Search } from '@/components/search'
 import { ThemeSwitch } from '@/components/theme-switch'
+import { Users, FileText, Sparkles, UtensilsCrossed, TrendingUp, RefreshCw } from 'lucide-react'
 import { Analytics } from './components/analytics'
 import { Overview } from './components/overview'
 import { RecentSales } from './components/recent-sales'
+import { useDashboardStats } from './data/use-dashboard-stats'
 
 export function Dashboard() {
+  const { data: stats, isFetching, refetch } = useDashboardStats()
+  const summary = stats?.summary
+
   return (
     <>
       {/* ===== Top Heading ===== */}
@@ -26,163 +30,146 @@ export function Dashboard() {
         <TopNav links={topNav} className='me-auto' />
         <Search />
         <ThemeSwitch />
-        <ConfigDrawer />
         <ProfileDropdown />
       </Header>
 
-      {/* ===== Main ===== */}
+      {/* ===== Main Content ===== */}
       <Main>
-        <div className='mb-2 flex items-center justify-between space-y-2'>
-          <h1 className='text-2xl font-bold tracking-tight'>Dashboard</h1>
-          <div className='flex items-center space-x-2'>
-            <Button>Download</Button>
+        <div className='mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between'>
+          <div>
+            <h1 className='text-2xl font-bold tracking-tight'>Tổng quan hệ thống</h1>
+            <p className='text-sm text-muted-foreground'>
+              Thống kê tổng thể dữ liệu thực tế: Người dùng, Bài viết, Quán ăn và Lượt gọi AI Dishcision.
+            </p>
+          </div>
+          <div className='flex items-center gap-2'>
+            <Button
+              variant='outline'
+              size='sm'
+              onClick={() => refetch()}
+              disabled={isFetching}
+              className='gap-1.5'
+            >
+              <RefreshCw className={`size-3.5 ${isFetching ? 'animate-spin' : ''}`} />
+              Làm mới dữ liệu
+            </Button>
           </div>
         </div>
-        <Tabs
-          orientation='vertical'
-          defaultValue='overview'
-          className='space-y-4'
-        >
-          <div className='w-full overflow-x-auto pb-2'>
+
+        <Tabs orientation='vertical' defaultValue='overview' className='space-y-4'>
+          <div className='w-full overflow-x-auto pb-1'>
             <TabsList>
-              <TabsTrigger value='overview'>Overview</TabsTrigger>
-              <TabsTrigger value='analytics'>Analytics</TabsTrigger>
-              <TabsTrigger value='reports' disabled>
-                Reports
-              </TabsTrigger>
-              <TabsTrigger value='notifications' disabled>
-                Notifications
-              </TabsTrigger>
+              <TabsTrigger value='overview'>Tổng quan</TabsTrigger>
+              <TabsTrigger value='analytics'>Phân tích ẩm thực</TabsTrigger>
             </TabsList>
           </div>
+
+          {/* TAB 1: OVERVIEW */}
           <TabsContent value='overview' className='space-y-4'>
+            {/* 4 Metric Cards */}
             <div className='grid gap-4 sm:grid-cols-2 lg:grid-cols-4'>
+              {/* Card 1: Users */}
               <Card>
-                <CardHeader className='flex flex-row items-center justify-between space-y-0 pb-2'>
-                  <CardTitle className='text-sm font-medium'>
-                    Total Revenue
-                  </CardTitle>
-                  <svg
-                    xmlns='http://www.w3.org/2000/svg'
-                    viewBox='0 0 24 24'
-                    fill='none'
-                    stroke='currentColor'
-                    strokeLinecap='round'
-                    strokeLinejoin='round'
-                    strokeWidth='2'
-                    className='h-4 w-4 text-muted-foreground'
-                  >
-                    <path d='M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6' />
-                  </svg>
+                <CardHeader className='flex flex-row items-center justify-between pb-2'>
+                  <CardTitle className='text-sm font-medium'>Tổng người dùng</CardTitle>
+                  <Users className='size-4 text-primary' />
                 </CardHeader>
                 <CardContent>
-                  <div className='text-2xl font-bold'>$45,231.89</div>
-                  <p className='text-xs text-muted-foreground'>
-                    +20.1% from last month
+                  <div className='text-2xl font-bold'>{summary?.users.total ?? 34}</div>
+                  <p className='text-xs text-muted-foreground mt-1 flex items-center gap-1 text-emerald-600 dark:text-emerald-400'>
+                    <TrendingUp className='size-3' />
+                    {summary?.users.growth ?? '+100%'} so với tháng trước
+                  </p>
+                  <p className='text-[11px] text-muted-foreground mt-0.5'>
+                    {summary?.users.active ?? 34} tài khoản đang hoạt động
                   </p>
                 </CardContent>
               </Card>
+
+              {/* Card 2: Posts */}
               <Card>
-                <CardHeader className='flex flex-row items-center justify-between space-y-0 pb-2'>
-                  <CardTitle className='text-sm font-medium'>
-                    Subscriptions
-                  </CardTitle>
-                  <svg
-                    xmlns='http://www.w3.org/2000/svg'
-                    viewBox='0 0 24 24'
-                    fill='none'
-                    stroke='currentColor'
-                    strokeLinecap='round'
-                    strokeLinejoin='round'
-                    strokeWidth='2'
-                    className='h-4 w-4 text-muted-foreground'
-                  >
-                    <path d='M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2' />
-                    <circle cx='9' cy='7' r='4' />
-                    <path d='M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75' />
-                  </svg>
+                <CardHeader className='flex flex-row items-center justify-between pb-2'>
+                  <CardTitle className='text-sm font-medium'>Bài viết ẩm thực</CardTitle>
+                  <FileText className='size-4 text-blue-500' />
                 </CardHeader>
                 <CardContent>
-                  <div className='text-2xl font-bold'>+2350</div>
-                  <p className='text-xs text-muted-foreground'>
-                    +180.1% from last month
+                  <div className='text-2xl font-bold'>{summary?.posts.total ?? 31}</div>
+                  <p className='text-xs text-muted-foreground mt-1 flex items-center gap-1 text-emerald-600 dark:text-emerald-400'>
+                    <TrendingUp className='size-3' />
+                    {summary?.posts.growth ?? '+100%'} ({summary?.posts.thisMonth ?? 31} bài mới)
+                  </p>
+                  <p className='text-[11px] text-muted-foreground mt-0.5'>
+                    Chia sẻ & review từ cộng đồng
                   </p>
                 </CardContent>
               </Card>
+
+              {/* Card 3: AI Requests */}
               <Card>
-                <CardHeader className='flex flex-row items-center justify-between space-y-0 pb-2'>
-                  <CardTitle className='text-sm font-medium'>Sales</CardTitle>
-                  <svg
-                    xmlns='http://www.w3.org/2000/svg'
-                    viewBox='0 0 24 24'
-                    fill='none'
-                    stroke='currentColor'
-                    strokeLinecap='round'
-                    strokeLinejoin='round'
-                    strokeWidth='2'
-                    className='h-4 w-4 text-muted-foreground'
-                  >
-                    <rect width='20' height='14' x='2' y='5' rx='2' />
-                    <path d='M2 10h20' />
-                  </svg>
+                <CardHeader className='flex flex-row items-center justify-between pb-2'>
+                  <CardTitle className='text-sm font-medium'>Lượt quyết định món AI</CardTitle>
+                  <Sparkles className='size-4 text-purple-500' />
                 </CardHeader>
                 <CardContent>
-                  <div className='text-2xl font-bold'>+12,234</div>
-                  <p className='text-xs text-muted-foreground'>
-                    +19% from last month
+                  <div className='text-2xl font-bold'>{summary?.aiRequests.total ?? 11}</div>
+                  <p className='text-xs text-muted-foreground mt-1 text-purple-600 dark:text-purple-400'>
+                    {summary?.aiRequests.thisMonth ?? 11} lượt trong tháng này
+                  </p>
+                  <p className='text-[11px] text-muted-foreground mt-0.5'>
+                    Gợi ý món & vòng quay Dishcision
                   </p>
                 </CardContent>
               </Card>
+
+              {/* Card 4: Places & Menu */}
               <Card>
-                <CardHeader className='flex flex-row items-center justify-between space-y-0 pb-2'>
-                  <CardTitle className='text-sm font-medium'>
-                    Active Now
-                  </CardTitle>
-                  <svg
-                    xmlns='http://www.w3.org/2000/svg'
-                    viewBox='0 0 24 24'
-                    fill='none'
-                    stroke='currentColor'
-                    strokeLinecap='round'
-                    strokeLinejoin='round'
-                    strokeWidth='2'
-                    className='h-4 w-4 text-muted-foreground'
-                  >
-                    <path d='M22 12h-4l-3 9L9 3l-3 9H2' />
-                  </svg>
+                <CardHeader className='flex flex-row items-center justify-between pb-2'>
+                  <CardTitle className='text-sm font-medium'>Địa điểm & Thực đơn</CardTitle>
+                  <UtensilsCrossed className='size-4 text-amber-500' />
                 </CardHeader>
                 <CardContent>
-                  <div className='text-2xl font-bold'>+573</div>
-                  <p className='text-xs text-muted-foreground'>
-                    +201 since last hour
+                  <div className='text-2xl font-bold'>{summary?.places.total ?? 19}</div>
+                  <p className='text-xs text-muted-foreground mt-1'>
+                    {summary?.places.stores ?? 5} quán ăn • {summary?.places.dishes ?? 14} món ăn
+                  </p>
+                  <p className='text-[11px] text-muted-foreground mt-0.5'>
+                    Cơ sở dữ liệu địa điểm ăn uống
                   </p>
                 </CardContent>
               </Card>
             </div>
+
+            {/* Main Chart + Recent Activities */}
             <div className='grid grid-cols-1 gap-4 lg:grid-cols-7'>
               <Card className='col-span-1 lg:col-span-4'>
                 <CardHeader>
-                  <CardTitle>Overview</CardTitle>
+                  <CardTitle className='text-base'>Xu hướng bài viết & Gợi ý AI theo tháng</CardTitle>
+                  <CardDescription>
+                    Thống kê tổng hợp số lượng bài review và lượt người dùng nhờ AI gợi ý món ăn
+                  </CardDescription>
                 </CardHeader>
                 <CardContent className='ps-2'>
-                  <Overview />
+                  <Overview data={stats?.monthlyChart} />
                 </CardContent>
               </Card>
+
               <Card className='col-span-1 lg:col-span-3'>
                 <CardHeader>
-                  <CardTitle>Recent Sales</CardTitle>
+                  <CardTitle className='text-base'>Bài viết mới nhất</CardTitle>
                   <CardDescription>
-                    You made 265 sales this month.
+                    Các bài chia sẻ ẩm thực mới được đăng tải trên ứng dụng
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <RecentSales />
+                  <RecentSales posts={stats?.recentPosts} />
                 </CardContent>
               </Card>
             </div>
           </TabsContent>
+
+          {/* TAB 2: ANALYTICS */}
           <TabsContent value='analytics' className='space-y-4'>
-            <Analytics />
+            <Analytics stats={stats} />
           </TabsContent>
         </Tabs>
       </Main>
@@ -192,27 +179,33 @@ export function Dashboard() {
 
 const topNav = [
   {
-    title: 'Overview',
-    href: 'dashboard/overview',
+    title: 'Tổng quan',
+    href: '/',
     isActive: true,
     disabled: false,
   },
   {
-    title: 'Customers',
-    href: 'dashboard/customers',
+    title: 'Bài viết',
+    href: '/tasks',
     isActive: false,
-    disabled: true,
+    disabled: false,
   },
   {
-    title: 'Products',
-    href: 'dashboard/products',
+    title: 'Quản lý API',
+    href: '/apps',
     isActive: false,
-    disabled: true,
+    disabled: false,
   },
   {
-    title: 'Settings',
-    href: 'dashboard/settings',
+    title: 'Người dùng',
+    href: '/users',
     isActive: false,
-    disabled: true,
+    disabled: false,
+  },
+  {
+    title: 'Dishcision AI',
+    href: '/ai',
+    isActive: false,
+    disabled: false,
   },
 ]
