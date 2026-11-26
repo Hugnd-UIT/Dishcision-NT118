@@ -284,24 +284,77 @@ public class StoryActivity extends AppCompatActivity {
         }
 
         if (btnSendReply != null) {
-            btnSendReply.setOnClickListener(v -> sendStoryReply());
+            btnSendReply.setOnClickListener(v -> showReplyPopup());
+        }
+
+        if (layoutReplyInput != null) {
+            layoutReplyInput.setOnClickListener(v -> showReplyPopup());
         }
 
         if (edtReply != null) {
-            edtReply.setOnEditorActionListener((v, actionId, event) -> {
+            edtReply.setOnClickListener(v -> showReplyPopup());
+        }
+    }
+
+    private void showReplyPopup() {
+        if (stories.isEmpty()) return;
+        StoryModel story = stories.get(currentStoryIndex);
+        if (currentLoggedInUserId > 0 && story.userId == currentLoggedInUserId) return;
+
+        com.google.android.material.bottomsheet.BottomSheetDialog dialog =
+                new com.google.android.material.bottomsheet.BottomSheetDialog(this);
+        View sheetView = getLayoutInflater().inflate(R.layout.layout_dialog_story_reply, null);
+        dialog.setContentView(sheetView);
+
+        if (dialog.getWindow() != null) {
+            dialog.getWindow().setSoftInputMode(
+                    android.view.WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE
+                            | android.view.WindowManager.LayoutParams.SOFT_INPUT_STATE_VISIBLE);
+        }
+
+        TextView tvTitle = sheetView.findViewById(R.id.tvReplyPopupTitle);
+        View btnClose = sheetView.findViewById(R.id.btnCloseReplyPopup);
+        EditText edtPopupReply = sheetView.findViewById(R.id.edtPopupStoryReply);
+        View btnPopupSend = sheetView.findViewById(R.id.btnPopupSendReply);
+
+        String displayName = !TextUtils.isEmpty(story.userFullName) ? story.userFullName : story.username;
+        if (tvTitle != null && !TextUtils.isEmpty(displayName)) {
+            tvTitle.setText("Nhắn tin cho " + displayName);
+        }
+        if (btnClose != null) {
+            btnClose.setOnClickListener(v -> dialog.dismiss());
+        }
+
+        Runnable doSend = () -> {
+            if (edtPopupReply == null) return;
+            String text = edtPopupReply.getText().toString().trim();
+            if (text.isEmpty()) {
+                Toast.makeText(this, "Vui lòng nhập nội dung phản hồi", Toast.LENGTH_SHORT).show();
+                return;
+            }
+            sendStoryReplyText(text, dialog);
+        };
+
+        if (btnPopupSend != null) {
+            btnPopupSend.setOnClickListener(v -> doSend.run());
+        }
+        if (edtPopupReply != null) {
+            edtPopupReply.setOnEditorActionListener((v, actionId, event) -> {
                 if (actionId == EditorInfo.IME_ACTION_SEND || actionId == EditorInfo.IME_ACTION_DONE) {
-                    sendStoryReply();
+                    doSend.run();
                     return true;
                 }
                 return false;
             });
+            edtPopupReply.post(() -> edtPopupReply.requestFocus());
         }
+
+        dialog.show();
     }
 
-    private void sendStoryReply() {
-        if (stories.isEmpty() || edtReply == null || isSendingReply) return;
-        String replyText = edtReply.getText().toString().trim();
-        if (replyText.isEmpty()) return;
+    private void sendStoryReplyText(String replyText, com.google.android.material.bottomsheet.BottomSheetDialog dialog) {
+        if (stories.isEmpty() || isSendingReply) return;
+        if (replyText == null || replyText.trim().isEmpty()) return;
 
         String authHeader = ApiClient.getAuthHeader(this);
         if (authHeader.isEmpty()) {
@@ -325,7 +378,8 @@ public class StoryActivity extends AppCompatActivity {
                     public void onResponse(@NonNull Call<SendChatMessageResponse> call, @NonNull Response<SendChatMessageResponse> response) {
                         isSendingReply = false;
                         if (response.isSuccessful()) {
-                            edtReply.setText("");
+                            if (edtReply != null) edtReply.setText("");
+                            if (dialog != null && dialog.isShowing()) dialog.dismiss();
                             Toast.makeText(StoryActivity.this, "Đã gửi phản hồi qua tin nhắn", Toast.LENGTH_SHORT).show();
                         } else {
                             Toast.makeText(StoryActivity.this, "Không thể gửi phản hồi (mã " + response.code() + ")", Toast.LENGTH_SHORT).show();

@@ -204,9 +204,10 @@
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:background="@null"
+                android:clickable="true"
+                android:focusable="false"
                 android:hint="Nhắn tin phản hồi..."
-                android:imeOptions="actionSend"
-                android:inputType="text"
+                android:inputType="none"
                 android:textColor="#3E2723"
                 android:textColorHint="#9E8A83"
                 android:textSize="14sp" />
