@@ -596,7 +596,7 @@ public class ProfileActivity extends AppCompatActivity {
                 ? ApiClient.getServerRootUrl() + "/users/" + resolvedId
                 : (!currentUsername.isEmpty() ? "dishcision://user/" + currentUsername.replace("@", "") : displayName);
 
-        Bitmap qrBitmap = generateQrBitmap(qrContent, dpToPx(220));
+        Bitmap qrBitmap = generateQrBitmap(qrContent, dpToPx(200));
         if (qrBitmap == null) {
             new AlertDialog.Builder(this)
                     .setTitle("Mã hồ sơ cá nhân")
@@ -608,7 +608,11 @@ public class ProfileActivity extends AppCompatActivity {
 
         View content = getLayoutInflater().inflate(R.layout.dialog_profile_qr, null);
         ((ImageView) content.findViewById(R.id.ivProfileQr)).setImageBitmap(qrBitmap);
-        ((TextView) content.findViewById(R.id.tvProfileQrName)).setText(displayName + "\n" + handleText);
+        ((TextView) content.findViewById(R.id.tvProfileQrName)).setText(displayName);
+        ((TextView) content.findViewById(R.id.tvProfileQrHandle)).setText(handleText);
+        if (!currentAvatarUrl.isEmpty()) {
+            ImageLoader.loadAvatar((ImageView) content.findViewById(R.id.ivProfileQrAvatar), currentAvatarUrl);
+        }
 
         final AlertDialog dialog = new AlertDialog.Builder(this).setView(content).create();
         content.findViewById(R.id.btnProfileQrClose).setOnClickListener(v -> dialog.dismiss());

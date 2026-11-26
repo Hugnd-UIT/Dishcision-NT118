@@ -45,8 +45,10 @@ public class CreateStoryActivity extends AppCompatActivity {
     private RelativeLayout btnShareStory;
     private TextView tvShareStoryLabel;
 
+    private static final int MAX_STORY_IMAGES = 5;
     private ActivityResultLauncher<String> imagePickerLauncher;
-    private Uri selectedImageUri;
+    private final java.util.List<Uri> selectedUris = new java.util.ArrayList<>();
+    private final java.util.List<String> uploadedUrls = new java.util.ArrayList<>();
     private boolean isSubmitting = false;
 
     @Override
@@ -57,7 +59,7 @@ public class CreateStoryActivity extends AppCompatActivity {
 
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main_create_story), (v, insets) -> {
             Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
-            v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
+            v.setPadding(systemBars.left, systemBars.top, systemBars.right, Math.max(systemBars.bottom, insets.getInsets(WindowInsetsCompat.Type.ime()).bottom));
             return insets;
         });
 
@@ -80,19 +82,25 @@ public class CreateStoryActivity extends AppCompatActivity {
 
     private void setupImagePicker() {
         imagePickerLauncher = registerForActivityResult(
-                new ActivityResultContracts.GetContent(),
-                uri -> {
-                    if (uri != null) {
-                        selectedImageUri = uri;
-                        if (imgStoryPreview != null) {
-                            ImageOrientationHelper.loadLocalUri(this, imgStoryPreview, uri, 1200);
-                        }
-                        if (layoutEmptyPreview != null) {
-                            layoutEmptyPreview.setVisibility(View.GONE);
-                        }
-                        if (btnPickPhoto != null) {
-                            btnPickPhoto.setText("Đổi ảnh");
-                        }
+                new ActivityResultContracts.GetMultipleContents(),
+                uris -> {
+                    if (uris == null || uris.isEmpty()) return;
+                    selectedUris.clear();
+                    for (Uri u : uris) {
+                        if (selectedUris.size() >= MAX_STORY_IMAGES) break;
+                        selectedUris.add(u);
+                    }
+                    if (uris.size() > MAX_STORY_IMAGES) {
+                        Toast.makeText(this, "Mỗi story tối đa " + MAX_STORY_IMAGES + " ảnh, đã lấy " + MAX_STORY_IMAGES + " ảnh đầu", Toast.LENGTH_SHORT).show();
+                    }
+                    if (imgStoryPreview != null) {
+                        ImageOrientationHelper.loadLocalUri(this, imgStoryPreview, selectedUris.get(0), 1200);
+                    }
+                    if (layoutEmptyPreview != null) {
+                        layoutEmptyPreview.setVisibility(View.GONE);
+                    }
+                    if (btnPickPhoto != null) {
+                        btnPickPhoto.setText(selectedUris.size() > 1 ? "Đổi ảnh (" + selectedUris.size() + ")" : "Đổi ảnh");
                     }
                 }
         );
@@ -125,15 +133,20 @@ public class CreateStoryActivity extends AppCompatActivity {
             return;
         }
 
-        if (selectedImageUri == null) {
+        if (selectedUris.isEmpty()) {
             Toast.makeText(this, "Vui lòng chọn ảnh cho story", Toast.LENGTH_SHORT).show();
             return;
         }
 
         String caption = edtStoryCaption != null ? edtStoryCaption.getText().toString().trim() : "";
+        uploadedUrls.clear();
+        uploadAt(0, authHeader, caption);
+    }
 
-        setSubmitting(true, "Đang tải ảnh lên...");
-        final Uri targetUri = selectedImageUri;
+    private void uploadAt(int index, String authHeader, String caption) {
+        final int total = selectedUris.size();
+        setSubmitting(true, "Đang tải ảnh " + (index + 1) + "/" + total + "...");
+        final Uri targetUri = selectedUris.get(index);
         final String displayName = resolveFileName(targetUri);
 
         ImageOrientationHelper.prepareUploadAsync(
@@ -162,12 +175,18 @@ public class CreateStoryActivity extends AppCompatActivity {
                                             ? response.body().data.url
                                             : response.body().data.fullUrl;
                                     if (!android.text.TextUtils.isEmpty(uploadedUrl)) {
-                                        createStoryRecord(authHeader, uploadedUrl, caption);
+                                        uploadedUrls.add(uploadedUrl);
+                                        if (index + 1 < total) {
+                                            uploadAt(index + 1, authHeader, caption);
+                                        } else {
+                                            // Đăng từ ảnh cuối về ảnh đầu để ảnh đầu hiện đầu tiên trong trình xem story.
+                                            createStoryRecord(authHeader, total - 1, caption, 0);
+                                        }
                                         return;
                                     }
                                 }
                                 setSubmitting(false, "Đăng Story");
-                                Toast.makeText(CreateStoryActivity.this, "Tải ảnh thất bại (mã " + response.code() + ")", Toast.LENGTH_SHORT).show();
+                                Toast.makeText(CreateStoryActivity.this, "Tải ảnh " + (index + 1) + " thất bại (mã " + response.code() + ")", Toast.LENGTH_SHORT).show();
                             }
 
                             @Override
@@ -188,28 +207,43 @@ public class CreateStoryActivity extends AppCompatActivity {
         );
     }
 
-    private void createStoryRecord(String authHeader, String mediaUrl, String caption) {
-        setSubmitting(true, "Đang đăng story...");
-        ApiClient.getApiService().createStory(authHeader, new CreateStoryRequest(mediaUrl, caption))
+    private void createStoryRecord(String authHeader, int urlIndex, String caption, int postedCount) {
+        final int total = uploadedUrls.size();
+        setSubmitting(true, "Đang đăng story " + (postedCount + 1) + "/" + total + "...");
+        ApiClient.getApiService().createStory(authHeader, new CreateStoryRequest(uploadedUrls.get(urlIndex), caption))
                 .enqueue(new Callback<CreateStoryResponse>() {
                     @Override
                     public void onResponse(@NonNull Call<CreateStoryResponse> call, @NonNull Response<CreateStoryResponse> response) {
-                        setSubmitting(false, "Đăng Story");
                         if (response.isSuccessful() && response.body() != null) {
+                            if (urlIndex > 0) {
+                                createStoryRecord(authHeader, urlIndex - 1, caption, postedCount + 1);
+                                return;
+                            }
+                            setSubmitting(false, "Đăng Story");
                             Toast.makeText(CreateStoryActivity.this, "Đăng story thành công", Toast.LENGTH_SHORT).show();
                             setResult(RESULT_OK);
                             finish();
                         } else {
-                            Toast.makeText(CreateStoryActivity.this, "Đăng story thất bại (mã " + response.code() + ")", Toast.LENGTH_SHORT).show();
+                            finishWithPartial(postedCount, total, "mã " + response.code());
                         }
                     }
 
                     @Override
                     public void onFailure(@NonNull Call<CreateStoryResponse> call, @NonNull Throwable t) {
-                        setSubmitting(false, "Đăng Story");
-                        Toast.makeText(CreateStoryActivity.this, "Lỗi kết nối: " + t.getMessage(), Toast.LENGTH_SHORT).show();
+                        finishWithPartial(postedCount, total, t.getMessage());
                     }
                 });
+    }
+
+    private void finishWithPartial(int posted, int total, String reason) {
+        setSubmitting(false, "Đăng Story");
+        if (posted > 0) {
+            Toast.makeText(this, "Mới đăng được " + posted + "/" + total + " ảnh (" + reason + ")", Toast.LENGTH_LONG).show();
+            setResult(RESULT_OK);
+            finish();
+        } else {
+            Toast.makeText(this, "Đăng story thất bại (" + reason + ")", Toast.LENGTH_SHORT).show();
+        }
     }
 
     private void setSubmitting(boolean submitting, String label) {
