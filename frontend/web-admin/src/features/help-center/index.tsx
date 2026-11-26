@@ -8,8 +8,6 @@ import {
   AlertCircle,
   Send,
   MessageSquare,
-  User as UserIcon,
-  Calendar,
   Mail,
   Loader2,
   RefreshCw,
