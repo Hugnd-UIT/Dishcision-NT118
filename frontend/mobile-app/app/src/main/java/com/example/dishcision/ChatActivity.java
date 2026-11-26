@@ -15,6 +15,8 @@ import androidx.core.content.FileProvider;
 import java.io.File;
 import java.io.IOException;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.text.util.Linkify;
 import android.util.TypedValue;
 import android.view.Gravity;
@@ -88,6 +90,15 @@ public class ChatActivity extends AppCompatActivity {
     private String partnerAvatarUrl = "";
     private String partnerRole = "";
     private final List<ChatMessagesResponse.MessageItem> currentMessages = new ArrayList<>();
+    private static final long POLL_INTERVAL_MS = 3000;
+    private final Handler pollHandler = new Handler(Looper.getMainLooper());
+    private final Runnable pollTask = new Runnable() {
+        @Override
+        public void run() {
+            fetchMessages(true);
+            pollHandler.postDelayed(this, POLL_INTERVAL_MS);
+        }
+    };
     private final Map<Integer, View> messageViewMap = new HashMap<>();
     private int pendingScrollToMessageId = 0;
     private boolean isUploadingImage = false;
@@ -159,7 +170,15 @@ public class ChatActivity extends AppCompatActivity {
     protected void onResume() {
         super.onResume();
         applyPersonalizations();
-        fetchMessages();
+        fetchMessages(false);
+        // shortcut: polling 3s, đổi sang WebSocket/SSE khi cần realtime thật
+        pollHandler.postDelayed(pollTask, POLL_INTERVAL_MS);
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        pollHandler.removeCallbacks(pollTask);
     }
 
     private void initViews() {
@@ -306,10 +325,10 @@ public class ChatActivity extends AppCompatActivity {
         }
     }
 
-    private void fetchMessages() {
+    private void fetchMessages(boolean silent) {
         String auth = ApiClient.getAuthHeader(this);
         if (auth.isEmpty()) return;
-        if (progressChat != null && currentMessages.isEmpty()) {
+        if (!silent && progressChat != null && currentMessages.isEmpty()) {
             progressChat.setVisibility(View.VISIBLE);
         }
 
@@ -319,9 +338,14 @@ public class ChatActivity extends AppCompatActivity {
                 if (isFinishing() || isDestroyed()) return;
                 if (progressChat != null) progressChat.setVisibility(View.GONE);
                 if (response.isSuccessful() && response.body() != null && response.body().data != null) {
-                    currentMessages.clear();
                     List<ChatMessagesResponse.MessageItem> list = new ArrayList<>(response.body().data);
                     Collections.reverse(list);
+                    if (silent) {
+                        int last = list.isEmpty() ? 0 : list.get(list.size() - 1).messageId;
+                        int curLast = currentMessages.isEmpty() ? 0 : currentMessages.get(currentMessages.size() - 1).messageId;
+                        if (last == curLast && list.size() == currentMessages.size()) return;
+                    }
+                    currentMessages.clear();
                     currentMessages.addAll(list);
                     renderMessages();
                     if (pendingScrollToMessageId > 0) {
