@@ -659,7 +659,13 @@ export async function getAIStats(req: AuthRequest, res: Response): Promise<void>
     completionTokens: 0,
     totalTokens: 0,
     totalLatency: 0,
+    totalRating: 0,
+    ratingCount: 0,
   }));
+
+  const starCounts: Record<number, number> = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
+  let feedbackCount = 0;
+  let totalRatingSum = 0;
 
   const logs = allRequests.map((r) => {
     const rJson = r.resultJson as any;
@@ -684,7 +690,6 @@ Dựa trên các tiêu chí sau, hãy gợi ý 3 món ăn ngon nhất, chuẩn v
     totalLatencyMs += latencyMs;
     if (isFormatValid) validFormatCount++;
 
-    // Aggregate monthly data
     const monthIdx = new Date(r.createdAt).getMonth();
     if (monthlyMap[monthIdx]) {
       monthlyMap[monthIdx].requests += 1;
@@ -692,6 +697,16 @@ Dựa trên các tiêu chí sau, hãy gợi ý 3 món ăn ngon nhất, chuẩn v
       monthlyMap[monthIdx].completionTokens += completionTokens;
       monthlyMap[monthIdx].totalTokens += totalTokens;
       monthlyMap[monthIdx].totalLatency += latencyMs;
+    }
+
+    if (typeof r.feedbackRating === 'number' && r.feedbackRating >= 1 && r.feedbackRating <= 5) {
+      starCounts[r.feedbackRating] = (starCounts[r.feedbackRating] || 0) + 1;
+      feedbackCount += 1;
+      totalRatingSum += r.feedbackRating;
+      if (monthlyMap[monthIdx]) {
+        monthlyMap[monthIdx].totalRating += r.feedbackRating;
+        monthlyMap[monthIdx].ratingCount += 1;
+      }
     }
 
     return {
@@ -714,6 +729,18 @@ Dựa trên các tiêu chí sau, hãy gợi ý 3 món ăn ngon nhất, chuẩn v
   const avgLatency = count > 0 ? Math.round(totalLatencyMs / count) : 0;
   const formatAccuracy = count > 0 ? Math.round((validFormatCount / count) * 1000) / 10 : 100;
 
+  const totalFeedbacks = requestsWithFeedback || feedbackCount;
+  const distribution = [5, 4, 3, 2, 1].map((star) => {
+    const starCount = starCounts[star] || 0;
+    const percentage = totalFeedbacks > 0 ? Math.round((starCount / totalFeedbacks) * 1000) / 10 : 0;
+    return {
+      star,
+      label: `${star} sao`,
+      count: starCount,
+      percentage,
+    };
+  });
+
   const monthlyChart = monthlyMap.map((item) => ({
     name: item.name,
     requests: item.requests,
@@ -721,6 +748,8 @@ Dựa trên các tiêu chí sau, hãy gợi ý 3 món ăn ngon nhất, chuẩn v
     completionTokens: item.completionTokens,
     totalTokens: item.totalTokens,
     latency: item.requests > 0 ? Math.round(item.totalLatency / item.requests) : 0,
+    avgRating: item.ratingCount > 0 ? Math.round((item.totalRating / item.ratingCount) * 10) / 10 : 0,
+    ratingCount: item.ratingCount,
   }));
 
   successResponse(res, {
@@ -743,6 +772,7 @@ Dựa trên các tiêu chí sau, hãy gợi ý 3 món ăn ngon nhất, chuẩn v
     rating: {
       avgRating: avgRatingResult._avg.feedbackRating ? Math.round(avgRatingResult._avg.feedbackRating * 10) / 10 : 0,
       feedbackCount: requestsWithFeedback,
+      distribution,
     },
     monthlyChart,
     logs,
@@ -1171,9 +1201,9 @@ export async function listSupportTickets(req: AuthRequest, res: Response): Promi
   const where: any = {};
   if (status && status !== 'all') {
     if (status === 'pending') {
-      where.status = { notIn: ['Đã giải quyết', 'Resolved', 'Từ chối', 'Rejected'] };
+      where.status = { in: ['Đã tiếp nhận', 'Chờ xử lý', 'Pending'] };
     } else if (status === 'resolved') {
-      where.status = { in: ['Đã giải quyết', 'Resolved'] };
+      where.status = { in: ['Đã giải quyết', 'Đã xử lý', 'Resolved'] };
     } else {
       where.status = status;
     }
@@ -1191,7 +1221,7 @@ export async function listSupportTickets(req: AuthRequest, res: Response): Promi
     ];
   }
 
-  const [tickets, total] = await Promise.all([
+  const [tickets, total, totalAll, pendingCount, resolvedCount] = await Promise.all([
     prisma.supportTicket.findMany({
       where,
       include: {
@@ -1211,6 +1241,13 @@ export async function listSupportTickets(req: AuthRequest, res: Response): Promi
       take: limit,
     }),
     prisma.supportTicket.count({ where }),
+    prisma.supportTicket.count(),
+    prisma.supportTicket.count({
+      where: { status: { in: ['Đã tiếp nhận', 'Chờ xử lý', 'Pending'] } },
+    }),
+    prisma.supportTicket.count({
+      where: { status: { in: ['Đã giải quyết', 'Đã xử lý', 'Resolved'] } },
+    }),
   ]);
 
   const formattedTickets = tickets.map((t) => ({
@@ -1236,7 +1273,22 @@ export async function listSupportTickets(req: AuthRequest, res: Response): Promi
     updatedAt: t.updatedAt,
   }));
 
-  paginatedResponse(res, formattedTickets, { page, limit, total });
+  res.status(200).json({
+    success: true,
+    message: 'Successful',
+    data: formattedTickets,
+    pagination: {
+      page,
+      limit,
+      total,
+      totalPages: Math.ceil(total / limit),
+    },
+    stats: {
+      total: totalAll,
+      pending: pendingCount,
+      resolved: resolvedCount,
+    },
+  });
 }
 
 // ── POST /admin/support-tickets/:ticketId/reply ──────

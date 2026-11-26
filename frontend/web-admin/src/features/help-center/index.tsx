@@ -89,6 +89,7 @@ export function HelpCenterFeature() {
   const { data, isLoading, isFetching, refetch } = useQuery<{
     items: SupportTicket[]
     total: number
+    stats?: { total: number; pending: number; resolved: number }
   }>({
     queryKey: ['admin-support-tickets', statusFilter, searchTerm],
     queryFn: async () => {
@@ -106,20 +107,21 @@ export function HelpCenterFeature() {
       return {
         items: json.data || [],
         total: json.pagination?.total || (json.data || []).length,
+        stats: json.stats,
       }
     },
     refetchInterval: 30000,
   })
 
   const tickets = data?.items || []
-  const totalTickets = data?.total || tickets.length
+  const totalTickets = data?.stats?.total ?? data?.total ?? tickets.length
 
-  const pendingCount = tickets.filter(
-    (t) => t.status === 'Đã tiếp nhận' || t.status === 'Pending'
-  ).length
-  const resolvedCount = tickets.filter(
-    (t) => t.status === 'Đã giải quyết' || t.status === 'Resolved'
-  ).length
+  const pendingCount =
+    data?.stats?.pending ??
+    tickets.filter((t) => ['Đã tiếp nhận', 'Chờ xử lý', 'Pending'].includes(t.status)).length
+  const resolvedCount =
+    data?.stats?.resolved ??
+    tickets.filter((t) => ['Đã giải quyết', 'Đã xử lý', 'Resolved'].includes(t.status)).length
   const resolvedPercentage =
     totalTickets > 0 ? Math.round((resolvedCount / totalTickets) * 100) : 100
 
@@ -340,7 +342,7 @@ export function HelpCenterFeature() {
                 ) : (
                   tickets.map((ticket) => {
                     const isPending =
-                      ticket.status === 'Đã tiếp nhận' || ticket.status === 'Pending'
+                      ['Đã tiếp nhận', 'Chờ xử lý', 'Pending'].includes(ticket.status)
                     const dateFormatted = new Date(ticket.createdAt).toLocaleString('vi-VN', {
                       hour: '2-digit',
                       minute: '2-digit',
