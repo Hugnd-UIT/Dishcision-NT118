@@ -6,6 +6,7 @@ import {
   UserCheck,
   Search as SearchIcon,
   Loader2,
+  RotateCw,
 } from 'lucide-react'
 import {
   ChevronLeftIcon,
@@ -51,7 +52,7 @@ export function AuditLogsFeature() {
   const [pageSize, setPageSize] = useState(10)
   const [searchTerm, setSearchTerm] = useState('')
 
-  const { data, isLoading } = useAuditLogs(page, pageSize)
+  const { data, isLoading, refetch, isFetching } = useAuditLogs(page, pageSize)
 
   const logs = data?.logs ?? []
   const totalLogs = data?.total ?? 0
@@ -194,14 +195,26 @@ export function AuditLogsFeature() {
                   Danh sách chi tiết các hành động và hoạt động của tất cả tài khoản trên hệ thống
                 </CardDescription>
               </div>
-              <div className='relative w-full sm:w-64'>
-                <SearchIcon className='absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground' />
-                <Input
-                  placeholder='Tìm kiếm thao tác...'
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className='pl-9 h-8 text-xs'
-                />
+              <div className='flex items-center gap-2 w-full sm:w-auto'>
+                <div className='relative w-full sm:w-64'>
+                  <SearchIcon className='absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground' />
+                  <Input
+                    placeholder='Tìm kiếm thao tác...'
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className='pl-9 h-8 text-xs'
+                  />
+                </div>
+                <Button
+                  variant='outline'
+                  size='sm'
+                  onClick={() => refetch()}
+                  disabled={isFetching}
+                  className='h-8 text-xs gap-1.5 shrink-0'
+                >
+                  <RotateCw className={`size-3.5 ${isFetching ? 'animate-spin' : ''}`} />
+                  Làm mới
+                </Button>
               </div>
             </div>
           </CardHeader>
