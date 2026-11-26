@@ -94,26 +94,6 @@ const emptyAIStats: AIStatsData = {
   monthlyChart: [],
   logs: [],
 }
-  tokens: {
-    totalPromptTokens: 0,
-    totalCompletionTokens: 0,
-    totalTokens: 0,
-    avgPromptTokens: 0,
-    avgCompletionTokens: 0,
-  },
-  performance: {
-    avgLatency: 0,
-    formatAccuracy: 0,
-    successRate: 0,
-    errorRate: 0,
-  },
-  rating: {
-    avgRating: 0,
-    feedbackCount: 0,
-  },
-  monthlyChart: [],
-  logs: [],
-}
 
 export function useAIStats() {
   return useQuery<AIStatsData>({
