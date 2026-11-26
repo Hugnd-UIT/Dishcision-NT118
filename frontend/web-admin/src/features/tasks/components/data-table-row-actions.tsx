@@ -1,22 +1,17 @@
 import { DotsHorizontalIcon } from '@radix-ui/react-icons'
 import { type Row } from '@tanstack/react-table'
-import { Trash2 } from 'lucide-react'
+import { Eye, Pin, EyeOff, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuRadioGroup,
-  DropdownMenuRadioItem,
   DropdownMenuSeparator,
   DropdownMenuShortcut,
-  DropdownMenuSub,
-  DropdownMenuSubContent,
-  DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { labels } from '../data/data'
 import { taskSchema } from '../data/schema'
+import { usePostMutations } from '../data/use-posts'
 import { useTasks } from './tasks-provider'
 
 type DataTableRowActionsProps<TData> = {
@@ -26,9 +21,13 @@ type DataTableRowActionsProps<TData> = {
 export function DataTableRowActions<TData>({
   row,
 }: DataTableRowActionsProps<TData>) {
-  const task = taskSchema.parse(row.original)
-
+  const post = taskSchema.parse(row.original)
   const { setOpen, setCurrentRow } = useTasks()
+  const { pinMutation, hideMutation } = usePostMutations()
+
+  const postId = post.postId || parseInt(post.id.replace('POST-', '')) || 0
+  const isPinned = post.isPinned || post.status === 'Pinned'
+  const isHidden = post.status === 'Hidden'
 
   return (
     <DropdownMenu modal={false}>
@@ -38,44 +37,65 @@ export function DataTableRowActions<TData>({
           className='flex h-8 w-8 p-0 data-[state=open]:bg-muted'
         >
           <DotsHorizontalIcon className='h-4 w-4' />
-          <span className='sr-only'>Open menu</span>
+          <span className='sr-only'>Mở menu</span>
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align='end' className='w-40'>
+      <DropdownMenuContent align='end' className='w-48'>
         <DropdownMenuItem
           onClick={() => {
-            setCurrentRow(task)
-            setOpen('update')
+            setCurrentRow(post)
+            setOpen('view')
           }}
         >
-          Edit
+          <Eye className='mr-2 size-4 text-muted-foreground' />
+          Xem chi tiết
         </DropdownMenuItem>
-        <DropdownMenuItem disabled>Make a copy</DropdownMenuItem>
-        <DropdownMenuItem disabled>Favorite</DropdownMenuItem>
-        <DropdownMenuSeparator />
-        <DropdownMenuSub>
-          <DropdownMenuSubTrigger>Labels</DropdownMenuSubTrigger>
-          <DropdownMenuSubContent>
-            <DropdownMenuRadioGroup value={task.label}>
-              {labels.map((label) => (
-                <DropdownMenuRadioItem key={label.value} value={label.value}>
-                  {label.label}
-                </DropdownMenuRadioItem>
-              ))}
-            </DropdownMenuRadioGroup>
-          </DropdownMenuSubContent>
-        </DropdownMenuSub>
-        <DropdownMenuSeparator />
+
         <DropdownMenuItem
+          disabled={pinMutation.isPending}
           onClick={() => {
-            setCurrentRow(task)
+            if (postId) {
+              pinMutation.mutate({ postId, isPinned: !isPinned })
+            }
+          }}
+        >
+          <Pin className='mr-2 size-4 text-amber-500' />
+          {isPinned ? 'Bỏ ghim bài' : 'Ghim bài lên đầu'}
+        </DropdownMenuItem>
+
+        <DropdownMenuItem
+          disabled={hideMutation.isPending}
+          onClick={() => {
+            if (postId) {
+              hideMutation.mutate({ postId, isHidden: !isHidden })
+            }
+          }}
+        >
+          {isHidden ? (
+            <>
+              <Eye className='mr-2 size-4 text-emerald-500' />
+              Bỏ ẩn (Hiện lại bài)
+            </>
+          ) : (
+            <>
+              <EyeOff className='mr-2 size-4 text-rose-500' />
+              Ẩn bài viết
+            </>
+          )}
+        </DropdownMenuItem>
+
+        <DropdownMenuSeparator />
+
+        <DropdownMenuItem
+          className='text-destructive focus:text-destructive'
+          onClick={() => {
+            setCurrentRow(post)
             setOpen('delete')
           }}
         >
-          Delete
-          <DropdownMenuShortcut>
-            <Trash2 size={16} />
-          </DropdownMenuShortcut>
+          <Trash2 className='mr-2 size-4 text-destructive' />
+          Xóa bài viết
+          <DropdownMenuShortcut>⌫</DropdownMenuShortcut>
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

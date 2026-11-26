@@ -1,7 +1,7 @@
 import { z } from 'zod'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { showSubmittedData } from '@/lib/show-submitted-data'
+import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import {
   Form,
@@ -23,19 +23,19 @@ import {
   SheetTitle,
 } from '@/components/ui/sheet'
 import { SelectDropdown } from '@/components/select-dropdown'
-import { type Task } from '../data/schema'
+import { type Post } from '../data/schema'
 
 type TaskMutateDrawerProps = {
   open: boolean
   onOpenChange: (open: boolean) => void
-  currentRow?: Task
+  currentRow?: Post
 }
 
 const formSchema = z.object({
-  title: z.string().min(1, 'Title is required.'),
-  status: z.string().min(1, 'Please select a status.'),
-  label: z.string().min(1, 'Please select a label.'),
-  priority: z.string().min(1, 'Please choose a priority.'),
+  title: z.string().min(1, 'Tiêu đề không được để trống.'),
+  status: z.string().min(1, 'Vui lòng chọn trạng thái.'),
+  label: z.string().min(1, 'Vui lòng chọn thể loại.'),
+  priority: z.string().min(1, 'Vui lòng chọn mức độ ưu tiên.'),
 })
 type TaskForm = z.infer<typeof formSchema>
 
@@ -48,19 +48,29 @@ export function TasksMutateDrawer({
 
   const form = useForm<TaskForm>({
     resolver: zodResolver(formSchema),
-    defaultValues: currentRow ?? {
-      title: '',
-      status: '',
-      label: '',
-      priority: '',
-    },
+    defaultValues: currentRow
+      ? {
+          title: currentRow.title || currentRow.content || '',
+          status: currentRow.status || 'Active',
+          label: currentRow.label || 'review',
+          priority: currentRow.priority || 'latest',
+        }
+      : {
+          title: '',
+          status: 'Active',
+          label: 'review',
+          priority: 'latest',
+        },
   })
 
   const onSubmit = (data: TaskForm) => {
-    // do something with the form data
     onOpenChange(false)
     form.reset()
-    showSubmittedData(data)
+    toast.success(
+      isUpdate
+        ? `Đã cập nhật bài viết: "${data.title}"`
+        : `Đã tạo bài viết mới: "${data.title}"`
+    )
   }
 
   return (
@@ -73,61 +83,65 @@ export function TasksMutateDrawer({
     >
       <SheetContent className='flex flex-col'>
         <SheetHeader className='text-start'>
-          <SheetTitle>{isUpdate ? 'Update' : 'Create'} Task</SheetTitle>
+          <SheetTitle>
+            {isUpdate ? 'Cập nhật bài viết' : 'Thêm bài viết mới'}
+          </SheetTitle>
           <SheetDescription>
             {isUpdate
-              ? 'Update the task by providing necessary info.'
-              : 'Add a new task by providing necessary info.'}
-            Click save when you&apos;re done.
+              ? 'Chỉnh sửa thông tin và trạng thái bài viết cộng đồng.'
+              : 'Tạo bài viết chia sẻ ẩm thực mới trên Dishcision.'}
           </SheetDescription>
         </SheetHeader>
         <Form {...form}>
           <form
             id='tasks-form'
             onSubmit={form.handleSubmit(onSubmit)}
-            className='flex-1 space-y-6 overflow-y-auto px-4'
+            className='flex-1 space-y-5 overflow-y-auto px-4 py-2'
           >
             <FormField
               control={form.control}
               name='title'
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Title</FormLabel>
+                  <FormLabel>Tiêu đề / Nội dung tóm tắt</FormLabel>
                   <FormControl>
-                    <Input {...field} placeholder='Enter a title' />
+                    <Input
+                      {...field}
+                      placeholder='Nhập tiêu đề hoặc trích dẫn bài viết...'
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
+
             <FormField
               control={form.control}
               name='status'
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Status</FormLabel>
+                  <FormLabel>Trạng thái hiển thị</FormLabel>
                   <SelectDropdown
                     defaultValue={field.value}
                     onValueChange={field.onChange}
-                    placeholder='Select dropdown'
+                    placeholder='Chọn trạng thái'
                     items={[
-                      { label: 'In Progress', value: 'in progress' },
-                      { label: 'Backlog', value: 'backlog' },
-                      { label: 'Todo', value: 'todo' },
-                      { label: 'Canceled', value: 'canceled' },
-                      { label: 'Done', value: 'done' },
+                      { label: 'Đang hiển thị', value: 'Active' },
+                      { label: 'Đã ghim nổi bật', value: 'Pinned' },
+                      { label: 'Đã ẩn / Vi phạm', value: 'Hidden' },
                     ]}
                   />
                   <FormMessage />
                 </FormItem>
               )}
             />
+
             <FormField
               control={form.control}
               name='label'
               render={({ field }) => (
                 <FormItem className='relative'>
-                  <FormLabel>Label</FormLabel>
+                  <FormLabel>Chuyên mục ẩm thực</FormLabel>
                   <FormControl>
                     <RadioGroup
                       onValueChange={field.onChange}
@@ -136,23 +150,35 @@ export function TasksMutateDrawer({
                     >
                       <FormItem className='flex items-center'>
                         <FormControl>
-                          <RadioGroupItem value='documentation' />
+                          <RadioGroupItem value='review' />
                         </FormControl>
-                        <FormLabel className='font-normal'>
-                          Documentation
+                        <FormLabel className='font-normal ml-2'>
+                          Review quán ăn
                         </FormLabel>
                       </FormItem>
                       <FormItem className='flex items-center'>
                         <FormControl>
-                          <RadioGroupItem value='feature' />
+                          <RadioGroupItem value='recipe' />
                         </FormControl>
-                        <FormLabel className='font-normal'>Feature</FormLabel>
+                        <FormLabel className='font-normal ml-2'>
+                          Công thức nấu ăn
+                        </FormLabel>
                       </FormItem>
                       <FormItem className='flex items-center'>
                         <FormControl>
-                          <RadioGroupItem value='bug' />
+                          <RadioGroupItem value='checkin' />
                         </FormControl>
-                        <FormLabel className='font-normal'>Bug</FormLabel>
+                        <FormLabel className='font-normal ml-2'>
+                          Check-in món ngon
+                        </FormLabel>
+                      </FormItem>
+                      <FormItem className='flex items-center'>
+                        <FormControl>
+                          <RadioGroupItem value='qa' />
+                        </FormControl>
+                        <FormLabel className='font-normal ml-2'>
+                          Hỏi đáp ẩm thực
+                        </FormLabel>
                       </FormItem>
                     </RadioGroup>
                   </FormControl>
@@ -160,12 +186,13 @@ export function TasksMutateDrawer({
                 </FormItem>
               )}
             />
+
             <FormField
               control={form.control}
               name='priority'
               render={({ field }) => (
                 <FormItem className='relative'>
-                  <FormLabel>Priority</FormLabel>
+                  <FormLabel>Mức độ ưu tiên</FormLabel>
                   <FormControl>
                     <RadioGroup
                       onValueChange={field.onChange}
@@ -174,21 +201,27 @@ export function TasksMutateDrawer({
                     >
                       <FormItem className='flex items-center'>
                         <FormControl>
-                          <RadioGroupItem value='high' />
+                          <RadioGroupItem value='featured' />
                         </FormControl>
-                        <FormLabel className='font-normal'>High</FormLabel>
+                        <FormLabel className='font-normal ml-2'>
+                          Nổi bật
+                        </FormLabel>
                       </FormItem>
                       <FormItem className='flex items-center'>
                         <FormControl>
-                          <RadioGroupItem value='medium' />
+                          <RadioGroupItem value='trending' />
                         </FormControl>
-                        <FormLabel className='font-normal'>Medium</FormLabel>
+                        <FormLabel className='font-normal ml-2'>
+                          Phổ biến
+                        </FormLabel>
                       </FormItem>
                       <FormItem className='flex items-center'>
                         <FormControl>
-                          <RadioGroupItem value='low' />
+                          <RadioGroupItem value='latest' />
                         </FormControl>
-                        <FormLabel className='font-normal'>Low</FormLabel>
+                        <FormLabel className='font-normal ml-2'>
+                          Mới nhất
+                        </FormLabel>
                       </FormItem>
                     </RadioGroup>
                   </FormControl>
@@ -200,10 +233,10 @@ export function TasksMutateDrawer({
         </Form>
         <SheetFooter className='gap-2'>
           <SheetClose asChild>
-            <Button variant='outline'>Close</Button>
+            <Button variant='outline'>Hủy</Button>
           </SheetClose>
           <Button form='tasks-form' type='submit'>
-            Save changes
+            {isUpdate ? 'Lưu thay đổi' : 'Tạo bài viết'}
           </Button>
         </SheetFooter>
       </SheetContent>

@@ -60,8 +60,7 @@ export function TasksMultiDeleteDialog<TData>({
             className='me-1 inline-block stroke-destructive'
             size={18}
           />{' '}
-          Delete {selectedRows.length}{' '}
-          {selectedRows.length > 1 ? 'tasks' : 'task'}
+          Xác nhận xóa {selectedRows.length} bài viết đã chọn
         </span>
       }
       desc={
@@ -74,8 +73,8 @@ export function TasksMultiDeleteDialog<TData>({
           className='space-y-4'
         >
           <p className='mb-2'>
-            Are you sure you want to delete the selected tasks? <br />
-            This action cannot be undone.
+            Bạn có chắc chắn muốn xóa các bài viết đã chọn không? <br />
+            Hành động này không thể hoàn tác.
           </p>
 
           <Label className='my-4 flex flex-col items-start gap-1.5'>

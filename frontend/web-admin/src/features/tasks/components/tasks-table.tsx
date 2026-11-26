@@ -82,11 +82,20 @@ export function TasksTable({ data }: DataTableProps) {
     onSortingChange: setSorting,
     onColumnVisibilityChange: setColumnVisibility,
     globalFilterFn: (row, _columnId, filterValue) => {
-      const id = String(row.getValue('id')).toLowerCase()
-      const title = String(row.getValue('title')).toLowerCase()
+      const id = String(row.original.id || '').toLowerCase()
+      const title = String(row.original.title || '').toLowerCase()
+      const content = String(row.original.content || '').toLowerCase()
+      const author = String(row.original.author?.fullName || '').toLowerCase()
+      const username = String(row.original.author?.username || '').toLowerCase()
       const searchValue = String(filterValue).toLowerCase()
 
-      return id.includes(searchValue) || title.includes(searchValue)
+      return (
+        id.includes(searchValue) ||
+        title.includes(searchValue) ||
+        content.includes(searchValue) ||
+        author.includes(searchValue) ||
+        username.includes(searchValue)
+      )
     },
     getCoreRowModel: getCoreRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
@@ -113,17 +122,12 @@ export function TasksTable({ data }: DataTableProps) {
     >
       <DataTableToolbar
         table={table}
-        searchPlaceholder='Filter by title or ID...'
+        searchPlaceholder='Tìm kiếm bài viết theo nội dung, tác giả hoặc mã...'
         filters={[
           {
             columnId: 'status',
-            title: 'Status',
+            title: 'Trạng thái',
             options: statuses,
-          },
-          {
-            columnId: 'priority',
-            title: 'Priority',
-            options: priorities,
           },
         ]}
       />
@@ -181,9 +185,9 @@ export function TasksTable({ data }: DataTableProps) {
               <TableRow>
                 <TableCell
                   colSpan={columns.length}
-                  className='h-24 text-center'
+                  className='h-24 text-center text-muted-foreground'
                 >
-                  No results.
+                  Không tìm thấy bài viết nào.
                 </TableCell>
               </TableRow>
             )}

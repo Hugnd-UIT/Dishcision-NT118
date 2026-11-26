@@ -1,20 +1,45 @@
-import { Download, Plus } from 'lucide-react'
+import { Download, Plus, RotateCw } from 'lucide-react'
+import { useQueryClient } from '@tanstack/react-query'
+import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { useTasks } from './tasks-provider'
 
 export function TasksPrimaryButtons() {
   const { setOpen } = useTasks()
+  const queryClient = useQueryClient()
+
+  const handleRefresh = async () => {
+    await queryClient.invalidateQueries({ queryKey: ['admin-posts'] })
+    toast.success('Đã làm mới danh sách bài viết')
+  }
+
   return (
-    <div className='flex gap-2'>
+    <div className='flex items-center gap-2'>
       <Button
         variant='outline'
-        className='space-x-1'
+        size='sm'
+        className='space-x-1.5'
+        onClick={handleRefresh}
+      >
+        <RotateCw size={16} />
+        <span>Làm mới</span>
+      </Button>
+      <Button
+        variant='outline'
+        size='sm'
+        className='space-x-1.5'
         onClick={() => setOpen('import')}
       >
-        <span>Import</span> <Download size={18} />
+        <Download size={16} />
+        <span>Nhập / Xuất</span>
       </Button>
-      <Button className='space-x-1' onClick={() => setOpen('create')}>
-        <span>Create</span> <Plus size={18} />
+      <Button
+        size='sm'
+        className='space-x-1.5 bg-primary text-primary-foreground hover:bg-primary/90'
+        onClick={() => setOpen('create')}
+      >
+        <Plus size={16} />
+        <span>Thêm bài viết</span>
       </Button>
     </div>
   )

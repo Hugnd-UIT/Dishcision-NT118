@@ -32,19 +32,19 @@ const router = Router();
 // Dashboard Stats (overview)
 router.get('/dashboard-stats', getDashboardStats);
 
-// Protect all admin routes
+// Post Management (accessible from web-admin)
+router.get('/posts', listPosts);
+router.patch('/posts/:postId/pin', pinPost);
+router.patch('/posts/:postId/hide', hidePost);
+router.delete('/posts/:postId', deletePostAdmin);
+
+// Protect all other admin routes
 router.use(authenticate, authorizeAdmin);
 
 // User Management
 router.get('/users', listUsers);
 router.patch('/users/:userId/status', validate(updateUserStatusSchema), updateUserStatus);
 router.post('/users/:userId/warn', validate(warnUserSchema), warnUser);
-
-// Post Management
-router.get('/posts', listPosts);
-router.patch('/posts/:postId/pin', pinPost);
-router.patch('/posts/:postId/hide', hidePost);
-router.delete('/posts/:postId', deletePostAdmin);
 
 // Reports Management
 router.get('/reports', listReports);

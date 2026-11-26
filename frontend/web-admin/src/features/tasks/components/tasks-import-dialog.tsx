@@ -74,9 +74,9 @@ export function TasksImportDialog({
     >
       <DialogContent className='gap-2 sm:max-w-sm'>
         <DialogHeader className='text-start'>
-          <DialogTitle>Import Tasks</DialogTitle>
+          <DialogTitle>Nhập dữ liệu bài viết</DialogTitle>
           <DialogDescription>
-            Import tasks quickly from a CSV file.
+            Nhập danh sách bài viết nhanh chóng từ tệp CSV.
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>

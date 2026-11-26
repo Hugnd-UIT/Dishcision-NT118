@@ -127,19 +127,29 @@ export async function warnUser(req: AuthRequest, res: Response): Promise<void> {
 export async function listPosts(req: AuthRequest, res: Response): Promise<void> {
   const status = req.query.status as PostStatus;
   const authorId = req.query.authorId ? parseInt(req.query.authorId as string) : undefined;
+  const keyword = req.query.keyword as string;
   const page = parseInt(req.query.page as string) || 1;
-  const limit = parseInt(req.query.limit as string) || 20;
+  const limit = parseInt(req.query.limit as string) || 50;
   const skip = (page - 1) * limit;
 
   const where: any = {};
   if (status) where.status = status;
   if (authorId) where.authorId = authorId;
+  if (keyword) {
+    const keywordNum = parseInt(keyword);
+    where.OR = [
+      { content: { contains: keyword, mode: 'insensitive' } },
+      { author: { fullName: { contains: keyword, mode: 'insensitive' } } },
+      { author: { username: { contains: keyword, mode: 'insensitive' } } },
+      ...(!isNaN(keywordNum) ? [{ id: keywordNum }] : []),
+    ];
+  }
 
   const [posts, total] = await Promise.all([
     prisma.post.findMany({
       where,
       include: POST_INCLUDE,
-      orderBy: { createdAt: 'desc' },
+      orderBy: [{ isPinned: 'desc' }, { createdAt: 'desc' }],
       skip,
       take: limit,
     }),
@@ -166,9 +176,10 @@ export async function pinPost(req: AuthRequest, res: Response): Promise<void> {
     data: { isPinned: Boolean(isPinned) },
   });
 
+  const adminId = req.user?.userId || 1;
   await prisma.auditLog.create({
     data: {
-      adminId: req.user!.userId,
+      adminId,
       action: isPinned ? 'PIN_POST' : 'UNPIN_POST',
       targetType: AuditTargetType.Post,
       targetId: postId,
@@ -203,9 +214,10 @@ export async function hidePost(req: AuthRequest, res: Response): Promise<void> {
     delCacheByPattern('newsfeed:*'),
   ]);
 
+  const adminId = req.user?.userId || 1;
   await prisma.auditLog.create({
     data: {
-      adminId: req.user!.userId,
+      adminId,
       action: isHidden ? 'HIDE_POST' : 'UNHIDE_POST',
       targetType: AuditTargetType.Post,
       targetId: postId,
@@ -237,9 +249,10 @@ export async function deletePostAdmin(req: AuthRequest, res: Response): Promise<
     delCacheByPattern('newsfeed:*'),
   ]);
 
+  const adminId = req.user?.userId || 1;
   await prisma.auditLog.create({
     data: {
-      adminId: req.user!.userId,
+      adminId,
       action: 'DELETE_POST',
       targetType: AuditTargetType.Post,
       targetId: postId,

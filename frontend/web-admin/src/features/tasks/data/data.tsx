@@ -1,77 +1,71 @@
 import {
-  ArrowDown,
-  ArrowRight,
-  ArrowUp,
-  Circle,
-  CheckCircle,
-  AlertCircle,
-  Timer,
-  HelpCircle,
-  CircleOff,
+  CheckCircle2,
+  Pin,
+  EyeOff,
+  Flame,
+  Sparkles,
+  Clock,
+  Utensils,
+  ChefHat,
+  Camera,
+  MessageSquare,
 } from 'lucide-react'
 
 export const labels = [
   {
-    value: 'bug',
-    label: 'Bug',
+    value: 'review',
+    label: 'Review quán',
+    icon: Utensils,
   },
   {
-    value: 'feature',
-    label: 'Feature',
+    value: 'recipe',
+    label: 'Công thức nấu',
+    icon: ChefHat,
   },
   {
-    value: 'documentation',
-    label: 'Documentation',
+    value: 'checkin',
+    label: 'Check-in món',
+    icon: Camera,
+  },
+  {
+    value: 'qa',
+    label: 'Hỏi đáp ẩm thực',
+    icon: MessageSquare,
   },
 ]
 
 export const statuses = [
   {
-    label: 'Backlog',
-    value: 'backlog' as const,
-    icon: HelpCircle,
+    label: 'Đang hiển thị',
+    value: 'Active' as const,
+    icon: CheckCircle2,
   },
   {
-    label: 'Todo',
-    value: 'todo' as const,
-    icon: Circle,
+    label: 'Đã ghim',
+    value: 'Pinned' as const,
+    icon: Pin,
   },
   {
-    label: 'In Progress',
-    value: 'in progress' as const,
-    icon: Timer,
-  },
-  {
-    label: 'Done',
-    value: 'done' as const,
-    icon: CheckCircle,
-  },
-  {
-    label: 'Canceled',
-    value: 'canceled' as const,
-    icon: CircleOff,
+    label: 'Đã ẩn',
+    value: 'Hidden' as const,
+    icon: EyeOff,
   },
 ]
 
 export const priorities = [
   {
-    label: 'Low',
-    value: 'low' as const,
-    icon: ArrowDown,
+    label: 'Nổi bật',
+    value: 'featured' as const,
+    icon: Flame,
   },
   {
-    label: 'Medium',
-    value: 'medium' as const,
-    icon: ArrowRight,
+    label: 'Phổ biến',
+    value: 'trending' as const,
+    icon: Sparkles,
   },
   {
-    label: 'High',
-    value: 'high' as const,
-    icon: ArrowUp,
-  },
-  {
-    label: 'Critical',
-    value: 'critical' as const,
-    icon: AlertCircle,
+    label: 'Mới nhất',
+    value: 'latest' as const,
+    icon: Clock,
   },
 ]
