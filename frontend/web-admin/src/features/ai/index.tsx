@@ -1,5 +1,4 @@
-import { Sparkles, Bot, Brain, Zap, CheckCircle2, TrendingUp, Sliders, ShieldCheck } from 'lucide-react'
-import { Button } from '@/components/ui/button'
+import { Sparkles, Bot, Brain, Zap, CheckCircle2, TrendingUp, ShieldCheck } from 'lucide-react'
 import {
   Card,
   CardContent,
