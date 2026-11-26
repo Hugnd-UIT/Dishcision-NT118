@@ -4,6 +4,7 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.graphics.Color;
+import android.graphics.Rect;
 import android.net.Uri;
 import android.os.Bundle;
 import android.text.Editable;
@@ -14,6 +15,7 @@ import android.view.ViewGroup;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
+import android.widget.ScrollView;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -91,9 +93,18 @@ public class EditProfileActivity extends AppCompatActivity {
         EdgeToEdge.enable(this);
         setContentView(R.layout.activity_edit_profile);
 
+        ScrollView scrollView = findViewById(R.id.scrollEditProfile);
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(android.R.id.content), (v, insets) -> {
-            Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
-            v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
+            Insets insetsCombined = insets.getInsets(WindowInsetsCompat.Type.systemBars() | WindowInsetsCompat.Type.ime());
+            v.setPadding(insetsCombined.left, insetsCombined.top, insetsCombined.right, insetsCombined.bottom);
+
+            boolean isImeVisible = insets.isVisible(WindowInsetsCompat.Type.ime());
+            if (isImeVisible && scrollView != null) {
+                View focused = getCurrentFocus();
+                if (focused != null) {
+                    scrollView.postDelayed(() -> scrollToFocusedView(scrollView, focused), 150);
+                }
+            }
             return insets;
         });
 
@@ -371,6 +382,19 @@ public class EditProfileActivity extends AppCompatActivity {
             });
         }
 
+        View.OnFocusChangeListener focusScrollListener = (v, hasFocus) -> {
+            if (hasFocus) {
+                ScrollView sv = findViewById(R.id.scrollEditProfile);
+                if (sv != null) {
+                    sv.postDelayed(() -> scrollToFocusedView(sv, v), 180);
+                }
+            }
+        };
+        if (edtDisplayName != null) edtDisplayName.setOnFocusChangeListener(focusScrollListener);
+        if (edtUsername != null) edtUsername.setOnFocusChangeListener(focusScrollListener);
+        if (edtBio != null) edtBio.setOnFocusChangeListener(focusScrollListener);
+        if (edtCity != null) edtCity.setOnFocusChangeListener(focusScrollListener);
+
         if (btnSave != null) {
             btnSave.setOnClickListener(v -> validateAndSave());
         }
@@ -384,23 +408,166 @@ public class EditProfileActivity extends AppCompatActivity {
         }
     }
 
-    private void showAddPreferenceOptions() {
-        final EditText input = new EditText(this);
-        input.setHint("Nhập khẩu vị mới (VD: Thuần chay, Ít ngọt...)");
-        int padding = dpToPx(16);
-        input.setPadding(padding, padding, padding, padding);
+    private void scrollToFocusedView(ScrollView scrollView, View focused) {
+        if (scrollView == null || focused == null || isFinishing() || isDestroyed()) return;
+        int[] focusedLoc = new int[2];
+        int[] scrollLoc = new int[2];
+        focused.getLocationInWindow(focusedLoc);
+        scrollView.getLocationInWindow(scrollLoc);
+        int relativeTop = focusedLoc[1] - scrollLoc[1] + scrollView.getScrollY();
+        int targetY = Math.max(0, relativeTop - dpToPx(24));
+        scrollView.smoothScrollTo(0, targetY);
+    }
 
-        new AlertDialog.Builder(this)
-                .setTitle("Thêm khẩu vị món ăn")
-                .setView(input)
-                .setPositiveButton("Thêm ngay", (dialog, which) -> {
-                    String taste = input.getText().toString().trim();
-                    if (!taste.isEmpty()) {
-                        addCustomTastePreference(taste.startsWith("✨") ? taste : "✨ " + taste);
+    private static final String[] PRESET_TASTE_TAGS = new String[]{
+            "🌶️ Ăn cay", "🌶️ Ít cay", "🍯 Đồ ngọt", "🧂 Mặn mà", "🍋 Chua thanh",
+            "🌿 Thanh đạm", "🥗 Ăn chay / Thuần chay", "💪 Eat Clean / Healthy",
+            "🥩 Thịt nướng / BBQ", "🍲 Lẩu", "🍜 Bún / Phở / Mì", "🍚 Cơm văn phòng",
+            "🥟 Dimsum / Đồ Hoa", "🍣 Sushi / Đồ Nhật", "🍢 Đồ Hàn / Tokbokki",
+            "🍕 Pizza / Pasta / Đồ Âu", "🍔 Fast Food / Gà rán", "🦐 Hải sản",
+            "🦀 Ốc / Hải sản bình dân", "🥖 Bánh mì / Đồ ăn sáng", "🍢 Ăn vặt đường phố",
+            "🧋 Trà sữa", "☕ Cà phê", "🍵 Trà trái cây / Matcha",
+            "🍰 Bánh ngọt / Tráng miệng", "🍨 Kem / Chè", "🍻 Nhậu / Lai rai",
+            "🥣 Cháo / Súp", "🥬 Nhiều rau xanh", "🧀 Béo ngậy / Phô mai",
+            "🧄 Đậm vị tỏi ớt", "🥥 Béo vị nước cốt dừa", "🔥 Đồ chiên giòn",
+            "🥢 Ẩm thực miền Bắc", "🥢 Ẩm thực miền Trung", "🥢 Ẩm thực miền Nam"
+    };
+
+    private void showAddPreferenceOptions() {
+        com.google.android.material.bottomsheet.BottomSheetDialog dialog =
+                new com.google.android.material.bottomsheet.BottomSheetDialog(this);
+        View sheetView = getLayoutInflater().inflate(R.layout.layout_dialog_taste_tags, null);
+        dialog.setContentView(sheetView);
+
+        View btnClose = sheetView.findViewById(R.id.btnCloseTasteDialog);
+        EditText edtSearch = sheetView.findViewById(R.id.edtSearchTasteTag);
+        LinearLayout containerTags = sheetView.findViewById(R.id.containerTasteTags);
+        TextView tvSelectedCount = sheetView.findViewById(R.id.tvSelectedTasteCount);
+        View btnConfirm = sheetView.findViewById(R.id.btnConfirmTasteTags);
+
+        final Set<String> tempSelected = new LinkedHashSet<>(workingPreferences);
+        final List<String> allTags = new ArrayList<>();
+        for (String tag : PRESET_TASTE_TAGS) {
+            allTags.add(tag);
+        }
+        for (String existing : workingPreferences) {
+            if (!allTags.contains(existing)) {
+                allTags.add(existing);
+            }
+        }
+
+        Runnable updateCountLabel = () -> {
+            if (tvSelectedCount != null) {
+                tvSelectedCount.setText("Đã chọn " + tempSelected.size() + " khẩu vị");
+            }
+        };
+
+        Runnable renderTagList = () -> {
+            if (containerTags == null) return;
+            containerTags.removeAllViews();
+
+            String query = edtSearch != null && edtSearch.getText() != null
+                    ? edtSearch.getText().toString().trim().toLowerCase()
+                    : "";
+
+            List<String> filtered = new ArrayList<>();
+            for (String tag : allTags) {
+                if (query.isEmpty() || tag.toLowerCase().contains(query)) {
+                    filtered.add(tag);
+                }
+            }
+
+            if (filtered.isEmpty()) {
+                TextView emptyTv = new TextView(this);
+                emptyTv.setText("Không tìm thấy tag khẩu vị phù hợp");
+                emptyTv.setTextColor(Color.parseColor("#8E7570"));
+                emptyTv.setTextSize(13f);
+                emptyTv.setPadding(0, dpToPx(16), 0, dpToPx(16));
+                containerTags.addView(emptyTv);
+                return;
+            }
+
+            int maxWidthPx = getResources().getDisplayMetrics().widthPixels - dpToPx(48);
+            LinearLayout currentRow = null;
+            int currentWidth = 0;
+            int marginEnd = dpToPx(8);
+            int marginBottom = dpToPx(8);
+
+            for (String tag : filtered) {
+                TextView chip = new TextView(this);
+                chip.setText(tag);
+                chip.setTextSize(13f);
+                chip.setPadding(dpToPx(12), dpToPx(7), dpToPx(12), dpToPx(7));
+                boolean isSelected = tempSelected.contains(tag);
+                chip.setBackgroundResource(isSelected ? R.drawable.bg_chip_active : R.drawable.bg_chip_inactive);
+                chip.setTextColor(isSelected ? Color.WHITE : Color.parseColor("#141B2B"));
+                chip.setClickable(true);
+                chip.setFocusable(true);
+
+                chip.setOnClickListener(v -> {
+                    if (tempSelected.contains(tag)) {
+                        tempSelected.remove(tag);
+                        chip.setBackgroundResource(R.drawable.bg_chip_inactive);
+                        chip.setTextColor(Color.parseColor("#141B2B"));
+                    } else {
+                        tempSelected.add(tag);
+                        chip.setBackgroundResource(R.drawable.bg_chip_active);
+                        chip.setTextColor(Color.WHITE);
                     }
-                })
-                .setNegativeButton("Hủy", null)
-                .show();
+                    updateCountLabel.run();
+                });
+
+                chip.measure(View.MeasureSpec.UNSPECIFIED, View.MeasureSpec.UNSPECIFIED);
+                int chipWidth = chip.getMeasuredWidth() + marginEnd;
+
+                if (currentRow == null || currentWidth + chipWidth > maxWidthPx) {
+                    currentRow = new LinearLayout(this);
+                    currentRow.setOrientation(LinearLayout.HORIZONTAL);
+                    LinearLayout.LayoutParams rowParams = new LinearLayout.LayoutParams(
+                            ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+                    rowParams.bottomMargin = marginBottom;
+                    currentRow.setLayoutParams(rowParams);
+                    containerTags.addView(currentRow);
+                    currentWidth = 0;
+                }
+
+                LinearLayout.LayoutParams chipParams = new LinearLayout.LayoutParams(
+                        ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+                chipParams.setMarginEnd(marginEnd);
+                chip.setLayoutParams(chipParams);
+                currentRow.addView(chip);
+                currentWidth += chipWidth;
+            }
+        };
+
+        updateCountLabel.run();
+        renderTagList.run();
+
+        if (edtSearch != null) {
+            edtSearch.addTextChangedListener(new TextWatcher() {
+                @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+                @Override public void onTextChanged(CharSequence s, int start, int before, int count) {
+                    renderTagList.run();
+                }
+                @Override public void afterTextChanged(Editable s) {}
+            });
+        }
+
+        if (btnClose != null) {
+            btnClose.setOnClickListener(v -> dialog.dismiss());
+        }
+
+        if (btnConfirm != null) {
+            btnConfirm.setOnClickListener(v -> {
+                workingPreferences.clear();
+                workingPreferences.addAll(tempSelected);
+                isPreferencesEdited = true;
+                renderPreferences();
+                dialog.dismiss();
+            });
+        }
+
+        dialog.show();
     }
 
     private void addCustomTastePreference(String tasteName) {
@@ -607,6 +774,19 @@ public class EditProfileActivity extends AppCompatActivity {
         }
 
         isSaving = true;
+        View.OnFocusChangeListener focusScrollListener = (v, hasFocus) -> {
+            if (hasFocus) {
+                ScrollView sv = findViewById(R.id.scrollEditProfile);
+                if (sv != null) {
+                    sv.postDelayed(() -> scrollToFocusedView(sv, v), 180);
+                }
+            }
+        };
+        if (edtDisplayName != null) edtDisplayName.setOnFocusChangeListener(focusScrollListener);
+        if (edtUsername != null) edtUsername.setOnFocusChangeListener(focusScrollListener);
+        if (edtBio != null) edtBio.setOnFocusChangeListener(focusScrollListener);
+        if (edtCity != null) edtCity.setOnFocusChangeListener(focusScrollListener);
+
         if (btnSave != null) {
             btnSave.setEnabled(false);
             btnSave.setText("Đang lưu...");
@@ -617,7 +797,20 @@ public class EditProfileActivity extends AppCompatActivity {
             @Override
             public void onResponse(Call<UserProfileResponse> call, Response<UserProfileResponse> response) {
                 isSaving = false;
-                if (btnSave != null) {
+                View.OnFocusChangeListener focusScrollListener = (v, hasFocus) -> {
+            if (hasFocus) {
+                ScrollView sv = findViewById(R.id.scrollEditProfile);
+                if (sv != null) {
+                    sv.postDelayed(() -> scrollToFocusedView(sv, v), 180);
+                }
+            }
+        };
+        if (edtDisplayName != null) edtDisplayName.setOnFocusChangeListener(focusScrollListener);
+        if (edtUsername != null) edtUsername.setOnFocusChangeListener(focusScrollListener);
+        if (edtBio != null) edtBio.setOnFocusChangeListener(focusScrollListener);
+        if (edtCity != null) edtCity.setOnFocusChangeListener(focusScrollListener);
+
+        if (btnSave != null) {
                     btnSave.setEnabled(true);
                     btnSave.setText("Lưu");
                 }
@@ -654,7 +847,20 @@ public class EditProfileActivity extends AppCompatActivity {
             @Override
             public void onFailure(Call<UserProfileResponse> call, Throwable t) {
                 isSaving = false;
-                if (btnSave != null) {
+                View.OnFocusChangeListener focusScrollListener = (v, hasFocus) -> {
+            if (hasFocus) {
+                ScrollView sv = findViewById(R.id.scrollEditProfile);
+                if (sv != null) {
+                    sv.postDelayed(() -> scrollToFocusedView(sv, v), 180);
+                }
+            }
+        };
+        if (edtDisplayName != null) edtDisplayName.setOnFocusChangeListener(focusScrollListener);
+        if (edtUsername != null) edtUsername.setOnFocusChangeListener(focusScrollListener);
+        if (edtBio != null) edtBio.setOnFocusChangeListener(focusScrollListener);
+        if (edtCity != null) edtCity.setOnFocusChangeListener(focusScrollListener);
+
+        if (btnSave != null) {
                     btnSave.setEnabled(true);
                     btnSave.setText("Lưu");
                 }
