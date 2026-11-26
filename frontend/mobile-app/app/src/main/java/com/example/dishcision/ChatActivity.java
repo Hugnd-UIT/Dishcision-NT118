@@ -80,7 +80,6 @@ public class ChatActivity extends AppCompatActivity {
 
     private ImageView btnCamera;
     private EditText edtChatMessage;
-    private ImageView btnAttachImage;
     private TextView btnQuickEmoji;
     private FrameLayout btnSendMessage;
 
@@ -90,6 +89,8 @@ public class ChatActivity extends AppCompatActivity {
     private String partnerAvatarUrl = "";
     private String partnerRole = "";
     private final List<ChatMessagesResponse.MessageItem> currentMessages = new ArrayList<>();
+    private static final long TIME_GAP_MS = 15L * 60 * 1000;
+    private final java.util.Set<Integer> shownTimeIds = new java.util.HashSet<>();
     private static final long POLL_INTERVAL_MS = 3000;
     private final Handler pollHandler = new Handler(Looper.getMainLooper());
     private final Runnable pollTask = new Runnable() {
@@ -107,6 +108,9 @@ public class ChatActivity extends AppCompatActivity {
     private ActivityResultLauncher<String> imagePickerLauncher;
     private ActivityResultLauncher<Uri> cameraLauncher;
     private Uri cameraPhotoUri;
+    private ActivityResultLauncher<String> mediaPermissionLauncher;
+    private ChatMediaPanel mediaPanel;
+    private final java.util.ArrayDeque<Uri> imageQueue = new java.util.ArrayDeque<>();
     private ActivityResultLauncher<Intent> detailLauncher;
 
     @Override
@@ -151,6 +155,29 @@ public class ChatActivity extends AppCompatActivity {
                 }
         );
 
+        mediaPermissionLauncher = registerForActivityResult(
+                new ActivityResultContracts.RequestPermission(),
+                granted -> {
+                    if (granted) {
+                        showMediaPanel();
+                    } else {
+                        // Không cấp quyền thì dùng bộ chọn ảnh của hệ thống.
+                        imagePickerLauncher.launch("image/*");
+                    }
+                }
+        );
+        getOnBackPressedDispatcher().addCallback(this, new androidx.activity.OnBackPressedCallback(true) {
+            @Override
+            public void handleOnBackPressed() {
+                if (mediaPanel != null && mediaPanel.isShowing()) {
+                    mediaPanel.hide();
+                } else {
+                    setEnabled(false);
+                    getOnBackPressedDispatcher().onBackPressed();
+                }
+            }
+        });
+
         detailLauncher = registerForActivityResult(
                 new ActivityResultContracts.StartActivityForResult(),
                 result -> {
@@ -176,6 +203,12 @@ public class ChatActivity extends AppCompatActivity {
     }
 
     @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        if (mediaPanel != null) mediaPanel.destroy();
+    }
+
+    @Override
     protected void onPause() {
         super.onPause();
         pollHandler.removeCallbacks(pollTask);
@@ -195,9 +228,38 @@ public class ChatActivity extends AppCompatActivity {
 
         btnCamera = findViewById(R.id.btnCamera);
         edtChatMessage = findViewById(R.id.edtChatMessage);
-        btnAttachImage = findViewById(R.id.btnAttachImage);
         btnQuickEmoji = findViewById(R.id.btnQuickEmoji);
         btnSendMessage = findViewById(R.id.btnSendMessage);
+
+        mediaPanel = new ChatMediaPanel(this, findViewById(R.id.layoutMediaPanel), new ChatMediaPanel.Listener() {
+            @Override
+            public void onCameraClick() {
+                mediaPanel.hide();
+                launchCamera();
+            }
+
+            @Override
+            public void onSend(List<Uri> images) {
+                mediaPanel.hide();
+                imageQueue.addAll(images);
+                sendNextQueuedImage();
+            }
+        });
+    }
+
+    private void showMediaPanel() {
+        android.view.inputmethod.InputMethodManager imm =
+                (android.view.inputmethod.InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
+        View focus = getCurrentFocus();
+        if (imm != null && focus != null) imm.hideSoftInputFromWindow(focus.getWindowToken(), 0);
+        if (edtChatMessage != null) edtChatMessage.clearFocus();
+        mediaPanel.show();
+        scrollToBottom();
+    }
+
+    private void sendNextQueuedImage() {
+        if (imageQueue.isEmpty() || isUploadingImage || isSending) return;
+        uploadAndSendImage(imageQueue.poll());
     }
 
     private void applyPersonalizations() {
@@ -280,31 +342,30 @@ public class ChatActivity extends AppCompatActivity {
         if (btnInfo != null) btnInfo.setOnClickListener(openDetail);
         if (layoutChatName != null) layoutChatName.setOnClickListener(openDetail);
 
-        View.OnClickListener pickImageClick = v -> {
-            if (isUploadingImage) {
-                Toast.makeText(this, "Đang tải ảnh lên, vui lòng đợi...", Toast.LENGTH_SHORT).show();
-                return;
-            }
-            imagePickerLauncher.launch("image/*");
-        };
         if (btnCamera != null) {
             btnCamera.setOnClickListener(v -> {
                 if (isUploadingImage) {
                     Toast.makeText(this, "Đang tải ảnh lên, vui lòng đợi...", Toast.LENGTH_SHORT).show();
                     return;
                 }
-                try {
-                    File dir = new File(getCacheDir(), "camera");
-                    if (!dir.exists() && !dir.mkdirs()) throw new IOException("mkdirs failed");
-                    File photo = File.createTempFile("chat_cam_", ".jpg", dir);
-                    cameraPhotoUri = FileProvider.getUriForFile(this, getPackageName() + ".fileprovider", photo);
-                    cameraLauncher.launch(cameraPhotoUri);
-                } catch (IOException | ActivityNotFoundException e) {
-                    Toast.makeText(this, "Không mở được máy ảnh", Toast.LENGTH_SHORT).show();
+                if (mediaPanel.isShowing()) {
+                    mediaPanel.hide();
+                } else if (ChatMediaPanel.hasPermission(this)) {
+                    showMediaPanel();
+                } else {
+                    mediaPermissionLauncher.launch(ChatMediaPanel.requiredPermission());
                 }
             });
         }
-        if (btnAttachImage != null) btnAttachImage.setOnClickListener(pickImageClick);
+
+        if (edtChatMessage != null) {
+            edtChatMessage.setOnFocusChangeListener((v, hasFocus) -> {
+                if (hasFocus && mediaPanel != null) mediaPanel.hide();
+            });
+            edtChatMessage.setOnClickListener(v -> {
+                if (mediaPanel != null) mediaPanel.hide();
+            });
+        }
 
         if (btnQuickEmoji != null) {
             btnQuickEmoji.setOnClickListener(v -> {
@@ -387,13 +448,31 @@ public class ChatActivity extends AppCompatActivity {
         String selfNick = ChatPrefsHelper.getSelfNickname(this, targetUserId);
         String partnerNick = ChatPrefsHelper.getPartnerNickname(this, targetUserId);
 
+        long prevMs = -1;
         for (ChatMessagesResponse.MessageItem msg : currentMessages) {
             if (msg == null) continue;
             boolean isMine = myUserId > 0 && msg.senderId == myUserId;
 
+            // Mốc giờ giữa cuộc trò chuyện: tin đầu hoặc cách tin trước từ 15 phút.
+            long ms = ChatPrefsHelper.parseTimeMillis(msg.createdAt);
+            if (ms >= 0 && (prevMs < 0 || ms - prevMs >= TIME_GAP_MS)) {
+                TextView tvGap = new TextView(this);
+                LinearLayout.LayoutParams gapLp = new LinearLayout.LayoutParams(
+                        LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+                gapLp.gravity = Gravity.CENTER_HORIZONTAL;
+                gapLp.topMargin = dpToPx(8);
+                gapLp.bottomMargin = dpToPx(10);
+                tvGap.setLayoutParams(gapLp);
+                tvGap.setText(ChatPrefsHelper.formatShortTime(msg.createdAt));
+                tvGap.setTextSize(TypedValue.COMPLEX_UNIT_SP, 11);
+                tvGap.setTextColor(0xFF8E7570);
+                layoutMessagesContainer.addView(tvGap);
+            }
+            if (ms >= 0) prevMs = ms;
+
             LinearLayout wrapper = new LinearLayout(this);
             LinearLayout.LayoutParams wrapperLp = new LinearLayout.LayoutParams(
-                    LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+                    LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
             wrapperLp.gravity = isMine ? Gravity.END : Gravity.START;
             wrapperLp.bottomMargin = dpToPx(8);
             wrapper.setLayoutParams(wrapperLp);
@@ -417,6 +496,7 @@ public class ChatActivity extends AppCompatActivity {
                 wrapper.addView(tvMetaLabel);
             }
 
+            TextView bodyView = null;
             LinearLayout bubble = new LinearLayout(this);
             bubble.setOrientation(LinearLayout.VERTICAL);
             GradientDrawable bg = new GradientDrawable();
@@ -451,20 +531,7 @@ public class ChatActivity extends AppCompatActivity {
                 tvBody.setAutoLinkMask(Linkify.WEB_URLS);
                 tvBody.setText(msg.content);
                 bubble.addView(tvBody);
-            }
-
-            String timeStr = ChatPrefsHelper.formatShortTime(msg.createdAt);
-            if (!timeStr.isEmpty()) {
-                TextView tvTime = new TextView(this);
-                LinearLayout.LayoutParams tLp = new LinearLayout.LayoutParams(
-                        LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT);
-                tLp.gravity = Gravity.END;
-                tLp.topMargin = dpToPx(4);
-                tvTime.setLayoutParams(tLp);
-                tvTime.setText(timeStr);
-                tvTime.setTextSize(TypedValue.COMPLEX_UNIT_SP, 10);
-                tvTime.setTextColor(isMine ? 0xDDFFFFFF : 0xFF8E7570);
-                bubble.addView(tvTime);
+                bodyView = tvBody;
             }
 
             bubble.setOnLongClickListener(v -> {
@@ -472,9 +539,53 @@ public class ChatActivity extends AppCompatActivity {
                 return true;
             });
 
-            wrapper.addView(bubble);
+            LinearLayout.LayoutParams bubbleLp = new LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+            bubbleLp.gravity = isMine ? Gravity.END : Gravity.START;
+            wrapper.addView(bubble, bubbleLp);
+
+            // Giờ riêng của tin: ẩn mặc định, bấm vào bong bóng để hiện/ẩn.
+            String timeStr = ChatPrefsHelper.formatShortTime(msg.createdAt);
+            if (!timeStr.isEmpty()) {
+                TextView tvTime = new TextView(this);
+                LinearLayout.LayoutParams tLp = new LinearLayout.LayoutParams(
+                        LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+                tLp.gravity = isMine ? Gravity.END : Gravity.START;
+                tLp.topMargin = dpToPx(2);
+                tvTime.setLayoutParams(tLp);
+                tvTime.setText(timeStr);
+                tvTime.setTextSize(TypedValue.COMPLEX_UNIT_SP, 10);
+                tvTime.setTextColor(0xFF8E7570);
+                tvTime.setVisibility(shownTimeIds.contains(msg.messageId) ? View.VISIBLE : View.GONE);
+                wrapper.addView(tvTime);
+
+                View.OnClickListener toggle = v -> {
+                    if (!shownTimeIds.remove(msg.messageId)) shownTimeIds.add(msg.messageId);
+                    renderMessages();
+                };
+                bubble.setOnClickListener(toggle);
+                if (bodyView != null) {
+                    bodyView.setOnClickListener(toggle);
+                    bodyView.setOnLongClickListener(v -> {
+                        showMessageActionsDialog(msg);
+                        return true;
+                    });
+                }
+            }
             messageViewMap.put(msg.messageId, wrapper);
             layoutMessagesContainer.addView(wrapper);
+        }
+    }
+
+    private void launchCamera() {
+        try {
+            File dir = new File(getCacheDir(), "camera");
+            if (!dir.exists() && !dir.mkdirs()) throw new IOException("mkdirs failed");
+            File photo = File.createTempFile("chat_cam_", ".jpg", dir);
+            cameraPhotoUri = FileProvider.getUriForFile(this, getPackageName() + ".fileprovider", photo);
+            cameraLauncher.launch(cameraPhotoUri);
+        } catch (IOException | ActivityNotFoundException e) {
+            Toast.makeText(this, "Không mở được máy ảnh", Toast.LENGTH_SHORT).show();
         }
     }
 
@@ -545,6 +656,7 @@ public class ChatActivity extends AppCompatActivity {
                                     String caption = edtChatMessage != null ? edtChatMessage.getText().toString().trim() : "";
                                     sendMessageToBackend(caption, url);
                                 } else {
+                                    imageQueue.clear();
                                     Toast.makeText(ChatActivity.this, "Không thể tải ảnh lên", Toast.LENGTH_SHORT).show();
                                 }
                             }
@@ -553,6 +665,7 @@ public class ChatActivity extends AppCompatActivity {
                             public void onFailure(@NonNull Call<UploadResponse> call, @NonNull Throwable t) {
                                 ImageOrientationHelper.deleteQuietly(prepared.file);
                                 isUploadingImage = false;
+                                imageQueue.clear();
                                 if (!isFinishing()) {
                                     Toast.makeText(ChatActivity.this, "Lỗi kết nối khi tải ảnh", Toast.LENGTH_SHORT).show();
                                 }
@@ -563,6 +676,7 @@ public class ChatActivity extends AppCompatActivity {
                     @Override
                     public void onError(Exception error) {
                         isUploadingImage = false;
+                        imageQueue.clear();
                         if (!isFinishing()) {
                             Toast.makeText(ChatActivity.this, "Không thể đọc tệp ảnh", Toast.LENGTH_SHORT).show();
                         }
@@ -594,7 +708,9 @@ public class ChatActivity extends AppCompatActivity {
                     currentMessages.add(response.body().data);
                     renderMessages();
                     scrollToBottom();
+                    sendNextQueuedImage();
                 } else {
+                    imageQueue.clear();
                     String errMsg = response.code() == 403
                             ? "Bạn không thể gửi tin nhắn cho người dùng này"
                             : "Không thể gửi tin nhắn (mã " + response.code() + ")";
@@ -614,6 +730,7 @@ public class ChatActivity extends AppCompatActivity {
             @Override
             public void onFailure(@NonNull Call<SendChatMessageResponse> call, @NonNull Throwable t) {
                 isSending = false;
+                imageQueue.clear();
                 if (btnSendMessage != null) btnSendMessage.setEnabled(true);
                 if (!isFinishing()) {
                     Toast.makeText(ChatActivity.this, "Lỗi kết nối máy chủ", Toast.LENGTH_SHORT).show();

@@ -141,11 +141,11 @@
             android:layout_height="42dp"
             android:background="@drawable/bg_button_light_blue"
             android:clickable="true"
-            android:contentDescription="Image"
+            android:contentDescription="Gửi ảnh"
             android:focusable="true"
             android:foreground="?attr/selectableItemBackground"
             android:padding="10dp"
-            android:src="@drawable/ic_camera"
+            android:src="@drawable/ic_image"
             app:tint="#505568" />
 
         <LinearLayout
@@ -170,17 +170,6 @@
                 android:textColor="#141B2B"
                 android:textColorHint="#6B7280"
                 android:textSize="14sp" />
-
-            <ImageView
-                android:id="@+id/btnAttachImage"
-                android:layout_width="22dp"
-                android:layout_height="22dp"
-                android:background="?attr/selectableItemBackgroundBorderless"
-                android:clickable="true"
-                android:contentDescription="Attach Image"
-                android:focusable="true"
-                android:src="@drawable/ic_image"
-                app:tint="#505568" />
 
             <TextView
                 android:id="@+id/btnQuickEmoji"
@@ -213,4 +202,40 @@
                 app:tint="#FFFFFF" />
         </FrameLayout>
     </LinearLayout>
+
+    <!-- Bảng ảnh (mở khi bấm nút ảnh) -->
+    <FrameLayout
+        android:id="@+id/layoutMediaPanel"
+        android:layout_width="match_parent"
+        android:layout_height="320dp"
+        android:background="#FFFFFF"
+        android:visibility="gone">
+
+        <GridView
+            android:id="@+id/gridMedia"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:clipToPadding="false"
+            android:paddingBottom="72dp"
+            android:scrollbars="none"
+            android:stretchMode="columnWidth" />
+
+        <TextView
+            android:id="@+id/btnSendMedia"
+            android:layout_width="wrap_content"
+            android:layout_height="44dp"
+            android:layout_gravity="bottom|center_horizontal"
+            android:layout_marginBottom="16dp"
+            android:background="@drawable/bg_chip_active"
+            android:clickable="true"
+            android:focusable="true"
+            android:gravity="center"
+            android:minWidth="140dp"
+            android:paddingHorizontal="24dp"
+            android:text="Gửi (0)"
+            android:textColor="#FFFFFF"
+            android:textSize="15sp"
+            android:textStyle="bold"
+            android:visibility="gone" />
+    </FrameLayout>
 </LinearLayout>

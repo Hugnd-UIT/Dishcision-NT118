@@ -100,8 +100,9 @@ public final class ChatPrefsHelper {
         prefs(context).edit().putStringSet("pinned_" + scope(context, partnerId), set).apply();
     }
 
-    public static String formatShortTime(String isoString) {
-        if (isoString == null || isoString.trim().isEmpty()) return "";
+    /** Epoch millis của chuỗi ISO từ server, -1 nếu không đọc được. */
+    public static long parseTimeMillis(String isoString) {
+        if (isoString == null || isoString.trim().isEmpty()) return -1;
         try {
             String normalized = isoString.replaceFirst("\\.\\d+", "");
             SimpleDateFormat parser = new SimpleDateFormat(
@@ -111,16 +112,21 @@ public final class ChatPrefsHelper {
                 parser.setTimeZone(TimeZone.getTimeZone("UTC"));
             }
             Date parsed = parser.parse(normalized);
-            if (parsed == null) return "";
-            long diffMs = System.currentTimeMillis() - parsed.getTime();
-            SimpleDateFormat timeFmt = new SimpleDateFormat("HH:mm", Locale.getDefault());
-            if (diffMs >= 0 && diffMs < 24L * 3600 * 1000) {
-                return timeFmt.format(parsed);
-            }
-            return new SimpleDateFormat("dd/MM HH:mm", Locale.getDefault()).format(parsed);
+            return parsed == null ? -1 : parsed.getTime();
         } catch (Exception e) {
-            return "";
+            return -1;
         }
+    }
+
+    public static String formatShortTime(String isoString) {
+        long ms = parseTimeMillis(isoString);
+        if (ms < 0) return "";
+        Date parsed = new Date(ms);
+        long diffMs = System.currentTimeMillis() - ms;
+        if (diffMs >= 0 && diffMs < 24L * 3600 * 1000) {
+            return new SimpleDateFormat("HH:mm", Locale.getDefault()).format(parsed);
+        }
+        return new SimpleDateFormat("dd/MM HH:mm", Locale.getDefault()).format(parsed);
     }
 }
 

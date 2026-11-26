@@ -85,6 +85,9 @@ public class EditProfileActivity extends AppCompatActivity {
     private boolean skipFirstResumeFetch = true;
 
     private ActivityResultLauncher<String> imagePickerLauncher;
+    private ActivityResultLauncher<Uri> cameraLauncher;
+    private ActivityResultLauncher<Intent> cropLauncher;
+    private Uri cameraPhotoUri;
     private boolean isUploadingAvatar = false;
     private boolean isSaving = false;
 
@@ -148,14 +151,58 @@ public class EditProfileActivity extends AppCompatActivity {
     }
 
     private void setupImagePicker() {
+        cropLauncher = registerForActivityResult(
+                new ActivityResultContracts.StartActivityForResult(),
+                result -> {
+                    Uri cropped = result.getResultCode() == RESULT_OK && result.getData() != null
+                            ? result.getData().getData() : null;
+                    if (cropped != null) uploadAvatarImage(cropped);
+                }
+        );
         imagePickerLauncher = registerForActivityResult(
                 new ActivityResultContracts.GetContent(),
                 uri -> {
-                    if (uri != null) {
-                        uploadAvatarImage(uri);
+                    if (uri != null) cropLauncher.launch(CropAvatarActivity.newIntent(this, uri));
+                }
+        );
+        cameraLauncher = registerForActivityResult(
+                new ActivityResultContracts.TakePicture(),
+                saved -> {
+                    if (saved && cameraPhotoUri != null) {
+                        cropLauncher.launch(CropAvatarActivity.newIntent(this, cameraPhotoUri));
                     }
                 }
         );
+    }
+
+    private void showAvatarSourceChooser() {
+        if (isUploadingAvatar) {
+            Toast.makeText(this, "Đang tải ảnh lên, vui lòng đợi...", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        new AlertDialog.Builder(this)
+                .setTitle("Đổi ảnh đại diện")
+                .setItems(new String[]{"Chọn ảnh từ thư viện", "Chụp ảnh mới"}, (d, which) -> {
+                    if (which == 0) {
+                        imagePickerLauncher.launch("image/*");
+                    } else {
+                        launchCamera();
+                    }
+                })
+                .show();
+    }
+
+    private void launchCamera() {
+        try {
+            java.io.File dir = new java.io.File(getCacheDir(), "camera");
+            if (!dir.exists() && !dir.mkdirs()) throw new java.io.IOException("mkdirs failed");
+            java.io.File photo = java.io.File.createTempFile("avatar_cam_", ".jpg", dir);
+            cameraPhotoUri = androidx.core.content.FileProvider.getUriForFile(
+                    this, getPackageName() + ".fileprovider", photo);
+            cameraLauncher.launch(cameraPhotoUri);
+        } catch (java.io.IOException | android.content.ActivityNotFoundException e) {
+            Toast.makeText(this, "Không mở được máy ảnh", Toast.LENGTH_SHORT).show();
+        }
     }
 
     private void setupDataFromIntentOrApi() {
@@ -312,21 +359,15 @@ public class EditProfileActivity extends AppCompatActivity {
         }
 
         if (btnChangeAvatar != null) {
-            btnChangeAvatar.setOnClickListener(v -> {
-                if (isUploadingAvatar) {
-                    Toast.makeText(this, "Đang tải ảnh lên, vui lòng đợi...", Toast.LENGTH_SHORT).show();
-                    return;
-                }
-                imagePickerLauncher.launch("image/*");
-            });
+            btnChangeAvatar.setOnClickListener(v -> showAvatarSourceChooser());
         }
 
         if (imgAvatar != null) {
-            imgAvatar.setOnClickListener(v -> {
-                if (!isUploadingAvatar) {
-                    imagePickerLauncher.launch("image/*");
-                }
-            });
+            imgAvatar.setOnClickListener(v -> showAvatarSourceChooser());
+        }
+        View btnCamera = findViewById(R.id.btnAvatarCamera);
+        if (btnCamera != null) {
+            btnCamera.setOnClickListener(v -> showAvatarSourceChooser());
         }
 
         if (edtDisplayName != null) {

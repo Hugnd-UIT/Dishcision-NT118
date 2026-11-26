@@ -281,8 +281,7 @@ public class SettingsActivity extends AppCompatActivity {
         if (tvVersion == null) return;
         try {
             PackageInfo info = getPackageManager().getPackageInfo(getPackageName(), 0);
-            long code = Build.VERSION.SDK_INT >= Build.VERSION_CODES.P ? info.getLongVersionCode() : info.versionCode;
-            tvVersion.setText("Phiên bản " + info.versionName + " (Build " + code + ")");
+            tvVersion.setText("Phiên bản " + info.versionName);
         } catch (PackageManager.NameNotFoundException e) {
             tvVersion.setText("Phiên bản —");
         }
