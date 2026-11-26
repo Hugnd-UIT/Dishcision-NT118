@@ -105,7 +105,7 @@ export function TasksDialogs() {
                   </span>
                   <span className='text-xs text-muted-foreground'>
                     @{currentRow.author?.username || 'user'} •{' '}
-                    {new Date(currentRow.createdAt).toLocaleDateString('vi-VN')}
+                    {new Date(currentRow.createdAt || Date.now()).toLocaleDateString('vi-VN')}
                   </span>
                 </div>
               </div>
