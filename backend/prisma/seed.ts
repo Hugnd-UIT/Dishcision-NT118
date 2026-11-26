@@ -82,18 +82,40 @@ async function main() {
     await prisma.post.deleteMany({});
   }
 
-  const adminPasswordHash = await bcrypt.hash('Admin@Dishcision2026', 12);
+  const adminPasswordHash = await bcrypt.hash('Admin@123456', 12);
   const userPasswordHash = await bcrypt.hash('Password@123', 12);
 
-  const admin = await ensureSampleUser({
-    username: 'admin',
-    email: 'admin@dishcision.com',
+  const adminQuang = await ensureSampleUser({
+    username: 'quang',
+    email: 'quang@dishcision.com',
     passwordHash: adminPasswordHash,
-    fullName: 'Quản trị viên Dishcision',
+    fullName: 'Quang',
     role: Role.Admin,
     avatarUrl: '/uploads/images/sample-avatar-admin.jpg',
-    bio: 'Dishcision Head Administrator',
+    bio: 'Quản trị viên Dishcision Quang',
   });
+
+  const adminHung = await ensureSampleUser({
+    username: 'hung',
+    email: 'hung@dishcision.com',
+    passwordHash: adminPasswordHash,
+    fullName: 'Hưng',
+    role: Role.Admin,
+    avatarUrl: '/uploads/images/sample-avatar-admin.jpg',
+    bio: 'Quản trị viên Dishcision Hưng',
+  });
+
+  const adminTien = await ensureSampleUser({
+    username: 'tien',
+    email: 'tien@dishcision.com',
+    passwordHash: adminPasswordHash,
+    fullName: 'Tiến',
+    role: Role.Admin,
+    avatarUrl: '/uploads/images/sample-avatar-admin.jpg',
+    bio: 'Quản trị viên Dishcision Tiến',
+  });
+
+  const admin = adminQuang;
 
   const tester = await ensureSampleUser({
     username: 'tester_foodie',

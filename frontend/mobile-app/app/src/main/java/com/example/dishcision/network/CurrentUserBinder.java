@@ -26,8 +26,16 @@ public final class CurrentUserBinder {
     private CurrentUserBinder() {}
 
     public static void bind(Activity activity, ImageView avatar, TextView name, TextView handle) {
+        bind(activity, avatar, name, handle, null);
+    }
+
+    public static void bind(Activity activity, ImageView avatar, TextView name, TextView handle, ImageView verifiedBadge) {
         if (activity == null) return;
         SharedPreferences prefs = activity.getSharedPreferences(PREFS, Context.MODE_PRIVATE);
+        if (verifiedBadge != null) {
+            boolean isVerified = prefs.getBoolean("is_verified", false);
+            verifiedBadge.setVisibility(isVerified ? android.view.View.VISIBLE : android.view.View.GONE);
+        }
         render(avatar, name, handle,
                 prefs.getString(KEY_NAME, null),
                 prefs.getString(KEY_USERNAME, null),
@@ -77,10 +85,15 @@ public final class CurrentUserBinder {
                         if (user.userId > 0 && user.allergies != null) {
                             editor.putStringSet("user_allergies_" + user.userId, new java.util.HashSet<>(user.allergies));
                         }
+                        boolean isVerified = user.isVerified || "Admin".equalsIgnoreCase(user.role);
+                        editor.putBoolean("is_verified", isVerified);
                         editor.putBoolean("is_google_login", user.isGoogleAccount);
                         editor.apply();
                         if (user.userId > 0) {
                             new TokenManager(activity).saveAuthData(null, user.userId, user.email, user.fullName);
+                        }
+                        if (verifiedBadge != null) {
+                            verifiedBadge.setVisibility(isVerified ? android.view.View.VISIBLE : android.view.View.GONE);
                         }
                         render(avatar, name, handle, user.fullName, user.username, user.email, user.avatarUrl);
                     }

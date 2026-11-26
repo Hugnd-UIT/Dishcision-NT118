@@ -67,6 +67,7 @@ public class HomeActivity extends AppCompatActivity {
     private LinearLayout menuReviews;
     private LinearLayout menuLogout;
     private ImageView imgSidebarAvatar;
+    private ImageView imgSidebarVerified;
     private TextView tvSidebarUserName;
     private TextView tvSidebarUserHandle;
 
@@ -111,7 +112,7 @@ public class HomeActivity extends AppCompatActivity {
 
         initViews();
         setupListeners();
-        CurrentUserBinder.bind(this, imgSidebarAvatar, tvSidebarUserName, tvSidebarUserHandle);
+        CurrentUserBinder.bind(this, imgSidebarAvatar, tvSidebarUserName, tvSidebarUserHandle, imgSidebarVerified);
         fetchFeedFromBackend();
         fetchUnreadNotificationDot();
     }
@@ -178,6 +179,7 @@ public class HomeActivity extends AppCompatActivity {
         menuReviews = findViewById(R.id.menuReviews);
         menuLogout = findViewById(R.id.menuLogout);
         imgSidebarAvatar = findViewById(R.id.imgSidebarAvatar);
+        imgSidebarVerified = findViewById(R.id.imgSidebarVerified);
         tvSidebarUserName = findViewById(R.id.tvSidebarUserName);
         tvSidebarUserHandle = findViewById(R.id.tvSidebarUserHandle);
     }
@@ -203,7 +205,7 @@ public class HomeActivity extends AppCompatActivity {
             drawerLayout.addDrawerListener(new DrawerLayout.SimpleDrawerListener() {
                 @Override
                 public void onDrawerOpened(@NonNull View drawerView) {
-                    CurrentUserBinder.bind(HomeActivity.this, imgSidebarAvatar, tvSidebarUserName, tvSidebarUserHandle);
+                    CurrentUserBinder.bind(HomeActivity.this, imgSidebarAvatar, tvSidebarUserName, tvSidebarUserHandle, imgSidebarVerified);
                 }
             });
         }
@@ -293,7 +295,7 @@ public class HomeActivity extends AppCompatActivity {
         if (showSpinner && swipeRefreshFeed != null) {
             swipeRefreshFeed.setRefreshing(true);
         }
-        CurrentUserBinder.bind(this, imgSidebarAvatar, tvSidebarUserName, tvSidebarUserHandle);
+        CurrentUserBinder.bind(this, imgSidebarAvatar, tvSidebarUserName, tvSidebarUserHandle, imgSidebarVerified);
         fetchFeedFromBackend();
         fetchUnreadNotificationDot();
     }

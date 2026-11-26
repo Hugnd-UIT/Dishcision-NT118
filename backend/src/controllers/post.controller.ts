@@ -24,6 +24,8 @@ export const POST_INCLUDE = {
       bio: true,
       city: true,
       role: true,
+      isVerified: true,
+      verificationStatus: true,
       _count: {
         select: {
           followers: true,
@@ -397,7 +399,7 @@ export async function getPostLikes(req: AuthRequest, res: Response): Promise<voi
   const [likes, total] = await Promise.all([
     prisma.postLike.findMany({
       where: likerWhere,
-      include: { user: { select: { id: true, username: true, fullName: true, avatarUrl: true, bio: true, city: true, role: true, _count: { select: { followers: true, following: true } } } } },
+      include: { user: { select: { id: true, username: true, fullName: true, avatarUrl: true, bio: true, city: true, role: true, isVerified: true, _count: { select: { followers: true, following: true } } } } },
       skip,
       take: limit,
     }),

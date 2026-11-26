@@ -12,7 +12,7 @@ import nodemailer from 'nodemailer';
 // ── Helpers ───────────────────────────────
 
 const USER_PUBLIC_SELECT = {
-  id: true, username: true, fullName: true, avatarUrl: true, bio: true, city: true, allergies: true, role: true,
+  id: true, username: true, fullName: true, avatarUrl: true, bio: true, city: true, allergies: true, role: true, isVerified: true, verificationStatus: true,
   _count: { select: { followers: true, following: true } },
 };
 
@@ -31,6 +31,8 @@ function formatUser(user: any) {
     allergies: Array.isArray(user.allergies) ? user.allergies : [],
     ...(prefNames ? { preferences: prefNames } : {}),
     role: user.role,
+    isVerified: Boolean(user.isVerified),
+    verificationStatus: user.verificationStatus || (user.isVerified ? 'Approved' : 'None'),
     isGoogleAccount: typeof user.passwordHash === 'string' ? user.passwordHash === '' : undefined,
     followersCount: _count?.followers ?? 0,
     followingCount: _count?.following ?? 0,

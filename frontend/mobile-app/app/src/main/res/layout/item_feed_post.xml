@@ -125,7 +125,7 @@
         android:background="#E8ECF4"
         android:visibility="gone">
 
-        <androidx.viewpager.widget.ViewPager
+        <com.example.dishcision.ui.NestedViewPager
             android:id="@+id/vpPostImages"
             android:layout_width="match_parent"
             android:layout_height="match_parent" />
