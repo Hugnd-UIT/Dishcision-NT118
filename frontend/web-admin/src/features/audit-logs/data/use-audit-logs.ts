@@ -21,11 +21,28 @@ export interface AuditLogItem {
   createdAt: string
 }
 
+export interface ActiveAccountItem {
+  id: number
+  username: string
+  fullName?: string | null
+  avatarUrl?: string | null
+  role: string
+  lastActive: string
+  deviceName?: string | null
+  location?: string | null
+}
+
 export interface AuditLogsResponse {
   logs: AuditLogItem[]
   total: number
   page: number
   limit: number
+  stats?: {
+    totalLogs: number
+    todayActionCount: number
+    activeAccountsCount: number
+    activeAccounts: ActiveAccountItem[]
+  }
 }
 
 export function useAuditLogs(page = 1, limit = 20) {
@@ -44,6 +61,7 @@ export function useAuditLogs(page = 1, limit = 20) {
             total: json.pagination?.total ?? json.meta?.total ?? json.data.length,
             page: json.pagination?.page ?? json.meta?.page ?? page,
             limit: json.pagination?.limit ?? json.meta?.limit ?? limit,
+            stats: json.stats ?? undefined,
           }
         }
         return { logs: [], total: 0, page: 1, limit }

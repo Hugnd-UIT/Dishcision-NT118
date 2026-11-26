@@ -1,12 +1,13 @@
 import { useState } from 'react'
 import {
   ScrollText,
-  ShieldAlert,
   Clock,
   UserCheck,
   Search as SearchIcon,
   Loader2,
   RotateCw,
+  Activity,
+  Users,
 } from 'lucide-react'
 import {
   ChevronLeftIcon,
@@ -24,6 +25,14 @@ import {
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
+import { ScrollArea } from '@/components/ui/scroll-area'
 import {
   Select,
   SelectContent,
@@ -51,12 +60,19 @@ export function AuditLogsFeature() {
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
   const [searchTerm, setSearchTerm] = useState('')
+  const [isAccountsDialogOpen, setIsAccountsDialogOpen] = useState(false)
+  const [accountSearch, setAccountSearch] = useState('')
 
   const { data, isLoading, refetch, isFetching } = useAuditLogs(page, pageSize)
 
   const logs = data?.logs ?? []
   const totalLogs = data?.total ?? 0
   const totalPages = Math.max(1, Math.ceil(totalLogs / pageSize))
+
+  const stats = data?.stats
+  const activeAccounts = stats?.activeAccounts ?? []
+  const activeCount = stats?.activeAccountsCount ?? activeAccounts.length
+  const todayActionCount = stats?.todayActionCount ?? logs.length
 
   const filteredLogs = logs.filter((log) => {
     if (!searchTerm) return true
@@ -127,36 +143,63 @@ export function AuditLogsFeature() {
             </CardContent>
           </Card>
 
-          <Card className='border-border/60 shadow-xs'>
+          {/* Card 2: Realtime Active Accounts */}
+          <Card
+            onClick={() => setIsAccountsDialogOpen(true)}
+            className='border-border/60 shadow-xs cursor-pointer hover:border-emerald-500/50 hover:bg-emerald-500/5 transition-all'
+          >
             <CardHeader className='flex flex-row items-center justify-between pb-2'>
               <CardTitle className='text-xs font-medium text-muted-foreground'>
-                Tài khoản hoạt động
+                Tài khoản đang hoạt động
               </CardTitle>
-              <UserCheck className='size-4 text-emerald-500' />
+              <div className='flex items-center gap-1.5'>
+                <span className='size-2 rounded-full bg-emerald-500 animate-pulse' />
+                <Badge variant='outline' className='text-[10px] border-emerald-500/30 bg-emerald-500/10 text-emerald-500 py-0 px-1.5 font-normal'>
+                  Trực tuyến
+                </Badge>
+              </div>
             </CardHeader>
             <CardContent>
               <div className='text-2xl font-bold text-foreground'>
-                Đa dạng tài khoản
+                {activeCount > 0 ? `${activeCount} tài khoản` : 'Đang cập nhật'}
               </div>
-              <p className='text-xs text-muted-foreground mt-1'>
-                Gồm quản trị viên, chủ quán và người dùng
-              </p>
+              <div className='flex items-center justify-between mt-2'>
+                <div className='flex -space-x-1.5 overflow-hidden'>
+                  {activeAccounts.slice(0, 4).map((acc) => (
+                    <Avatar key={acc.id} className='size-5 ring-1 ring-background'>
+                      <AvatarImage src={acc.avatarUrl || ''} />
+                      <AvatarFallback className='text-[9px] bg-primary/20 text-primary'>
+                        {acc.username[0].toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                  ))}
+                  {activeAccounts.length > 4 && (
+                    <span className='flex size-5 items-center justify-center rounded-full bg-muted text-[9px] text-muted-foreground ring-1 ring-background'>
+                      +{activeAccounts.length - 4}
+                    </span>
+                  )}
+                </div>
+                <span className='text-xs font-medium text-emerald-600 dark:text-emerald-400 hover:underline inline-flex items-center gap-1'>
+                  Xem danh sách
+                </span>
+              </div>
             </CardContent>
           </Card>
 
+          {/* Card 3: Today's Operations (replaced security card) */}
           <Card className='border-border/60 shadow-xs'>
             <CardHeader className='flex flex-row items-center justify-between pb-2'>
               <CardTitle className='text-xs font-medium text-muted-foreground'>
-                Mức độ an toàn hệ thống
+                Hoạt động trong 24 giờ qua
               </CardTitle>
-              <ShieldAlert className='size-4 text-sky-500' />
+              <Activity className='size-4 text-sky-500' />
             </CardHeader>
             <CardContent>
               <div className='text-2xl font-bold text-foreground'>
-                Bảo vệ 100%
+                {todayActionCount.toLocaleString()} thao tác
               </div>
               <p className='text-xs text-muted-foreground mt-1'>
-                Mọi hành động đều được kiểm duyệt
+                Ghi nhận tự động từ tất cả tài khoản
               </p>
             </CardContent>
           </Card>
@@ -370,6 +413,110 @@ export function AuditLogsFeature() {
             </div>
           </CardContent>
         </Card>
+
+        {/* Realtime Active Accounts Dialog */}
+        <Dialog open={isAccountsDialogOpen} onOpenChange={setIsAccountsDialogOpen}>
+          <DialogContent className='sm:max-w-[560px] max-h-[85vh] flex flex-col p-0 gap-0'>
+            <DialogHeader className='p-6 pb-4 border-b border-border/50'>
+              <div className='flex items-center gap-2'>
+                <span className='size-2.5 rounded-full bg-emerald-500 animate-pulse' />
+                <DialogTitle className='text-base font-semibold'>
+                  Danh sách tài khoản đang hoạt động thời gian thực
+                </DialogTitle>
+              </div>
+              <DialogDescription className='text-xs text-muted-foreground mt-1'>
+                Tự động cập nhật mỗi 3 giây • Tổng cộng {activeAccounts.length} tài khoản đang có kết nối
+              </DialogDescription>
+              <div className='relative mt-3'>
+                <SearchIcon className='absolute left-3 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground' />
+                <Input
+                  placeholder='Tìm kiếm theo tên tài khoản hoặc vai trò...'
+                  value={accountSearch}
+                  onChange={(e) => setAccountSearch(e.target.value)}
+                  className='pl-8 h-9 text-xs'
+                />
+              </div>
+            </DialogHeader>
+
+            <ScrollArea className='p-6 overflow-y-auto max-h-[50vh]'>
+              {activeAccounts
+                .filter((acc) => {
+                  if (!accountSearch) return true
+                  const term = accountSearch.toLowerCase()
+                  return (
+                    acc.username.toLowerCase().includes(term) ||
+                    (acc.fullName || '').toLowerCase().includes(term) ||
+                    acc.role.toLowerCase().includes(term)
+                  )
+                })
+                .length === 0 ? (
+                <div className='text-center py-8 text-xs text-muted-foreground'>
+                  Không tìm thấy tài khoản nào phù hợp
+                </div>
+              ) : (
+                <div className='space-y-3'>
+                  {activeAccounts
+                    .filter((acc) => {
+                      if (!accountSearch) return true
+                      const term = accountSearch.toLowerCase()
+                      return (
+                        acc.username.toLowerCase().includes(term) ||
+                        (acc.fullName || '').toLowerCase().includes(term) ||
+                        acc.role.toLowerCase().includes(term)
+                      )
+                    })
+                    .map((acc) => (
+                      <div
+                        key={acc.id}
+                        className='flex items-center justify-between p-3 rounded-lg border border-border/50 hover:bg-muted/40 transition-colors'
+                      >
+                        <div className='flex items-center gap-3'>
+                          <div className='relative'>
+                            <Avatar className='size-10'>
+                              <AvatarImage src={acc.avatarUrl || ''} />
+                              <AvatarFallback className='text-xs font-semibold bg-primary/10 text-primary'>
+                                {acc.username[0].toUpperCase()}
+                              </AvatarFallback>
+                            </Avatar>
+                            <span className='absolute bottom-0 right-0 size-2.5 rounded-full bg-emerald-500 ring-2 ring-background' />
+                          </div>
+                          <div className='flex flex-col'>
+                            <div className='flex items-center gap-2'>
+                              <span className='font-semibold text-sm text-foreground'>
+                                @{acc.username}
+                              </span>
+                              <Badge
+                                variant='outline'
+                                className='text-[10px] py-0 px-1.5 font-normal border-primary/30 bg-primary/10 text-primary'
+                              >
+                                {acc.role === 'Admin'
+                                  ? 'Quản trị viên'
+                                  : acc.role === 'RestaurantAccount'
+                                  ? 'Chủ quán'
+                                  : 'Người dùng'}
+                              </Badge>
+                            </div>
+                            <span className='text-xs text-muted-foreground'>
+                              {acc.fullName && acc.fullName !== acc.username ? acc.fullName : 'Tài khoản hoạt động'} • {acc.deviceName || 'Thiết bị di động'}
+                            </span>
+                          </div>
+                        </div>
+
+                        <div className='text-right text-xs'>
+                          <span className='inline-flex items-center gap-1 font-mono text-[11px] text-muted-foreground'>
+                            {acc.location || 'Trực tuyến'}
+                          </span>
+                          <div className='text-[10px] text-emerald-600 dark:text-emerald-400 font-medium'>
+                            Vừa hoạt động lúc {new Date(acc.lastActive).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                </div>
+              )}
+            </ScrollArea>
+          </DialogContent>
+        </Dialog>
       </Main>
     </>
   )

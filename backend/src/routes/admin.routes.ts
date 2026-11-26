@@ -17,6 +17,7 @@ import {
   getAIStats,
   broadcastSystemNotification,
   getAuditLogs,
+  getActiveAccounts,
 } from '../controllers/admin.controller';
 import { authenticate, authorizeAdmin } from '../middlewares/auth.middleware';
 import {
@@ -47,8 +48,9 @@ router.get('/ai-stats', getAIStats);
 router.get('/ai-configs', listAIConfigs);
 router.get('/ai-prompts', listAIPrompts);
 
-// Audit Logs (accessible from web-admin)
+// Audit Logs & Active Accounts (accessible from web-admin)
 router.get('/audit-logs', getAuditLogs);
+router.get('/active-accounts', getActiveAccounts);
 
 // Protect all other admin routes
 router.use(authenticate, authorizeAdmin);

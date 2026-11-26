@@ -91,6 +91,25 @@ export function AiFeature() {
   const logs = aiData?.logs ?? []
   const totalRequests = aiData?.totalRequests ?? 0
 
+  const totalPromptTokens = tokens.totalPromptTokens || 0
+  const totalCompletionTokens = tokens.totalCompletionTokens || 0
+  const totalCostUSD = (totalPromptTokens * 0.30 + totalCompletionTokens * 2.50) / 1_000_000
+  const totalCostVND = Math.round(totalCostUSD * 25400)
+
+  const monthlyCostChart = monthlyChart.map((m) => {
+    const pTokens = m.promptTokens || 0
+    const cTokens = m.completionTokens || 0
+    const costUSD = (pTokens * 0.30 + cTokens * 2.50) / 1_000_000
+    const costVND = Math.round(costUSD * 25400)
+    return {
+      ...m,
+      costUSD: Number(costUSD.toFixed(5)),
+      costVND,
+      formattedUSD: `$${costUSD.toFixed(4)}`,
+      formattedVND: `${costVND.toLocaleString()} đ`,
+    }
+  })
+
   const totalLogs = logs.length
   const totalPages = Math.max(1, Math.ceil(totalLogs / pageSize))
   const paginatedLogs = logs.slice((currentPage - 1) * pageSize, currentPage * pageSize)
@@ -127,7 +146,7 @@ export function AiFeature() {
                 className='gap-1.5 border-emerald-500/30 bg-emerald-500/10 text-emerald-500 py-1 px-3 text-xs'
               >
                 <span className='size-2 rounded-full bg-emerald-500 animate-pulse' />
-                Gemini 2.5 Flash: Đang hoạt động • {totalRequests} lượt gọi thực tế
+                Gemini 2.5 Flash
               </Badge>
             )}
           </div>
@@ -195,20 +214,20 @@ export function AiFeature() {
             </CardContent>
           </Card>
 
-          {/* Card 4: User Rating & Success Rate */}
+          {/* Card 4: Estimated API Cost */}
           <Card className='border-border/60 shadow-xs'>
             <CardHeader className='flex flex-row items-center justify-between pb-2'>
               <CardTitle className='text-xs font-medium text-muted-foreground'>
-                Độ hài lòng và tỷ lệ thành công
+                Chi phí API ước tính
               </CardTitle>
-              <Star className='size-4 text-amber-500 fill-amber-500/20' />
+              <Coins className='size-4 text-emerald-500' />
             </CardHeader>
             <CardContent>
               <div className='text-2xl font-bold text-foreground'>
-                {rating.avgRating > 0 ? `${rating.avgRating} / 5.0 ⭐` : 'Chưa có đánh giá'}
+                ${totalCostUSD.toFixed(4)} <span className='text-xs font-normal text-muted-foreground'>USD</span>
               </div>
               <p className='text-xs text-muted-foreground mt-1'>
-                {rating.feedbackCount} phản hồi thực tế • Thành công: {performance.successRate}%
+                Tương đương {totalCostVND.toLocaleString()} đ theo giá Gemini 2.5 Flash
               </p>
             </CardContent>
           </Card>
@@ -365,6 +384,81 @@ export function AiFeature() {
             </CardContent>
           </Card>
         </div>
+
+        {/* RECHARTS SECTION: Monthly Cost Chart */}
+        <Card className='border-border/60 shadow-xs mb-6'>
+          <CardHeader className='pb-3'>
+            <div className='flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between'>
+              <div className='flex items-center gap-2'>
+                <Coins className='size-5 text-emerald-500' />
+                <div>
+                  <CardTitle className='text-base font-semibold'>
+                    Biểu Đồ Chi Phí API Gemini 2.5 Flash Hàng Tháng
+                  </CardTitle>
+                  <CardDescription className='text-xs'>
+                    Tính toán chi phí dựa trên đơn giá chính thức của Google: $0.30 trên 1 triệu token vào và $2.50 trên 1 triệu token ra
+                  </CardDescription>
+                </div>
+              </div>
+              <div className='flex items-center gap-2'>
+                <Badge variant='outline' className='text-xs font-normal border-border/60'>
+                  Đơn giá vào: $0.30 / 1M token
+                </Badge>
+                <Badge variant='outline' className='text-xs font-normal border-border/60'>
+                  Đơn giá ra: $2.50 / 1M token
+                </Badge>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className='h-[280px] w-full'>
+              <ResponsiveContainer width='100%' height='100%'>
+                <BarChart
+                  data={monthlyCostChart}
+                  margin={{ top: 15, right: 15, left: -10, bottom: 0 }}
+                >
+                  <CartesianGrid strokeDasharray='3 3' stroke='#33333333' vertical={false} />
+                  <XAxis
+                    dataKey='name'
+                    stroke='#888888'
+                    fontSize={11}
+                    tickLine={false}
+                    axisLine={false}
+                  />
+                  <YAxis
+                    stroke='#888888'
+                    fontSize={11}
+                    tickLine={false}
+                    axisLine={false}
+                    tickFormatter={(val) => `$${Number(val).toFixed(3)}`}
+                  />
+                  <Tooltip
+                    cursor={{ fill: 'rgba(255, 255, 255, 0.05)' }}
+                    contentStyle={{
+                      backgroundColor: '#18181b',
+                      borderColor: '#27272a',
+                      borderRadius: '8px',
+                      color: '#f4f4f5',
+                      fontSize: '12px',
+                      boxShadow: '0 4px 12px rgba(0,0,0,0.5)',
+                    }}
+                    formatter={(val: any) => [
+                      `$${Number(val).toFixed(5)} USD • ${(Math.round(Number(val) * 25400)).toLocaleString()} đ`,
+                      'Chi phí ước tính',
+                    ]}
+                  />
+                  <Bar
+                    dataKey='costUSD'
+                    name='costUSD'
+                    fill='#10b981'
+                    radius={[4, 4, 0, 0]}
+                    maxBarSize={28}
+                  />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </CardContent>
+        </Card>
 
         {/* REAL REQUEST INFERENCE LOGS TABLE WITH FULL PAGINATION */}
         <Card className='border-border/60 shadow-xs mb-6'>

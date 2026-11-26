@@ -658,7 +658,9 @@ export async function getAuditLogs(req: AuthRequest, res: Response): Promise<voi
     if (to) where.createdAt.lte = to;
   }
 
-  const [logs, total] = await Promise.all([
+  const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+
+  const [logs, total, todayCount, recentSessions, recentLogsUsers] = await Promise.all([
     prisma.auditLog.findMany({
       where,
       include: {
@@ -669,7 +671,57 @@ export async function getAuditLogs(req: AuthRequest, res: Response): Promise<voi
       take: limit,
     }),
     prisma.auditLog.count({ where }),
+    prisma.auditLog.count({ where: { createdAt: { gte: oneDayAgo } } }),
+    prisma.userSession.findMany({
+      orderBy: { lastActive: 'desc' },
+      take: 40,
+      include: {
+        user: { select: { id: true, username: true, fullName: true, avatarUrl: true, role: true, accountStatus: true } },
+      },
+    }),
+    prisma.auditLog.findMany({
+      where: { createdAt: { gte: oneDayAgo } },
+      take: 50,
+      orderBy: { createdAt: 'desc' },
+      include: {
+        admin: { select: { id: true, username: true, fullName: true, avatarUrl: true, role: true, accountStatus: true } },
+      },
+    }),
   ]);
+
+  const uniqueUserMap = new Map<number, any>();
+
+  for (const s of recentSessions) {
+    if (s.user && s.user.accountStatus === 'Active' && !uniqueUserMap.has(s.user.id)) {
+      uniqueUserMap.set(s.user.id, {
+        id: s.user.id,
+        username: s.user.username,
+        fullName: s.user.fullName || s.user.username,
+        avatarUrl: s.user.avatarUrl || null,
+        role: s.user.role,
+        lastActive: s.lastActive,
+        deviceName: s.deviceName || 'Thiết bị di động',
+        location: s.location || 'Trực tuyến',
+      });
+    }
+  }
+
+  for (const l of recentLogsUsers) {
+    if (l.admin && l.admin.accountStatus === 'Active' && !uniqueUserMap.has(l.admin.id)) {
+      uniqueUserMap.set(l.admin.id, {
+        id: l.admin.id,
+        username: l.admin.username,
+        fullName: l.admin.fullName || l.admin.username,
+        avatarUrl: l.admin.avatarUrl || null,
+        role: l.admin.role,
+        lastActive: l.createdAt,
+        deviceName: 'Trang quản trị web',
+        location: l.ipAddress || 'Trực tuyến',
+      });
+    }
+  }
+
+  const activeAccounts = Array.from(uniqueUserMap.values());
 
   const formattedLogs = logs.map((log: any) => ({
     ...log,
@@ -685,7 +737,86 @@ export async function getAuditLogs(req: AuthRequest, res: Response): Promise<voi
       : null,
   }));
 
-  paginatedResponse(res, formattedLogs, { page, limit, total });
+  res.status(200).json({
+    success: true,
+    message: 'Successful',
+    data: formattedLogs,
+    pagination: {
+      page,
+      limit,
+      total,
+      totalPages: Math.ceil(total / limit),
+    },
+    stats: {
+      totalLogs: total,
+      todayActionCount: todayCount,
+      activeAccountsCount: activeAccounts.length,
+      activeAccounts,
+    },
+  });
+}
+
+// ── GET /admin/active-accounts ────────────
+
+export async function getActiveAccounts(_req: AuthRequest, res: Response): Promise<void> {
+  const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+
+  const [recentSessions, recentLogsUsers] = await Promise.all([
+    prisma.userSession.findMany({
+      orderBy: { lastActive: 'desc' },
+      take: 40,
+      include: {
+        user: { select: { id: true, username: true, fullName: true, avatarUrl: true, role: true, accountStatus: true } },
+      },
+    }),
+    prisma.auditLog.findMany({
+      where: { createdAt: { gte: oneDayAgo } },
+      take: 50,
+      orderBy: { createdAt: 'desc' },
+      include: {
+        admin: { select: { id: true, username: true, fullName: true, avatarUrl: true, role: true, accountStatus: true } },
+      },
+    }),
+  ]);
+
+  const uniqueUserMap = new Map<number, any>();
+
+  for (const s of recentSessions) {
+    if (s.user && s.user.accountStatus === 'Active' && !uniqueUserMap.has(s.user.id)) {
+      uniqueUserMap.set(s.user.id, {
+        id: s.user.id,
+        username: s.user.username,
+        fullName: s.user.fullName || s.user.username,
+        avatarUrl: s.user.avatarUrl || null,
+        role: s.user.role,
+        lastActive: s.lastActive,
+        deviceName: s.deviceName || 'Thiết bị di động',
+        location: s.location || 'Trực tuyến',
+      });
+    }
+  }
+
+  for (const l of recentLogsUsers) {
+    if (l.admin && l.admin.accountStatus === 'Active' && !uniqueUserMap.has(l.admin.id)) {
+      uniqueUserMap.set(l.admin.id, {
+        id: l.admin.id,
+        username: l.admin.username,
+        fullName: l.admin.fullName || l.admin.username,
+        avatarUrl: l.admin.avatarUrl || null,
+        role: l.admin.role,
+        lastActive: l.createdAt,
+        deviceName: 'Trang quản trị web',
+        location: l.ipAddress || 'Trực tuyến',
+      });
+    }
+  }
+
+  const activeAccounts = Array.from(uniqueUserMap.values());
+  res.status(200).json({
+    success: true,
+    data: activeAccounts,
+    total: activeAccounts.length,
+  });
 }
 
 // ── GET /admin/dashboard-stats ────────────
