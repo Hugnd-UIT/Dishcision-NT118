@@ -25,6 +25,13 @@ export interface AILogItem {
   createdAt: string
 }
 
+export interface RatingDistributionItem {
+  star: number
+  label: string
+  count: number
+  percentage: number
+}
+
 export interface MonthlyAIChartItem {
   name: string
   requests: number
@@ -32,6 +39,8 @@ export interface MonthlyAIChartItem {
   completionTokens: number
   totalTokens: number
   latency: number
+  avgRating?: number
+  ratingCount?: number
 }
 
 export interface AIStatsData {
@@ -54,6 +63,7 @@ export interface AIStatsData {
   rating: {
     avgRating: number
     feedbackCount: number
+    distribution?: RatingDistributionItem[]
   }
   monthlyChart: MonthlyAIChartItem[]
   logs: AILogItem[]
@@ -79,6 +89,7 @@ const emptyAIStats: AIStatsData = {
   rating: {
     avgRating: 0,
     feedbackCount: 0,
+    distribution: [],
   },
   monthlyChart: [],
   logs: [],

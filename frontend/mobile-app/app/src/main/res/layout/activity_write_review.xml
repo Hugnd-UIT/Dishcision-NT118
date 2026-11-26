@@ -370,10 +370,25 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginStart="10dp"
-                    android:text="Thêm ảnh trải nghiệm của bạn"
+                    android:text="Thêm ảnh trải nghiệm của bạn (tối đa 5)"
                     android:textColor="#8E7570"
                     android:textSize="13sp" />
             </LinearLayout>
+
+            <HorizontalScrollView
+                android:id="@+id/scrollReviewPhotos"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                android:scrollbars="none"
+                android:visibility="gone">
+
+                <LinearLayout
+                    android:id="@+id/layoutReviewPhotos"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal" />
+            </HorizontalScrollView>
 
             <LinearLayout
                 android:layout_width="match_parent"

@@ -74,7 +74,17 @@ public class WriteReviewActivity extends AppCompatActivity {
     private boolean isDineIn = true;
     private String selectedRestaurantName = "";
     private String selectedRestaurantLocation = "";
-    private String uploadedPhotoUrl = null;
+    private static final int MAX_REVIEW_PHOTOS = 5;
+
+    private static class PhotoItem {
+        Bitmap preview;
+        String url;
+    }
+
+    private final List<PhotoItem> photos = new ArrayList<>();
+    private final java.util.ArrayDeque<Uri> photoQueue = new java.util.ArrayDeque<>();
+    private LinearLayout layoutReviewPhotos;
+    private View scrollReviewPhotos;
     private boolean isUploadingPhoto = false;
     private boolean isSubmitting = false;
     private boolean submitted = false;
@@ -90,7 +100,7 @@ public class WriteReviewActivity extends AppCompatActivity {
 
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(android.R.id.content), (v, insets) -> {
             Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
-            v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
+            v.setPadding(systemBars.left, systemBars.top, systemBars.right, Math.max(systemBars.bottom, insets.getInsets(WindowInsetsCompat.Type.ime()).bottom));
             return insets;
         });
 
@@ -158,6 +168,8 @@ public class WriteReviewActivity extends AppCompatActivity {
         btnUploadPhoto = findViewById(R.id.btnUploadPhoto);
         imgUploadedPreview = findViewById(R.id.imgUploadedPreview);
         tvUploadPhotoStatus = findViewById(R.id.tvUploadPhotoStatus);
+        layoutReviewPhotos = findViewById(R.id.layoutReviewPhotos);
+        scrollReviewPhotos = findViewById(R.id.scrollReviewPhotos);
         btnSubmitReview = findViewById(R.id.btnSubmitReview);
         tvSubmitReviewLabel = findViewById(R.id.tvSubmitReviewLabel);
 
@@ -195,11 +207,18 @@ public class WriteReviewActivity extends AppCompatActivity {
 
     private void setupImagePicker() {
         imagePickerLauncher = registerForActivityResult(
-                new ActivityResultContracts.GetContent(),
-                uri -> {
-                    if (uri != null) {
-                        uploadReviewPhoto(uri);
+                new ActivityResultContracts.GetMultipleContents(),
+                uris -> {
+                    if (uris == null || uris.isEmpty()) return;
+                    int room = MAX_REVIEW_PHOTOS - photos.size() - photoQueue.size();
+                    if (uris.size() > room) {
+                        Toast.makeText(this, "Tối đa " + MAX_REVIEW_PHOTOS + " ảnh cho mỗi đánh giá", Toast.LENGTH_SHORT).show();
                     }
+                    for (Uri u : uris) {
+                        if (room-- <= 0) break;
+                        photoQueue.add(u);
+                    }
+                    if (!isUploadingPhoto) uploadNextPhoto();
                 }
         );
     }
@@ -229,9 +248,12 @@ public class WriteReviewActivity extends AppCompatActivity {
 
         if (btnUploadPhoto != null) {
             btnUploadPhoto.setOnClickListener(v -> {
-                if (!isUploadingPhoto && !isSubmitting) {
-                    imagePickerLauncher.launch("image/*");
+                if (isSubmitting) return;
+                if (photos.size() + photoQueue.size() >= MAX_REVIEW_PHOTOS) {
+                    Toast.makeText(this, "Tối đa " + MAX_REVIEW_PHOTOS + " ảnh cho mỗi đánh giá", Toast.LENGTH_SHORT).show();
+                    return;
                 }
+                imagePickerLauncher.launch("image/*");
             });
         }
 
@@ -388,15 +410,79 @@ public class WriteReviewActivity extends AppCompatActivity {
         }
     }
 
-    private void uploadReviewPhoto(Uri uri) {
+    private void updatePhotoStatus() {
+        if (tvUploadPhotoStatus == null) return;
+        if (isUploadingPhoto) {
+            tvUploadPhotoStatus.setText("Đang tải ảnh lên...");
+        } else if (photos.isEmpty()) {
+            tvUploadPhotoStatus.setText("Thêm ảnh trải nghiệm của bạn (tối đa " + MAX_REVIEW_PHOTOS + ")");
+        } else {
+            tvUploadPhotoStatus.setText("Thêm ảnh (" + photos.size() + "/" + MAX_REVIEW_PHOTOS + ")");
+        }
+    }
+
+    private void renderPhotos() {
+        if (layoutReviewPhotos == null) return;
+        layoutReviewPhotos.removeAllViews();
+        if (scrollReviewPhotos != null) scrollReviewPhotos.setVisibility(photos.isEmpty() ? View.GONE : View.VISIBLE);
+        float d = getResources().getDisplayMetrics().density;
+        for (PhotoItem p : new ArrayList<>(photos)) {
+            android.widget.FrameLayout cell = new android.widget.FrameLayout(this);
+            LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams((int) (76 * d), (int) (76 * d));
+            lp.setMarginEnd((int) (8 * d));
+            cell.setLayoutParams(lp);
+
+            ImageView iv = new ImageView(this);
+            iv.setLayoutParams(new android.widget.FrameLayout.LayoutParams(
+                    android.view.ViewGroup.LayoutParams.MATCH_PARENT, android.view.ViewGroup.LayoutParams.MATCH_PARENT));
+            iv.setScaleType(ImageView.ScaleType.CENTER_CROP);
+            iv.setBackgroundColor(0xFFE8ECF4);
+            if (p.preview != null) iv.setImageBitmap(p.preview);
+            iv.setAlpha(p.url == null ? 0.5f : 1f);
+            cell.addView(iv);
+
+            if (p.url != null) {
+                TextView x = new TextView(this);
+                x.setText("✕");
+                x.setTextColor(Color.WHITE);
+                x.setTextSize(11);
+                x.setGravity(android.view.Gravity.CENTER);
+                x.setBackgroundColor(0x99000000);
+                x.setLayoutParams(new android.widget.FrameLayout.LayoutParams(
+                        (int) (22 * d), (int) (22 * d), android.view.Gravity.TOP | android.view.Gravity.END));
+                x.setOnClickListener(v -> {
+                    photos.remove(p);
+                    renderPhotos();
+                    updatePhotoStatus();
+                });
+                cell.addView(x);
+            }
+            layoutReviewPhotos.addView(cell);
+        }
+    }
+
+    private void uploadNextPhoto() {
+        final Uri uri = photoQueue.poll();
+        if (uri == null) {
+            isUploadingPhoto = false;
+            updatePhotoStatus();
+            return;
+        }
+
         String authHeader = ApiClient.getAuthHeader(this);
         if (authHeader.isEmpty()) {
+            photoQueue.clear();
+            isUploadingPhoto = false;
+            updatePhotoStatus();
             Toast.makeText(this, "Vui lòng đăng nhập lại", Toast.LENGTH_SHORT).show();
             return;
         }
 
         isUploadingPhoto = true;
-        if (tvUploadPhotoStatus != null) tvUploadPhotoStatus.setText("Đang tải ảnh lên...");
+        updatePhotoStatus();
+        final PhotoItem item = new PhotoItem();
+        photos.add(item);
+        renderPhotos();
         final String displayName = resolveFileName(uri);
 
         ImageOrientationHelper.prepareUploadAsync(
@@ -411,9 +497,8 @@ public class WriteReviewActivity extends AppCompatActivity {
                             ImageOrientationHelper.deleteQuietly(prepared.file);
                             return;
                         }
-                        if (imgUploadedPreview != null && previewBitmap != null) {
-                            imgUploadedPreview.setImageBitmap(previewBitmap);
-                        }
+                        item.preview = previewBitmap;
+                        renderPhotos();
 
                         String fileName = ImageOrientationHelper.ensureExtensionMatchesMime(displayName, prepared.mimeType);
                         RequestBody requestFile = RequestBody.create(MediaType.parse(prepared.mimeType), prepared.file);
@@ -423,44 +508,41 @@ public class WriteReviewActivity extends AppCompatActivity {
                             @Override
                             public void onResponse(@NonNull Call<UploadResponse> call, @NonNull Response<UploadResponse> response) {
                                 ImageOrientationHelper.deleteQuietly(prepared.file);
-                                isUploadingPhoto = false;
                                 if (response.isSuccessful() && response.body() != null && response.body().data != null) {
                                     String rawUrl = !TextUtils.isEmpty(response.body().data.url)
                                             ? response.body().data.url
                                             : response.body().data.fullUrl;
                                     if (!TextUtils.isEmpty(rawUrl)) {
-                                        uploadedPhotoUrl = rawUrl;
-                                        if (tvUploadPhotoStatus != null) tvUploadPhotoStatus.setText(fileName + " (chạm để đổi)");
-                                        Toast.makeText(WriteReviewActivity.this, "Tải ảnh thành công", Toast.LENGTH_SHORT).show();
+                                        item.url = rawUrl;
+                                        renderPhotos();
+                                        uploadNextPhoto();
                                         return;
                                     }
                                 }
-                                uploadedPhotoUrl = null;
-                                if (tvUploadPhotoStatus != null) tvUploadPhotoStatus.setText("Thêm ảnh trải nghiệm của bạn");
-                                if (imgUploadedPreview != null) imgUploadedPreview.setImageResource(R.drawable.ic_image);
-                                Toast.makeText(WriteReviewActivity.this, "Tải ảnh thất bại", Toast.LENGTH_SHORT).show();
+                                failPhoto(item, "Tải ảnh thất bại");
                             }
 
                             @Override
                             public void onFailure(@NonNull Call<UploadResponse> call, @NonNull Throwable t) {
                                 ImageOrientationHelper.deleteQuietly(prepared.file);
-                                isUploadingPhoto = false;
-                                uploadedPhotoUrl = null;
-                                if (tvUploadPhotoStatus != null) tvUploadPhotoStatus.setText("Thêm ảnh trải nghiệm của bạn");
-                                if (imgUploadedPreview != null) imgUploadedPreview.setImageResource(R.drawable.ic_image);
-                                Toast.makeText(WriteReviewActivity.this, "Lỗi tải ảnh: " + t.getMessage(), Toast.LENGTH_SHORT).show();
+                                failPhoto(item, "Lỗi tải ảnh: " + t.getMessage());
                             }
                         });
                     }
 
                     @Override
                     public void onError(Exception error) {
-                        isUploadingPhoto = false;
-                        if (tvUploadPhotoStatus != null) tvUploadPhotoStatus.setText("Thêm ảnh trải nghiệm của bạn");
-                        Toast.makeText(WriteReviewActivity.this, "Không thể đọc ảnh đã chọn", Toast.LENGTH_SHORT).show();
+                        failPhoto(item, "Không thể đọc ảnh đã chọn");
                     }
                 }
         );
+    }
+
+    private void failPhoto(PhotoItem item, String message) {
+        photos.remove(item);
+        renderPhotos();
+        Toast.makeText(this, message, Toast.LENGTH_SHORT).show();
+        uploadNextPhoto();
     }
 
     private String resolveFileName(Uri uri) {
@@ -523,12 +605,15 @@ public class WriteReviewActivity extends AppCompatActivity {
         reviewData.put("content", reviewText);
         reviewData.put("tags", tags);
 
-        if (!TextUtils.isEmpty(uploadedPhotoUrl)) {
+        List<Map<String, Object>> imageList = new ArrayList<>();
+        for (PhotoItem p : photos) {
+            if (TextUtils.isEmpty(p.url)) continue;
             Map<String, Object> img = new HashMap<>();
-            img.put("imageUrl", uploadedPhotoUrl);
-            img.put("displayOrder", 1);
-            reviewData.put("images", Collections.singletonList(img));
+            img.put("imageUrl", p.url);
+            img.put("displayOrder", imageList.size() + 1);
+            imageList.add(img);
         }
+        if (!imageList.isEmpty()) reviewData.put("images", imageList);
 
         isSubmitting = true;
         if (btnSubmitReview != null) btnSubmitReview.setEnabled(false);

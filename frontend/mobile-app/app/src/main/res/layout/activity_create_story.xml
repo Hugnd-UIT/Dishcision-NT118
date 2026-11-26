@@ -130,7 +130,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="8dp"
-                        android:text="Chạm để chọn ảnh từ thư viện"
+                        android:text="Chạm để chọn ảnh (tối đa 5 ảnh)"
                         android:textColor="#E0E0E0"
                         android:textSize="14sp" />
                 </LinearLayout>
