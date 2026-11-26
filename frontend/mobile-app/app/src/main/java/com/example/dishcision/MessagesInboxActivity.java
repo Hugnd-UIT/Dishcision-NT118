@@ -4,6 +4,8 @@ import android.content.Intent;
 import android.graphics.Color;
 import android.graphics.Typeface;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.text.Editable;
 import android.text.TextUtils;
 import android.text.TextWatcher;
@@ -62,6 +64,15 @@ public class MessagesInboxActivity extends AppCompatActivity {
     private final List<ChatsListResponse.ConversationItem> allConversations = new ArrayList<>();
     private int activeFilter = FILTER_ALL;
     private boolean firstResume = true;
+    private static final long POLL_INTERVAL_MS = 5000;
+    private final Handler pollHandler = new Handler(Looper.getMainLooper());
+    private final Runnable pollTask = new Runnable() {
+        @Override
+        public void run() {
+            fetchChats(true);
+            pollHandler.postDelayed(this, POLL_INTERVAL_MS);
+        }
+    };
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -77,19 +88,27 @@ public class MessagesInboxActivity extends AppCompatActivity {
 
         initViews();
         setupListeners();
-        fetchChats();
+        fetchChats(false);
         fetchUnreadNotifDot();
     }
 
     @Override
     protected void onResume() {
         super.onResume();
+        // shortcut: polling 5s, đổi sang WebSocket/SSE khi cần realtime thật
+        pollHandler.postDelayed(pollTask, POLL_INTERVAL_MS);
         if (firstResume) {
             firstResume = false;
             return;
         }
-        fetchChats();
+        fetchChats(false);
         fetchUnreadNotifDot();
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        pollHandler.removeCallbacks(pollTask);
     }
 
     private void initViews() {
@@ -182,14 +201,25 @@ public class MessagesInboxActivity extends AppCompatActivity {
         });
     }
 
-    private void fetchChats() {
+    private static String chatsSignature(List<ChatsListResponse.ConversationItem> list) {
+        StringBuilder sb = new StringBuilder();
+        for (ChatsListResponse.ConversationItem c : list) {
+            if (c == null) continue;
+            sb.append(c.recipient != null ? c.recipient.userId : 0).append(':')
+                    .append(c.lastMessage != null ? c.lastMessage.messageId : 0).append(':')
+                    .append(c.unreadCount).append(';');
+        }
+        return sb.toString();
+    }
+
+    private void fetchChats(boolean silent) {
         String auth = ApiClient.getAuthHeader(this);
         if (auth.isEmpty()) {
             allConversations.clear();
             renderConversations();
             return;
         }
-        if (progressInbox != null && allConversations.isEmpty()) {
+        if (!silent && progressInbox != null && allConversations.isEmpty()) {
             progressInbox.setVisibility(View.VISIBLE);
         }
         ApiClient.getApiService().getChats(auth).enqueue(new Callback<ChatsListResponse>() {
@@ -198,10 +228,11 @@ public class MessagesInboxActivity extends AppCompatActivity {
                 if (isFinishing() || isDestroyed()) return;
                 if (progressInbox != null) progressInbox.setVisibility(View.GONE);
                 if (response.isSuccessful() && response.body() != null && response.body().data != null) {
+                    if (silent && chatsSignature(response.body().data).equals(chatsSignature(allConversations))) return;
                     allConversations.clear();
                     allConversations.addAll(response.body().data);
                     renderConversations();
-                } else {
+                } else if (!silent) {
                     Toast.makeText(MessagesInboxActivity.this, "Không thể tải danh sách tin nhắn", Toast.LENGTH_SHORT).show();
                     renderConversations();
                 }
@@ -210,6 +241,7 @@ public class MessagesInboxActivity extends AppCompatActivity {
             @Override
             public void onFailure(@NonNull Call<ChatsListResponse> call, @NonNull Throwable t) {
                 if (isFinishing() || isDestroyed()) return;
+                if (silent) return;
                 if (progressInbox != null) progressInbox.setVisibility(View.GONE);
                 renderConversations();
                 Toast.makeText(MessagesInboxActivity.this, "Lỗi kết nối máy chủ", Toast.LENGTH_SHORT).show();
