@@ -3,7 +3,6 @@ import {
   Sparkles,
   CheckCircle2,
   TrendingUp,
-  Star,
   Activity,
   Coins,
   Clock,
@@ -82,14 +81,8 @@ export function AiFeature() {
     errorRate: 0,
   }
 
-  const rating = aiData?.rating ?? {
-    avgRating: 0,
-    feedbackCount: 0,
-  }
-
   const monthlyChart = aiData?.monthlyChart ?? []
   const logs = aiData?.logs ?? []
-  const totalRequests = aiData?.totalRequests ?? 0
 
   const totalPromptTokens = tokens.totalPromptTokens || 0
   const totalCompletionTokens = tokens.totalCompletionTokens || 0

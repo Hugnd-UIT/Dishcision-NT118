@@ -2,12 +2,10 @@ import { useState } from 'react'
 import {
   ScrollText,
   Clock,
-  UserCheck,
   Search as SearchIcon,
   Loader2,
   RotateCw,
   Activity,
-  Users,
 } from 'lucide-react'
 import {
   ChevronLeftIcon,
