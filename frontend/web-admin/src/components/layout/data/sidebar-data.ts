@@ -5,7 +5,6 @@ import {
   Bug,
   ListTodo,
   FileX,
-  HelpCircle,
   Lock,
   Bell,
   Package,
@@ -16,36 +15,23 @@ import {
   UserCog,
   UserX,
   Users,
-  MessagesSquare,
   ShieldCheck,
-  AudioWaveform,
-  Command,
-  GalleryVerticalEnd,
+  Sparkles,
 } from 'lucide-react'
-import { ClerkLogo } from '@/assets/clerk-logo'
+import { DishcisionLogo } from '@/assets/logo'
 import { type SidebarData } from '../types'
 
 export const sidebarData: SidebarData = {
   user: {
-    name: 'satnaing',
-    email: 'satnaingdev@gmail.com',
-    avatar: '/avatars/shadcn.jpg',
+    name: 'Admin',
+    email: 'admin@dishcision.com',
+    avatar: '/images/dishcision-logo.png',
   },
   teams: [
     {
-      name: 'Shadcn Admin',
-      logo: Command,
-      plan: 'Vite + ShadcnUI',
-    },
-    {
-      name: 'Acme Inc',
-      logo: GalleryVerticalEnd,
-      plan: 'Enterprise',
-    },
-    {
-      name: 'Acme Corp.',
-      logo: AudioWaveform,
-      plan: 'Startup',
+      name: 'Dishcision',
+      logo: DishcisionLogo,
+      plan: 'Admin Dashboard',
     },
   ],
   navGroups: [
@@ -53,48 +39,29 @@ export const sidebarData: SidebarData = {
       title: 'General',
       items: [
         {
-          title: 'Dashboard',
+          title: 'Tổng quan',
           url: '/',
           icon: LayoutDashboard,
         },
         {
-          title: 'Tasks',
+          title: 'Bài viết',
           url: '/tasks',
           icon: ListTodo,
         },
         {
-          title: 'Apps',
+          title: 'Quản lý API',
           url: '/apps',
           icon: Package,
         },
         {
-          title: 'Chats',
-          url: '/chats',
-          badge: '3',
-          icon: MessagesSquare,
-        },
-        {
-          title: 'Users',
+          title: 'Người dùng',
           url: '/users',
           icon: Users,
         },
         {
-          title: 'Secured by Clerk',
-          icon: ClerkLogo,
-          items: [
-            {
-              title: 'Sign In',
-              url: '/clerk/sign-in',
-            },
-            {
-              title: 'Sign Up',
-              url: '/clerk/sign-up',
-            },
-            {
-              title: 'User Management',
-              url: '/clerk/user-management',
-            },
-          ],
+          title: 'AI',
+          url: '/ai',
+          icon: Sparkles,
         },
       ],
     },
@@ -193,11 +160,6 @@ export const sidebarData: SidebarData = {
               icon: Monitor,
             },
           ],
-        },
-        {
-          title: 'Help Center',
-          url: '/help-center',
-          icon: HelpCircle,
         },
       ],
     },

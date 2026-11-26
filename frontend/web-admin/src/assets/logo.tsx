@@ -1,24 +1,33 @@
-import { type SVGProps } from 'react'
+import * as React from 'react'
+import logoOrange from './logo.png'
+import logoWhite from './logo-white.png'
 import { cn } from '@/lib/utils'
 
-export function Logo({ className, ...props }: SVGProps<SVGSVGElement>) {
+export function Logo({
+  className,
+  ...props
+}: React.ImgHTMLAttributes<HTMLImageElement>) {
   return (
-    <svg
-      id='shadcn-admin-logo'
-      viewBox='0 0 24 24'
-      xmlns='http://www.w3.org/2000/svg'
-      height='24'
-      width='24'
-      fill='none'
-      stroke='currentColor'
-      strokeWidth='2'
-      strokeLinecap='round'
-      strokeLinejoin='round'
-      className={cn('size-6', className)}
+    <img
+      src={logoOrange}
+      alt='Dishcision'
+      className={cn('size-7 object-contain', className)}
       {...props}
-    >
-      <title>Shadcn-Admin</title>
-      <path d='M15 6v12a3 3 0 1 0 3-3H6a3 3 0 1 0 3 3V6a3 3 0 1 0-3 3h12a3 3 0 1 0-3-3' />
-    </svg>
+    />
+  )
+}
+
+export function DishcisionLogo({
+  className,
+  variant = 'white',
+  ...props
+}: React.ImgHTMLAttributes<HTMLImageElement> & { variant?: 'orange' | 'white' }) {
+  return (
+    <img
+      src={variant === 'orange' ? logoOrange : logoWhite}
+      alt='Dishcision'
+      className={cn('size-5 object-contain', className)}
+      {...props}
+    />
   )
 }
