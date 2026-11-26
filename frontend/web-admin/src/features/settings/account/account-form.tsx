@@ -45,12 +45,11 @@ const languages = [
 
 const accountFormSchema = z.object({
   name: z
-    .string()
-    .min(1, 'Vui lòng nhập họ và tên.')
+    .string('Vui lòng nhập họ và tên.')
     .min(2, 'Họ và tên phải có ít nhất 2 ký tự.')
     .max(30, 'Họ và tên không được vượt quá 30 ký tự.'),
-  dob: z.date({ required_error: 'Vui lòng chọn ngày sinh.' }),
-  language: z.string({ required_error: 'Vui lòng chọn ngôn ngữ.' }),
+  dob: z.date('Vui lòng chọn ngày sinh.'),
+  language: z.string('Vui lòng chọn ngôn ngữ.'),
 })
 
 type AccountFormValues = z.infer<typeof accountFormSchema>

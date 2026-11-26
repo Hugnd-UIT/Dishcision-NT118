@@ -25,15 +25,20 @@ import { Textarea } from '@/components/ui/textarea'
 
 const profileFormSchema = z.object({
   username: z
-    .string({ required_error: 'Vui lòng nhập tên người dùng.' })
+    .string('Vui lòng nhập tên người dùng.')
     .min(2, 'Tên người dùng phải có ít nhất 2 ký tự.')
     .max(30, 'Tên người dùng không được vượt quá 30 ký tự.'),
-  email: z.string().email('Vui lòng chọn email hợp lệ.'),
+  email: z.email({
+    error: (iss) =>
+      iss.input === undefined
+        ? 'Vui lòng chọn email hợp lệ.'
+        : undefined,
+  }),
   bio: z.string().max(160).min(4),
   urls: z
     .array(
       z.object({
-        value: z.string().url('Vui lòng nhập đường dẫn hợp lệ.'),
+        value: z.url('Vui lòng nhập đường dẫn hợp lệ.'),
       })
     )
     .optional(),
