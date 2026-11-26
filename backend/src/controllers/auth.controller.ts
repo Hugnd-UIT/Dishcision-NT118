@@ -5,6 +5,7 @@ import { hashPassword, comparePassword, generateAccessToken, generateRefreshToke
 import { successResponse, errorResponse } from '../utils/response';
 import { AuthRequest } from '../middlewares/auth.middleware';
 import { DEFAULT_AVATAR_URL, resolveAvatarUrl } from './user.controller';
+import { logActivity } from '../utils/audit';
 import crypto from 'crypto';
 import nodemailer from 'nodemailer';
 
@@ -208,6 +209,15 @@ async function issueAuthSession(user: any, req: Request, res: Response, message:
     ]),
     blacklistSessionHashes(hashesToRevoke, true),
   ]);
+
+  logActivity({
+    userId: user.id,
+    action: 'USER_LOGIN',
+    targetType: 'User' as any,
+    targetId: user.id,
+    details: `Đăng nhập qua thiết bị ${extractDeviceName(req)}`,
+    ipAddress: req.ip,
+  });
 
   res.status(200).json({
     success: true,

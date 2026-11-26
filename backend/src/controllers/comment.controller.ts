@@ -5,6 +5,7 @@ import { successResponse, paginatedResponse, errorResponse } from '../utils/resp
 import { parsePagination, parsePositiveInt } from '../utils/http';
 import { AuthRequest } from '../middlewares/auth.middleware';
 import { formatUser } from './user.controller';
+import { logActivity } from '../utils/audit';
 import {
   areUsersBlocked,
   canAccessPrivacy,
@@ -168,6 +169,14 @@ export async function createComment(req: AuthRequest, res: Response): Promise<vo
   }
 
   await delCache(`post:${postId}`);
+  logActivity({
+    userId,
+    action: 'CREATE_COMMENT',
+    targetType: 'Comment' as any,
+    targetId: comment.id,
+    details: `Bình luận vào bài viết #${postId}: ${content}`.slice(0, 150),
+    ipAddress: req.ip,
+  });
   successResponse(res, formatComment(comment), 'Comment added', 201);
 }
 
