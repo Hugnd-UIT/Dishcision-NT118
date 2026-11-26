@@ -1,30 +1,52 @@
 import { z } from 'zod'
 
-export const postSchema = z.object({
+export const taskSchema = z.object({
   id: z.string(),
-  postId: z.number().optional(),
   title: z.string(),
-  content: z.string().optional().default(''),
+  status: z.string(),
+  label: z.string().optional(),
+  priority: z.string().optional(),
+  content: z.string().optional(),
   author: z
     .object({
       id: z.number().optional(),
-      fullName: z.string(),
-      username: z.string(),
+      fullName: z.string().optional(),
+      username: z.string().optional(),
       avatarUrl: z.string().nullable().optional(),
     })
     .optional(),
-  images: z.array(z.string()).optional().default([]),
-  status: z.string(),
-  label: z.string().optional().default('review'),
-  priority: z.string().optional().default('latest'),
-  likesCount: z.number().optional().default(0),
-  commentsCount: z.number().optional().default(0),
-  sharesCount: z.number().optional().default(0),
-  isPinned: z.boolean().optional().default(false),
-  createdAt: z.string().or(z.date()).optional().default(() => new Date().toISOString()),
+  images: z.array(z.string()).optional(),
+  likesCount: z.number().optional(),
+  commentsCount: z.number().optional(),
+  sharesCount: z.number().optional(),
+  isPinned: z.boolean().optional(),
+  createdAt: z.string().or(z.date()).optional(),
   updatedAt: z.string().or(z.date()).optional(),
+  postId: z.number().optional(),
 })
 
-export type Post = z.infer<typeof postSchema>
-export type Task = Post
-export const taskSchema = postSchema
+export type Task = {
+  id: string
+  title: string
+  status: string
+  label?: string
+  priority?: string
+  content?: string
+  author?: {
+    id?: number
+    fullName?: string
+    username?: string
+    avatarUrl?: string | null
+  }
+  images?: string[]
+  likesCount?: number
+  commentsCount?: number
+  sharesCount?: number
+  isPinned?: boolean
+  createdAt?: string | Date
+  updatedAt?: string | Date
+  postId?: number
+}
+
+export type Post = Task
+export const postSchema = taskSchema
