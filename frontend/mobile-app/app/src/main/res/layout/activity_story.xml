@@ -186,7 +186,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_alignParentBottom="true"
-        android:gravity="center_vertical"
+        android:gravity="end|center_vertical"
         android:orientation="horizontal"
         android:paddingHorizontal="16dp"
         android:paddingBottom="24dp">

@@ -222,6 +222,9 @@ public class StoryActivity extends AppCompatActivity {
         if (btnSendReply != null) {
             btnSendReply.setVisibility(isOwnStory ? View.GONE : View.VISIBLE);
         }
+        if (btnStoryShare != null) {
+            btnStoryShare.setVisibility(isOwnStory ? View.VISIBLE : View.GONE);
+        }
         if (edtReply != null && !isOwnStory) {
             edtReply.setHint("Nhắn tin cho " + displayName + "...");
         }

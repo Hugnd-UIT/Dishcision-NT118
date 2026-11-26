@@ -340,9 +340,35 @@ public class FavoriteRestaurantsActivity extends AppCompatActivity {
                 "✏️ Nhập tên bài hát khác..."
         };
 
-        new AlertDialog.Builder(this)
-                .setTitle("Chọn nhạc nền cho Story")
-                .setItems(songs, (d, which) -> {
+        BottomSheetDialog dialog = new BottomSheetDialog(this);
+        View sheetView = getLayoutInflater().inflate(R.layout.layout_dialog_story_music, null);
+        dialog.setContentView(sheetView);
+
+        View btnClose = sheetView.findViewById(R.id.btnCloseMusicDialog);
+        LinearLayout containerMusicList = sheetView.findViewById(R.id.containerMusicList);
+
+        if (btnClose != null) btnClose.setOnClickListener(v -> dialog.dismiss());
+
+        if (containerMusicList != null) {
+            for (int i = 0; i < songs.length; i++) {
+                final int which = i;
+                final String songLabel = songs[i];
+                TextView row = new TextView(this);
+                row.setText(songLabel);
+                row.setTextSize(14f);
+                row.setPadding(dpToPx(14), dpToPx(12), dpToPx(14), dpToPx(12));
+                boolean isSelected = songLabel.equals(currentSelectedMusic);
+                row.setBackgroundResource(isSelected ? R.drawable.bg_chip_active : R.drawable.bg_favorite_search);
+                row.setTextColor(ContextCompat.getColor(this, isSelected ? R.color.white : R.color.text_dark));
+                LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
+                        LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+                lp.bottomMargin = dpToPx(8);
+                row.setLayoutParams(lp);
+                row.setClickable(true);
+                row.setFocusable(true);
+
+                row.setOnClickListener(v -> {
+                    dialog.dismiss();
                     if (which == 0) {
                         currentSelectedMusic = "";
                         if (tvSelectedMusic != null) {
@@ -352,15 +378,18 @@ public class FavoriteRestaurantsActivity extends AppCompatActivity {
                     } else if (which == songs.length - 1) {
                         showCustomMusicInputDialog(tvSelectedMusic);
                     } else {
-                        currentSelectedMusic = songs[which];
+                        currentSelectedMusic = songLabel;
                         if (tvSelectedMusic != null) {
                             tvSelectedMusic.setText(currentSelectedMusic);
                             tvSelectedMusic.setTextColor(ContextCompat.getColor(this, R.color.primary));
                         }
                     }
-                })
-                .setNegativeButton("Hủy", null)
-                .show();
+                });
+                containerMusicList.addView(row);
+            }
+        }
+
+        dialog.show();
     }
 
     private void showCustomMusicInputDialog(TextView tvSelectedMusic) {
