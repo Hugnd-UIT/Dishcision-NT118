@@ -80,7 +80,8 @@ public class FavoriteRestaurantsActivity extends AppCompatActivity {
     private final List<FollowingRestaurantsResponse.StoryItem> loadedStories = new ArrayList<>();
 
     private ActivityResultLauncher<String> storyImagePickerLauncher;
-    private Uri currentPickedStoryUri = null;
+    private static final int MAX_STORY_IMAGES = 5;
+    private final List<Uri> currentPickedStoryUris = new ArrayList<>();
     private String currentSelectedMusic = "";
     private ImageView popupImgStoryPreview;
     private LinearLayout popupLayoutNoImage;
@@ -231,27 +232,34 @@ public class FavoriteRestaurantsActivity extends AppCompatActivity {
 
     private void setupStoryPicker() {
         storyImagePickerLauncher = registerForActivityResult(
-                new ActivityResultContracts.GetContent(),
-                uri -> {
-                    if (uri != null) {
-                        currentPickedStoryUri = uri;
-                        updateStoryPopupImagePreview();
+                new ActivityResultContracts.GetMultipleContents(),
+                uris -> {
+                    if (uris == null || uris.isEmpty()) return;
+                    currentPickedStoryUris.clear();
+                    for (Uri u : uris) {
+                        if (currentPickedStoryUris.size() >= MAX_STORY_IMAGES) break;
+                        currentPickedStoryUris.add(u);
                     }
+                    if (uris.size() > MAX_STORY_IMAGES) {
+                        Toast.makeText(this, "Mỗi lần đăng tối đa " + MAX_STORY_IMAGES + " ảnh, đã lấy " + MAX_STORY_IMAGES + " ảnh đầu", Toast.LENGTH_SHORT).show();
+                    }
+                    updateStoryPopupImagePreview();
                 }
         );
     }
 
     private void updateStoryPopupImagePreview() {
-        if (currentPickedStoryUri == null) return;
+        if (currentPickedStoryUris.isEmpty()) return;
         if (popupImgStoryPreview != null) {
             popupImgStoryPreview.setVisibility(View.VISIBLE);
-            ImageOrientationHelper.loadLocalUri(this, popupImgStoryPreview, currentPickedStoryUri, 1200);
+            ImageOrientationHelper.loadLocalUri(this, popupImgStoryPreview, currentPickedStoryUris.get(0), 1200);
         }
         if (popupLayoutNoImage != null) {
             popupLayoutNoImage.setVisibility(View.GONE);
         }
         if (popupBtnChangePhoto != null) {
             popupBtnChangePhoto.setVisibility(View.VISIBLE);
+            popupBtnChangePhoto.setText(currentPickedStoryUris.size() > 1 ? "Đổi ảnh (" + currentPickedStoryUris.size() + ")" : "Đổi ảnh");
         }
     }
 
@@ -266,7 +274,7 @@ public class FavoriteRestaurantsActivity extends AppCompatActivity {
         View sheetView = getLayoutInflater().inflate(R.layout.layout_dialog_create_story, null);
         dialog.setContentView(sheetView);
 
-        currentPickedStoryUri = null;
+        currentPickedStoryUris.clear();
         currentSelectedMusic = "";
 
         ImageView btnClose = sheetView.findViewById(R.id.btnCloseCreateStory);
@@ -303,7 +311,7 @@ public class FavoriteRestaurantsActivity extends AppCompatActivity {
 
         if (btnSubmit != null) {
             btnSubmit.setOnClickListener(v -> {
-                if (currentPickedStoryUri == null) {
+                if (currentPickedStoryUris.isEmpty()) {
                     Toast.makeText(this, "Vui lòng chọn ảnh cho story", Toast.LENGTH_SHORT).show();
                     return;
                 }
@@ -318,7 +326,7 @@ public class FavoriteRestaurantsActivity extends AppCompatActivity {
                     }
                 }
 
-                publishStoryFromPopup(authHeader, currentPickedStoryUri, finalCaption, btnSubmit, pbSubmit, tvSubmitLabel, dialog);
+                publishStoryFromPopup(authHeader, new ArrayList<>(currentPickedStoryUris), finalCaption, btnSubmit, pbSubmit, tvSubmitLabel, dialog);
             });
         }
 
@@ -417,14 +425,22 @@ public class FavoriteRestaurantsActivity extends AppCompatActivity {
                 .show();
     }
 
-    private void publishStoryFromPopup(String authHeader, Uri targetUri, String caption,
+    private void publishStoryFromPopup(String authHeader, List<Uri> targetUris, String caption,
                                       View btnSubmit, ProgressBar pbSubmit, TextView tvSubmitLabel,
                                       BottomSheetDialog dialog) {
         if (pbSubmit != null) pbSubmit.setVisibility(View.VISIBLE);
-        if (tvSubmitLabel != null) tvSubmitLabel.setText("Đang tải ảnh...");
         if (btnSubmit != null) btnSubmit.setEnabled(false);
 
         final String activeAuth = !TextUtils.isEmpty(authHeader) ? authHeader : ApiClient.getAuthHeader(this);
+        uploadStoryImageAt(0, targetUris, new ArrayList<>(), activeAuth, caption, btnSubmit, pbSubmit, tvSubmitLabel, dialog);
+    }
+
+    private void uploadStoryImageAt(int index, List<Uri> uris, List<String> urls, String activeAuth, String caption,
+                                    View btnSubmit, ProgressBar pbSubmit, TextView tvSubmitLabel,
+                                    BottomSheetDialog dialog) {
+        final int total = uris.size();
+        if (tvSubmitLabel != null) tvSubmitLabel.setText("Đang tải ảnh " + (index + 1) + "/" + total + "...");
+        final Uri targetUri = uris.get(index);
         final String displayName = resolveFileName(targetUri);
 
         ImageOrientationHelper.prepareUploadAsync(
@@ -453,7 +469,13 @@ public class FavoriteRestaurantsActivity extends AppCompatActivity {
                                             ? response.body().data.url
                                             : response.body().data.fullUrl;
                                     if (!TextUtils.isEmpty(uploadedUrl)) {
-                                        createStoryFromPopup(activeAuth, uploadedUrl, caption, btnSubmit, pbSubmit, tvSubmitLabel, dialog);
+                                        urls.add(uploadedUrl);
+                                        if (index + 1 < total) {
+                                            uploadStoryImageAt(index + 1, uris, urls, activeAuth, caption, btnSubmit, pbSubmit, tvSubmitLabel, dialog);
+                                        } else {
+                                            // Đăng từ ảnh cuối về ảnh đầu để ảnh đầu hiện đầu tiên trong trình xem story.
+                                            createStoryFromPopup(activeAuth, urls, urls.size() - 1, 0, caption, btnSubmit, pbSubmit, tvSubmitLabel, dialog);
+                                        }
                                         return;
                                     }
                                 }
@@ -466,7 +488,7 @@ public class FavoriteRestaurantsActivity extends AppCompatActivity {
                                         if (m != null && !m.isEmpty()) errMsg = m;
                                     }
                                 } catch (Exception ignored) {}
-                                Toast.makeText(FavoriteRestaurantsActivity.this, "Tải ảnh thất bại (" + errMsg + ")", Toast.LENGTH_SHORT).show();
+                                Toast.makeText(FavoriteRestaurantsActivity.this, "Tải ảnh " + (index + 1) + " thất bại (" + errMsg + ")", Toast.LENGTH_SHORT).show();
                             }
 
                             @Override
@@ -487,23 +509,29 @@ public class FavoriteRestaurantsActivity extends AppCompatActivity {
         );
     }
 
-    private void createStoryFromPopup(String authHeader, String mediaUrl, String caption,
+    private void createStoryFromPopup(String authHeader, List<String> urls, int urlIndex, int postedCount, String caption,
                                       View btnSubmit, ProgressBar pbSubmit, TextView tvSubmitLabel,
                                       BottomSheetDialog dialog) {
-        if (tvSubmitLabel != null) tvSubmitLabel.setText("Đang đăng story...");
+        final int total = urls.size();
+        if (tvSubmitLabel != null) tvSubmitLabel.setText("Đang đăng story " + (postedCount + 1) + "/" + total + "...");
 
-        ApiClient.getApiService().createStory(authHeader, new CreateStoryRequest(mediaUrl, caption))
+        ApiClient.getApiService().createStory(authHeader, new CreateStoryRequest(urls.get(urlIndex), caption))
                 .enqueue(new Callback<CreateStoryResponse>() {
                     @Override
                     public void onResponse(@NonNull Call<CreateStoryResponse> call, @NonNull Response<CreateStoryResponse> response) {
-                        resetPopupSubmit(btnSubmit, pbSubmit, tvSubmitLabel);
                         if (response.isSuccessful() && response.body() != null) {
+                            if (urlIndex > 0) {
+                                createStoryFromPopup(authHeader, urls, urlIndex - 1, postedCount + 1, caption, btnSubmit, pbSubmit, tvSubmitLabel, dialog);
+                                return;
+                            }
+                            resetPopupSubmit(btnSubmit, pbSubmit, tvSubmitLabel);
                             Toast.makeText(FavoriteRestaurantsActivity.this, "Đăng story thành công!", Toast.LENGTH_SHORT).show();
                             if (dialog != null && dialog.isShowing()) {
                                 dialog.dismiss();
                             }
                             fetchRestaurantsFromBackend();
                         } else {
+                            resetPopupSubmit(btnSubmit, pbSubmit, tvSubmitLabel);
                             String errMsg = "mã " + response.code();
                             try {
                                 if (response.errorBody() != null) {
@@ -512,7 +540,10 @@ public class FavoriteRestaurantsActivity extends AppCompatActivity {
                                     if (m != null && !m.isEmpty()) errMsg = m;
                                 }
                             } catch (Exception ignored) {}
-                            Toast.makeText(FavoriteRestaurantsActivity.this, "Đăng story thất bại (" + errMsg + ")", Toast.LENGTH_SHORT).show();
+                            Toast.makeText(FavoriteRestaurantsActivity.this,
+                                    "Đăng story thất bại (" + errMsg + ")" + (postedCount > 0 ? ", đã đăng " + postedCount + "/" + total + " ảnh" : ""),
+                                    Toast.LENGTH_SHORT).show();
+                            if (postedCount > 0) fetchRestaurantsFromBackend();
                         }
                     }
 

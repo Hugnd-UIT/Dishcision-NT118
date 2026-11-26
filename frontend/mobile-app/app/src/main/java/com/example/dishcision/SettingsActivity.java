@@ -62,6 +62,7 @@ public class SettingsActivity extends AppCompatActivity {
         if (isGoogleLogin) {
             // Google accounts have no Dishcision password to change
             setVisible(R.id.btnChangePassword, false);
+            setVisible(R.id.dividerChangePassword, false);
         }
 
         setupNavigationRows();
