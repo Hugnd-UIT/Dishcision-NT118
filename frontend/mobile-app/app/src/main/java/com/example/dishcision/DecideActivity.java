@@ -131,7 +131,7 @@ public class DecideActivity extends AppCompatActivity {
     }
 
     private void fetchDishesFromBackend() {
-        ApiClient.getApiService().getDishes(null, null, null, 20).enqueue(new Callback<DishesResponse>() {
+        ApiClient.getApiService().getDishes(null, null, null, 50).enqueue(new Callback<DishesResponse>() {
             @Override
             public void onResponse(@NonNull Call<DishesResponse> call, @NonNull Response<DishesResponse> response) {
                 if (isFinishing() || isDestroyed()) return;
@@ -144,13 +144,6 @@ public class DecideActivity extends AppCompatActivity {
                                 backendDishPool.add(clean);
                             }
                         }
-                    }
-                    if (currentDishes.isEmpty() && !backendDishPool.isEmpty()) {
-                        int initCount = Math.min(5, backendDishPool.size());
-                        for (int i = 0; i < initCount; i++) {
-                            currentDishes.add(backendDishPool.get(i));
-                        }
-                        updateUI();
                     }
                 }
             }
@@ -215,16 +208,28 @@ public class DecideActivity extends AppCompatActivity {
             Toast.makeText(this, "Bạn đã đạt giới hạn vòng quay", Toast.LENGTH_SHORT).show();
             return;
         }
-        if (backendDishPool.isEmpty()) {
-            Toast.makeText(this, "Chưa tải được món từ hệ thống, bạn có thể nhập trực tiếp hoặc dùng AI gợi ý", Toast.LENGTH_SHORT).show();
-            return;
+        List<String> pool = new ArrayList<>(backendDishPool);
+        java.util.Collections.shuffle(pool, random);
+
+        String[] fallbackDishes = {
+                "Phở bò", "Bún chả", "Cơm tấm", "Bánh mì", "Bún bò Huế",
+                "Hủ tiếu", "Mì Quảng", "Bánh cuốn", "Bún đậu mắm tôm", "Cơm gà",
+                "Gỏi cuốn", "Bánh xèo", "Cháo sườn", "Lẩu Thái", "Nướng BBQ"
+        };
+        List<String> extraPool = new ArrayList<>(java.util.Arrays.asList(fallbackDishes));
+        java.util.Collections.shuffle(extraPool, random);
+        for (String extra : extraPool) {
+            if (!pool.contains(extra)) {
+                pool.add(extra);
+            }
         }
+
         currentDishes.clear();
-        for (int i = 0; i < count && i < backendDishPool.size(); i++) {
-            currentDishes.add(backendDishPool.get(i));
+        for (int i = 0; i < count && i < pool.size(); i++) {
+            currentDishes.add(pool.get(i));
         }
         updateUI();
-        Toast.makeText(this, "Đã cập nhật vòng quay với " + currentDishes.size() + " món ăn!", Toast.LENGTH_SHORT).show();
+        Toast.makeText(this, "Đã chọn ngẫu nhiên " + currentDishes.size() + " món ăn vào vòng quay!", Toast.LENGTH_SHORT).show();
     }
 
     private void setupListeners() {
@@ -317,6 +322,52 @@ public class DecideActivity extends AppCompatActivity {
         TextView tvAiDish3 = dialogView.findViewById(R.id.tvAiDish3);
         TextView tvAiReason3 = dialogView.findViewById(R.id.tvAiReason3);
         RelativeLayout btnApplyAiToWheel = dialogView.findViewById(R.id.btnApplyAiToWheel);
+        ImageView[] aiStars = {
+                dialogView.findViewById(R.id.aiStar1),
+                dialogView.findViewById(R.id.aiStar2),
+                dialogView.findViewById(R.id.aiStar3),
+                dialogView.findViewById(R.id.aiStar4),
+                dialogView.findViewById(R.id.aiStar5)
+        };
+        TextView tvAiRatingLabel = dialogView.findViewById(R.id.tvAiRatingLabel);
+        final String[] ratingDescriptions = {
+                "Hoàn toàn không phù hợp",
+                "Khá không phù hợp",
+                "Chấp nhận được",
+                "Khá phù hợp",
+                "Rất phù hợp"
+        };
+        final int[] lastAiRequestId = {0};
+
+        for (int i = 0; i < aiStars.length; i++) {
+            final int starValue = i + 1;
+            if (aiStars[i] != null) {
+                aiStars[i].setOnClickListener(v -> {
+                    applyAiStarRating(aiStars, tvAiRatingLabel, ratingDescriptions, starValue);
+                    if (lastAiRequestId[0] > 0) {
+                        String authHeader = ApiClient.getAuthHeader(DecideActivity.this);
+                        if (!authHeader.isEmpty()) {
+                            java.util.Map<String, Object> body = new java.util.HashMap<>();
+                            body.put("rating", starValue);
+                            body.put("comment", ratingDescriptions[starValue - 1]);
+                            ApiClient.getApiService().submitAiFeedback(authHeader, lastAiRequestId[0], body)
+                                    .enqueue(new Callback<com.example.dishcision.network.AuthResponse>() {
+                                        @Override
+                                        public void onResponse(@NonNull Call<com.example.dishcision.network.AuthResponse> call,
+                                                               @NonNull Response<com.example.dishcision.network.AuthResponse> response) {
+                                            if (!isFinishing() && !isDestroyed() && response.isSuccessful()) {
+                                                Toast.makeText(DecideActivity.this, "Cảm ơn bạn đã đánh giá!", Toast.LENGTH_SHORT).show();
+                                            }
+                                        }
+
+                                        @Override
+                                        public void onFailure(@NonNull Call<com.example.dishcision.network.AuthResponse> call, @NonNull Throwable t) {}
+                                    });
+                        }
+                    }
+                });
+            }
+        }
 
         if (btnCloseAiDialog != null) btnCloseAiDialog.setOnClickListener(v -> dialog.dismiss());
 
@@ -334,6 +385,7 @@ public class DecideActivity extends AppCompatActivity {
                 if (pbAiLoading != null) pbAiLoading.setVisibility(View.VISIBLE);
                 if (tvBtnCallGemini != null) tvBtnCallGemini.setText("Đang suy nghĩ...");
                 btnCallGemini.setEnabled(false);
+                applyAiStarRating(aiStars, tvAiRatingLabel, ratingDescriptions, 0);
 
                 FoodDecideRequest request = new FoodDecideRequest(promptText, "Bình dân", 1, promptText);
                 ApiClient.getApiService().foodDecide(request).enqueue(new Callback<FoodDecideResponse>() {
@@ -352,6 +404,7 @@ public class DecideActivity extends AppCompatActivity {
                         }
 
                         if (response.isSuccessful() && response.body() != null && response.body().getData() != null) {
+                            lastAiRequestId[0] = response.body().getData().requestId;
                             List<FoodDecideResponse.Suggestion> list = response.body().getData().suggestions;
                             if (list != null) {
                                 int shown = 0;
@@ -416,6 +469,25 @@ public class DecideActivity extends AppCompatActivity {
         }
 
         dialog.show();
+    }
+
+    private void applyAiStarRating(ImageView[] aiStars, TextView tvAiRatingLabel, String[] ratingDescriptions, int rating) {
+        for (int i = 0; i < aiStars.length; i++) {
+            ImageView star = aiStars[i];
+            if (star == null) continue;
+            boolean filled = i < rating;
+            star.setImageResource(filled ? R.drawable.ic_star : R.drawable.ic_star_outline);
+            star.setColorFilter(filled ? 0xFFFFB300 : 0xFF9E9E9E);
+        }
+        if (tvAiRatingLabel != null) {
+            if (rating >= 1 && rating <= 5) {
+                tvAiRatingLabel.setText(ratingDescriptions[rating - 1]);
+                tvAiRatingLabel.setTextColor(ContextCompat.getColor(this, R.color.primary));
+            } else {
+                tvAiRatingLabel.setText("Chạm vào sao để đánh giá");
+                tvAiRatingLabel.setTextColor(ContextCompat.getColor(this, R.color.text_gray));
+            }
+        }
     }
 
     private List<String> parseDishesFromText(String rawText) {

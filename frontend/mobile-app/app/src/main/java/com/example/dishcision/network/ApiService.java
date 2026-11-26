@@ -132,6 +132,13 @@ public interface ApiService {
     @POST("ai/food-decide")
     Call<FoodDecideResponse> foodDecide(@Body FoodDecideRequest request);
 
+    @POST("ai/requests/{requestId}/feedback")
+    Call<AuthResponse> submitAiFeedback(
+            @Header("Authorization") String authHeader,
+            @Path("requestId") int requestId,
+            @Body java.util.Map<String, Object> body
+    );
+
     @GET("users/me/blocked")
     Call<AccountsListResponse> getBlockedAccounts(@Header("Authorization") String authHeader);
 
