@@ -319,6 +319,15 @@ export async function register(req: Request, res: Response): Promise<void> {
     recordSession(user.id, req, accessToken),
   ]);
 
+  logActivity({
+    userId: user.id,
+    action: 'USER_REGISTER',
+    targetType: 'User' as any,
+    targetId: user.id,
+    details: `Đăng ký tài khoản mới: @${user.username}`,
+    ipAddress: req.ip || '127.0.0.1',
+  });
+
   res.status(201).json({
     success: true,
     message: 'Registration successful',
@@ -524,6 +533,15 @@ export async function googleAuth(req: Request, res: Response): Promise<void> {
         _count: { select: { followers: true, following: true } },
         preferences: { include: { preference: true } },
       },
+    });
+
+    logActivity({
+      userId: user.id,
+      action: 'USER_REGISTER',
+      targetType: 'User' as any,
+      targetId: user.id,
+      details: `Đăng ký tài khoản mới qua Google: @${user.username}`,
+      ipAddress: req.ip || '127.0.0.1',
     });
   } else if ((!user.avatarUrl || user.avatarUrl === DEFAULT_AVATAR_URL) && cleanGoogleAvatar) {
     user = await prisma.user.update({

@@ -48,7 +48,7 @@ export function useAuditLogs(page = 1, limit = 20) {
         return { logs: [], total: 0, page: 1, limit }
       }
     },
-    refetchInterval: 15000,
-    staleTime: 5000,
+    refetchInterval: 3000,
+    staleTime: 1000,
   })
 }
