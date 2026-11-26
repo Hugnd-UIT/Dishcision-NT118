@@ -4,9 +4,28 @@ import { successResponse, errorResponse } from '../utils/response';
 import { parsePositiveInt } from '../utils/http';
 import { AuthRequest } from '../middlewares/auth.middleware';
 
-async function callGeminiAI(prompt: string): Promise<any[] | null> {
+interface GeminiCallResult {
+  suggestions: any[] | null;
+  usageMetadata: {
+    promptTokenCount: number;
+    candidatesTokenCount: number;
+    totalTokenCount: number;
+  };
+  latencyMs: number;
+  isFormatValid: boolean;
+}
+
+async function callGeminiAI(prompt: string): Promise<GeminiCallResult> {
+  const startTime = Date.now();
   const apiKey = process.env.AI_KEY;
-  if (!apiKey) return null;
+  if (!apiKey) {
+    return {
+      suggestions: null,
+      usageMetadata: { promptTokenCount: 0, candidatesTokenCount: 0, totalTokenCount: 0 },
+      latencyMs: 0,
+      isFormatValid: false,
+    };
+  }
 
   try {
     const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
@@ -22,24 +41,65 @@ async function callGeminiAI(prompt: string): Promise<any[] | null> {
       }),
     });
 
+    const latencyMs = Date.now() - startTime;
+
     if (!response.ok) {
       console.error(`[AI] Gemini API error: ${response.status} ${response.statusText}`);
-      return null;
+      return {
+        suggestions: null,
+        usageMetadata: { promptTokenCount: 0, candidatesTokenCount: 0, totalTokenCount: 0 },
+        latencyMs,
+        isFormatValid: false,
+      };
     }
 
     const data: any = await response.json();
     const rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text;
-    if (!rawText) return null;
+    if (!rawText) {
+      return {
+        suggestions: null,
+        usageMetadata: { promptTokenCount: 0, candidatesTokenCount: 0, totalTokenCount: 0 },
+        latencyMs,
+        isFormatValid: false,
+      };
+    }
+
+    const promptTokens = data?.usageMetadata?.promptTokenCount ?? Math.round(prompt.length / 3.5);
+    const completionTokens = data?.usageMetadata?.candidatesTokenCount ?? Math.round(rawText.length / 3.5);
+    const totalTokens = data?.usageMetadata?.totalTokenCount ?? (promptTokens + completionTokens);
+
+    const usageMetadata = {
+      promptTokenCount: promptTokens,
+      candidatesTokenCount: completionTokens,
+      totalTokenCount: totalTokens,
+    };
 
     const cleaned = rawText.replace(/```json/g, '').replace(/```/g, '').trim();
-    const parsed = JSON.parse(cleaned);
-    if (Array.isArray(parsed) && parsed.length > 0) {
-      return parsed;
+    let parsed: any = null;
+    let isFormatValid = false;
+    try {
+      parsed = JSON.parse(cleaned);
+      if (Array.isArray(parsed) && parsed.length > 0 && parsed[0]?.dishName) {
+        isFormatValid = true;
+      }
+    } catch {
+      isFormatValid = false;
     }
-    return null;
+
+    return {
+      suggestions: isFormatValid ? parsed : null,
+      usageMetadata,
+      latencyMs,
+      isFormatValid,
+    };
   } catch (error) {
     console.error('[AI] Call to Gemini failed:', error);
-    return null;
+    return {
+      suggestions: null,
+      usageMetadata: { promptTokenCount: 0, candidatesTokenCount: 0, totalTokenCount: 0 },
+      latencyMs: Date.now() - startTime,
+      isFormatValid: false,
+    };
   }
 }
 
@@ -51,6 +111,13 @@ export async function foodDecide(req: AuthRequest, res: Response): Promise<void>
 
   let modelUsed = 'gemini-2.5-flash';
   let suggestions: any[] | null = null;
+  let metrics = {
+    promptTokens: 0,
+    completionTokens: 0,
+    totalTokens: 0,
+    latencyMs: 0,
+    isFormatValid: false,
+  };
 
   const prompt = `Bạn là chuyên gia tư vấn ẩm thực Việt Nam cho ứng dụng Dishcision.
 Dựa trên các tiêu chí sau, hãy gợi ý 3 món ăn ngon nhất, chuẩn vị Việt Nam:
@@ -69,8 +136,16 @@ YÊU CẦU: Trả về DUY NHẤT một mảng JSON gồm 3 object (không thêm
 ]`;
 
   const aiResult = await callGeminiAI(prompt);
-  if (aiResult && aiResult.length > 0) {
-    suggestions = aiResult.slice(0, 3).map((item, idx) => ({
+  metrics = {
+    promptTokens: aiResult.usageMetadata.promptTokenCount,
+    completionTokens: aiResult.usageMetadata.candidatesTokenCount,
+    totalTokens: aiResult.usageMetadata.totalTokenCount,
+    latencyMs: aiResult.latencyMs,
+    isFormatValid: aiResult.isFormatValid,
+  };
+
+  if (aiResult.suggestions && aiResult.suggestions.length > 0) {
+    suggestions = aiResult.suggestions.slice(0, 3).map((item, idx) => ({
       rank: idx + 1,
       dishName: item.dishName || '',
       reason: item.reason || '',
@@ -115,7 +190,10 @@ YÊU CẦU: Trả về DUY NHẤT một mảng JSON gồm 3 object (không thêm
         budget: String(budget || 'Bình dân'),
         companions: companions ? Number(companions) : 1,
         craving: craving || null,
-        resultJson: suggestions,
+        resultJson: {
+          suggestions,
+          metrics,
+        },
         modelUsed,
       },
     });

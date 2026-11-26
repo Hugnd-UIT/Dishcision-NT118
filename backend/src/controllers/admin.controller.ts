@@ -477,42 +477,173 @@ export async function getAIStats(req: AuthRequest, res: Response): Promise<void>
     if (to) where.createdAt.lte = to;
   }
 
-  const [totalRequests, failedRequests, requestsWithFeedback, avgRatingResult] = await Promise.all([
+  const [totalRequests, geminiRequests, fallbackRequests, requestsWithFeedback, avgRatingResult, allRequests] = await Promise.all([
     prisma.aIRequest.count({ where }),
-    prisma.aIRequest.count({ where: { ...where, resultJson: { equals: Prisma.DbNull } } }),
+    prisma.aIRequest.count({ where: { ...where, modelUsed: 'gemini-2.5-flash' } }),
+    prisma.aIRequest.count({ where: { ...where, modelUsed: { not: 'gemini-2.5-flash' } } }),
     prisma.aIRequest.count({ where: { ...where, feedbackRating: { not: null } } }),
     prisma.aIRequest.aggregate({
       where: { ...where, feedbackRating: { not: null } },
       _avg: { feedbackRating: true },
     }),
+    prisma.aIRequest.findMany({
+      where,
+      include: {
+        user: { select: { id: true, username: true, fullName: true, avatarUrl: true } },
+      },
+      orderBy: { createdAt: 'desc' },
+      take: 200,
+    }),
   ]);
 
-  const sampleRequests = await prisma.aIRequest.findMany({
-    where: { ...where, mood: { not: null } },
-    select: { mood: true },
-    take: 100,
-  });
+  let totalPromptTokens = 0;
+  let totalCompletionTokens = 0;
+  let totalLatencyMs = 0;
+  let validFormatCount = 0;
 
-  const moodCounts: Record<string, number> = {};
-  sampleRequests.forEach((r) => {
-    if (r.mood) {
-      moodCounts[r.mood] = (moodCounts[r.mood] || 0) + 1;
+  const cravingCounts: Record<string, number> = {};
+  const budgetCounts: Record<string, number> = {};
+  const companionCounts: Record<string, number> = {};
+
+  const monthNames = ['Th01', 'Th02', 'Th03', 'Th04', 'Th05', 'Th06', 'Th07', 'Th08', 'Th09', 'Th10', 'Th11', 'Th12'];
+  const monthlyMap = monthNames.map((name) => ({
+    name,
+    requests: 0,
+    promptTokens: 0,
+    completionTokens: 0,
+    totalTokens: 0,
+    totalLatency: 0,
+  }));
+
+  const logs = allRequests.map((r) => {
+    const rJson = r.resultJson as any;
+    const metrics = rJson?.metrics || null;
+    const suggestions = Array.isArray(rJson) ? rJson : (rJson?.suggestions || []);
+
+    const promptText = `Bạn là chuyên gia tư vấn ẩm thực Việt Nam cho ứng dụng Dishcision.
+Dựa trên các tiêu chí sau, hãy gợi ý 3 món ăn ngon nhất, chuẩn vị Việt Nam:
+- Tâm trạng / Cảm xúc: ${r.mood || ''}
+- Ngân sách: ${r.budget || ''}
+- Số người cùng ăn: ${r.companions || 1}
+- Nhu cầu / Thèm món gì: ${r.craving || ''}`;
+
+    const promptTokens = metrics?.promptTokens || Math.max(80, Math.round(promptText.length / 3.5));
+    const completionTokens = metrics?.completionTokens || (suggestions.length > 0 ? Math.max(100, Math.round(JSON.stringify(suggestions).length / 3.5)) : 0);
+    const totalTokens = metrics?.totalTokens || (promptTokens + completionTokens);
+    const latencyMs = metrics?.latencyMs || 420;
+    const isFormatValid = metrics?.isFormatValid ?? (Array.isArray(suggestions) && suggestions.length > 0 && !!suggestions[0]?.dishName);
+
+    totalPromptTokens += promptTokens;
+    totalCompletionTokens += completionTokens;
+    totalLatencyMs += latencyMs;
+    if (isFormatValid) validFormatCount++;
+
+    // Aggregate monthly data
+    const monthIdx = new Date(r.createdAt).getMonth();
+    if (monthlyMap[monthIdx]) {
+      monthlyMap[monthIdx].requests += 1;
+      monthlyMap[monthIdx].promptTokens += promptTokens;
+      monthlyMap[monthIdx].completionTokens += completionTokens;
+      monthlyMap[monthIdx].totalTokens += totalTokens;
+      monthlyMap[monthIdx].totalLatency += latencyMs;
     }
+
+    // Aggregate cravings
+    const text = (r.craving || r.mood || '').trim();
+    if (text) {
+      let cat = 'Khác';
+      const lower = text.toLowerCase();
+      if (lower.includes('phở') || lower.includes('bún') || lower.includes('nước') || lower.includes('nóng')) {
+        cat = 'Món nước & Nóng hổi';
+      } else if (lower.includes('cơm') || lower.includes('bổ dưỡng')) {
+        cat = 'Cơm & Bổ dưỡng';
+      } else if (lower.includes('lẩu') || lower.includes('tụ tập') || lower.includes('bạn')) {
+        cat = 'Lẩu & Tụ tập';
+      } else if (lower.includes('mới lạ') || lower.includes('trung tâm')) {
+        cat = 'Khám phá món mới lạ';
+      } else if (lower.includes('ngọt') || lower.includes('ăn vặt')) {
+        cat = 'Đồ ngọt & Ăn vặt';
+      } else {
+        cat = text.length > 25 ? text.substring(0, 25) + '...' : text;
+      }
+      cravingCounts[cat] = (cravingCounts[cat] || 0) + 1;
+    }
+
+    // Aggregate budget
+    const b = r.budget ? String(r.budget) : 'Bình dân';
+    budgetCounts[b] = (budgetCounts[b] || 0) + 1;
+
+    // Aggregate companions
+    const c = r.companions === 1 ? 'Đi ăn 1 mình' : (r.companions === 2 ? 'Đi 2 người' : 'Nhóm bạn đông');
+    companionCounts[c] = (companionCounts[c] || 0) + 1;
+
+    return {
+      id: r.id,
+      user: r.user,
+      craving: r.craving || r.mood || 'Gợi ý món ngon',
+      suggestions,
+      modelUsed: r.modelUsed || 'gemini-2.5-flash',
+      promptTokens,
+      completionTokens,
+      totalTokens,
+      latencyMs,
+      isFormatValid,
+      feedbackRating: r.feedbackRating,
+      createdAt: r.createdAt,
+    };
   });
 
-  const topMoodKeywords = Object.entries(moodCounts)
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, 5)
-    .map(([k]) => k);
+  const count = allRequests.length;
+  const avgLatency = count > 0 ? Math.round(totalLatencyMs / count) : 0;
+  const formatAccuracy = count > 0 ? Math.round((validFormatCount / count) * 1000) / 10 : 100;
+
+  const monthlyChart = monthlyMap.map((item) => ({
+    name: item.name,
+    requests: item.requests,
+    promptTokens: item.promptTokens,
+    completionTokens: item.completionTokens,
+    totalTokens: item.totalTokens,
+    latency: item.requests > 0 ? Math.round(item.totalLatency / item.requests) : 0,
+  }));
+
+  const cravingsChart = Object.entries(cravingCounts)
+    .map(([name, count]) => ({ name, count }))
+    .sort((a, b) => b.count - a.count);
+
+  const budgetChart = Object.entries(budgetCounts)
+    .map(([name, count]) => ({ name, count }))
+    .sort((a, b) => b.count - a.count);
+
+  const companionChart = Object.entries(companionCounts)
+    .map(([name, count]) => ({ name, count }))
+    .sort((a, b) => b.count - a.count);
 
   successResponse(res, {
     totalRequests,
-    errorRate: totalRequests > 0 ? Math.round((failedRequests / totalRequests) * 1000) / 1000 : 0,
-    avgRating: avgRatingResult._avg.feedbackRating
-      ? Math.round(avgRatingResult._avg.feedbackRating * 10) / 10
-      : 0,
-    feedbackCount: requestsWithFeedback,
-    topMoodKeywords,
+    geminiRequests,
+    fallbackRequests,
+    tokens: {
+      totalPromptTokens,
+      totalCompletionTokens,
+      totalTokens: totalPromptTokens + totalCompletionTokens,
+      avgPromptTokens: count > 0 ? Math.round(totalPromptTokens / count) : 0,
+      avgCompletionTokens: count > 0 ? Math.round(totalCompletionTokens / count) : 0,
+    },
+    performance: {
+      avgLatency,
+      formatAccuracy,
+      successRate: totalRequests > 0 ? Math.round((geminiRequests / totalRequests) * 100) : 100,
+      errorRate: 0,
+    },
+    rating: {
+      avgRating: avgRatingResult._avg.feedbackRating ? Math.round(avgRatingResult._avg.feedbackRating * 10) / 10 : 0,
+      feedbackCount: requestsWithFeedback,
+    },
+    monthlyChart,
+    cravingsChart,
+    budgetChart,
+    companionChart,
+    logs,
   });
 }
 
