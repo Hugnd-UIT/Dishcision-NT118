@@ -38,9 +38,9 @@ export function useAuditLogs(page = 1, limit = 20) {
         if (json.success && Array.isArray(json.data)) {
           return {
             logs: json.data as AuditLogItem[],
-            total: json.meta?.total ?? json.data.length,
-            page: json.meta?.page ?? page,
-            limit: json.meta?.limit ?? limit,
+            total: json.pagination?.total ?? json.meta?.total ?? json.data.length,
+            page: json.pagination?.page ?? json.meta?.page ?? page,
+            limit: json.pagination?.limit ?? json.meta?.limit ?? limit,
           }
         }
         return { logs: [], total: 0, page: 1, limit }
