@@ -2,12 +2,13 @@ import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
 
-// Khởi tạo các thư mục lưu trữ ảnh và video
+// Khởi tạo các thư mục lưu trữ ảnh, video và âm thanh
 const UPLOADS_ROOT = path.resolve(process.cwd(), 'uploads');
 const IMAGES_DIR = path.join(UPLOADS_ROOT, 'images');
 const VIDEOS_DIR = path.join(UPLOADS_ROOT, 'videos');
+const AUDIO_DIR = path.join(UPLOADS_ROOT, 'audio');
 
-[UPLOADS_ROOT, IMAGES_DIR, VIDEOS_DIR].forEach((dir) => {
+[UPLOADS_ROOT, IMAGES_DIR, VIDEOS_DIR, AUDIO_DIR].forEach((dir) => {
   if (!fs.existsSync(dir)) {
     fs.mkdirSync(dir, { recursive: true });
   }

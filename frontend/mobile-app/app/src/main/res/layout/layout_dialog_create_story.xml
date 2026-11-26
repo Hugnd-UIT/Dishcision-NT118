@@ -174,7 +174,7 @@
                     android:layout_weight="1"
                     android:ellipsize="end"
                     android:maxLines="1"
-                    android:text="Chọn bài hát cho story (tùy chọn)..."
+                    android:text="Chọn bài hát cho story..."
                     android:textColor="@color/text_gray"
                     android:textSize="14sp" />
 

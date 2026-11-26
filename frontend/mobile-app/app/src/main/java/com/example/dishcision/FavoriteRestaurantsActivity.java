@@ -209,15 +209,15 @@ public class FavoriteRestaurantsActivity extends AppCompatActivity {
                         if (item.isOpen) openCount++;
                     }
                     if (!exploreMode) {
-                        if (chipAll != null) chipAll.setText("Đang theo dõi (" + loadedStores.size() + ")");
-                        if (chipOpen != null) chipOpen.setText("Đang mở cửa (" + openCount + ")");
+                        if (chipAll != null) chipAll.setText("Đang theo dõi " + loadedStores.size());
+                        if (chipOpen != null) chipOpen.setText("Đang mở cửa " + openCount);
                     }
 
                     renderStories();
                     renderStores();
                 } else {
                     if (tvSummaryBadge != null) tvSummaryBadge.setText("Không thể tải danh sách quán");
-                    Toast.makeText(FavoriteRestaurantsActivity.this, "Không thể tải danh sách quán (mã " + response.code() + ")", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(FavoriteRestaurantsActivity.this, "Không thể tải danh sách quán - mã " + response.code(), Toast.LENGTH_SHORT).show();
                 }
             }
 
@@ -336,15 +336,16 @@ public class FavoriteRestaurantsActivity extends AppCompatActivity {
     private void showMusicPickerDialog(TextView tvSelectedMusic) {
         final String[] songs = new String[]{
                 "🚫 Không dùng nhạc",
-                "🎵 Nấu Ăn Cho Em - Đen Vâu",
-                "🎵 Bật Tình Yêu Lên - Tăng Duy Tân x Hòa Minzy",
-                "🎵 See Tình - Hoàng Thùy Linh",
-                "🎵 Cắt Đôi Nỗi Sầu - Tăng Duy Tân",
-                "🎵 Đi Về Nhà - Đen Vâu x JustaTee",
-                "🎵 Yêu Em Rất Nhiều - Hoàng Tôn",
-                "🎵 Vũ Trụ Có Anh - Phương Mỹ Chi",
-                "🎵 Chill Lofi & Acoustic Cafe",
-                "🎵 Foodie Vibes Guitar",
+                "🎵 Airport Lounge - Kevin MacLeod",
+                "🎵 Apero Hour - Kevin MacLeod",
+                "🎵 As I Figure - Kevin MacLeod",
+                "🎵 Awesome Call - Kevin MacLeod",
+                "🎵 Backbay Lounge - Kevin MacLeod",
+                "🎵 Bass Soli - Kevin MacLeod",
+                "🎵 Bossa Antigua - Kevin MacLeod",
+                "🎵 Cool Blast - Kevin MacLeod",
+                "🎵 Cool Vibes - Kevin MacLeod",
+                "🎵 Corncob - Kevin MacLeod",
                 "✏️ Nhập tên bài hát khác..."
         };
 
@@ -380,7 +381,7 @@ public class FavoriteRestaurantsActivity extends AppCompatActivity {
                     if (which == 0) {
                         currentSelectedMusic = "";
                         if (tvSelectedMusic != null) {
-                            tvSelectedMusic.setText("Chọn bài hát cho story (tùy chọn)...");
+                            tvSelectedMusic.setText("Chọn bài hát cho story...");
                             tvSelectedMusic.setTextColor(ContextCompat.getColor(this, R.color.text_gray));
                         }
                     } else if (which == songs.length - 1) {
@@ -488,7 +489,7 @@ public class FavoriteRestaurantsActivity extends AppCompatActivity {
                                         if (m != null && !m.isEmpty()) errMsg = m;
                                     }
                                 } catch (Exception ignored) {}
-                                Toast.makeText(FavoriteRestaurantsActivity.this, "Tải ảnh " + (index + 1) + " thất bại (" + errMsg + ")", Toast.LENGTH_SHORT).show();
+                                Toast.makeText(FavoriteRestaurantsActivity.this, "Tải ảnh " + (index + 1) + " thất bại - " + errMsg, Toast.LENGTH_SHORT).show();
                             }
 
                             @Override
@@ -541,7 +542,7 @@ public class FavoriteRestaurantsActivity extends AppCompatActivity {
                                 }
                             } catch (Exception ignored) {}
                             Toast.makeText(FavoriteRestaurantsActivity.this,
-                                    "Đăng story thất bại (" + errMsg + ")" + (postedCount > 0 ? ", đã đăng " + postedCount + "/" + total + " ảnh" : ""),
+                                    "Đăng story thất bại - " + errMsg + (postedCount > 0 ? ", đã đăng " + postedCount + "/" + total + " ảnh" : ""),
                                     Toast.LENGTH_SHORT).show();
                             if (postedCount > 0) fetchRestaurantsFromBackend();
                         }
@@ -834,7 +835,7 @@ public class FavoriteRestaurantsActivity extends AppCompatActivity {
                     LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT);
             trParams.setMarginStart(dpToPx(4));
             tvRating.setLayoutParams(trParams);
-            tvRating.setText(String.format(Locale.US, "%.1f (%d)", store.rating, store.reviewsCount));
+            tvRating.setText(String.format(Locale.US, "%.1f • %d đánh giá", store.rating, store.reviewsCount));
             tvRating.setTextColor(ContextCompat.getColor(this, R.color.text_dark));
             tvRating.setTextSize(12f);
             tvRating.setTypeface(null, Typeface.BOLD);

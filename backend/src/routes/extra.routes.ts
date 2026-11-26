@@ -2,6 +2,7 @@ import { Router } from 'express';
 import {
   getStories,
   createStory,
+  getStoryMusic,
   getDishDetail,
   getDishes,
   getStoreDetail,
@@ -25,6 +26,7 @@ router.post('/upload', authenticate, mediaUpload.single('file'), asyncHandler(up
 router.post('/upload/multiple', authenticate, mediaUpload.array('files', 10), asyncHandler(uploadMultipleMedia));
 
 // Stories (StoryActivity, CreateStoryActivity)
+router.get('/stories/music', asyncHandler(getStoryMusic));
 router.get('/stories', authenticate, asyncHandler(getStories));
 router.post('/stories', authenticate, asyncHandler(createStory));
 

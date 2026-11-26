@@ -1,4 +1,4 @@
-import { Response } from 'express';
+import { Request, Response } from 'express';
 import { prisma } from '../config/prisma';
 import { successResponse, errorResponse } from '../utils/response';
 import { AuthRequest } from '../middlewares/auth.middleware';
@@ -9,8 +9,95 @@ import { canAccessPrivacy, getBlockedUserIds, getUserPrivacy } from '../utils/pr
 import { logActivity } from '../utils/audit';
 
 // ─────────────────────────────────────────
-// 1. STORIES
+// 1. STORIES & MUSIC
 // ─────────────────────────────────────────
+
+export const STORY_MUSIC_TRACKS = [
+  {
+    id: 1,
+    title: 'Airport Lounge',
+    artist: 'Kevin MacLeod',
+    genre: 'Smooth Jazz',
+    duration: '4:06',
+    audioUrl: '/uploads/audio/track_01_airport_lounge.mp3',
+  },
+  {
+    id: 2,
+    title: 'Apero Hour',
+    artist: 'Kevin MacLeod',
+    genre: 'Cafe Accordion Jazz',
+    duration: '3:08',
+    audioUrl: '/uploads/audio/track_02_apero_hour.mp3',
+  },
+  {
+    id: 3,
+    title: 'As I Figure',
+    artist: 'Kevin MacLeod',
+    genre: 'Chill Lounge',
+    duration: '3:03',
+    audioUrl: '/uploads/audio/track_03_as_i_figure.mp3',
+  },
+  {
+    id: 4,
+    title: 'Awesome Call',
+    artist: 'Kevin MacLeod',
+    genre: 'Upbeat Jazz',
+    duration: '1:54',
+    audioUrl: '/uploads/audio/track_04_awesome_call.mp3',
+  },
+  {
+    id: 5,
+    title: 'Backbay Lounge',
+    artist: 'Kevin MacLeod',
+    genre: 'Evening Lounge',
+    duration: '2:57',
+    audioUrl: '/uploads/audio/track_05_backbay_lounge.mp3',
+  },
+  {
+    id: 6,
+    title: 'Bass Soli',
+    artist: 'Kevin MacLeod',
+    genre: 'Acoustic Bass',
+    duration: '0:52',
+    audioUrl: '/uploads/audio/track_06_bass_soli.mp3',
+  },
+  {
+    id: 7,
+    title: 'Bossa Antigua',
+    artist: 'Kevin MacLeod',
+    genre: 'Bossa Nova Cafe',
+    duration: '3:08',
+    audioUrl: '/uploads/audio/track_07_bossa_antigua.mp3',
+  },
+  {
+    id: 8,
+    title: 'Cool Blast',
+    artist: 'Kevin MacLeod',
+    genre: 'Funky Groove',
+    duration: '1:05',
+    audioUrl: '/uploads/audio/track_08_cool_blast.mp3',
+  },
+  {
+    id: 9,
+    title: 'Cool Vibes',
+    artist: 'Kevin MacLeod',
+    genre: 'Vibraphone Jazz',
+    duration: '3:02',
+    audioUrl: '/uploads/audio/track_09_cool_vibes.mp3',
+  },
+  {
+    id: 10,
+    title: 'Corncob',
+    artist: 'Kevin MacLeod',
+    genre: 'Acoustic Country',
+    duration: '0:46',
+    audioUrl: '/uploads/audio/track_10_corncob.mp3',
+  },
+];
+
+export async function getStoryMusic(_req: Request, res: Response): Promise<void> {
+  successResponse(res, STORY_MUSIC_TRACKS, 'Lấy danh sách nhạc story thành công');
+}
 
 function formatStory(s: any) {
   return {
