@@ -27,6 +27,17 @@ const USER_PUBLIC_SELECT = {
   },
 };
 
+const USER_INCLUDE = {
+  _count: {
+    select: {
+      followers: true,
+      following: true,
+      posts: { where: { status: 'Active' as const } },
+    },
+  },
+  preferences: { include: { preference: true } },
+};
+
 export const DEFAULT_AVATAR_URL = '/uploads/images/default-avatar.jpg';
 
 export function resolveAvatarUrl(avatarUrl?: string | null): string {
@@ -35,7 +46,7 @@ export function resolveAvatarUrl(avatarUrl?: string | null): string {
 }
 
 export function formatUser(user: any) {
-  const { id, username, fullName, avatarUrl, bio, city, role, _count, preferences } = user;
+  const { id, username, fullName, avatarUrl, bio, city, role, _count, preferences, isVerified, verificationStatus, verificationRejectionReason } = user;
   const prefNames = preferences
     ? preferences.map((up: any) => (up.preference ? up.preference.name : up.name || up)).filter(Boolean)
     : [];
@@ -47,6 +58,9 @@ export function formatUser(user: any) {
     bio,
     city: city ?? null,
     role,
+    isVerified: Boolean(isVerified),
+    verificationStatus: verificationStatus || (isVerified ? 'Approved' : 'None'),
+    verificationRejectionReason: verificationRejectionReason || null,
     preferences: prefNames,
     postsCount: _count?.posts ?? 0,
     followersCount: _count?.followers ?? 0,
@@ -744,7 +758,112 @@ export async function getMyActivity(req: AuthRequest, res: Response): Promise<vo
   successResponse(res, items.slice(0, 60));
 }
 
-// ── Delete own account ───────────────────
+// ── POST /users/register-merchant ──────────
+export async function registerMerchant(req: AuthRequest, res: Response): Promise<void> {
+  const userId = req.user!.userId;
+
+  const user = await prisma.user.findUnique({ where: { id: userId } });
+  if (!user) {
+    errorResponse(res, 'User not found', 404);
+    return;
+  }
+
+  const updatedUser = await prisma.$transaction(async (tx) => {
+    const u = await tx.user.update({
+      where: { id: userId },
+      data: {
+        role: 'RestaurantAccount',
+      },
+      include: USER_INCLUDE,
+    });
+
+    await tx.storeProfile.upsert({
+      where: { userId },
+      update: {},
+      create: {
+        userId,
+        address: u.city || 'Việt Nam',
+        coverUrl: u.avatarUrl || DEFAULT_AVATAR_URL,
+      },
+    });
+
+    await tx.notification.create({
+      data: {
+        userId,
+        type: 'System',
+        message: 'Chúc mừng! Bạn đã đăng ký thành công tài khoản Chủ quán ăn. Bạn có thể tiếp tục đăng ký tích xanh xác thực.',
+      },
+    });
+
+    return u;
+  });
+
+  await Promise.all([
+    delCache(`user:${userId}`),
+    delCache('search:trending'),
+    delCacheByPattern('post:*'),
+    delCacheByPattern('newsfeed:*'),
+  ]);
+
+  await logActivity({
+    userId,
+    username: updatedUser.username,
+    role: updatedUser.role,
+    action: 'REGISTER_MERCHANT',
+    targetType: 'User' as any,
+    targetId: userId,
+    details: `Tài khoản @${updatedUser.username} đã đăng ký nâng cấp thành Chủ quán ăn`,
+    ipAddress: req.ip,
+  });
+
+  successResponse(res, formatUser(updatedUser), 'Đăng ký làm chủ quán thành công');
+}
+
+// ── POST /users/request-verification ───────
+export async function requestVerification(req: AuthRequest, res: Response): Promise<void> {
+  const userId = req.user!.userId;
+
+  const user = await prisma.user.findUnique({ where: { id: userId } });
+  if (!user) {
+    errorResponse(res, 'User not found', 404);
+    return;
+  }
+
+  const updatedUser = await prisma.user.update({
+    where: { id: userId },
+    data: {
+      verificationStatus: 'Pending',
+      verificationRejectionReason: null,
+    },
+    include: USER_INCLUDE,
+  });
+
+  await Promise.all([
+    delCache(`user:${userId}`),
+  ]);
+
+  await prisma.notification.create({
+    data: {
+      userId,
+      type: 'System',
+      message: 'Yêu cầu cấp tích xanh xác thực của bạn đã được gửi thành công và đang chờ ban quản trị phê duyệt.',
+    },
+  });
+
+  await logActivity({
+    userId,
+    username: updatedUser.username,
+    role: updatedUser.role,
+    action: 'REQUEST_VERIFICATION',
+    targetType: 'User' as any,
+    targetId: userId,
+    details: `Tài khoản @${updatedUser.username} đã gửi yêu cầu xét duyệt cấp tích xanh xác thực`,
+    ipAddress: req.ip,
+  });
+
+  successResponse(res, formatUser(updatedUser), 'Gửi yêu cầu đăng ký tích xanh thành công');
+}
+
 // Tries a hard delete; if related rows block it (FK constraints), the account is deactivated instead
 // so it can no longer sign in. Either way the current token is revoked.
 export async function deleteMe(req: AuthRequest, res: Response): Promise<void> {

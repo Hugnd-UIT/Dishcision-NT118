@@ -86,6 +86,15 @@ public class UserProfileResponse {
 
         @SerializedName("isFollowing")
         public boolean isFollowing;
+
+        @SerializedName("isVerified")
+        public boolean isVerified;
+
+        @SerializedName("verificationStatus")
+        public String verificationStatus;
+
+        @SerializedName("verificationRejectionReason")
+        public String verificationRejectionReason;
     }
 }
 

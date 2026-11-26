@@ -19,7 +19,7 @@ export function useUsers() {
 
             let roleStr = 'user'
             if (u.role === 'Admin') roleStr = 'admin'
-            else if (u.role === 'StoreOwner') roleStr = 'manager'
+            else if (u.role === 'StoreOwner' || u.role === 'RestaurantAccount') roleStr = 'manager'
 
             let statusStr = 'active'
             if (u.accountStatus === 'Suspended') statusStr = 'suspended'
@@ -40,6 +40,9 @@ export function useUsers() {
               postsCount: u.postsCount || 0,
               followersCount: u.followersCount || 0,
               city: u.city || null,
+              isVerified: Boolean(u.isVerified),
+              verificationStatus: u.verificationStatus || (u.isVerified ? 'Approved' : 'None'),
+              verificationRejectionReason: u.verificationRejectionReason || null,
             } as User
           })
         }

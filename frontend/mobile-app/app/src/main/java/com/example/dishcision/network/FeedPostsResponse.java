@@ -101,6 +101,9 @@ public class FeedPostsResponse {
 
         @SerializedName("role")
         public String role;
+
+        @SerializedName("isVerified")
+        public boolean isVerified;
     }
 
     public static class PostImage {

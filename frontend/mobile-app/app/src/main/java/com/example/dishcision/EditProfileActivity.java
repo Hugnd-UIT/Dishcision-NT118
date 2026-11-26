@@ -67,6 +67,17 @@ public class EditProfileActivity extends AppCompatActivity {
     private EditText edtCity;
     private LinearLayout btnAddPreference;
     private LinearLayout layoutPreferenceChipsContainer;
+    private LinearLayout cardMerchantVerification;
+    private TextView tvMerchantSectionTitle;
+    private TextView tvMerchantSectionDesc;
+    private TextView tvVerificationRejectionReason;
+    private com.google.android.material.button.MaterialButton btnMerchantAction;
+
+    private String currentUserRole = "User";
+    private boolean currentIsVerified = false;
+    private String currentVerificationStatus = "None";
+    private String currentRejectionReason = null;
+    private boolean isProcessingMerchantAction = false;
 
     private TokenManager tokenManager;
 
@@ -146,6 +157,11 @@ public class EditProfileActivity extends AppCompatActivity {
         edtCity = findViewById(R.id.edtCity);
         btnAddPreference = findViewById(R.id.btnAddPreference);
         layoutPreferenceChipsContainer = findViewById(R.id.layoutPreferenceChipsContainer);
+        cardMerchantVerification = findViewById(R.id.cardMerchantVerification);
+        tvMerchantSectionTitle = findViewById(R.id.tvMerchantSectionTitle);
+        tvMerchantSectionDesc = findViewById(R.id.tvMerchantSectionDesc);
+        tvVerificationRejectionReason = findViewById(R.id.tvVerificationRejectionReason);
+        btnMerchantAction = findViewById(R.id.btnMerchantAction);
 
         // edtUsername is editable
     }
@@ -286,8 +302,13 @@ public class EditProfileActivity extends AppCompatActivity {
                     UserProfileResponse.UserData user = response.body().getData();
                     ProfileSyncHelper.ProfileState serverState = ProfileSyncHelper.fromUserData(user);
                     baselineState = serverState;
+                    currentUserRole = user.role != null ? user.role : "User";
+                    currentIsVerified = user.isVerified;
+                    currentVerificationStatus = user.verificationStatus != null ? user.verificationStatus : (user.isVerified ? "Approved" : "None");
+                    currentRejectionReason = user.verificationRejectionReason;
                     persistUserToPrefs(user, serverState);
                     applyStateToUi(serverState);
+                    updateMerchantVerificationUi();
                 } else if (response.code() == 401) {
                     AuthHelper.handleUnauthorized(EditProfileActivity.this, null);
                 }
@@ -447,6 +468,9 @@ public class EditProfileActivity extends AppCompatActivity {
         View tvBtnAdd = findViewById(R.id.tvBtnAddPreference);
         if (tvBtnAdd != null) {
             tvBtnAdd.setOnClickListener(v -> showAddPreferenceOptions());
+        }
+        if (btnMerchantAction != null) {
+            btnMerchantAction.setOnClickListener(v -> handleMerchantActionClick());
         }
     }
 
@@ -940,5 +964,132 @@ public class EditProfileActivity extends AppCompatActivity {
 
         String email = savedUser != null ? savedUser.email : null;
         tokenManager.saveAuthData(null, uid, email, state.fullName);
+    }
+
+    private void updateMerchantVerificationUi() {
+        if (cardMerchantVerification == null || btnMerchantAction == null) return;
+
+        if ("Admin".equalsIgnoreCase(currentUserRole)) {
+            tvMerchantSectionTitle.setText("Tài khoản quản trị viên");
+            tvMerchantSectionDesc.setText("Tài khoản của bạn thuộc ban quản trị hệ thống.");
+            tvVerificationRejectionReason.setVisibility(View.GONE);
+            btnMerchantAction.setText("Quản trị viên hệ thống");
+            btnMerchantAction.setEnabled(false);
+            btnMerchantAction.setBackgroundTintList(android.content.res.ColorStateList.valueOf(Color.parseColor("#8C8C8C")));
+            return;
+        }
+
+        if (!"RestaurantAccount".equalsIgnoreCase(currentUserRole)) {
+            tvMerchantSectionTitle.setText("Đăng ký chủ quán");
+            tvMerchantSectionDesc.setText("Nâng cấp tài khoản thành chủ quán ăn để quản lý thông tin nhà hàng và mở khóa tính năng đăng ký tích xanh xác thực.");
+            tvVerificationRejectionReason.setVisibility(View.GONE);
+            btnMerchantAction.setText("Đăng ký làm chủ quán");
+            btnMerchantAction.setEnabled(true);
+            btnMerchantAction.setBackgroundTintList(android.content.res.ColorStateList.valueOf(Color.parseColor("#FF5A36")));
+            return;
+        }
+
+        if (currentIsVerified) {
+            tvMerchantSectionTitle.setText("Tài khoản chủ quán đã xác thực");
+            tvMerchantSectionDesc.setText("Tài khoản của bạn đã được ban quản trị Dishcision xác thực thành công và sở hữu tích xanh chính thức.");
+            tvVerificationRejectionReason.setVisibility(View.GONE);
+            btnMerchantAction.setText("Đã có tích xanh xác thực");
+            btnMerchantAction.setEnabled(false);
+            btnMerchantAction.setBackgroundTintList(android.content.res.ColorStateList.valueOf(Color.parseColor("#00B96B")));
+            return;
+        }
+
+        if ("Pending".equalsIgnoreCase(currentVerificationStatus)) {
+            tvMerchantSectionTitle.setText("Xét duyệt tích xanh");
+            tvMerchantSectionDesc.setText("Yêu cầu cấp tích xanh đang được ban quản trị xem xét và phê duyệt.");
+            tvVerificationRejectionReason.setVisibility(View.GONE);
+            btnMerchantAction.setText("Đang phê duyệt");
+            btnMerchantAction.setEnabled(false);
+            btnMerchantAction.setBackgroundTintList(android.content.res.ColorStateList.valueOf(Color.parseColor("#FAAD14")));
+            return;
+        }
+
+        tvMerchantSectionTitle.setText("Đăng ký tích xanh");
+        tvMerchantSectionDesc.setText("Đăng ký để được ban quản trị xác thực hồ sơ nhà hàng và cấp huy hiệu tích xanh uy tín.");
+        btnMerchantAction.setText("Đăng ký tích xanh");
+        btnMerchantAction.setEnabled(true);
+        btnMerchantAction.setBackgroundTintList(android.content.res.ColorStateList.valueOf(Color.parseColor("#1890FF")));
+
+        if ("Rejected".equalsIgnoreCase(currentVerificationStatus) && currentRejectionReason != null && !currentRejectionReason.isEmpty()) {
+            tvVerificationRejectionReason.setVisibility(View.VISIBLE);
+            tvVerificationRejectionReason.setText("Yêu cầu trước đó bị từ chối: " + currentRejectionReason);
+        } else {
+            tvVerificationRejectionReason.setVisibility(View.GONE);
+        }
+    }
+
+    private void handleMerchantActionClick() {
+        if (isProcessingMerchantAction) return;
+
+        String authHeader = ApiClient.getAuthHeader(this);
+        if (authHeader.isEmpty()) {
+            Toast.makeText(this, "Vui lòng đăng nhập lại", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        if (!"RestaurantAccount".equalsIgnoreCase(currentUserRole)) {
+            isProcessingMerchantAction = true;
+            btnMerchantAction.setEnabled(false);
+            btnMerchantAction.setText("Đang xử lý...");
+            ApiClient.getApiService().registerMerchant(authHeader).enqueue(new Callback<UserProfileResponse>() {
+                @Override
+                public void onResponse(Call<UserProfileResponse> call, Response<UserProfileResponse> response) {
+                    isProcessingMerchantAction = false;
+                    if (response.isSuccessful() && response.body() != null && response.body().getData() != null) {
+                        UserProfileResponse.UserData user = response.body().getData();
+                        currentUserRole = user.role != null ? user.role : "RestaurantAccount";
+                        currentIsVerified = user.isVerified;
+                        currentVerificationStatus = user.verificationStatus != null ? user.verificationStatus : "None";
+                        persistUserToPrefs(user, baselineState);
+                        Toast.makeText(EditProfileActivity.this, "Đăng ký làm chủ quán thành công!", Toast.LENGTH_SHORT).show();
+                        updateMerchantVerificationUi();
+                    } else {
+                        updateMerchantVerificationUi();
+                        Toast.makeText(EditProfileActivity.this, "Đăng ký làm chủ quán thất bại", Toast.LENGTH_SHORT).show();
+                    }
+                }
+
+                @Override
+                public void onFailure(Call<UserProfileResponse> call, Throwable t) {
+                    isProcessingMerchantAction = false;
+                    updateMerchantVerificationUi();
+                    Toast.makeText(EditProfileActivity.this, "Lỗi kết nối máy chủ", Toast.LENGTH_SHORT).show();
+                }
+            });
+            return;
+        }
+
+        isProcessingMerchantAction = true;
+        btnMerchantAction.setEnabled(false);
+        btnMerchantAction.setText("Đang gửi yêu cầu...");
+        ApiClient.getApiService().requestVerification(authHeader).enqueue(new Callback<UserProfileResponse>() {
+            @Override
+            public void onResponse(Call<UserProfileResponse> call, Response<UserProfileResponse> response) {
+                isProcessingMerchantAction = false;
+                if (response.isSuccessful() && response.body() != null && response.body().getData() != null) {
+                    UserProfileResponse.UserData user = response.body().getData();
+                    currentVerificationStatus = "Pending";
+                    currentIsVerified = false;
+                    persistUserToPrefs(user, baselineState);
+                    Toast.makeText(EditProfileActivity.this, "Đã gửi yêu cầu đăng ký tích xanh thành công!", Toast.LENGTH_SHORT).show();
+                    updateMerchantVerificationUi();
+                } else {
+                    updateMerchantVerificationUi();
+                    Toast.makeText(EditProfileActivity.this, "Gửi yêu cầu thất bại", Toast.LENGTH_SHORT).show();
+                }
+            }
+
+            @Override
+            public void onFailure(Call<UserProfileResponse> call, Throwable t) {
+                isProcessingMerchantAction = false;
+                updateMerchantVerificationUi();
+                Toast.makeText(EditProfileActivity.this, "Lỗi kết nối máy chủ", Toast.LENGTH_SHORT).show();
+            }
+        });
     }
 }

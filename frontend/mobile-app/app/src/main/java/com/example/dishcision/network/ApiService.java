@@ -57,6 +57,12 @@ public interface ApiService {
             @Body Object profileData
     );
 
+    @POST("users/register-merchant")
+    Call<UserProfileResponse> registerMerchant(@Header("Authorization") String authHeader);
+
+    @POST("users/request-verification")
+    Call<UserProfileResponse> requestVerification(@Header("Authorization") String authHeader);
+
     @GET("auth/session-status")
     Call<Object> checkSessionStatus(@Header("Authorization") String authHeader);
 

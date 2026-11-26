@@ -332,7 +332,7 @@ public final class PostFeedHelper {
             }
         }
         if (imgVerified != null) {
-            boolean verified = post.author != null && ("RestaurantAccount".equals(post.author.role) || "Admin".equals(post.author.role));
+            boolean verified = post.author != null && (post.author.isVerified || "Admin".equals(post.author.role));
             imgVerified.setVisibility(verified ? View.VISIBLE : View.GONE);
         }
         if (imgAvatar != null) {
