@@ -440,7 +440,7 @@ public class ProfileActivity extends AppCompatActivity {
                     boolean isRestaurant = "RestaurantAccount".equals(user.role);
                     boolean isAdmin = "Admin".equals(user.role);
                     if (imgVerified != null) {
-                        imgVerified.setVisibility(isRestaurant || isAdmin ? View.VISIBLE : View.GONE);
+                        imgVerified.setVisibility(user.isVerified || isAdmin ? View.VISIBLE : View.GONE);
                     }
                     if (tvRoleBadge != null) {
                         if (isRestaurant) {

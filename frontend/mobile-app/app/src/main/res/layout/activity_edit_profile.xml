@@ -31,7 +31,7 @@
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:gravity="center"
-            android:text="Edit Profile"
+            android:text="Chỉnh sửa hồ sơ"
             android:textColor="#141B2B"
             android:textSize="18sp"
             android:textStyle="bold" />
@@ -364,6 +364,58 @@
                         android:textColor="#141B2B"
                         android:textSize="14sp" />
                 </LinearLayout>
+            </LinearLayout>
+
+            <!-- Merchant & Verification Card -->
+            <LinearLayout
+                android:id="@+id/cardMerchantVerification"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:background="@drawable/bg_card_white"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <TextView
+                    android:id="@+id/tvMerchantSectionTitle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Đăng ký chủ quán"
+                    android:textColor="#141B2B"
+                    android:textSize="14sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/tvMerchantSectionDesc"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:text="Nâng cấp tài khoản thành chủ quán ăn để quản lý thông tin nhà hàng và mở khóa tính năng đăng ký tích xanh xác thực."
+                    android:textColor="#7A869A"
+                    android:textSize="12sp" />
+
+                <TextView
+                    android:id="@+id/tvVerificationRejectionReason"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:background="#FFF1F0"
+                    android:padding="8dp"
+                    android:textColor="#CF1322"
+                    android:textSize="12sp"
+                    android:visibility="gone" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnMerchantAction"
+                    android:layout_width="match_parent"
+                    android:layout_height="48dp"
+                    android:layout_marginTop="12dp"
+                    android:text="Đăng ký làm chủ quán"
+                    android:textColor="#FFFFFF"
+                    android:textSize="14sp"
+                    android:textStyle="bold"
+                    app:cornerRadius="8dp"
+                    app:backgroundTint="#FF5A36" />
             </LinearLayout>
         </LinearLayout>
     </ScrollView>

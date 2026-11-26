@@ -96,6 +96,9 @@ model User {
   dateOfBirth   DateTime?     @db.Date
   role          Role          @default(User)
   accountStatus AccountStatus @default(Active)
+  isVerified                  Boolean       @default(false)
+  verificationStatus         String        @default("None") @db.VarChar(50)
+  verificationRejectionReason String?       @db.Text
   refreshToken  String?       @db.VarChar(500)
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @updatedAt

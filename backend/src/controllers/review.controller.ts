@@ -18,7 +18,7 @@ function formatReview(review: any) {
 
 const AUTHOR_SELECT = {
   id: true, username: true, fullName: true, avatarUrl: true,
-  bio: true, city: true, role: true,
+  bio: true, city: true, role: true, isVerified: true,
   _count: {
     select: {
       followers: true,

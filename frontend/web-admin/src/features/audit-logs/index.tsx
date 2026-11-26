@@ -116,7 +116,7 @@ export function AuditLogsFeature() {
                 className='gap-1.5 border-emerald-500/30 bg-emerald-500/10 text-emerald-500 py-1 px-3 text-xs'
               >
                 <span className='size-2 rounded-full bg-emerald-500 animate-pulse' />
-                Ghi nhật ký: Đang hoạt động • {totalLogs} sự kiện
+                Ghi nhật ký
               </Badge>
             )}
           </div>

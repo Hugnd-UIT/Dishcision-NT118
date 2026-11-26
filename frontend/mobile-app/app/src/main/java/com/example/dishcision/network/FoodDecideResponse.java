@@ -15,6 +15,9 @@ public class FoodDecideResponse {
     public AIResultData getData() { return data; }
 
     public static class AIResultData {
+        @SerializedName("requestId")
+        public int requestId;
+
         @SerializedName("modelUsed")
         public String modelUsed;
 

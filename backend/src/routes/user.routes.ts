@@ -3,6 +3,8 @@ import {
   getMe,
   updateMe,
   deleteMe,
+  registerMerchant,
+  requestVerification,
   getUserById,
   getUserPosts,
   getMyActivity,
@@ -29,6 +31,8 @@ router.get('/me', authenticate, asyncHandler(getMe));
 router.get('/me/posts', authenticate, asyncHandler(getUserPosts));
 router.get('/me/activity', authenticate, asyncHandler(getMyActivity));
 router.put('/me', authenticate, validate(updateProfileSchema), asyncHandler(updateMe));
+router.post('/register-merchant', authenticate, asyncHandler(registerMerchant));
+router.post('/request-verification', authenticate, asyncHandler(requestVerification));
 router.delete('/me', authenticate, asyncHandler(deleteMe));
 router.get('/me/preferences', authenticate, asyncHandler(getUserPreferences));
 router.put('/me/preferences', authenticate, asyncHandler(updateUserPreferences));

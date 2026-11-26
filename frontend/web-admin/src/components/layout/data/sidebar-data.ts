@@ -11,6 +11,7 @@ import {
   Users,
   Sparkles,
   ScrollText,
+  Headphones,
 } from 'lucide-react'
 import { DishcisionLogo } from '@/assets/logo'
 import { type SidebarData } from '../types'
@@ -56,6 +57,11 @@ export const sidebarData: SidebarData = {
           title: 'Trí tuệ nhân tạo',
           url: '/ai',
           icon: Sparkles,
+        },
+        {
+          title: 'Hỗ trợ',
+          url: '/help-center',
+          icon: Headphones,
         },
       ],
     },

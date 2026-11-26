@@ -20,6 +20,9 @@ export const userSchema = z.object({
   postsCount: z.number().optional(),
   followersCount: z.number().optional(),
   city: z.string().nullable().optional(),
+  isVerified: z.boolean().optional(),
+  verificationStatus: z.string().optional(),
+  verificationRejectionReason: z.string().nullable().optional(),
 })
 
 export type User = {
@@ -37,4 +40,7 @@ export type User = {
   postsCount?: number
   followersCount?: number
   city?: string | null
+  isVerified?: boolean
+  verificationStatus?: string
+  verificationRejectionReason?: string | null
 }

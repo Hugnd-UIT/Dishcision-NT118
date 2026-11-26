@@ -7,6 +7,25 @@ import { formatUserPrivate, resolveAvatarUrl } from './user.controller';
 import { formatPost, POST_INCLUDE } from './post.controller';
 import { AccountStatus, Role, PostStatus, ReportStatus, ReportPriority, AuditTargetType, Prisma } from '@prisma/client';
 
+// ── Helper to resolve admin actor for AuditLog ────
+async function getAdminActorInfo(req: AuthRequest) {
+  let adminUser = null;
+  if (req.user?.userId) {
+    adminUser = await prisma.user.findUnique({ where: { id: req.user.userId } });
+  }
+  if (!adminUser) {
+    adminUser = await prisma.user.findFirst({
+      where: { role: 'Admin' },
+      orderBy: { id: 'asc' },
+    });
+  }
+  return {
+    adminId: adminUser ? adminUser.id : undefined,
+    actorUsername: adminUser?.username || 'Admin',
+    actorRole: 'Admin',
+  };
+}
+
 // ── GET /admin/users ──────────────────────
 
 export async function listUsers(req: AuthRequest, res: Response): Promise<void> {
@@ -74,19 +93,104 @@ export async function updateUserStatus(req: AuthRequest, res: Response): Promise
     delCacheByPattern('newsfeed:*'),
   ]);
 
-  const adminId = req.user?.userId || 1;
-  await prisma.auditLog.create({
+  try {
+    const actor = await getAdminActorInfo(req);
+    await prisma.auditLog.create({
+      data: {
+        adminId: actor.adminId,
+        actorUsername: actor.actorUsername,
+        actorRole: actor.actorRole,
+        action: `UPDATE_USER_STATUS_${status}`,
+        targetType: AuditTargetType.User,
+        targetId: userId,
+        ipAddress: req.ip,
+        details: reason,
+      },
+    });
+  } catch (logErr) {
+    console.error('AuditLog creation warning in updateUserStatus:', logErr);
+  }
+
+  successResponse(res, null, 'Status updated successfully');
+}
+
+// ── POST /admin/users/:userId/verify ───────
+
+export async function verifyUser(req: AuthRequest, res: Response): Promise<void> {
+  const userId = parseInt(req.params.userId);
+  const { approved, reason } = req.body;
+
+  const targetUser = await prisma.user.findUnique({ where: { id: userId } });
+  if (!targetUser) {
+    errorResponse(res, 'User not found', 404);
+    return;
+  }
+
+  const isApproved = Boolean(approved);
+  const rejectionReason = isApproved
+    ? null
+    : reason && String(reason).trim()
+    ? String(reason).trim()
+    : 'Không đáp ứng đủ điều kiện tiêu chuẩn quán ăn';
+
+  const updatedUser = await prisma.user.update({
+    where: { id: userId },
     data: {
-      adminId,
-      action: `UPDATE_USER_STATUS_${status}`,
-      targetType: AuditTargetType.User,
-      targetId: userId,
-      ipAddress: req.ip,
-      details: reason,
+      isVerified: isApproved,
+      verificationStatus: isApproved ? 'Approved' : 'Rejected',
+      verificationRejectionReason: rejectionReason,
     },
   });
 
-  successResponse(res, null, 'Status updated successfully');
+  await Promise.all([
+    delCache(`user:${userId}`),
+    delCache('search:trending'),
+    delCacheByPattern('post:*'),
+    delCacheByPattern('newsfeed:*'),
+  ]);
+
+  const notificationMsg = isApproved
+    ? 'Chúc mừng! Hồ sơ của bạn đã được quản trị viên phê duyệt cấp tích xanh xác thực thành công.'
+    : `Yêu cầu cấp tích xanh xác thực của bạn không được phê duyệt. Lý do: ${rejectionReason}`;
+
+  await prisma.notification.create({
+    data: {
+      userId,
+      type: 'System',
+      message: notificationMsg,
+    },
+  });
+
+  try {
+    const actor = await getAdminActorInfo(req);
+    await prisma.auditLog.create({
+      data: {
+        adminId: actor.adminId,
+        actorUsername: actor.actorUsername,
+        actorRole: actor.actorRole,
+        action: isApproved ? 'APPROVE_VERIFICATION' : 'REJECT_VERIFICATION',
+        targetType: AuditTargetType.User,
+        targetId: userId,
+        ipAddress: req.ip,
+        details: isApproved
+          ? `Phê duyệt cấp tích xanh xác thực cho tài khoản @${targetUser.username}`
+          : `Từ chối cấp tích xanh cho tài khoản @${targetUser.username}. Lý do: ${rejectionReason}`,
+      },
+    });
+  } catch (logErr) {
+    console.error('AuditLog creation warning in verifyUser:', logErr);
+  }
+
+  successResponse(
+    res,
+    {
+      userId: updatedUser.id,
+      isVerified: updatedUser.isVerified,
+      verificationStatus: updatedUser.verificationStatus,
+      verificationRejectionReason: updatedUser.verificationRejectionReason,
+    },
+    isApproved ? 'Phê duyệt tích xanh thành công' : 'Đã từ chối cấp tích xanh'
+  );
 }
 
 // ── POST /admin/users/:userId/warn ────────
@@ -109,16 +213,23 @@ export async function warnUser(req: AuthRequest, res: Response): Promise<void> {
     },
   });
 
-  await prisma.auditLog.create({
-    data: {
-      adminId: req.user!.userId,
-      action: 'WARN_USER',
-      targetType: AuditTargetType.User,
-      targetId: userId,
-      ipAddress: req.ip,
-      details: message,
-    },
-  });
+  try {
+    const actor = await getAdminActorInfo(req);
+    await prisma.auditLog.create({
+      data: {
+        adminId: actor.adminId,
+        actorUsername: actor.actorUsername,
+        actorRole: actor.actorRole,
+        action: 'WARN_USER',
+        targetType: AuditTargetType.User,
+        targetId: userId,
+        ipAddress: req.ip,
+        details: message,
+      },
+    });
+  } catch (logErr) {
+    console.error('AuditLog creation warning in warnUser:', logErr);
+  }
 
   successResponse(res, null, 'Warning sent successfully');
 }
@@ -177,16 +288,22 @@ export async function pinPost(req: AuthRequest, res: Response): Promise<void> {
     data: { isPinned: Boolean(isPinned) },
   });
 
-  const adminId = req.user?.userId || 1;
-  await prisma.auditLog.create({
-    data: {
-      adminId,
-      action: isPinned ? 'PIN_POST' : 'UNPIN_POST',
-      targetType: AuditTargetType.Post,
-      targetId: postId,
-      ipAddress: req.ip,
-    },
-  });
+  try {
+    const actor = await getAdminActorInfo(req);
+    await prisma.auditLog.create({
+      data: {
+        adminId: actor.adminId,
+        actorUsername: actor.actorUsername,
+        actorRole: actor.actorRole,
+        action: isPinned ? 'PIN_POST' : 'UNPIN_POST',
+        targetType: AuditTargetType.Post,
+        targetId: postId,
+        ipAddress: req.ip,
+      },
+    });
+  } catch (logErr) {
+    console.error('AuditLog creation warning in pinPost:', logErr);
+  }
 
   successResponse(res, null, 'Update successful');
 }
@@ -215,17 +332,23 @@ export async function hidePost(req: AuthRequest, res: Response): Promise<void> {
     delCacheByPattern('newsfeed:*'),
   ]);
 
-  const adminId = req.user?.userId || 1;
-  await prisma.auditLog.create({
-    data: {
-      adminId,
-      action: isHidden ? 'HIDE_POST' : 'UNHIDE_POST',
-      targetType: AuditTargetType.Post,
-      targetId: postId,
-      ipAddress: req.ip,
-      details: reason,
-    },
-  });
+  try {
+    const actor = await getAdminActorInfo(req);
+    await prisma.auditLog.create({
+      data: {
+        adminId: actor.adminId,
+        actorUsername: actor.actorUsername,
+        actorRole: actor.actorRole,
+        action: isHidden ? 'HIDE_POST' : 'UNHIDE_POST',
+        targetType: AuditTargetType.Post,
+        targetId: postId,
+        ipAddress: req.ip,
+        details: reason,
+      },
+    });
+  } catch (logErr) {
+    console.error('AuditLog creation warning in hidePost:', logErr);
+  }
 
   successResponse(res, null, 'Update successful');
 }
@@ -250,16 +373,22 @@ export async function deletePostAdmin(req: AuthRequest, res: Response): Promise<
     delCacheByPattern('newsfeed:*'),
   ]);
 
-  const adminId = req.user?.userId || 1;
-  await prisma.auditLog.create({
-    data: {
-      adminId,
-      action: 'DELETE_POST',
-      targetType: AuditTargetType.Post,
-      targetId: postId,
-      ipAddress: req.ip,
-    },
-  });
+  try {
+    const actor = await getAdminActorInfo(req);
+    await prisma.auditLog.create({
+      data: {
+        adminId: actor.adminId,
+        actorUsername: actor.actorUsername,
+        actorRole: actor.actorRole,
+        action: 'DELETE_POST',
+        targetType: AuditTargetType.Post,
+        targetId: postId,
+        ipAddress: req.ip,
+      },
+    });
+  } catch (logErr) {
+    console.error('AuditLog creation warning in deletePostAdmin:', logErr);
+  }
 
   successResponse(res, null, 'Delete successful');
 }
@@ -371,16 +500,23 @@ export async function processReport(req: AuthRequest, res: Response): Promise<vo
     await Promise.all(cacheInvalidations);
   }
 
-  await prisma.auditLog.create({
-    data: {
-      adminId: req.user!.userId,
-      action: `PROCESS_REPORT_${action}`,
-      targetType: AuditTargetType.Report,
-      targetId: reportId,
-      ipAddress: req.ip,
-      details: note,
-    },
-  });
+  try {
+    const actor = await getAdminActorInfo(req);
+    await prisma.auditLog.create({
+      data: {
+        adminId: actor.adminId,
+        actorUsername: actor.actorUsername,
+        actorRole: actor.actorRole,
+        action: `PROCESS_REPORT_${action}`,
+        targetType: AuditTargetType.Report,
+        targetId: reportId,
+        ipAddress: req.ip,
+        details: note,
+      },
+    });
+  } catch (logErr) {
+    console.error('AuditLog creation warning in processReport:', logErr);
+  }
 
   successResponse(res, null, 'Report processed successfully');
 }
@@ -409,15 +545,22 @@ export async function setActiveAIConfig(req: AuthRequest, res: Response): Promis
     prisma.aIConfig.update({ where: { id: configId }, data: { isActive: true } }),
   ]);
 
-  await prisma.auditLog.create({
-    data: {
-      adminId: req.user!.userId,
-      action: 'SWITCH_AI_CONFIG',
-      targetType: AuditTargetType.AIConfig,
-      targetId: configId,
-      ipAddress: req.ip,
-    },
-  });
+  try {
+    const actor = await getAdminActorInfo(req);
+    await prisma.auditLog.create({
+      data: {
+        adminId: actor.adminId,
+        actorUsername: actor.actorUsername,
+        actorRole: actor.actorRole,
+        action: 'SWITCH_AI_CONFIG',
+        targetType: AuditTargetType.AIConfig,
+        targetId: configId,
+        ipAddress: req.ip,
+      },
+    });
+  } catch (logErr) {
+    console.error('AuditLog creation warning in setActiveAIConfig:', logErr);
+  }
 
   successResponse(res, null, 'Active AI model changed successfully');
 }
@@ -451,15 +594,22 @@ export async function updateAIPrompt(req: AuthRequest, res: Response): Promise<v
     },
   });
 
-  await prisma.auditLog.create({
-    data: {
-      adminId: req.user!.userId,
-      action: 'UPDATE_AI_PROMPT',
-      targetType: AuditTargetType.AIConfig,
-      targetId: promptId,
-      ipAddress: req.ip,
-    },
-  });
+  try {
+    const actor = await getAdminActorInfo(req);
+    await prisma.auditLog.create({
+      data: {
+        adminId: actor.adminId,
+        actorUsername: actor.actorUsername,
+        actorRole: actor.actorRole,
+        action: 'UPDATE_AI_PROMPT',
+        targetType: AuditTargetType.AIConfig,
+        targetId: promptId,
+        ipAddress: req.ip,
+      },
+    });
+  } catch (logErr) {
+    console.error('AuditLog creation warning in updateAIPrompt:', logErr);
+  }
 
   successResponse(res, null, 'Prompt updated successfully');
 }
@@ -1008,4 +1158,177 @@ export async function getDashboardStats(_req: any, res: Response): Promise<void>
   } catch (error: any) {
     errorResponse(res, error.message || 'Failed to fetch dashboard stats', 500);
   }
+}
+
+// ── GET /admin/support-tickets ──────────────────────
+export async function listSupportTickets(req: AuthRequest, res: Response): Promise<void> {
+  const status = req.query.status as string;
+  const search = ((req.query.search as string) || '').trim().toLowerCase();
+  const page = parseInt(req.query.page as string) || 1;
+  const limit = parseInt(req.query.limit as string) || 50;
+  const skip = (page - 1) * limit;
+
+  const where: any = {};
+  if (status && status !== 'all') {
+    if (status === 'pending') {
+      where.status = { notIn: ['Đã giải quyết', 'Resolved', 'Từ chối', 'Rejected'] };
+    } else if (status === 'resolved') {
+      where.status = { in: ['Đã giải quyết', 'Resolved'] };
+    } else {
+      where.status = status;
+    }
+  }
+
+  if (search) {
+    const searchNum = parseInt(search);
+    where.OR = [
+      { title: { contains: search, mode: 'insensitive' } },
+      { subject: { contains: search, mode: 'insensitive' } },
+      { description: { contains: search, mode: 'insensitive' } },
+      { user: { fullName: { contains: search, mode: 'insensitive' } } },
+      { user: { username: { contains: search, mode: 'insensitive' } } },
+      ...(!isNaN(searchNum) ? [{ id: searchNum }] : []),
+    ];
+  }
+
+  const [tickets, total] = await Promise.all([
+    prisma.supportTicket.findMany({
+      where,
+      include: {
+        user: {
+          select: {
+            id: true,
+            username: true,
+            fullName: true,
+            email: true,
+            avatarUrl: true,
+            role: true,
+          },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+      skip,
+      take: limit,
+    }),
+    prisma.supportTicket.count({ where }),
+  ]);
+
+  const formattedTickets = tickets.map((t) => ({
+    id: t.id,
+    userId: t.userId,
+    user: {
+      id: t.user.id,
+      username: t.user.username,
+      fullName: t.user.fullName || t.user.username,
+      email: t.user.email,
+      avatarUrl: resolveAvatarUrl(t.user.avatarUrl),
+      role: t.user.role,
+    },
+    type: t.type,
+    subject: t.subject,
+    title: t.title,
+    description: t.description,
+    contactEmail: t.contactEmail || t.user.email,
+    status: t.status,
+    attachments: Array.isArray(t.attachments) ? t.attachments : [],
+    timeline: Array.isArray(t.timeline) ? t.timeline : [],
+    createdAt: t.createdAt,
+    updatedAt: t.updatedAt,
+  }));
+
+  paginatedResponse(res, formattedTickets, { page, limit, total });
+}
+
+// ── POST /admin/support-tickets/:ticketId/reply ──────
+export async function replySupportTicket(req: AuthRequest, res: Response): Promise<void> {
+  const ticketId = parseInt(req.params.ticketId);
+  const { replyMessage, status } = req.body;
+
+  if (!replyMessage || !String(replyMessage).trim()) {
+    errorResponse(res, 'Vui lòng nhập nội dung phản hồi', 400);
+    return;
+  }
+
+  const ticket = await prisma.supportTicket.findUnique({
+    where: { id: ticketId },
+    include: { user: true },
+  });
+
+  if (!ticket) {
+    errorResponse(res, 'Không tìm thấy yêu cầu hỗ trợ', 404);
+    return;
+  }
+
+  const cleanReply = String(replyMessage).trim();
+  const nextStatus = status && String(status).trim() ? String(status).trim() : 'Đã giải quyết';
+  const dateStr = new Date().toLocaleDateString('vi-VN');
+
+  const currentTimeline = Array.isArray(ticket.timeline) ? (ticket.timeline as any[]) : [];
+  const updatedTimeline = [
+    ...currentTimeline,
+    {
+      step: nextStatus,
+      date: dateStr,
+      desc: `Quản trị viên đã phản hồi: ${cleanReply}`,
+      isDone: true,
+    },
+  ];
+
+  const updatedTicket = await prisma.supportTicket.update({
+    where: { id: ticketId },
+    data: {
+      status: nextStatus,
+      timeline: updatedTimeline,
+    },
+    include: {
+      user: {
+        select: {
+          id: true,
+          username: true,
+          fullName: true,
+          email: true,
+          avatarUrl: true,
+          role: true,
+        },
+      },
+    },
+  });
+
+  const notificationContent = `Ban quản trị đã phản hồi yêu cầu hỗ trợ "${ticket.title}": ${cleanReply}`;
+  await prisma.notification.create({
+    data: {
+      userId: ticket.userId,
+      type: 'System',
+      message: notificationContent,
+    },
+  });
+
+  try {
+    const actor = await getAdminActorInfo(req);
+    await prisma.auditLog.create({
+      data: {
+        adminId: actor.adminId,
+        actorUsername: actor.actorUsername,
+        actorRole: actor.actorRole,
+        action: 'REPLY_SUPPORT_TICKET',
+        targetType: AuditTargetType.User,
+        targetId: ticket.userId,
+        ipAddress: req.ip,
+        details: `Phản hồi yêu cầu hỗ trợ #${ticket.id} cho tài khoản @${ticket.user.username}: ${cleanReply}`,
+      },
+    });
+  } catch (logErr) {
+    console.error('AuditLog creation warning in replySupportTicket:', logErr);
+  }
+
+  successResponse(
+    res,
+    {
+      id: updatedTicket.id,
+      status: updatedTicket.status,
+      timeline: updatedTicket.timeline,
+      replyMessage: cleanReply,
+    },
+    'Phản hồi yêu cầu hỗ trợ thành công và đã gửi thông báo đến người dùng',
+  );
 }

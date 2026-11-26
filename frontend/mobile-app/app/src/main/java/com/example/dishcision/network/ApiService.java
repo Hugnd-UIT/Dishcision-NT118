@@ -57,6 +57,12 @@ public interface ApiService {
             @Body Object profileData
     );
 
+    @POST("users/register-merchant")
+    Call<UserProfileResponse> registerMerchant(@Header("Authorization") String authHeader);
+
+    @POST("users/request-verification")
+    Call<UserProfileResponse> requestVerification(@Header("Authorization") String authHeader);
+
     @GET("auth/session-status")
     Call<Object> checkSessionStatus(@Header("Authorization") String authHeader);
 
@@ -125,6 +131,13 @@ public interface ApiService {
     // ── AI FOOD DECIDE ENDPOINTS ──────────────────
     @POST("ai/food-decide")
     Call<FoodDecideResponse> foodDecide(@Body FoodDecideRequest request);
+
+    @POST("ai/requests/{requestId}/feedback")
+    Call<AuthResponse> submitAiFeedback(
+            @Header("Authorization") String authHeader,
+            @Path("requestId") int requestId,
+            @Body java.util.Map<String, Object> body
+    );
 
     @GET("users/me/blocked")
     Call<AccountsListResponse> getBlockedAccounts(@Header("Authorization") String authHeader);

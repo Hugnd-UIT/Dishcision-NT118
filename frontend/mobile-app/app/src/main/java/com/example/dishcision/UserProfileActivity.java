@@ -394,7 +394,7 @@ public class UserProfileActivity extends AppCompatActivity {
         boolean isAdmin = "Admin".equals(user.role);
         if (tabReviews != null) tabReviews.setVisibility(isRestaurant ? View.VISIBLE : View.GONE);
         if (imgVerifiedBadge != null) {
-            imgVerifiedBadge.setVisibility(isRestaurant || isAdmin ? View.VISIBLE : View.GONE);
+            imgVerifiedBadge.setVisibility(user.isVerified || isAdmin ? View.VISIBLE : View.GONE);
         }
 
         boolean showRole = isRestaurant || isAdmin;

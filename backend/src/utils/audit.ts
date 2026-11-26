@@ -45,7 +45,7 @@ export async function logActivity({
 
     await prisma.auditLog.create({
       data: {
-        adminId: userId || null,
+        adminId: userId ? userId : undefined,
         actorUsername: uName,
         actorRole: uRole,
         actorAvatar: uAvatar,

@@ -16,7 +16,7 @@ import {
 
 const AUTHOR_SELECT = {
   id: true, username: true, fullName: true, avatarUrl: true,
-  bio: true, city: true, role: true, _count: { select: { followers: true, following: true } },
+  bio: true, city: true, role: true, isVerified: true, _count: { select: { followers: true, following: true } },
 };
 
 function formatComment(comment: any): any {
