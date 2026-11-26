@@ -18,7 +18,7 @@ import {
 
 const AUTHOR_SELECT = {
   id: true, username: true, fullName: true, avatarUrl: true,
-  bio: true, city: true, role: true,
+  bio: true, city: true, role: true, isVerified: true,
   _count: {
     select: {
       followers: true,
@@ -167,6 +167,7 @@ export async function getFollowers(req: AuthRequest, res: Response): Promise<voi
           bio: true,
           city: true,
           role: true,
+          isVerified: true,
         },
       },
     },
@@ -240,6 +241,7 @@ export async function getFollowing(req: AuthRequest, res: Response): Promise<voi
           bio: true,
           city: true,
           role: true,
+          isVerified: true,
         },
       },
     },

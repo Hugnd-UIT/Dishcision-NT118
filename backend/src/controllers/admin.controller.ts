@@ -7,6 +7,25 @@ import { formatUserPrivate, resolveAvatarUrl } from './user.controller';
 import { formatPost, POST_INCLUDE } from './post.controller';
 import { AccountStatus, Role, PostStatus, ReportStatus, ReportPriority, AuditTargetType, Prisma } from '@prisma/client';
 
+// ── Helper to resolve admin actor for AuditLog ────
+async function getAdminActorInfo(req: AuthRequest) {
+  let adminUser = null;
+  if (req.user?.userId) {
+    adminUser = await prisma.user.findUnique({ where: { id: req.user.userId } });
+  }
+  if (!adminUser) {
+    adminUser = await prisma.user.findFirst({
+      where: { role: 'Admin' },
+      orderBy: { id: 'asc' },
+    });
+  }
+  return {
+    adminId: adminUser ? adminUser.id : undefined,
+    actorUsername: adminUser?.username || 'Admin',
+    actorRole: 'Admin',
+  };
+}
+
 // ── GET /admin/users ──────────────────────
 
 export async function listUsers(req: AuthRequest, res: Response): Promise<void> {
@@ -74,17 +93,23 @@ export async function updateUserStatus(req: AuthRequest, res: Response): Promise
     delCacheByPattern('newsfeed:*'),
   ]);
 
-  const adminId = req.user?.userId || 1;
-  await prisma.auditLog.create({
-    data: {
-      adminId,
-      action: `UPDATE_USER_STATUS_${status}`,
-      targetType: AuditTargetType.User,
-      targetId: userId,
-      ipAddress: req.ip,
-      details: reason,
-    },
-  });
+  try {
+    const actor = await getAdminActorInfo(req);
+    await prisma.auditLog.create({
+      data: {
+        adminId: actor.adminId,
+        actorUsername: actor.actorUsername,
+        actorRole: actor.actorRole,
+        action: `UPDATE_USER_STATUS_${status}`,
+        targetType: AuditTargetType.User,
+        targetId: userId,
+        ipAddress: req.ip,
+        details: reason,
+      },
+    });
+  } catch (logErr) {
+    console.error('AuditLog creation warning in updateUserStatus:', logErr);
+  }
 
   successResponse(res, null, 'Status updated successfully');
 }
@@ -136,23 +161,25 @@ export async function verifyUser(req: AuthRequest, res: Response): Promise<void>
     },
   });
 
-  const adminId = req.user?.userId;
-  const adminUser = adminId ? await prisma.user.findUnique({ where: { id: adminId } }) : null;
-  const adminUsername = adminUser?.username || 'admin';
-  await prisma.auditLog.create({
-    data: {
-      adminId: adminId ? adminId : undefined,
-      actorUsername: adminUsername,
-      actorRole: 'Admin',
-      action: isApproved ? 'APPROVE_VERIFICATION' : 'REJECT_VERIFICATION',
-      targetType: AuditTargetType.User,
-      targetId: userId,
-      ipAddress: req.ip,
-      details: isApproved
-        ? `Phê duyệt cấp tích xanh xác thực cho tài khoản @${targetUser.username}`
-        : `Từ chối cấp tích xanh cho tài khoản @${targetUser.username}. Lý do: ${rejectionReason}`,
-    },
-  });
+  try {
+    const actor = await getAdminActorInfo(req);
+    await prisma.auditLog.create({
+      data: {
+        adminId: actor.adminId,
+        actorUsername: actor.actorUsername,
+        actorRole: actor.actorRole,
+        action: isApproved ? 'APPROVE_VERIFICATION' : 'REJECT_VERIFICATION',
+        targetType: AuditTargetType.User,
+        targetId: userId,
+        ipAddress: req.ip,
+        details: isApproved
+          ? `Phê duyệt cấp tích xanh xác thực cho tài khoản @${targetUser.username}`
+          : `Từ chối cấp tích xanh cho tài khoản @${targetUser.username}. Lý do: ${rejectionReason}`,
+      },
+    });
+  } catch (logErr) {
+    console.error('AuditLog creation warning in verifyUser:', logErr);
+  }
 
   successResponse(
     res,
@@ -186,16 +213,23 @@ export async function warnUser(req: AuthRequest, res: Response): Promise<void> {
     },
   });
 
-  await prisma.auditLog.create({
-    data: {
-      adminId: req.user!.userId,
-      action: 'WARN_USER',
-      targetType: AuditTargetType.User,
-      targetId: userId,
-      ipAddress: req.ip,
-      details: message,
-    },
-  });
+  try {
+    const actor = await getAdminActorInfo(req);
+    await prisma.auditLog.create({
+      data: {
+        adminId: actor.adminId,
+        actorUsername: actor.actorUsername,
+        actorRole: actor.actorRole,
+        action: 'WARN_USER',
+        targetType: AuditTargetType.User,
+        targetId: userId,
+        ipAddress: req.ip,
+        details: message,
+      },
+    });
+  } catch (logErr) {
+    console.error('AuditLog creation warning in warnUser:', logErr);
+  }
 
   successResponse(res, null, 'Warning sent successfully');
 }
@@ -254,16 +288,22 @@ export async function pinPost(req: AuthRequest, res: Response): Promise<void> {
     data: { isPinned: Boolean(isPinned) },
   });
 
-  const adminId = req.user?.userId || 1;
-  await prisma.auditLog.create({
-    data: {
-      adminId,
-      action: isPinned ? 'PIN_POST' : 'UNPIN_POST',
-      targetType: AuditTargetType.Post,
-      targetId: postId,
-      ipAddress: req.ip,
-    },
-  });
+  try {
+    const actor = await getAdminActorInfo(req);
+    await prisma.auditLog.create({
+      data: {
+        adminId: actor.adminId,
+        actorUsername: actor.actorUsername,
+        actorRole: actor.actorRole,
+        action: isPinned ? 'PIN_POST' : 'UNPIN_POST',
+        targetType: AuditTargetType.Post,
+        targetId: postId,
+        ipAddress: req.ip,
+      },
+    });
+  } catch (logErr) {
+    console.error('AuditLog creation warning in pinPost:', logErr);
+  }
 
   successResponse(res, null, 'Update successful');
 }
@@ -292,17 +332,23 @@ export async function hidePost(req: AuthRequest, res: Response): Promise<void> {
     delCacheByPattern('newsfeed:*'),
   ]);
 
-  const adminId = req.user?.userId || 1;
-  await prisma.auditLog.create({
-    data: {
-      adminId,
-      action: isHidden ? 'HIDE_POST' : 'UNHIDE_POST',
-      targetType: AuditTargetType.Post,
-      targetId: postId,
-      ipAddress: req.ip,
-      details: reason,
-    },
-  });
+  try {
+    const actor = await getAdminActorInfo(req);
+    await prisma.auditLog.create({
+      data: {
+        adminId: actor.adminId,
+        actorUsername: actor.actorUsername,
+        actorRole: actor.actorRole,
+        action: isHidden ? 'HIDE_POST' : 'UNHIDE_POST',
+        targetType: AuditTargetType.Post,
+        targetId: postId,
+        ipAddress: req.ip,
+        details: reason,
+      },
+    });
+  } catch (logErr) {
+    console.error('AuditLog creation warning in hidePost:', logErr);
+  }
 
   successResponse(res, null, 'Update successful');
 }
@@ -327,16 +373,22 @@ export async function deletePostAdmin(req: AuthRequest, res: Response): Promise<
     delCacheByPattern('newsfeed:*'),
   ]);
 
-  const adminId = req.user?.userId || 1;
-  await prisma.auditLog.create({
-    data: {
-      adminId,
-      action: 'DELETE_POST',
-      targetType: AuditTargetType.Post,
-      targetId: postId,
-      ipAddress: req.ip,
-    },
-  });
+  try {
+    const actor = await getAdminActorInfo(req);
+    await prisma.auditLog.create({
+      data: {
+        adminId: actor.adminId,
+        actorUsername: actor.actorUsername,
+        actorRole: actor.actorRole,
+        action: 'DELETE_POST',
+        targetType: AuditTargetType.Post,
+        targetId: postId,
+        ipAddress: req.ip,
+      },
+    });
+  } catch (logErr) {
+    console.error('AuditLog creation warning in deletePostAdmin:', logErr);
+  }
 
   successResponse(res, null, 'Delete successful');
 }
@@ -448,16 +500,23 @@ export async function processReport(req: AuthRequest, res: Response): Promise<vo
     await Promise.all(cacheInvalidations);
   }
 
-  await prisma.auditLog.create({
-    data: {
-      adminId: req.user!.userId,
-      action: `PROCESS_REPORT_${action}`,
-      targetType: AuditTargetType.Report,
-      targetId: reportId,
-      ipAddress: req.ip,
-      details: note,
-    },
-  });
+  try {
+    const actor = await getAdminActorInfo(req);
+    await prisma.auditLog.create({
+      data: {
+        adminId: actor.adminId,
+        actorUsername: actor.actorUsername,
+        actorRole: actor.actorRole,
+        action: `PROCESS_REPORT_${action}`,
+        targetType: AuditTargetType.Report,
+        targetId: reportId,
+        ipAddress: req.ip,
+        details: note,
+      },
+    });
+  } catch (logErr) {
+    console.error('AuditLog creation warning in processReport:', logErr);
+  }
 
   successResponse(res, null, 'Report processed successfully');
 }
@@ -486,15 +545,22 @@ export async function setActiveAIConfig(req: AuthRequest, res: Response): Promis
     prisma.aIConfig.update({ where: { id: configId }, data: { isActive: true } }),
   ]);
 
-  await prisma.auditLog.create({
-    data: {
-      adminId: req.user!.userId,
-      action: 'SWITCH_AI_CONFIG',
-      targetType: AuditTargetType.AIConfig,
-      targetId: configId,
-      ipAddress: req.ip,
-    },
-  });
+  try {
+    const actor = await getAdminActorInfo(req);
+    await prisma.auditLog.create({
+      data: {
+        adminId: actor.adminId,
+        actorUsername: actor.actorUsername,
+        actorRole: actor.actorRole,
+        action: 'SWITCH_AI_CONFIG',
+        targetType: AuditTargetType.AIConfig,
+        targetId: configId,
+        ipAddress: req.ip,
+      },
+    });
+  } catch (logErr) {
+    console.error('AuditLog creation warning in setActiveAIConfig:', logErr);
+  }
 
   successResponse(res, null, 'Active AI model changed successfully');
 }
@@ -528,15 +594,22 @@ export async function updateAIPrompt(req: AuthRequest, res: Response): Promise<v
     },
   });
 
-  await prisma.auditLog.create({
-    data: {
-      adminId: req.user!.userId,
-      action: 'UPDATE_AI_PROMPT',
-      targetType: AuditTargetType.AIConfig,
-      targetId: promptId,
-      ipAddress: req.ip,
-    },
-  });
+  try {
+    const actor = await getAdminActorInfo(req);
+    await prisma.auditLog.create({
+      data: {
+        adminId: actor.adminId,
+        actorUsername: actor.actorUsername,
+        actorRole: actor.actorRole,
+        action: 'UPDATE_AI_PROMPT',
+        targetType: AuditTargetType.AIConfig,
+        targetId: promptId,
+        ipAddress: req.ip,
+      },
+    });
+  } catch (logErr) {
+    console.error('AuditLog creation warning in updateAIPrompt:', logErr);
+  }
 
   successResponse(res, null, 'Prompt updated successfully');
 }
@@ -1230,22 +1303,23 @@ export async function replySupportTicket(req: AuthRequest, res: Response): Promi
     },
   });
 
-  const adminId = req.user?.userId;
-  const adminUser = adminId ? await prisma.user.findUnique({ where: { id: adminId } }) : null;
-  const adminUsername = adminUser?.username || 'admin';
-
-  await prisma.auditLog.create({
-    data: {
-      adminId: adminId || undefined,
-      actorUsername: adminUsername,
-      actorRole: 'Admin',
-      action: 'REPLY_SUPPORT_TICKET',
-      targetType: AuditTargetType.User,
-      targetId: ticket.userId,
-      ipAddress: req.ip,
-      details: `Phản hồi yêu cầu hỗ trợ #${ticket.id} cho tài khoản @${ticket.user.username}: ${cleanReply}`,
-    },
-  });
+  try {
+    const actor = await getAdminActorInfo(req);
+    await prisma.auditLog.create({
+      data: {
+        adminId: actor.adminId,
+        actorUsername: actor.actorUsername,
+        actorRole: actor.actorRole,
+        action: 'REPLY_SUPPORT_TICKET',
+        targetType: AuditTargetType.User,
+        targetId: ticket.userId,
+        ipAddress: req.ip,
+        details: `Phản hồi yêu cầu hỗ trợ #${ticket.id} cho tài khoản @${ticket.user.username}: ${cleanReply}`,
+      },
+    });
+  } catch (logErr) {
+    console.error('AuditLog creation warning in replySupportTicket:', logErr);
+  }
 
   successResponse(
     res,
