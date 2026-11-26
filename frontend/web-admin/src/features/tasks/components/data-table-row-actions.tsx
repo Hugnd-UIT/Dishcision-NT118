@@ -74,7 +74,7 @@ export function DataTableRowActions<TData>({
           {isHidden ? (
             <>
               <Eye className='mr-2 size-4 text-emerald-500' />
-              Bỏ ẩn (Hiện lại bài)
+              Bỏ ẩn bài viết
             </>
           ) : (
             <>
